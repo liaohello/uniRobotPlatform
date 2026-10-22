@@ -4,6 +4,8 @@
 
 换笔记本时使用 [Git 追踪与恢复清单](laptop-migration.md)，区分本仓库源码、三个外部工程和本机私有环境。
 
+另开会话时先读 [新会话交接说明](handoff.md)；本次讨论的可读用户/助手正文保存在 [2026-10-22 会话存档](conversations/2026-10-22-scene-setup-dialogue.md)，历史建议以当前规范取代关系为准。
+
 当前组织版本为 V0.6。优先阅读 [mobileCar 四步闭环与 bimanual 复用](specs/00-overview/10-first-task-closed-loop.md)：先场景→运行→录制→回放，再验证多宿主下组件复用，训练/预测后续。完整演变见 [修订记录](specs/90-governance/07-change-log.md)。
 
 | 阅读目的 | 入口 |
