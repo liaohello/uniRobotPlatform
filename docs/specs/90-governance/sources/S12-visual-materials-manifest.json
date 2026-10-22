@@ -1,0 +1,498 @@
+{
+  "folder": "C:\\Users\\Administrator\\Desktop\\embodied_intelligence_proj\\uniRobotPlatform\\docs\\foreendAssets",
+  "files": [
+    {
+      "name": "RoboLab 场景库与机器人仿真编辑器.png",
+      "sha256": "c4aed8b49786301db25278299e6a174f3ca3bd35b565bd16fe1ace0587eb56eb",
+      "bytes": 1899861,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "RoboLab 机器人评估结果仪表板.png",
+      "sha256": "abfc3f9261c2aa22bc467af41949055057e60490b8b4ff492743a1bdfa7f41c0",
+      "bytes": 1763958,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "RoboLab 模型动物园仪表盘.png",
+      "sha256": "f70eee6bdd0a57f9b03e458067792869c9809ef66dfcecfbca99c8b94f675060",
+      "bytes": 1946120,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "RoboLab双臂机器人平台控制台.png",
+      "sha256": "e3177640d0ea94572af5f077db92202dee3faeeea69a32665c3b4a71088b1b81",
+      "bytes": 1722030,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "RoboLab机器人仿真场景配置界面.png",
+      "sha256": "39cd90f0b0781a2c22a9c74b26d2426bfe0dee0ccf23a8e007161974b69803bf",
+      "bytes": 1927394,
+      "dimensions": [
+        1672,
+        941
+      ]
+    },
+    {
+      "name": "RoboLab机器人仿真平台仪表盘.png",
+      "sha256": "7da0123a55119f6db4b3839256aa3b29fe1da3c5c7aab858a490bf39b9bb6c53",
+      "bytes": 1698767,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "RoboLab机器人仿真控制台.png",
+      "sha256": "9d4d315a30e93c4499086e823b69756abd893ca3087d1e6bf0b77a98bd4349e9",
+      "bytes": 1953041,
+      "dimensions": [
+        1672,
+        941
+      ]
+    },
+    {
+      "name": "RoboLab机器人回放与标注界面.png",
+      "sha256": "756ad49ce5fd6433110a9dabe6a0f5f48f43ef784142fa522f1fb1b40b014b29",
+      "bytes": 2007987,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "RoboLab机器人推理与仿真控制台.png",
+      "sha256": "d2d277ce74285d67c5698315648b1667aba272eb1de044a9187566b6dd5fb621",
+      "bytes": 1813545,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "RoboLab机器人数据集管理界面.png",
+      "sha256": "f27e85096da1786dd7330a965a6995034641416ee0dc3454d58b50a50d0c5e3c",
+      "bytes": 1729247,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "RoboLab机器人模型园深色仪表盘.png",
+      "sha256": "8c335afe494a5002c511c07af4469193b118d7153c25732b99eb683d551b4216",
+      "bytes": 1919444,
+      "dimensions": [
+        1672,
+        941
+      ]
+    },
+    {
+      "name": "RoboLab机器人策略仿真控制台.png",
+      "sha256": "11d575528920cfd731be20fb651537cd0216c30f75ac2da94ac062160afe8cd2",
+      "bytes": 1778101,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "RoboLab机器人评估控制台.png",
+      "sha256": "078efa4007962e877a1127e200f8742edb61f5148d749c688a2ed297cde4fd68",
+      "bytes": 1787703,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "RoboLab模型库对比与注册仪表板.png",
+      "sha256": "694a76f0c6a53bb1385ff4e21e88a21c27cf20001b1807787bf3a5fe59004fed",
+      "bytes": 1904249,
+      "dimensions": [
+        1672,
+        941
+      ]
+    },
+    {
+      "name": "RoboLab模型训练控制台.png",
+      "sha256": "19fa6babcce9b9bdad394df7e22992af434b80e31faa23ba1eb8bdefa3c16e8c",
+      "bytes": 1905608,
+      "dimensions": [
+        1672,
+        941
+      ]
+    },
+    {
+      "name": "RoboLab模型训练监控仪表板.png",
+      "sha256": "3c1bd3bac5c55b3e55b0325ed1be38c371abd89df933d544a59fa6d5f8d26b30",
+      "bytes": 1872082,
+      "dimensions": [
+        1672,
+        941
+      ]
+    },
+    {
+      "name": "ScreenShot_2026-10-21_211828_609.png",
+      "sha256": "6939f9b69ce5bbd12a703e05efab5632e1fe2001e7c29d5904317278699dada7",
+      "bytes": 1619100,
+      "dimensions": [
+        1656,
+        1056
+      ]
+    },
+    {
+      "name": "机器人任务预设控制台.png",
+      "sha256": "0780aa4ab59e3d4d3e113a8abff3b72b06d4d744efb591c206d2c01a4c99d4fd",
+      "bytes": 1863166,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "机器人推理与真实部署控制台.png",
+      "sha256": "7a50fe685eead7a235b4d6de968701cc8fa0ef6fbdf984438c78845d4acd159e",
+      "bytes": 1839112,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "机器人评估运行监控仪表盘 - 副本.png",
+      "sha256": "46d63137aa42fef699f45c86ca8b11051886774100fff7db49125a7ebc653ac9",
+      "bytes": 1938309,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "机器人评估运行监控仪表盘.png",
+      "sha256": "46d63137aa42fef699f45c86ca8b11051886774100fff7db49125a7ebc653ac9",
+      "bytes": 1938309,
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "机器人评测批次对比仪表板.png",
+      "sha256": "f063f200f9d8e000af1afe5cf6d53c67d55b596bb430a6db59cb4490de94720c",
+      "bytes": 1978115,
+      "dimensions": [
+        1672,
+        941
+      ]
+    },
+    {
+      "name": "项目制作平台前端.pptx",
+      "sha256": "47affa701cc187ef556b2cc7966b2728f2d0800597c606155d3f810c6aa70448",
+      "bytes": 37348735
+    }
+  ],
+  "slides": [
+    {
+      "slide": 1,
+      "texts": [],
+      "notes": "1",
+      "images": [
+        {
+          "member": "ppt/media/image1.png",
+          "sha256": "7da0123a55119f6db4b3839256aa3b29fe1da3c5c7aab858a490bf39b9bb6c53",
+          "matching_assets": [
+            "RoboLab机器人仿真平台仪表盘.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 2,
+      "texts": [],
+      "notes": "2",
+      "images": [
+        {
+          "member": "ppt/media/image2.png",
+          "sha256": "39cd90f0b0781a2c22a9c74b26d2426bfe0dee0ccf23a8e007161974b69803bf",
+          "matching_assets": [
+            "RoboLab机器人仿真场景配置界面.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 3,
+      "texts": [],
+      "notes": "3",
+      "images": [
+        {
+          "member": "ppt/media/image3.png",
+          "sha256": "9d4d315a30e93c4499086e823b69756abd893ca3087d1e6bf0b77a98bd4349e9",
+          "matching_assets": [
+            "RoboLab机器人仿真控制台.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 4,
+      "texts": [],
+      "notes": "4",
+      "images": [
+        {
+          "member": "ppt/media/image4.png",
+          "sha256": "756ad49ce5fd6433110a9dabe6a0f5f48f43ef784142fa522f1fb1b40b014b29",
+          "matching_assets": [
+            "RoboLab机器人回放与标注界面.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 5,
+      "texts": [],
+      "notes": "5",
+      "images": [
+        {
+          "member": "ppt/media/image5.png",
+          "sha256": "f27e85096da1786dd7330a965a6995034641416ee0dc3454d58b50a50d0c5e3c",
+          "matching_assets": [
+            "RoboLab机器人数据集管理界面.png"
+          ]
+        },
+        {
+          "member": "ppt/media/image5.png",
+          "sha256": "f27e85096da1786dd7330a965a6995034641416ee0dc3454d58b50a50d0c5e3c",
+          "matching_assets": [
+            "RoboLab机器人数据集管理界面.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 6,
+      "texts": [],
+      "notes": "6",
+      "images": [
+        {
+          "member": "ppt/media/image6.png",
+          "sha256": "19fa6babcce9b9bdad394df7e22992af434b80e31faa23ba1eb8bdefa3c16e8c",
+          "matching_assets": [
+            "RoboLab模型训练控制台.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 7,
+      "texts": [],
+      "notes": "7",
+      "images": [
+        {
+          "member": "ppt/media/image7.png",
+          "sha256": "3c1bd3bac5c55b3e55b0325ed1be38c371abd89df933d544a59fa6d5f8d26b30",
+          "matching_assets": [
+            "RoboLab模型训练监控仪表板.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 8,
+      "texts": [],
+      "notes": "8",
+      "images": [
+        {
+          "member": "ppt/media/image8.png",
+          "sha256": "d2d277ce74285d67c5698315648b1667aba272eb1de044a9187566b6dd5fb621",
+          "matching_assets": [
+            "RoboLab机器人推理与仿真控制台.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 9,
+      "texts": [],
+      "notes": "9",
+      "images": [
+        {
+          "member": "ppt/media/image9.png",
+          "sha256": "11d575528920cfd731be20fb651537cd0216c30f75ac2da94ac062160afe8cd2",
+          "matching_assets": [
+            "RoboLab机器人策略仿真控制台.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 10,
+      "texts": [],
+      "notes": "10",
+      "images": [
+        {
+          "member": "ppt/media/image10.png",
+          "sha256": "7a50fe685eead7a235b4d6de968701cc8fa0ef6fbdf984438c78845d4acd159e",
+          "matching_assets": [
+            "机器人推理与真实部署控制台.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 11,
+      "texts": [],
+      "notes": "11",
+      "images": [
+        {
+          "member": "ppt/media/image11.png",
+          "sha256": "f70eee6bdd0a57f9b03e458067792869c9809ef66dfcecfbca99c8b94f675060",
+          "matching_assets": [
+            "RoboLab 模型动物园仪表盘.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 12,
+      "texts": [],
+      "notes": "12",
+      "images": [
+        {
+          "member": "ppt/media/image12.png",
+          "sha256": "8c335afe494a5002c511c07af4469193b118d7153c25732b99eb683d551b4216",
+          "matching_assets": [
+            "RoboLab机器人模型园深色仪表盘.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 13,
+      "texts": [],
+      "notes": "13",
+      "images": [
+        {
+          "member": "ppt/media/image13.png",
+          "sha256": "694a76f0c6a53bb1385ff4e21e88a21c27cf20001b1807787bf3a5fe59004fed",
+          "matching_assets": [
+            "RoboLab模型库对比与注册仪表板.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 14,
+      "texts": [],
+      "notes": "14",
+      "images": [
+        {
+          "member": "ppt/media/image14.png",
+          "sha256": "078efa4007962e877a1127e200f8742edb61f5148d749c688a2ed297cde4fd68",
+          "matching_assets": [
+            "RoboLab机器人评估控制台.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 15,
+      "texts": [],
+      "notes": "15",
+      "images": [
+        {
+          "member": "ppt/media/image15.png",
+          "sha256": "46d63137aa42fef699f45c86ca8b11051886774100fff7db49125a7ebc653ac9",
+          "matching_assets": [
+            "机器人评估运行监控仪表盘 - 副本.png",
+            "机器人评估运行监控仪表盘.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 16,
+      "texts": [],
+      "notes": "16",
+      "images": [
+        {
+          "member": "ppt/media/image16.png",
+          "sha256": "abfc3f9261c2aa22bc467af41949055057e60490b8b4ff492743a1bdfa7f41c0",
+          "matching_assets": [
+            "RoboLab 机器人评估结果仪表板.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 17,
+      "texts": [],
+      "notes": "17",
+      "images": [
+        {
+          "member": "ppt/media/image17.png",
+          "sha256": "f063f200f9d8e000af1afe5cf6d53c67d55b596bb430a6db59cb4490de94720c",
+          "matching_assets": [
+            "机器人评测批次对比仪表板.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 18,
+      "texts": [],
+      "notes": "18",
+      "images": [
+        {
+          "member": "ppt/media/image18.png",
+          "sha256": "0780aa4ab59e3d4d3e113a8abff3b72b06d4d744efb591c206d2c01a4c99d4fd",
+          "matching_assets": [
+            "机器人任务预设控制台.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 19,
+      "texts": [],
+      "notes": "19",
+      "images": [
+        {
+          "member": "ppt/media/image19.png",
+          "sha256": "e3177640d0ea94572af5f077db92202dee3faeeea69a32665c3b4a71088b1b81",
+          "matching_assets": [
+            "RoboLab双臂机器人平台控制台.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slide": 20,
+      "texts": [],
+      "notes": "20",
+      "images": [
+        {
+          "member": "ppt/media/image20.png",
+          "sha256": "c4aed8b49786301db25278299e6a174f3ca3bd35b565bd16fe1ace0587eb56eb",
+          "matching_assets": [
+            "RoboLab 场景库与机器人仿真编辑器.png"
+          ]
+        }
+      ]
+    }
+  ]
+}

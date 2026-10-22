@@ -1,0 +1,1291 @@
+{
+  "version": "0.6",
+  "date": "2026-10-22",
+  "status": "base_specification_draft",
+  "source_sha256": "995e4bf3c3fdc19f6874e1d221d5e52195db5f38e79fcac8c082b8ac9939119a",
+  "packages": [
+    {
+      "path": "10-frontend/01-shell/README.md",
+      "id": "PKG-FE-SHELL",
+      "title": "全局外壳与操作上下文",
+      "layer": "10-frontend"
+    },
+    {
+      "path": "10-frontend/02-scene-setup/README.md",
+      "id": "PKG-FE-SCENE",
+      "title": "场景布置工作区",
+      "layer": "10-frontend"
+    },
+    {
+      "path": "10-frontend/03-simulation/README.md",
+      "id": "PKG-FE-SIM",
+      "title": "在线仿真工作台",
+      "layer": "10-frontend"
+    },
+    {
+      "path": "10-frontend/04-replay-annotation/README.md",
+      "id": "PKG-FE-REPLAY",
+      "title": "回放与标注工作区",
+      "layer": "10-frontend"
+    },
+    {
+      "path": "10-frontend/05-datasets/README.md",
+      "id": "PKG-FE-DATA",
+      "title": "数据管理工作区",
+      "layer": "10-frontend"
+    },
+    {
+      "path": "10-frontend/06-training-evaluation/README.md",
+      "id": "PKG-FE-MODELS",
+      "title": "训练与评估工作区",
+      "layer": "10-frontend"
+    },
+    {
+      "path": "10-frontend/07-viewport-tools/README.md",
+      "id": "PKG-FE-3D",
+      "title": "共享三维视口与交互工具",
+      "layer": "10-frontend"
+    },
+    {
+      "path": "10-frontend/08-observation-inspector/README.md",
+      "id": "PKG-FE-PANELS",
+      "title": "共享观察、属性与时间面板",
+      "layer": "10-frontend"
+    },
+    {
+      "path": "20-backend/01-session-scene/README.md",
+      "id": "PKG-BE-SESSION",
+      "title": "会话、场景与配置",
+      "layer": "20-backend"
+    },
+    {
+      "path": "20-backend/02-robot-control/README.md",
+      "id": "PKG-BE-CONTROL",
+      "title": "机器人控制与干预",
+      "layer": "20-backend"
+    },
+    {
+      "path": "20-backend/03-observation-algorithms/README.md",
+      "id": "PKG-BE-OBS",
+      "title": "观测、算法与任务编排",
+      "layer": "20-backend"
+    },
+    {
+      "path": "20-backend/04-recording-replay/README.md",
+      "id": "PKG-BE-RECORDING",
+      "title": "采集、回放与标注存储",
+      "layer": "20-backend"
+    },
+    {
+      "path": "20-backend/05-dataset-export/README.md",
+      "id": "PKG-BE-DATA",
+      "title": "数据质量与导出",
+      "layer": "20-backend"
+    },
+    {
+      "path": "20-backend/06-training-evaluation/README.md",
+      "id": "PKG-BE-MODELS",
+      "title": "训练与评估服务",
+      "layer": "20-backend"
+    },
+    {
+      "path": "20-backend/07-existing-project-adapters/README.md",
+      "id": "PKG-BE-ADAPTERS",
+      "title": "现有项目适配",
+      "layer": "20-backend"
+    }
+  ],
+  "documents": [
+    {
+      "path": "00-overview/01-product-boundaries.md",
+      "id": "SYS-PRODUCT",
+      "title": "产品目标与边界",
+      "layer": "系统",
+      "source_chapter": 7,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "00-overview/02-scope-and-staging.md",
+      "id": "SYS-SCOPE",
+      "title": "范围与建议分期",
+      "layer": "系统",
+      "source_chapter": 8,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "00-overview/03-task-and-observation-profiles.md",
+      "id": "SYS-PROFILES",
+      "title": "任务、观测、执行与采集配置",
+      "layer": "系统",
+      "source_chapter": 9,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "00-overview/04-runtime-state-domains.md",
+      "id": "SYS-STATE",
+      "title": "独立状态域与运行模型",
+      "layer": "系统",
+      "source_chapter": 11,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "00-overview/05-glossary.md",
+      "id": "SYS-GLOSSARY",
+      "title": "术语与边界",
+      "layer": "系统",
+      "source_chapter": 6,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "00-overview/06-robot-capabilities.md",
+      "id": "SYS-CAPABILITIES",
+      "title": "机器人能力与适配边界",
+      "layer": "系统",
+      "source_chapter": 12
+    },
+    {
+      "path": "00-overview/07-task-template-catalog.md",
+      "id": "SYS-TASK-CATALOG",
+      "title": "任务模板目录与能力差异",
+      "layer": "系统",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "00-overview/08-unified-development-roadmap.md",
+      "id": "SYS-DELIVERY-SLICES",
+      "title": "共用契约与任务控制台的增量路线",
+      "layer": "系统",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "00-overview/09-page-design-delivery-plan.md",
+      "id": "SYS-PAGE-DELIVERY",
+      "title": "页面设计收敛与任务增量计划",
+      "layer": "系统规划",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "00-overview/README.md",
+      "id": "CAT-SYSTEM",
+      "title": "系统目标与全局边界",
+      "layer": "大类索引",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/01-shell/01-navigation-context.md",
+      "id": "FE-SHELL-NAV",
+      "title": "全局信息架构与工作区",
+      "layer": "前端",
+      "source_chapter": 10,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/01-shell/02-layout-input-focus.md",
+      "id": "FE-SHELL-LAYOUT",
+      "title": "面板布局与输入焦点",
+      "layer": "前端",
+      "source_chapter": 28,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/01-shell/03-authority-status-feedback.md",
+      "id": "FE-SHELL-AUTHORITY",
+      "title": "控制权、接管与全局状态反馈",
+      "layer": "前端",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/01-shell/04-visual-design-rules.md",
+      "id": "FE-SHELL-VISUAL",
+      "title": "页面统一规则与视觉基线",
+      "layer": "前端共享交互",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/01-shell/README.md",
+      "id": "PKG-FE-SHELL",
+      "title": "全局外壳与操作上下文",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/02-scene-setup/01-workflow-initial-state.md",
+      "id": "FE-SCENE-WORKFLOW",
+      "title": "Scene Setup｜场景布置",
+      "layer": "前端",
+      "source_chapter": 15,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/02-scene-setup/02-task-template-configuration.md",
+      "id": "FE-SCENE-TEMPLATES",
+      "title": "Scene Setup 任务配置与实验配置流程",
+      "layer": "前端",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/02-scene-setup/03-so101-tabletop-layout.md",
+      "id": "FE-SCENE-BIMANUAL-LAYOUT",
+      "title": "SO101 桌面对象的 2D/3D 布置",
+      "layer": "前端",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/02-scene-setup/04-map-waypoint-editor.md",
+      "id": "FE-SCENE-WAYPOINTS",
+      "title": "2D 地图与 Waypoint 路线编辑",
+      "layer": "前端",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/02-scene-setup/README.md",
+      "id": "PKG-FE-SCENE",
+      "title": "场景布置工作区",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.5"
+    },
+    {
+      "path": "10-frontend/03-simulation/01-workflow-task-panels.md",
+      "id": "FE-SIM-WORKFLOW",
+      "title": "Simulation｜在线仿真工作台",
+      "layer": "前端",
+      "source_chapter": 16,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/03-simulation/02-recording-session-controls.md",
+      "id": "FE-SIM-RECORDING",
+      "title": "运行与录制操作区",
+      "layer": "前端",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/03-simulation/03-leader-follower-panel.md",
+      "id": "FE-SIM-LEADER",
+      "title": "实体主臂与仿真从臂",
+      "layer": "前端",
+      "source_chapter": 25
+    },
+    {
+      "path": "10-frontend/03-simulation/04-ah-layout-presets.md",
+      "id": "FE-SIM-LAYOUT-AH",
+      "title": "Simulation A–H 功能区域与任务布局",
+      "layer": "前端",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/03-simulation/05-execution-profiles-policy-rollout.md",
+      "id": "FE-SIM-EXECUTION",
+      "title": "执行配置与模型推理入口",
+      "layer": "前端",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/03-simulation/06-simulation-v2-review.md",
+      "id": "FE-SIM-V2-REVIEW",
+      "title": "Simulation V2｜删除、替换与待修正项",
+      "layer": "前端设计评审",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/03-simulation/README.md",
+      "id": "PKG-FE-SIM",
+      "title": "在线仿真工作台",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/04-replay-annotation/01-synchronized-playback.md",
+      "id": "FE-REPLAY-PLAYBACK",
+      "title": "Replay & Annotation｜同步回放与标注",
+      "layer": "前端",
+      "source_chapter": 17,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/04-replay-annotation/02-annotation-editor.md",
+      "id": "FE-REPLAY-ANNOTATION",
+      "title": "阶段、事件与标注编辑",
+      "layer": "前端",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/04-replay-annotation/README.md",
+      "id": "PKG-FE-REPLAY",
+      "title": "回放与标注工作区",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/05-datasets/01-browser-quality-export.md",
+      "id": "FE-DATA-BROWSER",
+      "title": "Dataset Management｜数据管理",
+      "layer": "前端",
+      "source_chapter": 18,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/05-datasets/README.md",
+      "id": "PKG-FE-DATA",
+      "title": "数据管理工作区",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/06-training-evaluation/01-training-workspace.md",
+      "id": "FE-TRAIN-WORKSPACE",
+      "title": "Model Training｜训练管理概念",
+      "layer": "前端",
+      "source_chapter": 19,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/06-training-evaluation/02-evaluation-workspace.md",
+      "id": "FE-EVAL-WORKSPACE",
+      "title": "Evaluation｜评估概念",
+      "layer": "前端",
+      "source_chapter": 20,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/06-training-evaluation/README.md",
+      "id": "PKG-FE-MODELS",
+      "title": "训练与评估工作区",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/07-viewport-tools/01-viewport-contexts.md",
+      "id": "FE-3D-VIEWPORT",
+      "title": "共用 3D Viewport",
+      "layer": "前端",
+      "source_chapter": 26,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/07-viewport-tools/02-selection-camera.md",
+      "id": "FE-3D-SELECTION",
+      "title": "选择、相机与整臂框选",
+      "layer": "前端",
+      "source_chapter": 21
+    },
+    {
+      "path": "10-frontend/07-viewport-tools/03-joint-manipulation.md",
+      "id": "FE-3D-JOINT",
+      "title": "关节操控与监控",
+      "layer": "前端",
+      "source_chapter": 22
+    },
+    {
+      "path": "10-frontend/07-viewport-tools/04-tcp-trajectories.md",
+      "id": "FE-3D-TCP",
+      "title": "TCP 操控与虚线运动轨迹",
+      "layer": "前端",
+      "source_chapter": 23
+    },
+    {
+      "path": "10-frontend/07-viewport-tools/05-physical-force-tool.md",
+      "id": "FE-3D-FORCE",
+      "title": "物理受力与临时工具",
+      "layer": "前端",
+      "source_chapter": 24
+    },
+    {
+      "path": "10-frontend/07-viewport-tools/README.md",
+      "id": "PKG-FE-3D",
+      "title": "共享三维视口与交互工具",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/08-observation-inspector/01-hierarchy-inspector.md",
+      "id": "FE-PANEL-INSPECTOR",
+      "title": "Inspector 与层级联动",
+      "layer": "前端",
+      "source_chapter": 27
+    },
+    {
+      "path": "10-frontend/08-observation-inspector/02-sensors-algorithms.md",
+      "id": "FE-PANEL-SENSORS",
+      "title": "传感器与算法观测面板",
+      "layer": "前端",
+      "source_chapter": 29,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/08-observation-inspector/03-timeline-event-tracks.md",
+      "id": "FE-PANEL-TIMELINE",
+      "title": "统一时间轴与事件轨",
+      "layer": "前端",
+      "source_chapter": 30
+    },
+    {
+      "path": "10-frontend/08-observation-inspector/README.md",
+      "id": "PKG-FE-PANELS",
+      "title": "共享观察、属性与时间面板",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "10-frontend/README.md",
+      "id": "CAT-FRONTEND",
+      "title": "前端 Specification",
+      "layer": "大类索引",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/page-designs/01-home.md",
+      "id": "PAGE-01",
+      "title": "Home｜项目首页",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/02-scene-setup.md",
+      "id": "PAGE-02",
+      "title": "Scene Setup｜实验配置与场景布置",
+      "layer": "前端页面设计",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/page-designs/03-simulation.md",
+      "id": "PAGE-03",
+      "title": "Simulation｜统一在线任务工作台",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/04-episode-library.md",
+      "id": "PAGE-04",
+      "title": "Episode Library｜轨迹列表",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/05-episode-detail.md",
+      "id": "PAGE-05",
+      "title": "Episode Detail｜回放、标注与审核",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/06-dataset-collections.md",
+      "id": "PAGE-06",
+      "title": "Dataset Collections｜数据集合",
+      "layer": "前端页面设计",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/page-designs/07-dataset-version.md",
+      "id": "PAGE-07",
+      "title": "Dataset Version｜划分、质量与导出",
+      "layer": "前端页面设计",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/page-designs/08-training-setup.md",
+      "id": "PAGE-08",
+      "title": "Training Setup｜训练配置",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/09-training-runs.md",
+      "id": "PAGE-09",
+      "title": "Training Runs｜作业列表与详情",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/10-offline-inference.md",
+      "id": "PAGE-10",
+      "title": "Offline Inference｜离线预测诊断",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/11-model-catalog.md",
+      "id": "PAGE-11",
+      "title": "Model Catalog｜模型来源目录",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/12-my-models.md",
+      "id": "PAGE-12",
+      "title": "My Models｜模型版本与 Checkpoint",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/13-model-registry-compare.md",
+      "id": "PAGE-13",
+      "title": "Registry & Compare｜模型版本比较",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/14-evaluation-setup.md",
+      "id": "PAGE-14",
+      "title": "Evaluation Setup｜评估协议配置",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/15-evaluation-running.md",
+      "id": "PAGE-15",
+      "title": "Evaluation Running｜评估运行监控",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/16-evaluation-results.md",
+      "id": "PAGE-16",
+      "title": "Results & Reports｜评估结果",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/17-batch-comparison.md",
+      "id": "PAGE-17",
+      "title": "Batch Comparison｜评估批次比较",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/18-task-presets.md",
+      "id": "PAGE-18",
+      "title": "Task Presets｜任务模板资源",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/19-robot-platform.md",
+      "id": "PAGE-19",
+      "title": "Robot Platform｜机器人能力资源",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/20-scenes.md",
+      "id": "PAGE-20",
+      "title": "Scenes｜场景资源库",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/21-real-robot-future.md",
+      "id": "PAGE-21",
+      "title": "Real Robot Deployment｜真机部署后续参考",
+      "layer": "前端页面设计",
+      "source_chapter": null
+    },
+    {
+      "path": "10-frontend/page-designs/README.md",
+      "id": "FE-PAGE-DESIGNS",
+      "title": "前端页面设计与图片索引",
+      "layer": "前端页面设计",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "20-backend/01-session-scene/01-session-lifecycle.md",
+      "id": "BE-SESSION-LIFECYCLE",
+      "title": "仿真 Session 与运行生命周期",
+      "layer": "后端",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "20-backend/01-session-scene/02-scene-config-versions.md",
+      "id": "BE-SCENE-CONFIG",
+      "title": "场景配置、初态检查与版本",
+      "layer": "后端",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "20-backend/01-session-scene/03-scene-builder-assets.md",
+      "id": "BE-SCENE-BUILDER",
+      "title": "受限对象配置与 MuJoCo 场景构建",
+      "layer": "后端",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/01-session-scene/README.md",
+      "id": "PKG-BE-SESSION",
+      "title": "会话、场景与配置",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/02-robot-control/01-ownership-takeover.md",
+      "id": "BE-CONTROL-AUTHORITY",
+      "title": "控制源仲裁与受控接管执行",
+      "layer": "后端",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/02-robot-control/02-joint-base-gripper.md",
+      "id": "BE-CONTROL-ACTUATORS",
+      "title": "关节、底盘与夹爪命令执行",
+      "layer": "后端",
+      "source_chapter": null
+    },
+    {
+      "path": "20-backend/02-robot-control/03-ik-planning-execution.md",
+      "id": "BE-CONTROL-PLANNING",
+      "title": "TCP 求解、轨迹检查与执行",
+      "layer": "后端",
+      "source_chapter": null
+    },
+    {
+      "path": "20-backend/02-robot-control/04-physical-intervention.md",
+      "id": "BE-CONTROL-FORCE",
+      "title": "物理扰动与持续外力管理",
+      "layer": "后端",
+      "source_chapter": null
+    },
+    {
+      "path": "20-backend/02-robot-control/05-leader-device-bridge.md",
+      "id": "BE-CONTROL-LEADER",
+      "title": "实体主臂设备桥与关节映射",
+      "layer": "后端",
+      "source_chapter": null
+    },
+    {
+      "path": "20-backend/02-robot-control/README.md",
+      "id": "PKG-BE-CONTROL",
+      "title": "机器人控制与干预",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/03-observation-algorithms/01-sensors-transforms.md",
+      "id": "BE-OBSERVATION-STREAMS",
+      "title": "传感器、状态与时刻变换",
+      "layer": "后端",
+      "source_chapter": null
+    },
+    {
+      "path": "20-backend/03-observation-algorithms/02-experts-policies-task-phases.md",
+      "id": "BE-ALGORITHM-RUNNERS",
+      "title": "专家、学习策略与任务编排",
+      "layer": "后端",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/03-observation-algorithms/03-map-waypoint-execution.md",
+      "id": "BE-NAV-ROUTES",
+      "title": "地图与 Waypoint 校验、授权和执行",
+      "layer": "后端",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/03-observation-algorithms/04-task-assessment.md",
+      "id": "BE-TASK-ASSESSMENT",
+      "title": "任务判据、终止原因与人工辅助统计",
+      "layer": "后端",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/03-observation-algorithms/README.md",
+      "id": "PKG-BE-OBS",
+      "title": "观测、算法与任务编排",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/04-recording-replay/01-recorder-events.md",
+      "id": "BE-DATA-RECORDER",
+      "title": "原始采集、Episode 与事件写入",
+      "layer": "后端",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "20-backend/04-recording-replay/02-replay-annotation-store.md",
+      "id": "BE-DATA-REPLAY",
+      "title": "历史数据读取与标注修订存储",
+      "layer": "后端",
+      "source_chapter": null
+    },
+    {
+      "path": "20-backend/04-recording-replay/README.md",
+      "id": "PKG-BE-RECORDING",
+      "title": "采集、回放与标注存储",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/05-dataset-export/01-quality-versions-export.md",
+      "id": "BE-DATA-EXPORT",
+      "title": "数据质量、版本与训练出口",
+      "layer": "后端",
+      "source_chapter": null,
+      "last_revision": "0.5"
+    },
+    {
+      "path": "20-backend/05-dataset-export/README.md",
+      "id": "PKG-BE-DATA",
+      "title": "数据质量与导出",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/06-training-evaluation/01-jobs-models-results.md",
+      "id": "BE-MODEL-JOBS",
+      "title": "训练作业、模型版本与评估结果",
+      "layer": "后端",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "20-backend/06-training-evaluation/02-evaluation-comparison.md",
+      "id": "BE-EVAL-COMPARISON",
+      "title": "评估编排、报告与比较服务边界",
+      "layer": "后端能力域",
+      "source_chapter": null
+    },
+    {
+      "path": "20-backend/06-training-evaluation/README.md",
+      "id": "PKG-BE-MODELS",
+      "title": "训练与评估服务",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/07-existing-project-adapters/01-integration-boundaries.md",
+      "id": "BE-ADAPTERS-LEGACY",
+      "title": "三个既有项目的适配边界",
+      "layer": "后端",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/07-existing-project-adapters/README.md",
+      "id": "PKG-BE-ADAPTERS",
+      "title": "现有项目适配",
+      "layer": "功能包",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "20-backend/README.md",
+      "id": "CAT-BACKEND",
+      "title": "后端 Specification",
+      "layer": "大类索引",
+      "source_chapter": null
+    },
+    {
+      "path": "30-contracts/01-robot-world-state.md",
+      "id": "CT-STATE",
+      "title": "Robot / World State 契约草案",
+      "layer": "共享契约",
+      "source_chapter": 31
+    },
+    {
+      "path": "30-contracts/02-control-intervention-commands.md",
+      "id": "CT-COMMAND",
+      "title": "控制与干预命令契约草案",
+      "layer": "共享契约",
+      "source_chapter": 32
+    },
+    {
+      "path": "30-contracts/03-episode-events-annotations.md",
+      "id": "CT-EPISODE",
+      "title": "Episode、录制接入、事件与标注契约",
+      "layer": "共享契约",
+      "source_chapter": 33,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "30-contracts/04-time-frames-units.md",
+      "id": "CT-TIME-FRAMES",
+      "title": "时间、坐标系与命令生命周期",
+      "layer": "共享契约",
+      "source_chapter": 14
+    },
+    {
+      "path": "30-contracts/05-dataset-model-lineage.md",
+      "id": "CT-LINEAGE",
+      "title": "Dataset、Training、Checkpoint 与 Evaluation 关系",
+      "layer": "共享契约",
+      "source_chapter": 34,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "30-contracts/06-control-authority.md",
+      "id": "CT-AUTHORITY",
+      "title": "控制权与受控人工接管",
+      "layer": "共享契约",
+      "source_chapter": 13,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "30-contracts/07-task-scene-experiment-config.md",
+      "id": "CT-EXPERIMENT-CONFIG",
+      "title": "Scene、Task Template 与 Experiment Configuration",
+      "layer": "共享契约",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "30-contracts/08-navigation-map-route.md",
+      "id": "CT-NAVIGATION-ROUTE",
+      "title": "地图、Waypoint 路线与执行反馈契约",
+      "layer": "共享契约",
+      "source_chapter": null,
+      "last_revision": "0.5"
+    },
+    {
+      "path": "30-contracts/09-evaluation-comparison.md",
+      "id": "CT-EVAL-COMPARISON",
+      "title": "评估报告与比较证据契约",
+      "layer": "共享契约",
+      "source_chapter": null
+    },
+    {
+      "path": "30-contracts/README.md",
+      "id": "CAT-CONTRACTS",
+      "title": "前后端共享契约",
+      "layer": "大类索引",
+      "source_chapter": null,
+      "last_revision": "0.5"
+    },
+    {
+      "path": "40-verification/01-interaction-acceptance.md",
+      "id": "QA-INTERACTION",
+      "title": "交互验收清单",
+      "layer": "验收",
+      "source_chapter": 35
+    },
+    {
+      "path": "40-verification/02-workspace-runtime-acceptance.md",
+      "id": "QA-RUNTIME",
+      "title": "工作区、运行与记录验收",
+      "layer": "验收",
+      "source_chapter": 36,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "40-verification/03-replay-data-acceptance.md",
+      "id": "QA-DATA",
+      "title": "回放、标注与数据管理验收",
+      "layer": "验收",
+      "source_chapter": 37
+    },
+    {
+      "path": "40-verification/04-task-config-workflow-acceptance.md",
+      "id": "QA-TASK-CONFIG",
+      "title": "任务配置、导航与跨工作区验收",
+      "layer": "验收",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "40-verification/05-visual-page-consistency.md",
+      "id": "QA-VISUAL-CONSISTENCY",
+      "title": "页面与设计一致性验收",
+      "layer": "验收设计",
+      "source_chapter": null
+    },
+    {
+      "path": "40-verification/README.md",
+      "id": "CAT-VERIFICATION",
+      "title": "验收与验证",
+      "layer": "大类索引",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "90-governance/01-decisions.md",
+      "id": "GOV-DECISIONS",
+      "title": "决策与方案演变记录",
+      "layer": "治理",
+      "source_chapter": 38,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "90-governance/02-open-questions.md",
+      "id": "GOV-QUESTIONS",
+      "title": "未决问题登记",
+      "layer": "治理",
+      "source_chapter": 39,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "90-governance/03-conflicts-supersession.md",
+      "id": "GOV-CONFLICTS",
+      "title": "冲突、澄清与取代关系",
+      "layer": "治理",
+      "source_chapter": 40,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "90-governance/04-design-history.md",
+      "id": "GOV-HISTORY",
+      "title": "讨论过程与设计形成路径",
+      "layer": "治理",
+      "source_chapter": 41,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "90-governance/05-maintenance.md",
+      "id": "GOV-MAINTENANCE",
+      "title": "文档组织与维护规则",
+      "layer": "治理",
+      "source_chapter": 42,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "90-governance/06-sources.md",
+      "id": "GOV-SOURCES",
+      "title": "来源目录与完整性声明",
+      "layer": "来源",
+      "source_chapter": 43,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "90-governance/07-change-log.md",
+      "id": "GOV-CHANGELOG",
+      "title": "Specification 修订记录",
+      "layer": "治理",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "90-governance/08-visual-design-conflicts.md",
+      "id": "GOV-VISUAL-CONFLICTS",
+      "title": "现有前端图片冲突分析与收敛方案",
+      "layer": "设计治理",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "90-governance/README.md",
+      "id": "CAT-GOVERNANCE",
+      "title": "决策、未决与来源",
+      "layer": "大类索引",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "90-governance/sources/S08-frontend-ia-analysis.md",
+      "id": "SOURCE-S08",
+      "title": "S08｜前端 IA 分析原文",
+      "layer": "来源归档",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "90-governance/sources/S09-unified-development-reuse-analysis.md",
+      "id": "SOURCE-S09",
+      "title": "S09｜统一开发与复用分析原文",
+      "layer": "来源归档",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "90-governance/sources/S10-waypoint-scope-confirmation.md",
+      "id": "SOURCE-S10",
+      "title": "S10｜Waypoint 范围确认",
+      "layer": "来源归档",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "90-governance/sources/S11-design-discussions.md",
+      "id": "SRC-S11-DISCUSSIONS",
+      "title": "S11｜设计讨论可读摘录与限制",
+      "layer": "来源档案",
+      "source_chapter": null
+    },
+    {
+      "path": "90-governance/sources/S12-visual-materials.md",
+      "id": "SRC-S12-VISUALS",
+      "title": "S12｜本地图片与演示文稿来源",
+      "layer": "来源档案",
+      "source_chapter": null
+    },
+    {
+      "path": "90-governance/sources/S13-current-visual-spec-request.md",
+      "id": "SRC-S13-VISUAL-REQUEST",
+      "title": "S13｜当前图片归档与规范优化要求",
+      "layer": "来源档案",
+      "source_chapter": null
+    },
+    {
+      "path": "90-governance/sources/S14-simulation-v2-update.md",
+      "id": "SRC-S14-SIMULATION-V2",
+      "title": "S14｜用户更新 Simulation 图与本轮请求",
+      "layer": "来源档案",
+      "source_chapter": null
+    },
+    {
+      "path": "README.md",
+      "id": "SPEC-HOME",
+      "title": "uniRobotPlatform Specification 总索引",
+      "layer": "总索引",
+      "source_chapter": 1,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "indexes/01-reading-guide.md",
+      "id": "IDX-READING",
+      "title": "阅读指南与分类依据",
+      "layer": "阅读索引",
+      "source_chapter": 2,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "indexes/02-workspaces.md",
+      "id": "IDX-WORKSPACES",
+      "title": "按工作区查找",
+      "layer": "工作区索引",
+      "source_chapter": 3,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "indexes/03-ui-regions.md",
+      "id": "IDX-UI-REGIONS",
+      "title": "按前端功能区域查找",
+      "layer": "区域索引",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "indexes/04-topics.md",
+      "id": "IDX-TOPICS",
+      "title": "按交互与基础主题索引",
+      "layer": "主题索引",
+      "source_chapter": 4
+    },
+    {
+      "path": "indexes/05-requirements.md",
+      "id": "IDX-REQUIREMENTS",
+      "title": "需求追踪矩阵",
+      "layer": "需求索引",
+      "source_chapter": 5,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "indexes/06-feature-map.md",
+      "id": "IDX-FEATURES",
+      "title": "按功能贯通前端、后端、契约与验收",
+      "layer": "功能映射",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "indexes/07-source-migration.md",
+      "id": "IDX-MIGRATION",
+      "title": "总册章节与当前文档对应",
+      "layer": "迁移索引",
+      "source_chapter": null
+    },
+    {
+      "path": "indexes/08-robot-task-profiles.md",
+      "id": "IDX-ROBOT-TASKS",
+      "title": "按机器人与任务配置查找",
+      "layer": "任务索引",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "references/02-reuse-poc-plan.md",
+      "id": "REF-REUSE-POC",
+      "title": "Scene Editor、Drei、Dockview 优先验证计划",
+      "layer": "参考",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "references/03-official-review-notes.md",
+      "id": "REF-OFFICIAL-REVIEW",
+      "title": "本轮官方资料核对与兼容边界",
+      "layer": "参考",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "references/04-visual-asset-catalog.md",
+      "id": "REF-VISUAL-ASSETS",
+      "title": "设计图片与 PPT 页码对照",
+      "layer": "参考资料",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "references/README.md",
+      "id": "REF-HOME",
+      "title": "开源与本地复用参考",
+      "layer": "参考",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "references/open-source-resource-registry.md",
+      "id": "REF-RESOURCE-REGISTRY",
+      "title": "可复用资源登记表",
+      "layer": "参考",
+      "source_chapter": null,
+      "last_revision": "0.2"
+    },
+    {
+      "path": "templates/decision.md",
+      "id": "TPL-DECISION",
+      "title": "ADR-<编号>｜<决定>",
+      "layer": "模板",
+      "source_chapter": 51
+    },
+    {
+      "path": "templates/feature-package.md",
+      "id": "TPL-PACKAGE",
+      "title": "功能包模板",
+      "layer": "模板",
+      "source_chapter": null
+    },
+    {
+      "path": "templates/spec-node.md",
+      "id": "TPL-NODE",
+      "title": "Specification 节点模板",
+      "layer": "模板",
+      "source_chapter": 50
+    },
+    {
+      "path": "00-overview/10-first-task-closed-loop.md",
+      "id": "SYS-FIRST-TASK-LOOP",
+      "title": "当前开发基线：mobileCar 最短闭环与 bimanual 复用验证",
+      "layer": "系统",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "10-frontend/02-scene-setup/05-shared-scene-components.md",
+      "id": "FE-SCENE-COMPONENTS",
+      "title": "Scene Setup 共享组件与任务变体",
+      "layer": "前端",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "40-verification/06-scene-setup-first-loop.md",
+      "id": "QA-SCENE-FIRST-LOOP",
+      "title": "当前 mobileCar 闭环、宿主复用与后续完整流程验收",
+      "layer": "验收",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    },
+    {
+      "path": "90-governance/sources/S15-scene-setup-first-loop.md",
+      "id": "SRC-S15-SCENE-FIRST-LOOP",
+      "title": "S15｜三张 Scene Setup 参考图与首条完整任务要求",
+      "layer": "治理",
+      "source_chapter": null,
+      "last_revision": "0.5"
+    },
+    {
+      "path": "90-governance/sources/S16-mobile-first-spec-repair.md",
+      "id": "SRC-S16-MOBILE-FIRST-REPAIR",
+      "title": "S16｜mobileCar 优先、按宿主复用与规范修复授权",
+      "layer": "来源归档",
+      "source_chapter": null,
+      "last_revision": "0.6"
+    }
+  ],
+  "supplement_sources": {
+    "S08": {
+      "path": "90-governance/sources/S08-frontend-ia-analysis.md",
+      "sha256": "ceb01d36c0b0de8c5ae6397157fb0c010600172fd9f746bfd73610a540dfe4ad",
+      "kind": "provided_analysis"
+    },
+    "S09": {
+      "path": "90-governance/sources/S09-unified-development-reuse-analysis.md",
+      "sha256": "377bc8d4b39c55f014826b538f70430b60af8875a46e28337f4a143700233adb",
+      "kind": "provided_analysis"
+    },
+    "S10": {
+      "path": "90-governance/sources/S10-waypoint-scope-confirmation.md",
+      "sha256": "2280782bc2eafcd2cd84b394959b974b8a518547adc7b496e57871cb9432cdb5",
+      "kind": "user_scope_confirmation"
+    },
+    "S11": {
+      "path": "90-governance/sources/S11-design-discussions.md",
+      "sha256": "7c3c489ea861b36574c10368358bffd11f63387a0a49195e4f4323640ae3cdb1",
+      "kind": "readable_thread_excerpts_with_missing_assistant_body"
+    },
+    "S11-RAW": {
+      "path": "90-governance/sources/S11-design-discussion-snapshot.json",
+      "sha256": "e1dd6fcaa6afaa5d6b359484e2429c4813d694af962ee5cedf615b1f5adcef15",
+      "kind": "raw_thread_tool_snapshot"
+    },
+    "S12": {
+      "path": "90-governance/sources/S12-visual-materials.md",
+      "sha256": "feb8493b52b568a37cffd07d9dddffc846800e943ac6ba09980996fa067efae5",
+      "kind": "local_visual_materials_readonly_review"
+    },
+    "S12-MANIFEST": {
+      "path": "90-governance/sources/S12-visual-materials-manifest.json",
+      "sha256": "b766eff820278221585b62fcef317e5807fc9d6403485ed63df0ec4632c3910b",
+      "kind": "original_file_hashes_and_ppt_mapping"
+    },
+    "S13": {
+      "path": "90-governance/sources/S13-current-visual-spec-request.md",
+      "sha256": "54e65ffddb8916a518b668b6ff5dfa49fb193a2a2aa3181a7f256057d0d34db1",
+      "kind": "current_user_request"
+    },
+    "S14": {
+      "path": "90-governance/sources/S14-simulation-v2-update.md",
+      "sha256": "ac1fbcb020e6ca3805d621f88896b8bda199696d0f36eb24228232ffe999b5c6",
+      "kind": "user_submitted_simulation_revision"
+    },
+    "S15": {
+      "path": "90-governance/sources/S15-scene-setup-first-loop.md",
+      "sha256": "55729dab971b53f58c391484d164a17f14cb97e0630c6d97e7bf206c4cf4d96f",
+      "kind": "current_user_scene_setup_and_complete_loop_request"
+    },
+    "S16": {
+      "path": "90-governance/sources/S16-mobile-first-spec-repair.md",
+      "sha256": "9151707aacd0c9f1aab73c08a894cc1511d87a309596b4c52ad540c6eccb3703",
+      "kind": "current_user_mobile_first_scope_and_spec_repair_authorization"
+    }
+  },
+  "page_design_index": "10-frontend/page-designs/README.md",
+  "visual_registry": "references/visual-assets.json"
+}

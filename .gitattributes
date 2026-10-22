@@ -1,0 +1,4 @@
+# Preserve byte-verified source evidence and original visual references.
+docs/specs/90-governance/sources/** -text
+docs/foreendAssets/** -text
+docs/设计过程与Specification总册_20261021.md -text

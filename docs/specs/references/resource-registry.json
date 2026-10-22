@@ -1,0 +1,844 @@
+{
+  "version": "0.2",
+  "date": "2026-10-21",
+  "resources": [
+    {
+      "id": "LOC-01",
+      "name": "mobileCar",
+      "reference": "../../mobileCar",
+      "task_mapping": "小车状态、控制、录制、导航",
+      "reuse_level": "封装适配",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "已有工程分析参考；本轮未复验",
+      "code_license": "保留本项目/上游授权，待接入核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "优先本地接入",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "历史工程分析；本轮未复验",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "LOC-02",
+      "name": "bimanual_proj",
+      "reference": "../../bimanual_proj",
+      "task_mapping": "双臂专家、多相机、轨迹回放",
+      "reuse_level": "封装适配",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "已有工程分析参考；本轮未复验",
+      "code_license": "保留本项目/上游授权，待接入核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "保留主要双臂基础",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "历史工程分析；本轮未复验",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "LOC-03",
+      "name": "mujoco_learning",
+      "reference": "../../mujoco_learning",
+      "task_mapping": "IK/视觉实验与交互参考",
+      "reuse_level": "选择性适配",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "已有工程分析参考；本轮未复验",
+      "code_license": "保留本项目/上游授权，待接入核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不搬入完整实验 UI",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "历史工程分析；本轮未复验",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-01",
+      "name": "MuJoCo Scene Editor",
+      "reference": "https://github.com/markusgrotz/mujoco-scene-editor",
+      "task_mapping": "对象摆放、Gizmo 与配置导出",
+      "reuse_level": "交互复用/适配候选",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "浏览器编辑工具；Python/MuJoCo/前端实际版本待固定；先核对模型保真",
+      "code_license": "MIT；官方 LICENSE.md 已读",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "XML round-trip 不保证保留所有模型语义",
+        "不应覆盖现有机器人模型"
+      ],
+      "decision": "待 PoC；不覆盖源模型",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "官方 README/License 已核对；无运行验证",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": "03-official-review-notes.md"
+      }
+    },
+    {
+      "id": "OSS-02",
+      "name": "Drei",
+      "reference": "https://github.com/pmndrs/drei",
+      "task_mapping": "相机、Transform/Pivot 控件",
+      "reuse_level": "组件候选",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "面向 React Three Fiber；与现有原生 Three.js 封装路线待比较",
+      "code_license": "MIT；官方 LICENSE 已读",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "通用 TransformControls 不提供机器人 IK 或权限",
+        "需处理焦点和视口生命周期"
+      ],
+      "decision": "待 PoC；依赖 R3F 方案先评估",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "官方 README/License 已核对；无运行验证",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": "03-official-review-notes.md"
+      }
+    },
+    {
+      "id": "OSS-03",
+      "name": "Dockview",
+      "reference": "https://github.com/dockview/dockview",
+      "task_mapping": "停靠、布局保存和恢复",
+      "reuse_level": "组件候选",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "React/JS 绑定候选；选定包版本与框架兼容需 PoC",
+      "code_license": "README 声明基础包 MIT、enterprise 商业；最终按选定包 License",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "不可混用 enterprise 授权假设",
+        "布局变化不能改变控制/录制"
+      ],
+      "decision": "待 PoC；基础包与 enterprise 分开",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "官方 README 已核对；无运行验证",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": "03-official-review-notes.md"
+      }
+    },
+    {
+      "id": "OSS-04",
+      "name": "ros2-web2d",
+      "reference": "https://github.com/Neoplanetz/ros2-web2d",
+      "task_mapping": "地图、路径、位姿、雷达显示",
+      "reuse_level": "封装适配候选",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "ROS2/rosbridge/roslibjs；可评估 subscribe=false 的 feed 模式",
+      "code_license": "README 声明 BSD-3-Clause；选定包待归档",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "需地图/TF/状态适配",
+        "点击回调不能绕过命令授权"
+      ],
+      "decision": "评估 ROS2/rosbridge 或 feed 接口",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "官方 README 已核对；无运行验证",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": "03-official-review-notes.md"
+      }
+    },
+    {
+      "id": "OSS-05",
+      "name": "Waypoint Editor",
+      "reference": "https://github.com/kzm784/waypoint_editor",
+      "task_mapping": "路线创建、顺序和文件交换",
+      "reuse_level": "工作流/格式参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "README 为 ROS2/RViz2 工具；只作网页交互和格式参考",
+      "code_license": "README 声明 Apache-2.0；选定版本待归档",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "不是可直接嵌入的浏览器控件",
+        "文件格式需校验 Frame/单位/地图身份"
+      ],
+      "decision": "不直接当浏览器组件",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "官方 README 已核对；RViz2 工具",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": "03-official-review-notes.md"
+      }
+    },
+    {
+      "id": "OSS-06",
+      "name": "Nav2 Waypoint Follower",
+      "reference": "https://github.com/ros-navigation/navigation2/tree/humble/nav2_waypoint_follower",
+      "task_mapping": "有序目标执行与当前/失败点反馈",
+      "reuse_level": "后端接口参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "已读 Humble 分支 README；既有导航 supervisor 接线待核对",
+      "code_license": "未在本轮核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "默认失败处理需模板显式配置",
+        "路线跟随与离散点到达不是同一个评估问题"
+      ],
+      "decision": "适配既有导航授权边界",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "Humble README 已核对；无集成验证",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": "03-official-review-notes.md"
+      }
+    },
+    {
+      "id": "OSS-07",
+      "name": "URDF Loaders",
+      "reference": "https://github.com/gkjohnson/urdf-loaders",
+      "task_mapping": "模型层级、关节加载",
+      "reuse_level": "加载/交互参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "待模型映射评估",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-08",
+      "name": "URDF Viewer",
+      "reference": "https://github.com/tony1213/urdf-viewer",
+      "task_mapping": "选择与前端组织",
+      "reuse_level": "参考实现",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不推断已具备本平台 IK",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-09",
+      "name": "mjswan",
+      "reference": "https://github.com/ttktjmt/mjswan",
+      "task_mapping": "鼠标施力体验",
+      "reuse_level": "交互参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不迁移浏览器物理为权威源",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-10",
+      "name": "Rerun",
+      "reference": "https://github.com/rerun-io/rerun",
+      "task_mapping": "同步回放、图层与布局",
+      "reuse_level": "参考/分析出口候选",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不替代控制层",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-11",
+      "name": "MuJoCo Menagerie",
+      "reference": "https://github.com/google-deepmind/mujoco_menagerie",
+      "task_mapping": "机器人模型对照",
+      "reuse_level": "资产参考候选",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不替换已校验模型",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未核对具体 SO101 文件",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-12",
+      "name": "robosuite",
+      "reference": "https://github.com/ARISE-Initiative/robosuite",
+      "task_mapping": "Arena/Objects/任务组合",
+      "reuse_level": "后端建模参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "选择性研究",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-13",
+      "name": "RoboCasa",
+      "reference": "https://github.com/robocasa/robocasa",
+      "task_mapping": "场景/物体资源与任务关系",
+      "reuse_level": "资产/任务参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不为简单桌面引入完整框架",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-14",
+      "name": "Habitat-Lab",
+      "reference": "https://github.com/facebookresearch/habitat-lab",
+      "task_mapping": "导航任务和 Episode 定义",
+      "reuse_level": "任务设计参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不迁移仿真底座",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-15",
+      "name": "ManiSkill",
+      "reference": "https://github.com/mani-skill/ManiSkill",
+      "task_mapping": "操作任务变体和评价",
+      "reuse_level": "任务设计参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不默认引入依赖",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-16",
+      "name": "MoveIt 2 Tutorials",
+      "reference": "https://github.com/moveit/moveit2_tutorials",
+      "task_mapping": "规划/执行分离与轨迹显示",
+      "reuse_level": "流程/算法参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不是自动替换现有 IK",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-17",
+      "name": "Open3D",
+      "reference": "https://github.com/isl-org/Open3D",
+      "task_mapping": "点云与几何处理",
+      "reuse_level": "后端算法候选",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不在网页嵌入桌面 GUI",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-18",
+      "name": "ViSP",
+      "reference": "https://github.com/lagadic/visp",
+      "task_mapping": "视觉误差与闭环控制",
+      "reuse_level": "后端算法参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "需适配和独立闭环验证",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-19",
+      "name": "Mink",
+      "reference": "https://github.com/kevinzakka/mink",
+      "task_mapping": "微分 IK 与约束",
+      "reuse_level": "算法候选",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "对照现有模型，不直接升级环境",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-20",
+      "name": "SimEngine",
+      "reference": "https://github.com/RajatDandekar/sim-engine",
+      "task_mapping": "示教/训练/评估流程",
+      "reuse_level": "代码对照",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不声称所有模型可训练",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未核对骨架与已实现范围",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-21",
+      "name": "SO101 MuJoCo LeRobot Adapter",
+      "reference": "https://github.com/SinfonIAUniandes/lerobot_robot_so101_mujoco",
+      "task_mapping": "仿真机器人与数据接口",
+      "reuse_level": "适配参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不替换 bimanual 物理基线",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-22",
+      "name": "LeLab",
+      "reference": "https://github.com/huggingface/leLab",
+      "task_mapping": "数据→训练→推理跳转",
+      "reuse_level": "产品流程参考",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "仿真/双臂适配待验",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-23",
+      "name": "MimicGen",
+      "reference": "https://github.com/NVlabs/mimicgen",
+      "task_mapping": "子任务分段、信号与数据生成",
+      "reuse_level": "阶段设计参考",
+      "source_ids": [
+        "S08"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不把示例词表冻结",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-24",
+      "name": "CVAT",
+      "reference": "https://github.com/cvat-ai/cvat",
+      "task_mapping": "图像/视频标注",
+      "reuse_level": "后续工具候选",
+      "source_ids": [
+        "S08"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "非首版完整标注平台",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-25",
+      "name": "FiftyOne",
+      "reference": "https://github.com/voxel51/fiftyone",
+      "task_mapping": "数据筛选与失败案例",
+      "reuse_level": "产品流程参考",
+      "source_ids": [
+        "S08"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "待明确数据规模",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-26",
+      "name": "MLflow",
+      "reference": "https://github.com/mlflow/mlflow",
+      "task_mapping": "作业/指标/Artifacts/模型关系",
+      "reuse_level": "管理流程参考",
+      "source_ids": [
+        "S08"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不冻结后端选型",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-27",
+      "name": "Aim",
+      "reference": "https://github.com/aimhubio/aim",
+      "task_mapping": "训练曲线与运行比较",
+      "reuse_level": "管理流程参考",
+      "source_ids": [
+        "S08"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不与多套看板同时强绑",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未重新核对",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-28",
+      "name": "LeRobot annotation pipeline",
+      "reference": "https://github.com/huggingface/lerobot",
+      "task_mapping": "语言标注流程研究",
+      "reuse_level": "后续调研",
+      "source_ids": [
+        "S08"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不要求 ACT 具备所有语言标签",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未核对锁定版本",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    },
+    {
+      "id": "OSS-29",
+      "name": "RobolaWeb 社区介绍",
+      "reference": "https://github.com/google-deepmind/mujoco/discussions/2999",
+      "task_mapping": "场景编辑与运行时同步",
+      "reuse_level": "仅研究",
+      "source_ids": [
+        "S09"
+      ],
+      "version": null,
+      "version_status": "not_pinned",
+      "compatibility": "待核对",
+      "code_license": "待核对",
+      "asset_license": "资源/模型/纹理逐项核对；不从代码授权推导",
+      "risks": [
+        "参见本轮材料及资源登记；未完成独立适配验证"
+      ],
+      "decision": "不当无条件可集成组件",
+      "decision_status": "candidate_or_existing_local_reference",
+      "verification": {
+        "declared_evidence": "材料提及；本轮未核对代码/授权",
+        "runtime_tested": false,
+        "product_qualified": false,
+        "evidence_note": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,1503 @@
+{
+  "version": "0.6",
+  "date": "2026-10-22",
+  "timezone": "America/Los_Angeles",
+  "source_book": "../设计过程与Specification总册_20261021.md",
+  "source_sha256": "995e4bf3c3fdc19f6874e1d221d5e52195db5f38e79fcac8c082b8ac9939119a",
+  "requirements": [
+    {
+      "id": "REQ-PRD-001",
+      "confirmation": "用户明确",
+      "summary": "MuJoCo 实时操控、算法观察、干预及 VLN/VLA 数据录制",
+      "source_ids": [
+        "S02",
+        "S07"
+      ],
+      "primary_spec": "00-overview/01-product-boundaries.md",
+      "tests": [
+        "TEST-REC-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-PRD-002",
+      "confirmation": "用户明确",
+      "summary": "三维编辑器操作手感 + 多面板与时间轴",
+      "source_ids": [
+        "S02"
+      ],
+      "primary_spec": "00-overview/01-product-boundaries.md",
+      "tests": [],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-PRD-003",
+      "confirmation": "用户明确",
+      "summary": "前端按场景布置/仿真/回放/训练等业务分别设计",
+      "source_ids": [
+        "S04"
+      ],
+      "primary_spec": "10-frontend/01-shell/01-navigation-context.md",
+      "tests": [],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-PRD-004",
+      "confirmation": "助手建议",
+      "summary": "六业务工作区 + 共用基础设施",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "10-frontend/01-shell/01-navigation-context.md",
+      "tests": [
+        "TEST-NAV-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-PRD-005",
+      "confirmation": "助手建议",
+      "summary": "P0/P1/P2 分期与基础/完整能力拆分",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "00-overview/02-scope-and-staging.md",
+      "tests": [],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-OBS-001",
+      "confirmation": "用户明确",
+      "summary": "小车提供 3D、本体、SLAM、RGB-D 相关观测",
+      "source_ids": [
+        "S02"
+      ],
+      "primary_spec": "00-overview/03-task-and-observation-profiles.md",
+      "tests": [
+        "TEST-PROFILE-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-OBS-002",
+      "confirmation": "用户明确",
+      "summary": "双臂提供 3D、三相机和本体观测",
+      "source_ids": [
+        "S02"
+      ],
+      "primary_spec": "00-overview/03-task-and-observation-profiles.md",
+      "tests": [
+        "TEST-PROFILE-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-OBS-003",
+      "confirmation": "用户明确",
+      "summary": "小车键盘+鼠标；双臂鼠标+实体主臂",
+      "source_ids": [
+        "S02",
+        "S07"
+      ],
+      "primary_spec": "00-overview/03-task-and-observation-profiles.md",
+      "tests": [
+        "TEST-PROFILE-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-OBS-004",
+      "confirmation": "用户明确",
+      "summary": "小车专家 SLAM/导航+视觉伺服；双臂 IK/动作规划",
+      "source_ids": [
+        "S02",
+        "S07"
+      ],
+      "primary_spec": "00-overview/03-task-and-observation-profiles.md",
+      "tests": [],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-OBS-005",
+      "confirmation": "整理方案",
+      "summary": "UI、Algorithm Observation、Recording Profile 分开",
+      "source_ids": [
+        "S02",
+        "S05"
+      ],
+      "primary_spec": "00-overview/03-task-and-observation-profiles.md",
+      "tests": [
+        "TEST-REC-003"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-STATE-001",
+      "confirmation": "用户明确",
+      "summary": "任务前 Observe/Edit 可配置",
+      "source_ids": [
+        "S02"
+      ],
+      "primary_spec": "00-overview/04-runtime-state-domains.md",
+      "tests": [
+        "TEST-SCENE-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-STATE-002",
+      "confirmation": "用户明确",
+      "summary": "任务中支持实时和预览确认两种执行策略",
+      "source_ids": [
+        "S02"
+      ],
+      "primary_spec": "00-overview/04-runtime-state-domains.md",
+      "tests": [
+        "TEST-TCP-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-STATE-003",
+      "confirmation": "助手建议",
+      "summary": "页面切换不隐式结束 Session/录制或转移控制权",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "10-frontend/01-shell/01-navigation-context.md",
+      "tests": [
+        "TEST-NAV-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-STATE-004",
+      "confirmation": "助手建议",
+      "summary": "离开驾驶/失焦撤销连续速度，后端超时兜底",
+      "source_ids": [
+        "S03",
+        "S05"
+      ],
+      "primary_spec": "10-frontend/01-shell/02-layout-input-focus.md",
+      "tests": [
+        "TEST-INPUT-003"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SCENE-001",
+      "confirmation": "助手建议",
+      "summary": "初态编辑与在线物理状态分离",
+      "source_ids": [
+        "S02",
+        "S05"
+      ],
+      "primary_spec": "10-frontend/02-scene-setup/01-workflow-initial-state.md",
+      "tests": [
+        "TEST-SCENE-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SCENE-002",
+      "confirmation": "助手建议",
+      "summary": "场景检查、保存配置版本并可关联复现",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "10-frontend/02-scene-setup/01-workflow-initial-state.md",
+      "tests": [
+        "TEST-SCENE-003"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SEL-001",
+      "confirmation": "历史基线",
+      "summary": "Hover 高亮、Click Link/Joint、Double Click Arm",
+      "source_ids": [
+        "S01",
+        "S03"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/02-selection-camera.md",
+      "tests": [
+        "TEST-SEL-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SEL-002",
+      "confirmation": "历史确认",
+      "summary": "框选同一 Arm 至少两个不同 Link，自动提升整臂",
+      "source_ids": [
+        "S02",
+        "S03"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/02-selection-camera.md",
+      "tests": [
+        "TEST-SEL-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SEL-003",
+      "confirmation": "历史基线",
+      "summary": "默认互斥，Ctrl 双击切换 Arm 多选",
+      "source_ids": [
+        "S02",
+        "S03"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/02-selection-camera.md",
+      "tests": [
+        "TEST-SEL-003"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SEL-004",
+      "confirmation": "助手建议",
+      "summary": "无 Ctrl 的跨臂框选不自动提交多臂集合",
+      "source_ids": [
+        "S03"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/02-selection-camera.md",
+      "tests": [
+        "TEST-SEL-005"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SEL-005",
+      "confirmation": "历史基线",
+      "summary": "整臂高亮并联动 Hierarchy / Inspector",
+      "source_ids": [
+        "S03"
+      ],
+      "primary_spec": "10-frontend/08-observation-inspector/01-hierarchy-inspector.md",
+      "tests": [
+        "TEST-SEL-004"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SEL-006",
+      "confirmation": "助手建议",
+      "summary": "选择、Active Arm、控制权分离；选择不发运动",
+      "source_ids": [
+        "S03"
+      ],
+      "primary_spec": "30-contracts/06-control-authority.md",
+      "tests": [
+        "TEST-SEL-006"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SEL-007",
+      "confirmation": "助手建议",
+      "summary": "多臂选择默认只作摘要，不自动联合 IK/运动",
+      "source_ids": [
+        "S03"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/02-selection-camera.md",
+      "tests": [
+        "TEST-SEL-006"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-VIEW-001",
+      "confirmation": "用户明确",
+      "summary": "坐标系显示与大小调整",
+      "source_ids": [
+        "S01"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/01-viewport-contexts.md",
+      "tests": [],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-VIEW-002",
+      "confirmation": "历史基线",
+      "summary": "空白拖动 Orbit、滚轮 Zoom；中键/F 为补充建议",
+      "source_ids": [
+        "S01",
+        "S03"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/02-selection-camera.md",
+      "tests": [],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-JOINT-001",
+      "confirmation": "用户明确",
+      "summary": "关节滑条主要监控；默认只读为建议细化",
+      "source_ids": [
+        "S04",
+        "S05"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/03-joint-manipulation.md",
+      "tests": [
+        "TEST-JOINT-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-JOINT-002",
+      "confirmation": "助手建议",
+      "summary": "Joint Ring 控制；明确选 Joint 后支持对应 Link 拖动",
+      "source_ids": [
+        "S03"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/03-joint-manipulation.md",
+      "tests": [
+        "TEST-JOINT-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-TCP-001",
+      "confirmation": "历史基线",
+      "summary": "Arm 的 TCP Tool 产生目标位姿，经后端检查",
+      "source_ids": [
+        "S03"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/04-tcp-trajectories.md",
+      "tests": [
+        "TEST-TCP-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-TCP-002",
+      "confirmation": "用户明确",
+      "summary": "TCP 朝目标移动时虚线呈现关节运动轨迹",
+      "source_ids": [
+        "S04"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/04-tcp-trajectories.md",
+      "tests": [
+        "TEST-TCP-003"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-TCP-003",
+      "confirmation": "助手建议",
+      "summary": "候选路径、q(t)、关节中心与实际 Trail 区分",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/04-tcp-trajectories.md",
+      "tests": [
+        "TEST-TCP-002",
+        "TEST-TCP-003"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-TCP-004",
+      "confirmation": "未决",
+      "summary": "虚线默认对象、姿态约束与具体规划能力",
+      "source_ids": [
+        "S04",
+        "S05"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/04-tcp-trajectories.md",
+      "tests": [],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-AUTH-001",
+      "confirmation": "用户明确",
+      "summary": "支持人工控制、策略控制及受控接管",
+      "source_ids": [
+        "S04"
+      ],
+      "primary_spec": "30-contracts/06-control-authority.md",
+      "tests": [
+        "TEST-AUTH-001",
+        "TEST-AUTH-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-AUTH-002",
+      "confirmation": "用户明确",
+      "summary": "按钮停止 VLA 操控，进入人工干预，不隐式鼠标抢占",
+      "source_ids": [
+        "S04"
+      ],
+      "primary_spec": "30-contracts/06-control-authority.md",
+      "tests": [
+        "TEST-AUTH-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-AUTH-003",
+      "confirmation": "助手建议",
+      "summary": "Pending→后端确认→Human；处理旧动作后交接",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "30-contracts/06-control-authority.md",
+      "tests": [
+        "TEST-AUTH-003"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-AUTH-004",
+      "confirmation": "助手建议",
+      "summary": "显式恢复策略；接管不等于暂停仿真时钟",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "30-contracts/06-control-authority.md",
+      "tests": [
+        "TEST-REC-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-FORCE-001",
+      "confirmation": "候选方案",
+      "summary": "Alt 拖动作为临时外力工具；独立模式由早期方案演进",
+      "source_ids": [
+        "S01",
+        "S03"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/05-physical-force-tool.md",
+      "tests": [
+        "TEST-FORCE-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-FORCE-002",
+      "confirmation": "助手建议",
+      "summary": "释放/取消/失焦/断连/超时撤销持续力",
+      "source_ids": [
+        "S03"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/05-physical-force-tool.md",
+      "tests": [
+        "TEST-FORCE-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-FORCE-003",
+      "confirmation": "助手建议",
+      "summary": "外力与 Joint Target/Teleport 不同，Replay 禁用施力",
+      "source_ids": [
+        "S03"
+      ],
+      "primary_spec": "10-frontend/07-viewport-tools/05-physical-force-tool.md",
+      "tests": [
+        "TEST-REPLAY-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-FORCE-004",
+      "confirmation": "助手建议",
+      "summary": "记录 Body/作用点/向量/时间与并行 Policy",
+      "source_ids": [
+        "S03"
+      ],
+      "primary_spec": "30-contracts/03-episode-events-annotations.md",
+      "tests": [
+        "TEST-REC-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-LEADER-001",
+      "confirmation": "用户明确",
+      "summary": "双实体主臂映射 MuJoCo 从臂并录制",
+      "source_ids": [
+        "S02",
+        "S07"
+      ],
+      "primary_spec": "10-frontend/03-simulation/03-leader-follower-panel.md",
+      "tests": [
+        "TEST-LEADER-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-LEADER-002",
+      "confirmation": "历史澄清",
+      "summary": "主臂无独立摄像头，提供状态与映射监控",
+      "source_ids": [
+        "S03"
+      ],
+      "primary_spec": "10-frontend/03-simulation/03-leader-follower-panel.md",
+      "tests": [],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-LEADER-003",
+      "confirmation": "未决",
+      "summary": "主臂断连策略、超时参数、重连对齐和来源切换",
+      "source_ids": [
+        "S03"
+      ],
+      "primary_spec": "10-frontend/03-simulation/03-leader-follower-panel.md",
+      "tests": [
+        "TEST-LEADER-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-NAV-001",
+      "confirmation": "被取代（历史排除）",
+      "summary": "当前前端不做导航目标点击/Waypoint 编辑",
+      "source_ids": [
+        "S04"
+      ],
+      "primary_spec": "00-overview/02-scope-and-staging.md",
+      "tests": [
+        "TEST-NAV-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed",
+      "superseded_by": "REQ-NAV-003",
+      "supersession_source": "S10"
+    },
+    {
+      "id": "REQ-NAV-002",
+      "confirmation": "用户明确",
+      "summary": "后端导航仍可存在并产生专家数据",
+      "source_ids": [
+        "S04",
+        "S07"
+      ],
+      "primary_spec": "00-overview/03-task-and-observation-profiles.md",
+      "tests": [
+        "TEST-NAV-006"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-REPLAY-001",
+      "confirmation": "用户明确",
+      "summary": "独立选择录制数据，传感器/本体/轨迹回放与倍速",
+      "source_ids": [
+        "S01"
+      ],
+      "primary_spec": "10-frontend/04-replay-annotation/01-synchronized-playback.md",
+      "tests": [
+        "TEST-REPLAY-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-REPLAY-002",
+      "confirmation": "助手建议",
+      "summary": "历史状态只读并与在线仿真隔离；标签独立写入",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "10-frontend/04-replay-annotation/01-synchronized-playback.md",
+      "tests": [
+        "TEST-ANN-001",
+        "TEST-REPLAY-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-ANN-001",
+      "confirmation": "用户明确",
+      "summary": "人类数据与专家数据的阶段标签继续讨论",
+      "source_ids": [
+        "S02"
+      ],
+      "primary_spec": "10-frontend/04-replay-annotation/01-synchronized-playback.md",
+      "tests": [
+        "TEST-ANN-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-DATA-001",
+      "confirmation": "助手建议",
+      "summary": "记录完整性、任务成功、训练用途资格分开",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "10-frontend/05-datasets/01-browser-quality-export.md",
+      "tests": [
+        "TEST-DATA-001",
+        "TEST-DATA-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-DATA-002",
+      "confirmation": "助手建议",
+      "summary": "LeRobot 导出检查观测键、动作/单位/频率/对齐",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "10-frontend/05-datasets/01-browser-quality-export.md",
+      "tests": [
+        "TEST-EXPORT-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-TRAIN-001",
+      "confirmation": "用户明确",
+      "summary": "模型训练作为单独部分设计",
+      "source_ids": [
+        "S04"
+      ],
+      "primary_spec": "10-frontend/06-training-evaluation/01-training-workspace.md",
+      "tests": [],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-TRAIN-002",
+      "confirmation": "助手建议",
+      "summary": "训练前端调独立后端，维护 Job/Checkpoint/版本",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "30-contracts/05-dataset-model-lineage.md",
+      "tests": [
+        "TEST-TRACE-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-EVAL-001",
+      "confirmation": "助手建议",
+      "summary": "独立评估管理/批量测试并追踪数据与模型",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "10-frontend/06-training-evaluation/02-evaluation-workspace.md",
+      "tests": [
+        "TEST-TRACE-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-CONTRACT-001",
+      "confirmation": "助手建议",
+      "summary": "Actual/Target/Preview 与命令受理/执行分开",
+      "source_ids": [
+        "S03",
+        "S05"
+      ],
+      "primary_spec": "30-contracts/01-robot-world-state.md",
+      "tests": [
+        "TEST-TCP-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-CONTRACT-002",
+      "confirmation": "助手建议",
+      "summary": "统一时间、Frame、单位和版本关系",
+      "source_ids": [
+        "S05"
+      ],
+      "primary_spec": "30-contracts/04-time-frames-units.md",
+      "tests": [
+        "TEST-REPLAY-001"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-REC-001",
+      "confirmation": "助手建议",
+      "summary": "来源、采集意图、阶段和标注分开；原始数据可追溯",
+      "source_ids": [
+        "S02",
+        "S05",
+        "S16"
+      ],
+      "primary_spec": "30-contracts/03-episode-events-annotations.md",
+      "tests": [
+        "TEST-ANN-001",
+        "TEST-REC-001",
+        "TEST-MOBILE-001",
+        "TEST-MOBILE-002"
+      ],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-DOC-001",
+      "confirmation": "用户明确",
+      "summary": "包含可获取讨论过程，按 Spec 分类建立 Wiki 和索引",
+      "source_ids": [
+        "S06"
+      ],
+      "primary_spec": "90-governance/05-maintenance.md",
+      "tests": [],
+      "implementation_status": "not_assessed_in_this_organization",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-IA-001",
+      "confirmation": "设计建议",
+      "summary": "四组导航组织六个逻辑工作区，不按任务复制页面",
+      "source_ids": [
+        "S08"
+      ],
+      "primary_spec": "10-frontend/01-shell/01-navigation-context.md",
+      "tests": [
+        "TEST-IA-001"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-IA-002",
+      "confirmation": "设计建议",
+      "summary": "Data 组合 Library、Episode Detail、Dataset Collections",
+      "source_ids": [
+        "S08"
+      ],
+      "primary_spec": "10-frontend/05-datasets/01-browser-quality-export.md",
+      "tests": [
+        "TEST-IA-001"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-IA-003",
+      "confirmation": "设计建议",
+      "summary": "Checkpoint 进入 Simulation 执行 Policy Rollout",
+      "source_ids": [
+        "S08"
+      ],
+      "primary_spec": "10-frontend/03-simulation/05-execution-profiles-policy-rollout.md",
+      "tests": [
+        "TEST-IA-002"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SCENE-003",
+      "confirmation": "设计建议",
+      "summary": "以任务模板组织 Scene/Robot/Task/Experiment 配置",
+      "source_ids": [
+        "S08",
+        "S16"
+      ],
+      "primary_spec": "10-frontend/02-scene-setup/02-task-template-configuration.md",
+      "tests": [
+        "TEST-SCENE-004",
+        "TEST-CONFIG-008"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SCENE-004",
+      "confirmation": "设计建议",
+      "summary": "SO101 俯视摆放与三维检查共享一个场景草案",
+      "source_ids": [
+        "S08"
+      ],
+      "primary_spec": "10-frontend/02-scene-setup/03-so101-tabletop-layout.md",
+      "tests": [
+        "TEST-SCENE-005"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SCENE-005",
+      "confirmation": "设计建议",
+      "summary": "受限对象配置与 Scene Builder 保留源机器人模型语义",
+      "source_ids": [
+        "S08",
+        "S09"
+      ],
+      "primary_spec": "20-backend/01-session-scene/03-scene-builder-assets.md",
+      "tests": [
+        "TEST-SCENE-006"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-NAV-003",
+      "confirmation": "用户明确",
+      "summary": "V1 Scene Setup 创建/编辑/保存 Waypoint，Simulation 展示进度",
+      "source_ids": [
+        "S09",
+        "S10"
+      ],
+      "primary_spec": "10-frontend/02-scene-setup/04-map-waypoint-editor.md",
+      "tests": [
+        "TEST-NAV-004",
+        "TEST-NAV-006"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-NAV-004",
+      "confirmation": "接口草案",
+      "summary": "地图/路线版本、坐标转换、检查、授权与进度可追踪",
+      "source_ids": [
+        "S09"
+      ],
+      "primary_spec": "30-contracts/08-navigation-map-route.md",
+      "tests": [
+        "TEST-NAV-003",
+        "TEST-NAV-005",
+        "TEST-NAV-006"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-TASK-001",
+      "confirmation": "设计建议",
+      "summary": "导航三类、感知四类、IK 两类与双臂不同交接分别作模板",
+      "source_ids": [
+        "S08"
+      ],
+      "primary_spec": "00-overview/07-task-template-catalog.md",
+      "tests": [
+        "TEST-SCENE-004"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-TASK-002",
+      "confirmation": "设计建议",
+      "summary": "任务判据绑定版本，终止/有效性和人工辅助统计分别表达",
+      "source_ids": [
+        "S08"
+      ],
+      "primary_spec": "20-backend/03-observation-algorithms/04-task-assessment.md",
+      "tests": [
+        "TEST-TASK-001"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-EXEC-001",
+      "confirmation": "设计建议",
+      "summary": "三种 Execution Profile 与录制/阶段/部件控制源独立",
+      "source_ids": [
+        "S08"
+      ],
+      "primary_spec": "10-frontend/03-simulation/05-execution-profiles-policy-rollout.md",
+      "tests": [
+        "TEST-EXEC-001"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-LAYOUT-001",
+      "confirmation": "设计建议",
+      "summary": "Simulation A–H 区域与任务布局预设共享语义",
+      "source_ids": [
+        "S08"
+      ],
+      "primary_spec": "10-frontend/03-simulation/04-ah-layout-presets.md",
+      "tests": [
+        "TEST-ARCH-001"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-ANN-002",
+      "confirmation": "设计建议",
+      "summary": "四类标注按训练用途选用，真值/预测/人工审核有来源",
+      "source_ids": [
+        "S08"
+      ],
+      "primary_spec": "10-frontend/04-replay-annotation/02-annotation-editor.md",
+      "tests": [
+        "TEST-ANN-002"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-ARCH-001",
+      "confirmation": "开发建议",
+      "summary": "统一骨架先行、按真实任务纵向接入与验收",
+      "source_ids": [
+        "S09"
+      ],
+      "primary_spec": "00-overview/08-unified-development-roadmap.md",
+      "tests": [
+        "TEST-ARCH-001"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-REUSE-001",
+      "confirmation": "流程建议",
+      "summary": "新功能先检查本地能力和资源登记，记录复用/适配决定",
+      "source_ids": [
+        "S09"
+      ],
+      "primary_spec": "references/open-source-resource-registry.md",
+      "tests": [],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-REUSE-002",
+      "confirmation": "验证建议",
+      "summary": "Scene Editor/Drei/Dockview 先做有限 PoC 再选型",
+      "source_ids": [
+        "S09"
+      ],
+      "primary_spec": "references/02-reuse-poc-plan.md",
+      "tests": [
+        "TEST-SCENE-006",
+        "TEST-ARCH-001"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-VIS-001",
+      "confirmation": "用户明确",
+      "summary": "每个前端页面必须有实际图片参考，并能找到页面功能与设计说明",
+      "source_ids": [
+        "S13"
+      ],
+      "primary_spec": "10-frontend/page-designs/README.md",
+      "tests": [
+        "TEST-VIS-001"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-VIS-002",
+      "confirmation": "整理方法",
+      "summary": "原图/PPT 保留来源，逐页登记采用范围、冲突和未核实占位",
+      "source_ids": [
+        "S12",
+        "S13"
+      ],
+      "primary_spec": "references/04-visual-asset-catalog.md",
+      "tests": [
+        "TEST-VIS-002"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-IA-004",
+      "confirmation": "设计建议",
+      "summary": "业务导航、辅助资源与页面视图有唯一归属，页面时钟与对象明确",
+      "source_ids": [
+        "S08",
+        "S12",
+        "S13"
+      ],
+      "primary_spec": "10-frontend/01-shell/04-visual-design-rules.md",
+      "tests": [
+        "TEST-CTX-002"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-MODEL-001",
+      "confirmation": "设计细化",
+      "summary": "模型导入/注册/适配/验证分开，离线预测不执行，在线复用 Simulation",
+      "source_ids": [
+        "S08",
+        "S12"
+      ],
+      "primary_spec": "10-frontend/03-simulation/05-execution-profiles-policy-rollout.md",
+      "tests": [
+        "TEST-MODEL-001",
+        "TEST-CTX-001"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-TRAIN-003",
+      "confirmation": "设计细化",
+      "summary": "训练配置草案与接受作业快照分开，参数指标控制由适配器声明",
+      "source_ids": [
+        "S08",
+        "S12"
+      ],
+      "primary_spec": "10-frontend/06-training-evaluation/01-training-workspace.md",
+      "tests": [
+        "TEST-TRAIN-001"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-EVAL-002",
+      "confirmation": "设计细化",
+      "summary": "比较绑定同一报告证据，声明共同条件、分母、统计单位与人工辅助",
+      "source_ids": [
+        "S08",
+        "S12"
+      ],
+      "primary_spec": "30-contracts/09-evaluation-comparison.md",
+      "tests": [
+        "TEST-EVAL-002",
+        "TEST-EVAL-003"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-SCENE-006",
+      "confirmation": "用户明确目标；字段细化为建议",
+      "summary": "按任务类型定义配置字段、显示条件、默认与校验，避免固定全字段表单",
+      "source_ids": [
+        "S15",
+        "S16"
+      ],
+      "primary_spec": "10-frontend/02-scene-setup/02-task-template-configuration.md",
+      "tests": [
+        "TEST-CONFIG-001",
+        "TEST-CONFIG-008"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-NAV-005",
+      "confirmation": "用户明确目标；协议细化为建议",
+      "summary": "Waypoint/Route 为独立版本资源，采用和执行分开，历史引用固定",
+      "source_ids": [
+        "S15"
+      ],
+      "primary_spec": "30-contracts/08-navigation-map-route.md",
+      "tests": [
+        "TEST-CONFIG-006"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-CONFIG-001",
+      "confirmation": "用户明确目标；交互细化为建议",
+      "summary": "Profile 只有单一编辑来源，多处摘要共享固定引用",
+      "source_ids": [
+        "S15"
+      ],
+      "primary_spec": "30-contracts/07-task-scene-experiment-config.md",
+      "tests": [
+        "TEST-CONFIG-002"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-CONFIG-002",
+      "confirmation": "用户明确目标；权限细化为建议",
+      "summary": "不同对象按角色、能力和编辑上下文限制写入，草案不改运行态",
+      "source_ids": [
+        "S15",
+        "S16"
+      ],
+      "primary_spec": "30-contracts/07-task-scene-experiment-config.md",
+      "tests": [
+        "TEST-CONFIG-003",
+        "TEST-CONFIG-008"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-CONFIG-003",
+      "confirmation": "用户明确目标；状态机制为建议",
+      "summary": "Validation Stale 绑定执行修订与依赖，处理纯展示例外、改回和异步竞态",
+      "source_ids": [
+        "S15"
+      ],
+      "primary_spec": "30-contracts/07-task-scene-experiment-config.md",
+      "tests": [
+        "TEST-CONFIG-004"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-CONFIG-004",
+      "confirmation": "用户明确目标；协议细化为建议",
+      "summary": "服务端已验证快照固定依赖，原子/幂等创建未开始 Session",
+      "source_ids": [
+        "S15"
+      ],
+      "primary_spec": "30-contracts/07-task-scene-experiment-config.md",
+      "tests": [
+        "TEST-CONFIG-005"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-UI-001",
+      "confirmation": "用户明确",
+      "summary": "三张图生成共享组件清单，区分共用一次、任务驱动与后续扩展",
+      "source_ids": [
+        "S15",
+        "S16"
+      ],
+      "primary_spec": "10-frontend/02-scene-setup/05-shared-scene-components.md",
+      "tests": [
+        "TEST-CONFIG-001",
+        "TEST-CONFIG-007",
+        "TEST-HOST-001"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-LOOP-001",
+      "confirmation": "用户明确目标；首任务/模型为建议",
+      "summary": "选择场景、Human 或 Expert 采集、清理、固定数据版本、选模型训练、预测运行完整闭环",
+      "source_ids": [
+        "S15"
+      ],
+      "primary_spec": "00-overview/10-first-task-closed-loop.md",
+      "tests": [
+        "TEST-LOOP-001",
+        "TEST-LOOP-002",
+        "TEST-LOOP-003",
+        "TEST-LOOP-004",
+        "TEST-LOOP-005"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed",
+      "applicable_stage": "later_complete_data_training_rollout"
+    },
+    {
+      "id": "REQ-LOOP-002",
+      "confirmation": "用户明确当前方向",
+      "summary": "先做一个可交互前端样板，三图后停止大范围补图；Mock 与真实能力分别验收",
+      "source_ids": [
+        "S15"
+      ],
+      "primary_spec": "00-overview/10-first-task-closed-loop.md",
+      "tests": [
+        "TEST-CONFIG-007"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed",
+      "applicable_stage": "optional_prototype_with_real_and_mock_separated"
+    },
+    {
+      "id": "REQ-STAGE-001",
+      "confirmation": "用户明确",
+      "summary": "先 mobileCar 场景→运行→录制→回放，再 bimanual 复用；训练/预测后续且不阻塞当前记录回放",
+      "source_ids": [
+        "S16"
+      ],
+      "primary_spec": "00-overview/10-first-task-closed-loop.md",
+      "tests": [
+        "TEST-MOBILE-001",
+        "TEST-MOBILE-002"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    },
+    {
+      "id": "REQ-ARCH-002",
+      "confirmation": "用户明确目标；作用域机制为修复基线",
+      "summary": "组件可被轻量/平台 HostApp 复用，store 按宿主和草案注入；同一资源/草案与运行实体的权威不因宿主分裂",
+      "source_ids": [
+        "S16"
+      ],
+      "primary_spec": "30-contracts/07-task-scene-experiment-config.md",
+      "tests": [
+        "TEST-HOST-001",
+        "TEST-CONFIG-008"
+      ],
+      "implementation_status": "not_assessed_in_this_revision",
+      "verification_status": "not_executed"
+    }
+  ],
+  "test_owners": {
+    "TEST-SEL-001": "40-verification/01-interaction-acceptance.md#test-sel-001",
+    "TEST-SEL-002": "40-verification/01-interaction-acceptance.md#test-sel-002",
+    "TEST-SEL-003": "40-verification/01-interaction-acceptance.md#test-sel-003",
+    "TEST-SEL-004": "40-verification/01-interaction-acceptance.md#test-sel-004",
+    "TEST-SEL-005": "40-verification/01-interaction-acceptance.md#test-sel-005",
+    "TEST-SEL-006": "40-verification/01-interaction-acceptance.md#test-sel-006",
+    "TEST-JOINT-001": "40-verification/01-interaction-acceptance.md#test-joint-001",
+    "TEST-JOINT-002": "40-verification/01-interaction-acceptance.md#test-joint-002",
+    "TEST-TCP-001": "40-verification/01-interaction-acceptance.md#test-tcp-001",
+    "TEST-TCP-002": "40-verification/01-interaction-acceptance.md#test-tcp-002",
+    "TEST-TCP-003": "40-verification/01-interaction-acceptance.md#test-tcp-003",
+    "TEST-FORCE-001": "40-verification/01-interaction-acceptance.md#test-force-001",
+    "TEST-FORCE-002": "40-verification/01-interaction-acceptance.md#test-force-002",
+    "TEST-INPUT-001": "40-verification/01-interaction-acceptance.md#test-input-001",
+    "TEST-INPUT-002": "40-verification/01-interaction-acceptance.md#test-input-002",
+    "TEST-AUTH-001": "40-verification/01-interaction-acceptance.md#test-auth-001",
+    "TEST-AUTH-002": "40-verification/01-interaction-acceptance.md#test-auth-002",
+    "TEST-AUTH-003": "40-verification/01-interaction-acceptance.md#test-auth-003",
+    "TEST-SCENE-001": "40-verification/02-workspace-runtime-acceptance.md#test-scene-001",
+    "TEST-SCENE-002": "40-verification/02-workspace-runtime-acceptance.md#test-scene-002",
+    "TEST-SCENE-003": "40-verification/02-workspace-runtime-acceptance.md#test-scene-003",
+    "TEST-NAV-001": "40-verification/02-workspace-runtime-acceptance.md#test-nav-001",
+    "TEST-NAV-002": "40-verification/02-workspace-runtime-acceptance.md#test-nav-002",
+    "TEST-INPUT-003": "40-verification/02-workspace-runtime-acceptance.md#test-input-003",
+    "TEST-PROFILE-001": "40-verification/02-workspace-runtime-acceptance.md#test-profile-001",
+    "TEST-LEADER-001": "40-verification/02-workspace-runtime-acceptance.md#test-leader-001",
+    "TEST-LEADER-002": "40-verification/02-workspace-runtime-acceptance.md#test-leader-002",
+    "TEST-REC-001": "40-verification/02-workspace-runtime-acceptance.md#test-rec-001",
+    "TEST-REC-002": "40-verification/02-workspace-runtime-acceptance.md#test-rec-002",
+    "TEST-REC-003": "40-verification/02-workspace-runtime-acceptance.md#test-rec-003",
+    "TEST-REC-004": "40-verification/02-workspace-runtime-acceptance.md#test-rec-004",
+    "TEST-REPLAY-001": "40-verification/03-replay-data-acceptance.md#test-replay-001",
+    "TEST-REPLAY-002": "40-verification/03-replay-data-acceptance.md#test-replay-002",
+    "TEST-REPLAY-003": "40-verification/03-replay-data-acceptance.md#test-replay-003",
+    "TEST-ANN-001": "40-verification/03-replay-data-acceptance.md#test-ann-001",
+    "TEST-DATA-001": "40-verification/03-replay-data-acceptance.md#test-data-001",
+    "TEST-DATA-002": "40-verification/03-replay-data-acceptance.md#test-data-002",
+    "TEST-EXPORT-001": "40-verification/03-replay-data-acceptance.md#test-export-001",
+    "TEST-TRACE-001": "40-verification/03-replay-data-acceptance.md#test-trace-001",
+    "TEST-IA-001": "40-verification/04-task-config-workflow-acceptance.md#test-ia-001",
+    "TEST-IA-002": "40-verification/04-task-config-workflow-acceptance.md#test-ia-002",
+    "TEST-SCENE-004": "40-verification/04-task-config-workflow-acceptance.md#test-scene-004",
+    "TEST-SCENE-005": "40-verification/04-task-config-workflow-acceptance.md#test-scene-005",
+    "TEST-SCENE-006": "40-verification/04-task-config-workflow-acceptance.md#test-scene-006",
+    "TEST-NAV-003": "40-verification/04-task-config-workflow-acceptance.md#test-nav-003",
+    "TEST-NAV-004": "40-verification/04-task-config-workflow-acceptance.md#test-nav-004",
+    "TEST-NAV-005": "40-verification/04-task-config-workflow-acceptance.md#test-nav-005",
+    "TEST-NAV-006": "40-verification/04-task-config-workflow-acceptance.md#test-nav-006",
+    "TEST-EXEC-001": "40-verification/04-task-config-workflow-acceptance.md#test-exec-001",
+    "TEST-ANN-002": "40-verification/04-task-config-workflow-acceptance.md#test-ann-002",
+    "TEST-TASK-001": "40-verification/04-task-config-workflow-acceptance.md#test-task-001",
+    "TEST-ARCH-001": "40-verification/04-task-config-workflow-acceptance.md#test-arch-001",
+    "TEST-VIS-001": "40-verification/05-visual-page-consistency.md#test-vis-001",
+    "TEST-VIS-002": "40-verification/05-visual-page-consistency.md#test-vis-002",
+    "TEST-CTX-001": "40-verification/05-visual-page-consistency.md#test-ctx-001",
+    "TEST-CTX-002": "40-verification/05-visual-page-consistency.md#test-ctx-002",
+    "TEST-MODEL-001": "40-verification/05-visual-page-consistency.md#test-model-001",
+    "TEST-TRAIN-001": "40-verification/05-visual-page-consistency.md#test-train-001",
+    "TEST-EVAL-002": "40-verification/05-visual-page-consistency.md#test-eval-002",
+    "TEST-EVAL-003": "40-verification/05-visual-page-consistency.md#test-eval-003",
+    "TEST-CONFIG-001": "40-verification/06-scene-setup-first-loop.md#test-config-001",
+    "TEST-CONFIG-002": "40-verification/06-scene-setup-first-loop.md#test-config-002",
+    "TEST-CONFIG-003": "40-verification/06-scene-setup-first-loop.md#test-config-003",
+    "TEST-CONFIG-004": "40-verification/06-scene-setup-first-loop.md#test-config-004",
+    "TEST-CONFIG-005": "40-verification/06-scene-setup-first-loop.md#test-config-005",
+    "TEST-CONFIG-006": "40-verification/06-scene-setup-first-loop.md#test-config-006",
+    "TEST-CONFIG-007": "40-verification/06-scene-setup-first-loop.md#test-config-007",
+    "TEST-LOOP-001": "40-verification/06-scene-setup-first-loop.md#test-loop-001",
+    "TEST-LOOP-002": "40-verification/06-scene-setup-first-loop.md#test-loop-002",
+    "TEST-LOOP-003": "40-verification/06-scene-setup-first-loop.md#test-loop-003",
+    "TEST-LOOP-004": "40-verification/06-scene-setup-first-loop.md#test-loop-004",
+    "TEST-LOOP-005": "40-verification/06-scene-setup-first-loop.md#test-loop-005",
+    "TEST-MOBILE-001": "40-verification/06-scene-setup-first-loop.md#test-mobile-001",
+    "TEST-MOBILE-002": "40-verification/06-scene-setup-first-loop.md#test-mobile-002",
+    "TEST-HOST-001": "40-verification/06-scene-setup-first-loop.md#test-host-001",
+    "TEST-CONFIG-008": "40-verification/06-scene-setup-first-loop.md#test-config-008"
+  },
+  "test_status": {
+    "TEST-NAV-001": {
+      "status": "superseded",
+      "replaced_by": [
+        "TEST-NAV-003",
+        "TEST-NAV-004",
+        "TEST-NAV-005",
+        "TEST-NAV-006"
+      ],
+      "source": "S10"
+    },
+    "TEST-CONFIG-001": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-CONFIG-002": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-CONFIG-003": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-CONFIG-004": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-CONFIG-005": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-CONFIG-006": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-CONFIG-007": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-LOOP-001": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-LOOP-002": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-LOOP-003": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-LOOP-004": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-LOOP-005": {
+      "status": "not_executed",
+      "source": "S15"
+    },
+    "TEST-MOBILE-001": {
+      "status": "not_executed",
+      "source": "S16"
+    },
+    "TEST-MOBILE-002": {
+      "status": "not_executed",
+      "source": "S16"
+    },
+    "TEST-HOST-001": {
+      "status": "not_executed",
+      "source": "S16"
+    },
+    "TEST-CONFIG-008": {
+      "status": "not_executed",
+      "source": "S16"
+    }
+  },
+  "supplement_sources": {
+    "S08": {
+      "path": "90-governance/sources/S08-frontend-ia-analysis.md",
+      "sha256": "ceb01d36c0b0de8c5ae6397157fb0c010600172fd9f746bfd73610a540dfe4ad",
+      "kind": "provided_analysis"
+    },
+    "S09": {
+      "path": "90-governance/sources/S09-unified-development-reuse-analysis.md",
+      "sha256": "377bc8d4b39c55f014826b538f70430b60af8875a46e28337f4a143700233adb",
+      "kind": "provided_analysis"
+    },
+    "S10": {
+      "path": "90-governance/sources/S10-waypoint-scope-confirmation.md",
+      "sha256": "2280782bc2eafcd2cd84b394959b974b8a518547adc7b496e57871cb9432cdb5",
+      "kind": "user_scope_confirmation"
+    },
+    "S11": {
+      "path": "90-governance/sources/S11-design-discussions.md",
+      "sha256": "7c3c489ea861b36574c10368358bffd11f63387a0a49195e4f4323640ae3cdb1",
+      "kind": "readable_thread_excerpts_with_missing_assistant_body"
+    },
+    "S11-RAW": {
+      "path": "90-governance/sources/S11-design-discussion-snapshot.json",
+      "sha256": "e1dd6fcaa6afaa5d6b359484e2429c4813d694af962ee5cedf615b1f5adcef15",
+      "kind": "raw_thread_tool_snapshot"
+    },
+    "S12": {
+      "path": "90-governance/sources/S12-visual-materials.md",
+      "sha256": "feb8493b52b568a37cffd07d9dddffc846800e943ac6ba09980996fa067efae5",
+      "kind": "local_visual_materials_readonly_review"
+    },
+    "S12-MANIFEST": {
+      "path": "90-governance/sources/S12-visual-materials-manifest.json",
+      "sha256": "b766eff820278221585b62fcef317e5807fc9d6403485ed63df0ec4632c3910b",
+      "kind": "original_file_hashes_and_ppt_mapping"
+    },
+    "S13": {
+      "path": "90-governance/sources/S13-current-visual-spec-request.md",
+      "sha256": "54e65ffddb8916a518b668b6ff5dfa49fb193a2a2aa3181a7f256057d0d34db1",
+      "kind": "current_user_request"
+    },
+    "S14": {
+      "path": "90-governance/sources/S14-simulation-v2-update.md",
+      "sha256": "ac1fbcb020e6ca3805d621f88896b8bda199696d0f36eb24228232ffe999b5c6",
+      "kind": "user_submitted_simulation_revision"
+    },
+    "S15": {
+      "path": "90-governance/sources/S15-scene-setup-first-loop.md",
+      "sha256": "55729dab971b53f58c391484d164a17f14cb97e0630c6d97e7bf206c4cf4d96f",
+      "kind": "current_user_scene_setup_and_complete_loop_request"
+    },
+    "S16": {
+      "path": "90-governance/sources/S16-mobile-first-spec-repair.md",
+      "sha256": "9151707aacd0c9f1aab73c08a894cc1511d87a309596b4c52ad540c6eccb3703",
+      "kind": "current_user_mobile_first_scope_and_spec_repair_authorization"
+    }
+  },
+  "visual_registry": "references/visual-assets.json"
+}

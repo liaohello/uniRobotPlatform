@@ -1,0 +1,691 @@
+{
+  "version": "0.6",
+  "date": "2026-10-22",
+  "timezone": "America/Los_Angeles",
+  "status": "design_reference_not_approved_implementation",
+  "original_image_files": 26,
+  "unique_images": 25,
+  "ppt_slides": 20,
+  "originals_modified": false,
+  "assets": [
+    {
+      "id": "IMG-001",
+      "path": "docs/foreendAssets/RoboLab机器人仿真平台仪表盘.png",
+      "aliases": [],
+      "sha256": "7da0123a55119f6db4b3839256aa3b29fe1da3c5c7aab858a490bf39b9bb6c53",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        1
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-002",
+      "path": "docs/foreendAssets/RoboLab机器人仿真场景配置界面.png",
+      "aliases": [],
+      "sha256": "39cd90f0b0781a2c22a9c74b26d2426bfe0dee0ccf23a8e007161974b69803bf",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "ppt_slides": [
+        2
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation",
+      "current_reference_for_page_02": false,
+      "superseded_for_page_02_by": [
+        "IMG-023",
+        "IMG-024",
+        "IMG-025"
+      ]
+    },
+    {
+      "id": "IMG-003",
+      "path": "docs/foreendAssets/RoboLab机器人仿真控制台.png",
+      "aliases": [],
+      "sha256": "9d4d315a30e93c4499086e823b69756abd893ca3087d1e6bf0b77a98bd4349e9",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "ppt_slides": [
+        3
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation",
+      "current_reference_for_page_03": false,
+      "superseded_for_page_03_by": "IMG-022"
+    },
+    {
+      "id": "IMG-004",
+      "path": "docs/foreendAssets/RoboLab机器人回放与标注界面.png",
+      "aliases": [],
+      "sha256": "756ad49ce5fd6433110a9dabe6a0f5f48f43ef784142fa522f1fb1b40b014b29",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        4
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-005",
+      "path": "docs/foreendAssets/RoboLab机器人数据集管理界面.png",
+      "aliases": [],
+      "sha256": "f27e85096da1786dd7330a965a6995034641416ee0dc3454d58b50a50d0c5e3c",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        5
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-006",
+      "path": "docs/foreendAssets/RoboLab模型训练控制台.png",
+      "aliases": [],
+      "sha256": "19fa6babcce9b9bdad394df7e22992af434b80e31faa23ba1eb8bdefa3c16e8c",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "ppt_slides": [
+        6
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-007",
+      "path": "docs/foreendAssets/RoboLab模型训练监控仪表板.png",
+      "aliases": [],
+      "sha256": "3c1bd3bac5c55b3e55b0325ed1be38c371abd89df933d544a59fa6d5f8d26b30",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "ppt_slides": [
+        7
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-008",
+      "path": "docs/foreendAssets/RoboLab机器人推理与仿真控制台.png",
+      "aliases": [],
+      "sha256": "d2d277ce74285d67c5698315648b1667aba272eb1de044a9187566b6dd5fb621",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        8
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-009",
+      "path": "docs/foreendAssets/RoboLab机器人策略仿真控制台.png",
+      "aliases": [],
+      "sha256": "11d575528920cfd731be20fb651537cd0216c30f75ac2da94ac062160afe8cd2",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        9
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-010",
+      "path": "docs/foreendAssets/机器人推理与真实部署控制台.png",
+      "aliases": [],
+      "sha256": "7a50fe685eead7a235b4d6de968701cc8fa0ef6fbdf984438c78845d4acd159e",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        10
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-011",
+      "path": "docs/foreendAssets/RoboLab 模型动物园仪表盘.png",
+      "aliases": [],
+      "sha256": "f70eee6bdd0a57f9b03e458067792869c9809ef66dfcecfbca99c8b94f675060",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        11
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-012",
+      "path": "docs/foreendAssets/RoboLab机器人模型园深色仪表盘.png",
+      "aliases": [],
+      "sha256": "8c335afe494a5002c511c07af4469193b118d7153c25732b99eb683d551b4216",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "ppt_slides": [
+        12
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-013",
+      "path": "docs/foreendAssets/RoboLab模型库对比与注册仪表板.png",
+      "aliases": [],
+      "sha256": "694a76f0c6a53bb1385ff4e21e88a21c27cf20001b1807787bf3a5fe59004fed",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "ppt_slides": [
+        13
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-014",
+      "path": "docs/foreendAssets/RoboLab机器人评估控制台.png",
+      "aliases": [],
+      "sha256": "078efa4007962e877a1127e200f8742edb61f5148d749c688a2ed297cde4fd68",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        14
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-015",
+      "path": "docs/foreendAssets/机器人评估运行监控仪表盘.png",
+      "aliases": [
+        "docs/foreendAssets/机器人评估运行监控仪表盘 - 副本.png"
+      ],
+      "sha256": "46d63137aa42fef699f45c86ca8b11051886774100fff7db49125a7ebc653ac9",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        15
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-016",
+      "path": "docs/foreendAssets/RoboLab 机器人评估结果仪表板.png",
+      "aliases": [],
+      "sha256": "abfc3f9261c2aa22bc467af41949055057e60490b8b4ff492743a1bdfa7f41c0",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        16
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-017",
+      "path": "docs/foreendAssets/机器人评测批次对比仪表板.png",
+      "aliases": [],
+      "sha256": "f063f200f9d8e000af1afe5cf6d53c67d55b596bb430a6db59cb4490de94720c",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "ppt_slides": [
+        17
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-018",
+      "path": "docs/foreendAssets/机器人任务预设控制台.png",
+      "aliases": [],
+      "sha256": "0780aa4ab59e3d4d3e113a8abff3b72b06d4d744efb591c206d2c01a4c99d4fd",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        18
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-019",
+      "path": "docs/foreendAssets/RoboLab双臂机器人平台控制台.png",
+      "aliases": [],
+      "sha256": "e3177640d0ea94572af5f077db92202dee3faeeea69a32665c3b4a71088b1b81",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        19
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-020",
+      "path": "docs/foreendAssets/RoboLab 场景库与机器人仿真编辑器.png",
+      "aliases": [],
+      "sha256": "c4aed8b49786301db25278299e6a174f3ca3bd35b565bd16fe1ace0587eb56eb",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "ppt_slides": [
+        20
+      ],
+      "viewed": true,
+      "status": "source_mockup_not_approved_implementation"
+    },
+    {
+      "id": "IMG-021",
+      "path": "docs/foreendAssets/ScreenShot_2026-10-21_211828_609.png",
+      "aliases": [],
+      "sha256": "6939f9b69ce5bbd12a703e05efab5632e1fe2001e7c29d5904317278699dada7",
+      "dimensions": [
+        1656,
+        1056
+      ],
+      "ppt_slides": [],
+      "viewed": true,
+      "status": "historical_conflict_evidence"
+    },
+    {
+      "id": "IMG-022",
+      "path": "docs/foreendAssets/RoboLab机器人仿真控制台_v2_20261022.png",
+      "aliases": [],
+      "sha256": "281a2d190f5fb2d6af5fe54c8090d71e4a028f5b4443d031a3218ea2506b4497",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "ppt_slides": [],
+      "viewed": true,
+      "status": "current_user_submitted_reference_with_open_design_issues",
+      "date": "2026-10-22",
+      "source_id": "S14",
+      "replaces_page_reference": "IMG-003"
+    },
+    {
+      "id": "IMG-023",
+      "path": "docs/foreendAssets/scene-setup-navigation-reference-20261022.png",
+      "aliases": [],
+      "sha256": "3af2a05d6108c5491bad0f30f0a376d8278115932684b2364cb26c9fa92593c9",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "ppt_slides": [],
+      "viewed": true,
+      "status": "current_user_submitted_ui_reference_not_implemented",
+      "date": "2026-10-22",
+      "source_id": "S15",
+      "current_reference_for_page_02": true
+    },
+    {
+      "id": "IMG-024",
+      "path": "docs/foreendAssets/scene-setup-near-field-grasp-reference-20261022.png",
+      "aliases": [],
+      "sha256": "762b66ec12cdf33d2e39654299e2aef17f4ef9a9e2875d6c9828621d94efccc4",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "ppt_slides": [],
+      "viewed": true,
+      "status": "current_user_submitted_ui_reference_not_implemented",
+      "date": "2026-10-22",
+      "source_id": "S15",
+      "current_reference_for_page_02": true
+    },
+    {
+      "id": "IMG-025",
+      "path": "docs/foreendAssets/scene-setup-bimanual-transfer-reference-20261022.png",
+      "aliases": [],
+      "sha256": "b0878169bbcc6621e0272ac882ce61e5e041f428e9de6c4b4ad31bde50808b82",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "ppt_slides": [],
+      "viewed": true,
+      "status": "current_user_submitted_ui_reference_not_implemented",
+      "date": "2026-10-22",
+      "source_id": "S15",
+      "current_reference_for_page_02": true
+    }
+  ],
+  "pages": [
+    {
+      "title": "Home｜项目首页",
+      "group": "Home",
+      "coverage": "完整页面构图参考",
+      "phase": "A：轻量入口",
+      "id": "PAGE-01",
+      "path": "10-frontend/page-designs/01-home.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-001",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Scene Setup｜实验配置与场景布置",
+      "group": "Prepare",
+      "coverage": "导航、近场抓取、双臂转运三变体共用页面；旧 IMG-002 保留",
+      "phase": "M1 mobileCar supported presets / M2 bimanual reuse; other variants by task slice",
+      "id": "PAGE-02",
+      "path": "10-frontend/page-designs/02-scene-setup.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-025",
+      "secondary_images": [
+        "IMG-023",
+        "IMG-024",
+        "IMG-002"
+      ],
+      "reference_is_final_design": false,
+      "current_reference_images": [
+        "IMG-023",
+        "IMG-024",
+        "IMG-025"
+      ]
+    },
+    {
+      "title": "Simulation｜统一在线任务工作台",
+      "group": "Run",
+      "coverage": "完整新版布局参考；旧图保留对照，按钮与状态语义仍需修正",
+      "phase": "A/B 首条闭环，C/D 增量",
+      "id": "PAGE-03",
+      "path": "10-frontend/page-designs/03-simulation.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-022",
+      "secondary_images": [
+        "IMG-003",
+        "IMG-009"
+      ],
+      "reference_is_final_design": false,
+      "reference_updated": "2026-10-22"
+    },
+    {
+      "title": "Episode Library｜轨迹列表",
+      "group": "Data",
+      "coverage": "局部参考：仅使用图左侧 Episode List；尚无独立完整列表设计图",
+      "phase": "B 最小列表，E 完整检索",
+      "id": "PAGE-04",
+      "path": "10-frontend/page-designs/04-episode-library.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "partial",
+      "primary_image": "IMG-004",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Episode Detail｜回放、标注与审核",
+      "group": "Data",
+      "coverage": "完整页面构图参考；图底 A/B 方案是备选说明",
+      "phase": "B 同步只读回放，E 标注审核",
+      "id": "PAGE-05",
+      "path": "10-frontend/page-designs/05-episode-detail.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-004",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Dataset Collections｜数据集合",
+      "group": "Data",
+      "coverage": "完整页面构图参考；底部分析区缩为摘要",
+      "phase": "E：数据组织",
+      "id": "PAGE-06",
+      "path": "10-frontend/page-designs/06-dataset-collections.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-005",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Dataset Version｜划分、质量与导出",
+      "group": "Data",
+      "coverage": "局部参考：右侧 Dataset Details 与底部 Statistics；导出向导尚无独立图",
+      "phase": "E：数据版本与出口",
+      "id": "PAGE-07",
+      "path": "10-frontend/page-designs/07-dataset-version.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "partial",
+      "primary_image": "IMG-005",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Training Setup｜训练配置",
+      "group": "Models & Experiments",
+      "coverage": "局部采用图 6 左侧配置；完整图混有运行监控",
+      "phase": "E：模型训练规划",
+      "id": "PAGE-08",
+      "path": "10-frontend/page-designs/08-training-setup.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "partial",
+      "primary_image": "IMG-006",
+      "secondary_images": [
+        "IMG-021"
+      ],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Training Runs｜作业列表与详情",
+      "group": "Models & Experiments",
+      "coverage": "完整页面构图参考",
+      "phase": "E：训练监控",
+      "id": "PAGE-09",
+      "path": "10-frontend/page-designs/09-training-runs.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-007",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Offline Inference｜离线预测诊断",
+      "group": "Models & Experiments / 模型详情工具",
+      "coverage": "局部参考：模型、输入和预测区；运行控制区不采用",
+      "phase": "后续候选诊断工具，非首条闭环必做",
+      "id": "PAGE-10",
+      "path": "10-frontend/page-designs/10-offline-inference.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "partial",
+      "primary_image": "IMG-008",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Model Catalog｜模型来源目录",
+      "group": "Models & Experiments / Models",
+      "coverage": "完整页面构图参考",
+      "phase": "E 或后续；先登记实际接入模型",
+      "id": "PAGE-11",
+      "path": "10-frontend/page-designs/11-model-catalog.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-011",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "My Models｜模型版本与 Checkpoint",
+      "group": "Models & Experiments / Models",
+      "coverage": "完整页面构图参考",
+      "phase": "E：模型版本",
+      "id": "PAGE-12",
+      "path": "10-frontend/page-designs/12-my-models.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-012",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Registry & Compare｜模型版本比较",
+      "group": "Models & Experiments / Models",
+      "coverage": "完整页面构图参考",
+      "phase": "E 或后续比较能力",
+      "id": "PAGE-13",
+      "path": "10-frontend/page-designs/13-model-registry-compare.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-013",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Evaluation Setup｜评估协议配置",
+      "group": "Models & Experiments / Evaluation",
+      "coverage": "局部采用左侧配置；图中实时/结果面板分给 P15/P16",
+      "phase": "E：先单次评估；批量参数后续",
+      "id": "PAGE-14",
+      "path": "10-frontend/page-designs/14-evaluation-setup.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "partial",
+      "primary_image": "IMG-014",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Evaluation Running｜评估运行监控",
+      "group": "Models & Experiments / Evaluation",
+      "coverage": "完整页面构图参考",
+      "phase": "E：监控；并行调度后续另定",
+      "id": "PAGE-15",
+      "path": "10-frontend/page-designs/15-evaluation-running.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-015",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Results & Reports｜评估结果",
+      "group": "Models & Experiments / Evaluation",
+      "coverage": "完整页面构图参考",
+      "phase": "E：评估结果与回放证据",
+      "id": "PAGE-16",
+      "path": "10-frontend/page-designs/16-evaluation-results.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-016",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Batch Comparison｜评估批次比较",
+      "group": "Models & Experiments / Evaluation",
+      "coverage": "完整页面构图参考",
+      "phase": "后续比较方案；不要求先建设并行集群",
+      "id": "PAGE-17",
+      "path": "10-frontend/page-designs/17-batch-comparison.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-017",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Task Presets｜任务模板资源",
+      "group": "Resources / 辅助资源入口",
+      "coverage": "完整页面构图参考",
+      "phase": "A/B 选择已有模板；复杂编辑后续",
+      "id": "PAGE-18",
+      "path": "10-frontend/page-designs/18-task-presets.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-018",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Robot Platform｜机器人能力资源",
+      "group": "Resources / 辅助资源入口",
+      "coverage": "完整页面构图参考；硬件事实与外形须全部替换为工程来源",
+      "phase": "A/B 只读能力登记；D 主臂与双臂",
+      "id": "PAGE-19",
+      "path": "10-frontend/page-designs/19-robot-platform.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-019",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Scenes｜场景资源库",
+      "group": "Resources / 辅助资源入口",
+      "coverage": "完整页面构图参考",
+      "phase": "A/B 已有场景选择；C 受限对象资产",
+      "id": "PAGE-20",
+      "path": "10-frontend/page-designs/20-scenes.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-020",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    },
+    {
+      "title": "Real Robot Deployment｜真机部署后续参考",
+      "group": "后续环境能力；不加入当前活动 V1 导航",
+      "coverage": "完整候选构图参考；执行与安全语义尚未定义",
+      "phase": "后续，不因存在图片纳入当前 V1",
+      "id": "PAGE-21",
+      "path": "10-frontend/page-designs/21-real-robot-future.md",
+      "route_status": "logical_view_not_frozen_url",
+      "reference_status": "reference_with_corrections",
+      "primary_image": "IMG-010",
+      "secondary_images": [],
+      "reference_is_final_design": false
+    }
+  ],
+  "baseline_original_image_files": 22,
+  "current_image_files": 26
+}
