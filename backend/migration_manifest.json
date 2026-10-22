@@ -1,0 +1,223 @@
+{
+  "version": "0.1",
+  "date": "2026-10-22",
+  "strategy": "federated-strangler",
+  "principle": "先统一契约与任务呈现，再按模块抽取；仿真步进留在原工程进程内，禁止把不同 MuJoCo 版本合并进同一解释器。",
+  "environments": [
+    {
+      "project": "mobileCar",
+      "python": ">=3.10,<3.13",
+      "mujoco": "3.1.6",
+      "role": "LanderPi 运行时、HTTP/WS 合同、原始 Episode 与导航桥",
+      "isolated": true
+    },
+    {
+      "project": "bimanual_proj",
+      "python": ">=3.12",
+      "mujoco": "3.11.0",
+      "role": "双 SO101 专家、采集、评估与 ops 工作台",
+      "isolated": true
+    },
+    {
+      "project": "bimanual-train",
+      "python": "3.12.14",
+      "mujoco": "3.11.0",
+      "torch": "2.11.0+cu128",
+      "role": "ACT 训练与策略推理",
+      "isolated": true
+    },
+    {
+      "project": "mujoco_learning",
+      "python": "3.14 本地 / 3.10 服务器",
+      "mujoco": "3.14.0",
+      "ros2": "Humble",
+      "role": "LanderPi 估计导航、建图/SLAM、视觉基准与 ROS 2 桥",
+      "isolated": true
+    }
+  ],
+  "modules": [
+    {
+      "id": "MC-CONTRACTS",
+      "source": "mobileCar/src/mobilecar/contracts/models.py",
+      "target": "backend/src/unirobot/contracts/robot.py",
+      "strategy": "extract",
+      "priority": "P0",
+      "status": "pending",
+      "reason": "mobilecar-1.0 已是最完整的命令/状态/场景合同，作为统一 Robot/World 契约基线。"
+    },
+    {
+      "id": "MC-PROTOCOLS",
+      "source": "mobileCar/src/mobilecar/contracts/protocols.py",
+      "target": "backend/src/unirobot/contracts/protocols.py",
+      "strategy": "extract",
+      "priority": "P0",
+      "status": "pending",
+      "reason": "后端能力协议可直接作为适配器接口的先验。"
+    },
+    {
+      "id": "BI-OPS-CONTRACTS",
+      "source": "bimanual_proj/src/bimanual/ops/contracts_v2.py",
+      "target": "backend/src/unirobot/contracts/experiment.py",
+      "strategy": "reference",
+      "priority": "P0",
+      "status": "pending",
+      "reason": "实验草案/批次/选择/物化对象需与统一 Experiment 契约对齐，不重复造字段。"
+    },
+    {
+      "id": "LP-OBSERVATION",
+      "source": "mujoco_learning/robots/landerpi/observation/contracts.py",
+      "target": "backend/src/unirobot/contracts/observation.py",
+      "strategy": "extract",
+      "priority": "P0",
+      "status": "pending",
+      "reason": "carsys-1.2 的 ObservationRequest/Result 是导航与近场交接的既有语义。"
+    },
+    {
+      "id": "MC-RECORDER",
+      "source": "mobileCar/src/mobilecar/data/recorder.py",
+      "target": "backend/src/unirobot/recording/recorder.py",
+      "strategy": "extract",
+      "priority": "P1",
+      "status": "pending",
+      "reason": "多频 Episode 录制与 mobilecar-1.0 事件一一绑定，可作为统一录制器基础。"
+    },
+    {
+      "id": "MC-VALIDATOR",
+      "source": "mobileCar/src/mobilecar/data/validator.py",
+      "target": "backend/src/unirobot/recording/validator.py",
+      "strategy": "extract",
+      "priority": "P1",
+      "status": "pending",
+      "reason": "完整性/边界/频率校验与统一 Data 资格模型对齐。"
+    },
+    {
+      "id": "MC-REPLAY",
+      "source": "mobileCar/src/mobilecar/data/replay.py",
+      "target": "backend/src/unirobot/recording/replay.py",
+      "strategy": "extract",
+      "priority": "P1",
+      "status": "pending",
+      "reason": "只读回放语义已在合同中冻结，可直接复用。"
+    },
+    {
+      "id": "MC-ELIGIBILITY",
+      "source": "mobileCar/src/mobilecar/data/eligibility.py",
+      "target": "backend/src/unirobot/recording/eligibility.py",
+      "strategy": "extract",
+      "priority": "P1",
+      "status": "pending",
+      "reason": "训练资格与任务结果分开，是统一 Dataset 模型的必要约束。"
+    },
+    {
+      "id": "BI-EPISODE",
+      "source": "bimanual_proj/src/bimanual/recording/episode.py",
+      "target": "backend/src/unirobot/recording/bimanual_episode.py",
+      "strategy": "adapt",
+      "priority": "P1",
+      "status": "pending",
+      "reason": "唯一物理步进者与 trace.npz 结构需适配为统一 Episode，不直接覆盖 mobileCar 格式。"
+    },
+    {
+      "id": "BI-EVALUATION",
+      "source": "bimanual_proj/src/bimanual/recording/evaluation.py",
+      "target": "backend/src/unirobot/evaluation/bimanual.py",
+      "strategy": "adapt",
+      "priority": "P1",
+      "status": "pending",
+      "reason": "冻结 manifest、续跑与独立判定是评估域的现成实现。"
+    },
+    {
+      "id": "BI-POLICY-RUNNER",
+      "source": "bimanual_proj/src/bimanual/recording/policy_runner.py",
+      "target": "backend/src/unirobot/policy/runner.py",
+      "strategy": "adapt",
+      "priority": "P1",
+      "status": "pending",
+      "reason": "策略推理必须留在 CUDA 环境；只迁移控制接口与结果记录，不迁移 torch 运行时。"
+    },
+    {
+      "id": "BI-WORKBENCH",
+      "source": "bimanual_proj/src/bimanual/ops/app.py",
+      "target": "backend/src/unirobot/experiments/workbench.py",
+      "strategy": "extract",
+      "priority": "P1",
+      "status": "pending",
+      "reason": "任务/草案/批次/选择/物化是最完整的实验域；先包后抽，保留 token 与幂等语义。"
+    },
+    {
+      "id": "LP-CONSOLE",
+      "source": "mujoco_learning/robots/landerpi/debug_console/server.py",
+      "target": "backend/src/unirobot/adapters/landerpi_console.py",
+      "strategy": "wrap",
+      "priority": "P1",
+      "status": "pending",
+      "reason": "调试控制台保留为独立运行时，网关只做健康、任务呈现与只读证据代理。"
+    },
+    {
+      "id": "MC-ROS2-BRIDGE",
+      "source": "mobileCar/src/mobilecar/ros_ipc/server.py",
+      "target": "backend/src/unirobot/bridges/nav_ros2.py",
+      "strategy": "wrap",
+      "priority": "P2",
+      "status": "pending",
+      "reason": "ROS 2 Humble 进程边界不合并；网关只消费 NavigationHandoff/状态。"
+    },
+    {
+      "id": "MC-LEGACY-UI",
+      "source": "mobileCar/src/mobilecar/ui/routes.py",
+      "target": "backend/src/unirobot/static/legacy_mobilecar.html",
+      "strategy": "retire",
+      "priority": "P2",
+      "status": "pending",
+      "reason": "统一任务台接管页面入口；原页面在迁移期保留只读访问。"
+    }
+  ],
+  "do_not_migrate": [
+    {
+      "path": "mobileCar/src/mobilecar/backends",
+      "reason": "MuJoCo 3.1.6 仿真步进与实时循环，只能留在 mobileCar 进程内。"
+    },
+    {
+      "path": "bimanual_proj/src/bimanual/sim",
+      "reason": "MuJoCo 3.11 场景构建与物理步进，与 mobileCar 版本不兼容。"
+    },
+    {
+      "path": "mujoco_learning/robots/landerpi/simulation.py",
+      "reason": "MuJoCo 3.14 的 LanderPi 仿真与 GUI 生命周期，保留为独立运行时。"
+    },
+    {
+      "path": "mujoco_learning/ros2_ws",
+      "reason": "ROS 2 Humble 节点与 Nav2 栈，通过进程/话题边界接入，不并入网关。"
+    },
+    {
+      "path": "bimanual-train",
+      "reason": "CUDA torch 训练/推理环境，只暴露作业与产物接口。"
+    }
+  ],
+  "phases": [
+    {
+      "id": "P0",
+      "title": "联邦网关与统一契约",
+      "status": "in_progress",
+      "exit": "任务目录可呈现 3 个工程的真实任务；运行只做可复现准备；契约映射表冻结。"
+    },
+    {
+      "id": "P1",
+      "title": "录制/回放/资格统一",
+      "status": "pending",
+      "exit": "mobileCar 与 bimanual 的 Episode 都能被统一索引、校验与只读回放。"
+    },
+    {
+      "id": "P2",
+      "title": "实验、训练与评估域",
+      "status": "pending",
+      "exit": "草案→冻结 manifest→批次→评估→比较走同一组对象，训练仍由独立环境执行。"
+    },
+    {
+      "id": "P3",
+      "title": "前端收敛与旧入口退役",
+      "status": "pending",
+      "exit": "统一任务台成为唯一在线入口；旧页面保留只读或下线。"
+    }
+  ]
+}

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>统一任务台 · uniRobotPlatform</title>
+<style>
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --surface-2:#fafbfc; --line:#e4e7ec;
+  --text:#1d2129; --muted:#667085; --faint:#98a2b3;
+  --blue:#185fa5; --blue-bg:#e8f1fa; --green:#067647; --green-bg:#e7f6ec;
+  --amber:#b54708; --amber-bg:#fdf3e6; --red:#b42318; --red-bg:#fdeceb;
+  --radius:12px; --mono:"Cascadia Code","JetBrains Mono",Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.top{
+  position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between;
+  gap:20px; padding:14px 24px; background:rgba(255,255,255,.92);
+  border-bottom:1px solid var(--line); backdrop-filter:blur(8px);
+}
+.brand{display:flex; align-items:center; gap:12px}
+.mark{
+  width:38px;height:38px;border-radius:11px;background:#12263a;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.5px;
+}
+.brand h1{font-size:17px;margin:0;font-weight:600;letter-spacing:.2px}
+.brand p{margin:1px 0 0;color:var(--muted);font-size:12px}
+.top-stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{
+  display:flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);
+  border-radius:999px;background:var(--surface);font-size:12px;color:var(--muted)
+}
+.stat b{color:var(--text);font-size:13px;font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--faint)}
+.dot.on{background:#12b76a}.dot.off{background:#f04438}
+
+.shell{display:grid;grid-template-columns:224px minmax(0,1fr) 350px;gap:18px;padding:18px 24px 40px;align-items:start}
+.rail,.detail{position:sticky;top:86px;max-height:calc(100vh - 104px);overflow:auto}
+.rail{display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.panel h2,.section-title{font-size:12px;letter-spacing:.4px;color:var(--muted);margin:0 0 10px;font-weight:600}
+.filter{display:flex;flex-direction:column;gap:2px}
+.filter button{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+  background:none;border:0;border-radius:8px;padding:7px 9px;text-align:left;color:var(--muted)
+}
+.filter button:hover{background:var(--surface-2);color:var(--text)}
+.filter button.active{background:var(--blue-bg);color:var(--blue);font-weight:600}
+.filter .n{font-size:11px;color:var(--faint)}
+.filter button.active .n{color:var(--blue)}
+
+.cov{display:flex;flex-direction:column;gap:3px}
+.cov button{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:8px;background:none;border:0;border-radius:7px;padding:5px 6px;text-align:left;color:var(--muted);font-size:12px}
+.cov button:hover{background:var(--surface-2)}
+.cov button.active{background:var(--blue-bg);color:var(--blue)}
+.cov .bar{width:8px;height:8px;border-radius:2px;background:#e4e7ec}
+.cov .bar.verified{background:#12b76a}.cov .bar.partial{background:#f79009}.cov .bar.gap{background:#d0d5dd}
+.cov .tag{font-size:10px;color:var(--faint)}
+.cov .tag.verified{color:var(--green)}.cov .tag.partial{color:var(--amber)}
+
+.adapters{display:flex;flex-direction:column;gap:8px}
+.adapter{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:8px 9px;border-radius:8px;background:var(--surface-2)}
+.adapter .name{font-size:12px;font-weight:600}
+.adapter .meta{font-size:11px;color:var(--faint);margin-top:1px}
+.adapter .state{font-size:11px;white-space:nowrap}
+.adapter .state.on{color:var(--green)}.adapter .state.off{color:var(--faint)}
+
+main{min-width:0}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
+.tabs button{border:0;background:none;padding:6px 11px;border-radius:7px;color:var(--muted);font-size:12px}
+.tabs button.active{background:#12263a;color:#fff}
+.search{flex:1;min-width:180px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;outline:none}
+.search:focus{border-color:#9cc3e6;box-shadow:0 0 0 3px #e8f1fa}
+.count{font-size:12px;color:var(--faint);white-space:nowrap}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:12px}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:15px 15px 13px;display:flex;flex-direction:column;gap:9px;text-align:left;
+  transition:border-color .15s, box-shadow .15s, transform .15s;
+}
+.card:hover{border-color:#c7d7e6;box-shadow:0 4px 14px rgba(16,24,40,.06);transform:translateY(-1px)}
+.card.active{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-bg)}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.badge.tpl{font-family:var(--mono);font-size:10px;letter-spacing:.2px}
+.badge.verified{background:var(--green-bg);color:var(--green);border-color:#bfe8cf}
+.badge.experimental{background:var(--amber-bg);color:var(--amber);border-color:#f5d5a8}
+.badge.concept{background:var(--surface-2);color:var(--muted)}
+.card h3{font-size:15px;margin:0;font-weight:600;line-height:1.35}
+.card p{margin:0;color:var(--muted);font-size:12.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:10.5px;color:#475467;background:#f2f4f7;border-radius:5px;padding:2px 6px;font-family:var(--mono)}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:9px;border-top:1px solid #f0f1f3;font-size:11px;color:var(--faint)}
+.src{display:flex;align-items:center;gap:5px}
+.arrow{color:var(--blue);font-size:12px}
+
+.detail{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.detail .empty{color:var(--faint);font-size:13px;text-align:center;padding:40px 10px}
+.ov-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.ov-kpi{background:var(--surface-2);border-radius:9px;padding:10px 11px}
+.ov-kpi b{display:block;font-size:20px;font-weight:600;line-height:1.2}
+.ov-kpi span{font-size:11px;color:var(--faint)}
+.ov-list{display:flex;flex-direction:column;gap:2px}
+.ov-list button{display:flex;align-items:center;justify-content:space-between;gap:8px;background:none;border:0;border-radius:7px;padding:6px 7px;text-align:left;font-size:12px;color:var(--muted)}
+.ov-list button:hover{background:var(--surface-2);color:var(--text)}
+.ov-list .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ov-gaps{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.detail h2{font-size:16px;margin:6px 0 6px;font-weight:600;line-height:1.4}
+.detail .summary{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+.kv{display:grid;grid-template-columns:78px 1fr;gap:6px 8px;font-size:12px;margin:10px 0}
+.kv dt{color:var(--faint)}
+.kv dd{margin:0;color:var(--text);word-break:break-all}
+.note{background:var(--amber-bg);border-radius:8px;padding:9px 10px;font-size:12px;color:#7a3c06;margin:8px 0}
+.note ul{margin:0;padding-left:16px}
+.note li+li{margin-top:3px}
+.evidence{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);font-family:var(--mono);word-break:break-all}
+.form{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.row{display:flex;gap:8px}
+.row>*{flex:1;min-width:0}
+label.f{font-size:11px;color:var(--faint);display:block;margin-bottom:3px}
+select,input[type=number]{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;outline:none}
+select:focus,input[type=number]:focus{border-color:#9cc3e6}
+.check{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;font-size:12px}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:#12263a;color:#fff;border-color:#12263a}
+.btn.primary:hover{background:#1c3854}
+.btn.primary:disabled{opacity:.5;cursor:not-allowed}
+.result{margin-top:10px;font-size:11.5px;background:var(--surface-2);border-radius:8px;padding:10px;color:var(--muted);display:none}
+.result.show{display:block}
+.result .cmd{font-family:var(--mono);font-size:10.5px;background:#eef1f4;border-radius:5px;padding:6px 7px;margin:6px 0;word-break:break-all;color:#344054}
+.result .id{font-family:var(--mono);color:var(--text)}
+.result .err{color:var(--red)}
+.copy{border:0;background:none;color:var(--blue);font-size:11px;padding:0}
+
+.runs{margin-top:22px}
+.runs-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.runs-head h2{font-size:13px;margin:0;font-weight:600}
+.runs-head .sub{font-size:11px;color:var(--faint)}
+.run-table{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.run-row{display:grid;grid-template-columns:150px minmax(0,1.2fr) 92px 90px 88px 92px;gap:8px;align-items:center;padding:9px 12px;font-size:11.5px;border-top:1px solid #f0f1f3}
+.run-row:first-child{border-top:0}
+.run-row.head{background:var(--surface-2);color:var(--faint);font-size:10.5px;letter-spacing:.3px}
+.run-row .id{font-family:var(--mono);font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.run-row .task{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;padding:2px 6px;border-radius:999px;background:#f2f4f7;color:var(--muted);white-space:nowrap}
+.st.running,.st.launching{background:var(--blue-bg);color:var(--blue)}
+.st.prepared{background:var(--amber-bg);color:var(--amber)}
+.st.stopped{background:var(--green-bg);color:var(--green)}
+.st.failed{background:var(--red-bg);color:var(--red)}
+.run-row .stop{border:0;background:none;color:var(--faint);font-size:11px;padding:2px}
+.run-row .stop:hover{color:var(--red)}
+.empty-runs{padding:18px;text-align:center;color:var(--faint);font-size:12px}
+.toast{position:fixed;right:22px;bottom:22px;background:#12263a;color:#fff;font-size:12px;padding:9px 14px;border-radius:9px;opacity:0;transform:translateY(6px);transition:.2s;pointer-events:none;z-index:50}
+.toast.show{opacity:1;transform:none}
+@media(max-width:1180px){
+  .shell{grid-template-columns:200px minmax(0,1fr)}
+  .detail{position:fixed;right:0;top:0;bottom:0;width:min(390px,92vw);max-height:none;border-radius:0;z-index:40;transform:translateX(102%);transition:transform .2s;box-shadow:-8px 0 30px rgba(16,24,40,.12)}
+  .detail.open{transform:none}
+}
+@media(max-width:760px){
+  .shell{grid-template-columns:1fr;padding:14px}
+  .rail{position:static;max-height:none;display:grid;grid-template-columns:1fr 1fr}
+  .top{padding:12px 14px}.brand p{display:none}
+  .run-row{grid-template-columns:1fr 70px 78px}
+  .run-row .id,.run-row .mode,.run-row .created{display:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="mark">UR</div>
+    <div><h1>统一任务台</h1><p>uniRobotPlatform · 任务呈现与后端迁移控制面</p></div>
+  </div>
+  <div class="top-stats" id="topStats"></div>
+</header>
+
+<div class="shell">
+  <aside class="rail">
+    <section class="panel">
+      <h2>机器人</h2>
+      <div class="filter" id="robotFilters"></div>
+    </section>
+    <section class="panel">
+      <h2>成熟度</h2>
+      <div class="filter" id="maturityFilters"></div>
+    </section>
+    <section class="panel">
+      <h2>模板覆盖</h2>
+      <div class="cov" id="coverage"></div>
+    </section>
+    <section class="panel">
+      <h2>适配器</h2>
+      <div class="adapters" id="adapterList"></div>
+    </section>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <div class="tabs" id="sourceTabs"></div>
+      <input class="search" id="search" placeholder="搜索任务、能力或模板">
+      <span class="count" id="count"></span>
+    </div>
+    <div class="grid" id="taskGrid"></div>
+    <section class="runs">
+      <div class="runs-head">
+        <div><h2>运行记录</h2><div class="sub">准备态不启动进程；只有运行主机显式开启启动时才会执行原生命令。</div></div>
+        <button class="btn" id="refreshRuns">刷新</button>
+      </div>
+      <div class="run-table" id="runList"></div>
+    </section>
+  </main>
+
+  <aside class="detail" id="detail">
+    <div class="empty">选择左侧任务查看呈现信息<br>并准备一次可复现运行</div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const state = {
+  tasks: [], robots: [], coverage: null, adapters: [], runs: [],
+  platform: null, filters: { robot: 'all', maturity: 'all', template: 'all', source: 'all', q: '' },
+  selected: null
+};
+const MATURITY = { verified: '已验收', experimental: '实验', concept: '概念' };
+const MODE = { teleop: '遥操作', human_demo: '人工示教', expert: '专家', policy: '策略', replay: '回放', batch: '批处理' };
+const RUN_STATE = { prepared: '已准备', launching: '启动中', running: '运行中', stopping: '停止中', stopped: '已停止', failed: '失败' };
+const SOURCE_LABEL = { mobileCar: 'mobileCar', bimanual_proj: 'bimanual', mujoco_learning: 'mujoco_learning' };
+
+const $ = (sel) => document.querySelector(sel);
+const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+
+async function api(path, options) {
+  const response = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...options });
+  if (!response.ok) {
+    let detail = response.statusText;
+    try { const body = await response.json(); detail = body.detail || JSON.stringify(body); } catch (e) {}
+    throw new Error(detail);
+  }
+  return response.json();
+}
+
+function toast(message) {
+  const el = $('#toast');
+  el.textContent = message;
+  el.classList.add('show');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function adapterOf(id) { return state.adapters.find((item) => item.adapter_id === id); }
+function taskById(id) { return state.tasks.find((item) => item.id === id); }
+
+function renderTop() {
+  const p = state.platform || {};
+  const online = state.adapters.filter((a) => a.state === 'online').length;
+  $('#topStats').innerHTML = `
+    <span class="stat"><span class="dot ${online ? 'on' : 'off'}"></span>适配器 <b>${online}/${state.adapters.length}</b></span>
+    <span class="stat">任务 <b>${p.tasks ?? state.tasks.length}</b></span>
+    <span class="stat">已验收 <b>${p.verified ?? 0}</b></span>
+    <span class="stat">模板覆盖 <b>${p.coverage ? p.coverage.verified : 0}/16</b></span>
+    <span class="stat">活动运行 <b>${p.active_runs ?? 0}</b></span>`;
+}
+
+function renderFilters() {
+  const robots = [{ id: 'all', title: '全部机器人', count: state.tasks.length }].concat(
+    state.robots.map((r) => ({ id: r.id, title: r.title, count: r.task_count }))
+  );
+  $('#robotFilters').innerHTML = robots.map((r) => `
+    <button data-robot="${esc(r.id)}" class="${state.filters.robot === r.id ? 'active' : ''}">
+      <span>${esc(r.title)}</span><span class="n">${r.count}</span>
+    </button>`).join('');
+
+  const maturities = [
+    { id: 'all', title: '全部' },
+    { id: 'verified', title: '已验收' },
+    { id: 'experimental', title: '实验' },
+    { id: 'concept', title: '概念' }
+  ];
+  $('#maturityFilters').innerHTML = maturities.map((m) => `
+    <button data-maturity="${m.id}" class="${state.filters.maturity === m.id ? 'active' : ''}">
+      <span>${m.title}</span>
+      <span class="n">${m.id === 'all' ? state.tasks.length : state.tasks.filter((t) => t.maturity === m.id).length}</span>
+    </button>`).join('');
+
+  const sources = [{ id: 'all', title: '全部来源' }, { id: 'mobileCar', title: 'mobileCar' },
+    { id: 'bimanual_proj', title: 'bimanual' }, { id: 'mujoco_learning', title: 'mujoco_learning' }];
+  $('#sourceTabs').innerHTML = sources.map((s) => `
+    <button data-source="${s.id}" class="${state.filters.source === s.id ? 'active' : ''}">${s.title}</button>`).join('');
+}
+
+function renderCoverage() {
+  if (!state.coverage) return;
+  $('#coverage').innerHTML = state.coverage.rows.map((row) => `
+    <button data-template="${row.template}" class="${state.filters.template === row.template ? 'active' : ''}" title="${row.tasks} 个任务">
+      <span class="bar ${row.state}"></span>
+      <span>${row.template}</span>
+      <span class="tag ${row.state}">${row.state === 'verified' ? row.verified : row.state === 'partial' ? '部分' : '缺口'}</span>
+    </button>`).join('');
+}
+
+function renderAdapters() {
+  $('#adapterList').innerHTML = state.adapters.map((a) => `
+    <div class="adapter">
+      <div><div class="name">${esc(a.adapter_id)}</div>
+        <div class="meta">${a.state === 'online' ? `${a.latency_ms ?? '-'} ms · ${esc(a.version || '已连接')}` : '未启动或不可达'}</div>
+      </div>
+      <div class="state ${a.state === 'online' ? 'on' : 'off'}">${a.state === 'online' ? '在线' : a.state === 'offline' ? '离线' : '未配置'}</div>
+    </div>`).join('');
+}
+
+function visibleTasks() {
+  const { robot, maturity, template, source, q } = state.filters;
+  const text = q.trim().toLowerCase();
+  return state.tasks.filter((task) => {
+    if (robot !== 'all' && task.robot_id !== robot) return false;
+    if (maturity !== 'all' && task.maturity !== maturity) return false;
+    if (template !== 'all' && task.template !== template) return false;
+    if (source !== 'all' && task.source_project !== source) return false;
+    if (text) {
+      const haystack = [task.id, task.title, task.summary, task.template, ...(task.capabilities || [])].join(' ').toLowerCase();
+      if (!haystack.includes(text)) return false;
+    }
+    return true;
+  });
+}
+
+function renderTasks() {
+  const tasks = visibleTasks();
+  $('#count').textContent = `${tasks.length} / ${state.tasks.length} 个任务`;
+  if (!tasks.length) {
+    $('#taskGrid').innerHTML = `<div class="panel" style="grid-column:1/-1;color:var(--faint);text-align:center;padding:40px">没有符合筛选条件的任务</div>`;
+    return;
+  }
+  $('#taskGrid').innerHTML = tasks.map((task) => {
+    const adapter = adapterOf(task.adapter_id);
+    const online = adapter && adapter.state === 'online';
+    return `<button class="card ${state.selected === task.id ? 'active' : ''}" data-task="${esc(task.id)}">
+      <div class="card-top">
+        <span class="badge tpl">${esc(task.template)}</span>
+        <span class="badge ${esc(task.maturity)}">${MATURITY[task.maturity] || task.maturity}</span>
+      </div>
+      <h3>${esc(task.title)}</h3>
+      <p>${esc(task.summary)}</p>
+      <div class="chips">${(task.capabilities || []).slice(0, 4).map((c) => `<span class="chip">${esc(c)}</span>`).join('')}
+        ${(task.capabilities || []).length > 4 ? `<span class="chip">+${task.capabilities.length - 4}</span>` : ''}</div>
+      <div class="card-foot">
+        <span class="src"><span class="dot ${online ? 'on' : 'off'}"></span>${esc(SOURCE_LABEL[task.source_project] || task.source_project)}${task.source_project === task.adapter_id ? '' : ` · ${esc(task.adapter_id)}`}</span>
+        <span class="arrow">查看 →</span>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+function renderDetail() {
+  const task = taskById(state.selected);
+  const panel = $('#detail');
+  if (!task) {
+    panel.classList.remove('open');
+    const p = state.platform || {};
+    const verified = state.tasks.filter((item) => item.maturity === 'verified');
+    const gaps = (state.coverage?.rows || []).filter((row) => row.state === 'gap');
+    panel.innerHTML = `
+      <div class="card-top"><span class="badge tpl">PLATFORM</span><span class="badge">只读概览</span></div>
+      <h2>平台概览</h2>
+      <p class="summary">任务来自三个隔离运行时；这里统一呈现能力、成熟度与验收证据。选择任务可准备一次可复现运行。</p>
+      <div class="ov-kpis">
+        <div class="ov-kpi"><b>${p.tasks ?? state.tasks.length}</b><span>任务</span></div>
+        <div class="ov-kpi"><b>${p.verified ?? verified.length}</b><span>已验收</span></div>
+        <div class="ov-kpi"><b>${p.coverage ? `${p.coverage.verified}/16` : '—'}</b><span>模板覆盖</span></div>
+        <div class="ov-kpi"><b>${p.active_runs ?? 0}</b><span>活动运行</span></div>
+      </div>
+      <div class="section-title">已验收任务</div>
+      <div class="ov-list">${verified.slice(0, 6).map((item) => `
+        <button data-task="${esc(item.id)}"><span class="t">${esc(item.title)}</span><span class="badge tpl">${esc(item.template)}</span></button>`).join('')}</div>
+      <div class="section-title" style="margin-top:14px">尚无任务的模板（${gaps.length}）</div>
+      <div class="ov-gaps">${gaps.map((row) => `<span class="chip">${esc(row.template)}</span>`).join('') || '<span class="chip">无</span>'}</div>
+      <div class="note" style="margin-top:14px">“已验收”只表示源工程有对应记录；统一平台本身的交互与集成验收尚未执行。</div>`;
+    return;
+  }
+  const adapter = adapterOf(task.adapter_id) || {};
+  const evidence = (task.evidence || []).map((path, index) => `<div title="${esc(task.evidence_paths?.[index] || '')}">${esc(path)}</div>`).join('');
+  panel.innerHTML = `
+    <div class="card-top">
+      <span class="badge tpl">${esc(task.template)}</span>
+      <span class="badge ${esc(task.maturity)}">${MATURITY[task.maturity] || task.maturity}</span>
+    </div>
+    <h2>${esc(task.title)}</h2>
+    <p class="summary">${esc(task.summary)}</p>
+    <div class="kv">
+      <dt>任务 ID</dt><dd style="font-family:var(--mono);font-size:11px">${esc(task.id)}</dd>
+      <dt>机器人</dt><dd>${esc(task.robot_id)}</dd>
+      <dt>适配器</dt><dd>${esc(task.adapter_id)} · ${adapter.state === 'online' ? '在线' : '离线'}</dd>
+      <dt>模式</dt><dd>${(task.modes || []).map((m) => MODE[m] || m).join(' / ')}</dd>
+      <dt>来源</dt><dd>${esc(task.source_project)}</dd>
+      <dt>规范引用</dt><dd>${(task.spec_refs || []).join(' · ') || '—'}</dd>
+    </div>
+    ${adapter.state === 'online' && task.native_console ? `<a class="btn" style="display:block;text-align:center;text-decoration:none;margin:4px 0 10px" href="${esc((adapter.base_url || '').replace(/\/$/, '') + '/' + task.native_console.replace(/^\//, ''))}" target="_blank" rel="noreferrer">打开 ${esc(task.adapter_id)} 原生控制台 ↗</a>` : ''}
+    <div class="section-title">所需能力</div>
+    <div class="chips">${(task.capabilities || []).map((c) => `<span class="chip">${esc(c)}</span>`).join('') || '<span class="chip">未声明</span>'}</div>
+    ${task.caveats?.length ? `<div class="note"><ul>${task.caveats.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></div>` : ''}
+    <div class="section-title" style="margin-top:12px">验收证据</div>
+    <div class="evidence">${evidence || '—'}</div>
+    <div class="form">
+      <div class="row">
+        <div><label class="f">运行模式</label><select id="runMode">${(task.modes || []).map((m) => `<option value="${m}">${MODE[m] || m}</option>`).join('')}</select></div>
+        <div><label class="f">Seed</label><input id="runSeed" type="number" value="1000" min="0"></div>
+      </div>
+      ${task.native_launch.includes('{checkpoint}') ? `<div><label class="f">Checkpoint</label><input id="runCheckpoint" placeholder="outputs/.../checkpoint（策略任务必填）"></div>` : ''}
+      <label class="check"><input type="checkbox" id="runRecord" checked> 同时录制 Episode</label>
+      <label class="check"><input type="checkbox" id="runLaunch" ${state.platform?.launch_enabled ? '' : 'disabled'}> 请求网关启动原生命令${state.platform?.launch_enabled ? '' : '（运行主机未开启）'}</label>
+      <button class="btn primary" id="createRun">准备运行</button>
+      <div class="result" id="runResult"></div>
+    </div>`;
+  panel.classList.add('open');
+  $('#createRun').addEventListener('click', createRun);
+}
+
+async function createRun() {
+  const task = taskById(state.selected);
+  if (!task) return;
+  const button = $('#createRun');
+  button.disabled = true;
+  button.textContent = '准备中…';
+  try {
+    const overrides = {};
+    const checkpoint = $('#runCheckpoint');
+    if (checkpoint && checkpoint.value.trim()) overrides.checkpoint = checkpoint.value.trim();
+    const run = await api('/api/v1/runs', {
+      method: 'POST',
+      body: JSON.stringify({
+        task_id: task.id,
+        mode: $('#runMode').value,
+        seed: Number($('#runSeed').value || 0),
+        record: $('#runRecord').checked,
+        launch: $('#runLaunch').checked,
+        overrides
+      })
+    });
+    const box = $('#runResult');
+    box.className = 'result show';
+    box.innerHTML = `
+      <div>运行 <span class="id">${esc(run.run_id)}</span> · <span class="st ${run.state}">${RUN_STATE[run.state] || run.state}</span></div>
+      <div class="cmd">${esc(run.native_command)} <button class="copy" id="copyCmd">复制</button></div>
+      ${run.notes?.length ? `<div>${run.notes.map(esc).join('<br>')}</div>` : ''}
+      ${run.error ? `<div class="err">${esc(run.error)}</div>` : ''}`;
+    $('#copyCmd').addEventListener('click', () => navigator.clipboard?.writeText(run.native_command).then(() => toast('命令已复制')));
+    await loadRuns();
+    toast('运行已创建');
+  } catch (error) {
+    const box = $('#runResult');
+    box.className = 'result show';
+    box.innerHTML = `<div class="err">创建失败：${esc(error.message)}</div>`;
+  } finally {
+    button.disabled = false;
+    button.textContent = '准备运行';
+  }
+}
+
+function renderRuns() {
+  const rows = state.runs.slice(0, 12);
+  const head = `<div class="run-row head"><span>运行 ID</span><span>任务</span><span class="mode">模式</span><span>状态</span><span class="created">创建</span><span></span></div>`;
+  if (!rows.length) {
+    $('#runList').innerHTML = head + `<div class="empty-runs">还没有运行记录。选择一个任务并点击“准备运行”。</div>`;
+    return;
+  }
+  $('#runList').innerHTML = head + rows.map((run) => {
+    const task = taskById(run.task_id);
+    const active = ['prepared', 'launching', 'running', 'stopping'].includes(run.state);
+    return `<div class="run-row">
+      <span class="id" title="${esc(run.run_id)}">${esc(run.run_id)}</span>
+      <span class="task" title="${esc(run.native_command)}">${esc(task ? task.title : run.task_id)}</span>
+      <span class="mode">${MODE[run.mode] || run.mode}</span>
+      <span><span class="st ${run.state}">${RUN_STATE[run.state] || run.state}</span></span>
+      <span class="created">${esc((run.created_at || '').slice(5, 16).replace('T', ' '))}</span>
+      <span>${active ? `<button class="stop" data-stop="${esc(run.run_id)}">停止</button>` : ''}</span>
+    </div>`;
+  }).join('');
+}
+
+async function loadRuns() {
+  try {
+    state.runs = await api('/api/v1/runs');
+    if (state.platform) {
+      state.platform.active_runs = state.runs.filter((run) =>
+        ['prepared', 'launching', 'running', 'stopping'].includes(run.state)).length;
+      renderTop();
+    }
+    renderRuns();
+  } catch (error) { /* keep console usable when API is restarting */ }
+}
+
+async function loadAll() {
+  const [platform, tasks, robots, coverage, adapters, runs] = await Promise.all([
+    api('/api/v1/platform'), api('/api/v1/tasks'), api('/api/v1/robots'),
+    api('/api/v1/coverage'), api('/api/v1/adapters'), api('/api/v1/runs')
+  ]);
+  state.platform = platform; state.tasks = tasks; state.robots = robots;
+  state.coverage = coverage; state.adapters = adapters; state.runs = runs;
+  const initial = decodeURIComponent(location.hash.slice(1));
+  if (initial && taskById(initial)) state.selected = initial;
+  renderTop(); renderFilters(); renderCoverage(); renderAdapters(); renderTasks(); renderDetail(); renderRuns();
+}
+
+document.addEventListener('click', (event) => {
+  const robot = event.target.closest('[data-robot]');
+  if (robot) { state.filters.robot = robot.dataset.robot; renderFilters(); renderTasks(); return; }
+  const maturity = event.target.closest('[data-maturity]');
+  if (maturity) { state.filters.maturity = maturity.dataset.maturity; renderFilters(); renderTasks(); return; }
+  const template = event.target.closest('[data-template]');
+  if (template) {
+    state.filters.template = state.filters.template === template.dataset.template ? 'all' : template.dataset.template;
+    renderCoverage(); renderTasks(); return;
+  }
+  const source = event.target.closest('[data-source]');
+  if (source) { state.filters.source = source.dataset.source; renderFilters(); renderTasks(); return; }
+  const card = event.target.closest('[data-task]');
+  if (card) {
+    state.selected = card.dataset.task;
+    history.replaceState(null, '', '#' + encodeURIComponent(state.selected));
+    renderTasks(); renderDetail(); return;
+  }
+  const stop = event.target.closest('[data-stop]');
+  if (stop) {
+    api(`/api/v1/runs/${encodeURIComponent(stop.dataset.stop)}/stop`, { method: 'POST' })
+      .then(() => { toast('已停止'); return loadRuns(); })
+      .catch((error) => toast(`停止失败：${error.message}`));
+  }
+});
+
+$('#search').addEventListener('input', (event) => { state.filters.q = event.target.value; renderTasks(); });
+$('#refreshRuns').addEventListener('click', () => { loadRuns(); toast('已刷新'); });
+
+loadAll().catch((error) => {
+  $('#taskGrid').innerHTML = `<div class="panel" style="grid-column:1/-1;color:var(--red)">加载失败：${esc(error.message)}</div>`;
+});
+setInterval(loadRuns, 5000);
+setInterval(async () => {
+  try {
+    state.adapters = await api('/api/v1/adapters');
+    state.platform = await api('/api/v1/platform');
+    renderAdapters(); renderTop();
+  } catch (error) {}
+}, 20000);
+</script>
+</body>
+</html>

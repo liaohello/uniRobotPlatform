@@ -1,4 +1,24 @@
 # Byte-compiled / optimized / DLL files
+.workbuddy/
+
+# Machine-specific settings, dependencies, and editor state.
+.env.*
+!.env.example
+!.env.*.example
+node_modules/
+.idea/
+.vscode/
+backend/config/*.local.yaml
+backend/config/*.local.yml
+backend/config/*.local.json
+
+# Local copies of agent instructions; keep the authoritative AGENTS.md.
+AGENTS.md.*.bak
+
+# OS-generated metadata.
+.DS_Store
+Thumbs.db
+
 __pycache__/
 *.py[codz]
 *$py.class

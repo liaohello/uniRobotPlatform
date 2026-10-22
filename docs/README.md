@@ -2,6 +2,8 @@
 
 当前持续维护的规范入口是 [Specification 总索引](specs/README.md)。文档按前端、后端、共享契约和验收分层，再按功能包与编号节点细化。
 
+换笔记本时使用 [Git 追踪与恢复清单](laptop-migration.md)，区分本仓库源码、三个外部工程和本机私有环境。
+
 当前组织版本为 V0.6。优先阅读 [mobileCar 四步闭环与 bimanual 复用](specs/00-overview/10-first-task-closed-loop.md)：先场景→运行→录制→回放，再验证多宿主下组件复用，训练/预测后续。完整演变见 [修订记录](specs/90-governance/07-change-log.md)。
 
 | 阅读目的 | 入口 |

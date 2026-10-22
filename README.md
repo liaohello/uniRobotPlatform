@@ -1,6 +1,8 @@
 # uniRobotPlatform
 A MuJoCo-based embodied AI simulation and 3D interaction data collection platform with LiDAR/SLAM navigation, RGB-D perception, robotic arm manipulation, teleoperation data recording, and policy evaluation for BC, ACT, Diffusion Policy, VLA, and hierarchical VLN.
 
+换笔记本继续开发先看 [Git 追踪与恢复清单](docs/laptop-migration.md)：本仓库包含规范、参考素材、项目规则和网关源码；三个原生工程仍需分别恢复，虚拟环境/私人配置/运行数据不随 Git 搬迁。
+
 设计与需求从 [Specification 总索引](docs/specs/README.md) 开始；按 [前端](docs/specs/10-frontend/README.md)、[后端](docs/specs/20-backend/README.md) 和 [共享契约](docs/specs/30-contracts/README.md) 分层，提供 [功能映射](docs/specs/indexes/06-feature-map.md) 与 [需求追踪](docs/specs/indexes/05-requirements.md)。历史材料见 [文档入口](docs/README.md)。
 
 ### V0.3 前端图片与页面 Specification

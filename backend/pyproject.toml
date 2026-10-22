@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unirobot-platform"
+version = "0.1.0"
+description = "Federated task presentation and migration gateway for uniRobotPlatform"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.110",
+  "pydantic>=2.7",
+  "uvicorn>=0.27",
+  "PyYAML>=6",
+]
+
+[project.scripts]
+unirobot = "unirobot.__main__:main"
+unirobot-migrate = "unirobot.migrate:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+unirobot = ["static/**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
