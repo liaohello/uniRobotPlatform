@@ -2,6 +2,12 @@
 
 日期：2026-10-23（America/Los_Angeles）。本切片已经实现并在服务器验证；**它是只读接入，不是 M1 运行/控制/录制/回放闭环验收。**
 
+## 当前联调稳定约束
+
+用户已明确前端开始接入本组服务。保持服务器18941和 `unirobot-mobilecar-read-1` 稳定；不重启native，不开放运动、RESET或录制，不修改frontend。当前网关PID1155600、native PID941842；本轮只读核对确认两者未变，OpenAPI字节与冻结报告相同，capabilities/snapshot运行身份一致，`read_only=true`、`session_ready=false`。
+
+wire Schema、资产URI、身份一致性和错误码的问题由后端修复，优先保留当前兼容行为。若接口必须变化，提供字段/语义/错误码的明确差异、真实请求响应与前端适配说明；不能以扩大控制能力解决读取联调问题。本约束优先于此前后续控制/录制的实施顺序，直到用户明确调整范围。
+
 ## 协作与源码位置
 
 - 与前端使用同一共同基线：`2f7ff9b091c060034e55d2f387dbb6e130aaada3`，内容树 `76289b0fb63b5afbd6c6086eb42e6c0a462d6e3c`。此前另存的 `codex/parallel-base-20261023` 内容相同，原工作目录和未提交成果没有被 reset/clean。
