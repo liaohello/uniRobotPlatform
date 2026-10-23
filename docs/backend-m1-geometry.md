@@ -103,4 +103,15 @@ PYTHONPATH="$native_release/src" /home/liaozhengyan/Desktop/mobileCar/envs/g2a-p
 - native进程、run/generation/episode、录制状态未变；18941 OpenAPI字节完全一致，scene除retrieved_at之外相等。[冻结服务检查](evidence/m1-geometry/m1-geometry-20261023T192202Z-cdfc7472e5de/report/frozen-service-check.json)
 - 大网格/原始native状态留服务器，本地只保留约39KB压缩的报告/来源摘要；[远端资产索引](evidence/m1-geometry/m1-geometry-20261023T192202Z-cdfc7472e5de/report/server-artifact-index.json)。
 
-前端可开始接入：新scene类型、编译STL URI、identity scale、真实group/过滤位、来源与错误展示，并用原有snapshot驱动Actual。前端还需在服务器验证正/侧/斜视、Ghost关闭时底盘/轮子/外壳/臂/夹爪装配，以及既有Joint/TCP/Actual/Target/Ghost与joint4映射不回退。资产能加载或数值检查通过不等于视觉验收。目标、控制权、录制、回放继续按[既有只读切片限制](backend-m1-read.md)执行；本轮不开放这些写入口。
+初次交付的前端接入范围为：新scene类型、编译STL URI、identity scale、真实group/过滤位、来源与错误展示，并用原有snapshot驱动Actual。正/侧/斜视、Ghost关闭时的整车装配与既有交互需由前端验证，回传结果见下节。资产能加载或数值检查通过不等于视觉验收。目标、控制权、录制、回放继续按[既有只读切片限制](backend-m1-read.md)执行；本轮不开放这些写入口。
+
+## 前端集成回传（2026-10-23）
+
+前端对话“Continue M1.1 前端”回传已完成集成。本方亲读其开发记录、`integration-summary.json`、`unit.json` 和 `geometry/geometry.json` 核对以下结果；**这些浏览器/视觉检查由前端执行，本方没有重新运行或独立复验截图。** 后端实现、接口、bundle与运行进程维持上述已验证版本，没有因此扩展功能。
+
+- 前端 release `m1-front-geometry-20261023T192903Z-58a156740be8`，aggregate `58a156740be83a2879e5a1d2145f77d552d51f6682b1e3d318d6a2b048044276`；服务器预览18933/PID800217代理本方18942。来源 bundle 摘要与本记录一致；前端摘要记录18931/18932/18941/18942/native进程均保留。
+- 前端记录服务器21项单元、30项只读浏览器、29项既有交互和23项装配/TCP检查通过；geometry-1字段、新资产摘要和过滤元数据已消费，compiled mesh不再重复缩放。
+- 前端主智能体报告亲自查看Ghost关闭的车头、侧面与斜视截图，底盘水平，轮组/外壳/机械臂/夹爪装配完整。其数值报告最终真实TCP标记与渲染关节链误差 `1.694362330178007e-14 m`；持续TCP拖拽跨两次Actual更新和取消检查通过，joint4映射保留。
+- 前端网络摘要记录261次API请求全部GET，native运行身份与录制IDLE保持；这些结果限定为**只读几何与交互集成**，不构成真实命令执行、Session Ready、录制或回放闭环通过，也不外推真人体验/GPU性能。
+
+可核对来源：[前端开发记录](/home/liaozhengyan/.codex/worktrees/frontend-m12a/uniRobotPlatform/frontend/docs/development.md)、[集成摘要](/home/liaozhengyan/.codex/worktrees/frontend-m12a/uniRobotPlatform/frontend/reports/m1-front-geometry-20261023T192903Z-58a156740be8/integration-summary.json)、[装配与TCP证据](/home/liaozhengyan/.codex/worktrees/frontend-m12a/uniRobotPlatform/frontend/reports/m1-front-geometry-20261023T192903Z-58a156740be8/geometry/geometry.json)。服务器原始release在 `/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-front-geometry-20261023T192903Z-58a156740be8`；本方未复制或改写前端证据。
