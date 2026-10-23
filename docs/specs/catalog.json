@@ -818,7 +818,8 @@
       "id": "CT-STATE",
       "title": "Robot / World State 契约草案",
       "layer": "共享契约",
-      "source_chapter": 31
+      "source_chapter": 31,
+      "last_revision": "0.7"
     },
     {
       "path": "30-contracts/02-control-intervention-commands.md",

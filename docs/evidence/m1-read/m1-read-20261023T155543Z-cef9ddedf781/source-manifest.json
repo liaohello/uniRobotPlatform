@@ -1,0 +1,143 @@
+{
+  "release_id": "m1-read-20261023T155543Z-cef9ddedf781",
+  "remote_release": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-read-20261023T155543Z-cef9ddedf781",
+  "source_sha256": "cef9ddedf7815bff4158f25e21737b49aa20cfe70f691a0c90c281dfbf19def3",
+  "files": [
+    {
+      "path": "backend/config/catalog.yaml",
+      "sha256": "3b7b277a04358a9e2aad19bcbed5ca10828c6dc434e12691e8f0403bc72cff50",
+      "size_bytes": 10979
+    },
+    {
+      "path": "backend/config/mobilecar-g1-source.json",
+      "sha256": "146d331f7b1e72316432835a648238eadce57fec78d89b48b4fe062f283d9768",
+      "size_bytes": 29636
+    },
+    {
+      "path": "backend/migration_manifest.json",
+      "sha256": "1876fc487f5e4cb9bb3874148e5d337bd0c2a01d1dce5242f0b2e596af1b2ecc",
+      "size_bytes": 8127
+    },
+    {
+      "path": "backend/pyproject.toml",
+      "sha256": "e8337cfc17d4e700cffd342247b48e6df867e223f9247da85e6ec13efaa68b86",
+      "size_bytes": 692
+    },
+    {
+      "path": "backend/src/unirobot/__init__.py",
+      "sha256": "d420e2db76b2650af8361ded2892d984086dd8b539b43e2a93be04682fdd651a",
+      "size_bytes": 88
+    },
+    {
+      "path": "backend/src/unirobot/__main__.py",
+      "sha256": "466e1c3162113201a16d7f2bf9837f57a0f3e799870eacc5bf5963513d9c6dd8",
+      "size_bytes": 807
+    },
+    {
+      "path": "backend/src/unirobot/adapters.py",
+      "sha256": "2c62e8ce4f9dec4ab2365528d7bbd555fe719a6066522c0dfdac7d539adbfe44",
+      "size_bytes": 7536
+    },
+    {
+      "path": "backend/src/unirobot/api.py",
+      "sha256": "d3dd47265fd1153c46aaa8e22795092361d9a60ca551b5976a58a57c6fd798a9",
+      "size_bytes": 13009
+    },
+    {
+      "path": "backend/src/unirobot/catalog.py",
+      "sha256": "35bb44461993601cd02972dcc5b473ab964ede2f2ec90329917abb64dfcc0e3a",
+      "size_bytes": 7184
+    },
+    {
+      "path": "backend/src/unirobot/contracts.py",
+      "sha256": "674464a27f09815f96cdda4be0ecab8acf5feab354a4cec9064ef1ac70e9c30c",
+      "size_bytes": 5619
+    },
+    {
+      "path": "backend/src/unirobot/drafts.py",
+      "sha256": "8b46cda22191b2eef71050c87a237e0a7d21df1410e53b83dc06666a22700c17",
+      "size_bytes": 6294
+    },
+    {
+      "path": "backend/src/unirobot/migrate.py",
+      "sha256": "5f7f7ff0875d9379838b6d1e87657b6a0dd8636ee7c21164eb68eb11c006e41a",
+      "size_bytes": 4706
+    },
+    {
+      "path": "backend/src/unirobot/mobilecar.py",
+      "sha256": "cd7049ec40bad73193eb9ffa3bc10994a3379fb74f2460848c3ddd34a6c3130c",
+      "size_bytes": 10146
+    },
+    {
+      "path": "backend/src/unirobot/mobilecar_read.py",
+      "sha256": "ac310521692a37e26c4fb36110c68f7543e5aaef72f998766b0cbce8af3b69bc",
+      "size_bytes": 16537
+    },
+    {
+      "path": "backend/src/unirobot/runtime.py",
+      "sha256": "7cc0fc18c720b9b40d52c6b0ecbdaf8d8c4c63a13d4cd7e0b64b22b3877cd086",
+      "size_bytes": 6144
+    },
+    {
+      "path": "backend/src/unirobot/settings.py",
+      "sha256": "4a3f0bc4d4a4625ba017944774a2daa8069a527afa55a6f426c0f2edd8656a34",
+      "size_bytes": 979
+    },
+    {
+      "path": "backend/src/unirobot/static/index.html",
+      "sha256": "c481d84b3b17659d3829a2e19dc737da6554b188d619c10991340562507a5340",
+      "size_bytes": 30531
+    },
+    {
+      "path": "backend/src/unirobot/static/mobilecar/app.js",
+      "sha256": "3767444673a28af72a11a1e686530eec3b0e552c6d8bbff9615edc60f346fcf6",
+      "size_bytes": 1453
+    },
+    {
+      "path": "backend/src/unirobot/static/mobilecar/drafts.js",
+      "sha256": "19a2f0bf0d71887128fa00af289ebf5fa690c69dd8b23304f807bd439e3761a5",
+      "size_bytes": 4726
+    },
+    {
+      "path": "backend/src/unirobot/static/mobilecar/index.html",
+      "sha256": "31cecbde8da80ba6dfcbe71783f5a1876d1043bf40504c66cd5c6ff595b9ccec",
+      "size_bytes": 3130
+    },
+    {
+      "path": "backend/src/unirobot/static/mobilecar/panel.js",
+      "sha256": "25c87a19946790295583660255850398c5033aeda8f7419dcaa52a333efc600b",
+      "size_bytes": 3450
+    },
+    {
+      "path": "backend/src/unirobot/static/mobilecar/styles.css",
+      "sha256": "a9f48915298d5c9713ceab5c66c95cb340e589d22fc073c6fbe5aaef18a5e51c",
+      "size_bytes": 2401
+    },
+    {
+      "path": "backend/tests/test_api.py",
+      "sha256": "cf121ba8cb9480db94fe414d1beca751c94b7813318a7072d224e73b4fbe71c3",
+      "size_bytes": 3015
+    },
+    {
+      "path": "backend/tests/test_drafts.py",
+      "sha256": "00c1dfe66891f9b1e45824e80508ce7e42297a612982cc3ba5e9f4301c422762",
+      "size_bytes": 7004
+    },
+    {
+      "path": "backend/tests/test_mobilecar.py",
+      "sha256": "2fa0781bb392291daa22755a568a339dfe60ea1b4dea8adfe94fd8b38ff3c3d7",
+      "size_bytes": 5471
+    },
+    {
+      "path": "backend/tests/test_mobilecar_read.py",
+      "sha256": "977c4ac1c0ee012b135a42cec2bdb8b42518338ac0a7b9a555adb9523c6df85a",
+      "size_bytes": 12607
+    },
+    {
+      "path": "docs/specs/catalog.json",
+      "sha256": "f9e38f952efd08658292750e139ae171e03e651c1aae8690f44e8a615704689e",
+      "size_bytes": 40520
+    }
+  ],
+  "baseline_commit": "2f7ff9b091c060034e55d2f387dbb6e130aaada3"
+}

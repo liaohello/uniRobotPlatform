@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .adapters import build_adapters
@@ -33,6 +33,7 @@ from .runtime import (
     TaskNotFound,
 )
 from .mobilecar import MobileCarIntegration
+from .mobilecar_read import CapabilitiesRead, MobileCarReadService, ReadServiceError, SceneRead, SnapshotRead
 from .drafts import CreateDraft, CreateSession, DraftConflict, DraftNotFound, DraftStore, SaveDraft, ValidateDraft
 from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH
 
@@ -97,6 +98,36 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     @application.get("/api/v1/mobilecar/preflight")
     def mobilecar_preflight(request: Request) -> dict[str, Any]:
         return request.app.state.mobilecar_integration.check()
+
+    @application.exception_handler(ReadServiceError)
+    async def native_read_error(request: Request, exc: ReadServiceError):
+        return JSONResponse(status_code=exc.status_code, content={"detail": {
+            "code": exc.code, "message": str(exc), "read_only": True, "session_ready": False,
+        }})
+
+    @application.get("/api/v1/mobilecar/capabilities", response_model=CapabilitiesRead)
+    def mobilecar_capabilities(request: Request):
+        return MobileCarReadService(request.app.state.mobilecar_integration).capabilities()
+
+    @application.get("/api/v1/mobilecar/scene", response_model=SceneRead)
+    def mobilecar_scene(request: Request):
+        return MobileCarReadService(request.app.state.mobilecar_integration).scene()
+
+    @application.get("/api/v1/mobilecar/snapshot", response_model=SnapshotRead)
+    def mobilecar_snapshot(request: Request):
+        return MobileCarReadService(request.app.state.mobilecar_integration).snapshot()
+
+    @application.get("/api/v1/mobilecar/scene/assets/{asset_id}")
+    def mobilecar_scene_asset(asset_id: str, request: Request, sha256: str = Query(pattern=r"^[0-9a-f]{64}$")):
+        body = MobileCarReadService(request.app.state.mobilecar_integration).asset(asset_id, sha256)
+        return Response(body, media_type="model/stl", headers={"ETag": f'"{sha256}"', "Cache-Control": "no-store"})
+
+    @application.middleware("http")
+    async def no_stale_workbench_reads(request: Request, call_next):
+        response = await call_next(request)
+        if request.url.path.startswith("/api/v1/mobilecar/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
     @application.exception_handler(DraftNotFound)
     async def missing_draft(request: Request, exc: DraftNotFound):

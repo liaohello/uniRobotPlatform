@@ -1,6 +1,6 @@
 # 前后端共享契约
 
-只负责跨边界共同理解的身份、数据、时间、命令与权限语义；暂不冻结传输协议、字段拼写、端点和频率。前端负责呈现，后端负责权威执行。
+只负责跨边界共同理解的身份、数据、时间、命令与权限语义。通用部分仍为设计草案；[mobileCar read v1](01-robot-world-state.md#mobilecar-read-v1) 已落实场景/能力/实际状态/资产的HTTP读取子集，其他端点与频率不能据此视为已实现。前端负责呈现，后端负责权威执行。
 
 V0.5 当前优先：[实验配置](07-task-scene-experiment-config.md) 的 Profile/权限/Stale/快照、[路线资源版本](08-navigation-map-route.md) 与 [数据到模型来源链](05-dataset-model-lineage.md)。示意字段用于实现对齐，现存后端任务目录结构不自动满足这些运行契约。
 

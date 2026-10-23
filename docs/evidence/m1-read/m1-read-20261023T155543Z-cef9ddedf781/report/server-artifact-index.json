@@ -1,0 +1,86 @@
+{
+  "release_id": "m1-read-20261023T155543Z-cef9ddedf781",
+  "server": "cec-sim",
+  "files": [
+    {
+      "path": "source-manifest.json",
+      "sha256": "6a5d2d3b8d53e3a3e35034b53c2018eda123f5d7bc5e1628c6fa8afd0642b28a",
+      "size_bytes": 5041
+    },
+    {
+      "path": "report/focused.log",
+      "sha256": "990acd9d655f09a280fe55f8c69fb3e368e116bb084bad5ec935e18920183a79",
+      "size_bytes": 643
+    },
+    {
+      "path": "report/focused.junit.xml",
+      "sha256": "f31aa7d8c94b50f8d9712f151e894897a2a640632d547b35599bb7745f1033d2",
+      "size_bytes": 6601
+    },
+    {
+      "path": "report/test-result.json",
+      "sha256": "b695cdcc39135dbb54367b8b411a4a81dacfea31e76b6a57ee91c118ffc94125",
+      "size_bytes": 523
+    },
+    {
+      "path": "report/live-read-check.json",
+      "sha256": "c95a71c5f695bebbfad4fd771fb0fc783396830831c5ca9d85218f0290a21d90",
+      "size_bytes": 2164
+    },
+    {
+      "path": "report/asset-checks.json",
+      "sha256": "794d56749f50d5590526ac3f1b78f0a7ba58d1ec73aa564e3626e95b676aebc1",
+      "size_bytes": 3889
+    },
+    {
+      "path": "report/scene.json",
+      "sha256": "5c4ccebc48d8e9ed9805bec92d279c69290cce17a22b9d2208db2f3132ef92a7",
+      "size_bytes": 174466
+    },
+    {
+      "path": "report/capabilities.json",
+      "sha256": "e87f50b8dc820b3cd6ee617a892aef7c88d8e8917e9efd3131848af074610781",
+      "size_bytes": 2549
+    },
+    {
+      "path": "report/snapshot.json",
+      "sha256": "fc9b061de811ce935848e5677f10c981fec6d6e6432275aa5613312606bdb31d",
+      "size_bytes": 14140
+    },
+    {
+      "path": "report/unknown-asset.json",
+      "sha256": "de6542f61dca008b0ce7dfbc8f21592c39bcada362f1c610bd3977edcdfc9e8f",
+      "size_bytes": 106
+    },
+    {
+      "path": "report/stale-asset.json",
+      "sha256": "806901ad59544dc10a469fef1318a2cc210803e67d57d7e3d3cd9121a96dfc35",
+      "size_bytes": 143
+    },
+    {
+      "path": "report/environment.txt",
+      "sha256": "e6233d7f0ff296f34fdeb69c742081bfd648336d9ba1ee76ec661c8c2fac81a9",
+      "size_bytes": 529
+    },
+    {
+      "path": "report/gateway-job.json",
+      "sha256": "a9c760f26f8d8799df1926dabee1510fb15d06da583fd5e23b856c32b9ecf612",
+      "size_bytes": 491
+    },
+    {
+      "path": "report/openapi.json",
+      "sha256": "23ca7c0d256191f162a0bbf4ad6bb313f417e6a3e22d2287b99e3358b24a0212",
+      "size_bytes": 39925
+    },
+    {
+      "path": "report/native-before-after-summary.json",
+      "sha256": "a954204bbc6f616b41e543479d047e1085e828e8f0bbfe47870d2573c8749839",
+      "size_bytes": 1290
+    },
+    {
+      "path": "report/catalog.live.yaml",
+      "sha256": "d7cdce23265c5bdef88a38737d1c2ad8263768825cf6876d20d4fac13b95deeb",
+      "size_bytes": 10741
+    }
+  ]
+}

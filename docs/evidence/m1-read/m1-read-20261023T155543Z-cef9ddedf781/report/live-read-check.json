@@ -1,0 +1,81 @@
+{
+  "endpoints": [
+    {
+      "endpoint": "scene",
+      "http_status": 200,
+      "bytes": 96663,
+      "read_only": true,
+      "native_identity": {
+        "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+        "backend_generation": 1,
+        "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+      }
+    },
+    {
+      "endpoint": "capabilities",
+      "http_status": 200,
+      "bytes": 1915,
+      "read_only": true,
+      "native_identity": {
+        "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+        "backend_generation": 1,
+        "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+      }
+    },
+    {
+      "endpoint": "snapshot",
+      "http_status": 200,
+      "bytes": 10443,
+      "read_only": true,
+      "native_identity": {
+        "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+        "backend_generation": 1,
+        "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+      }
+    },
+    {
+      "endpoint": "unknown-asset",
+      "http_status": 404,
+      "detail": {
+        "code": "unknown_asset",
+        "message": "Unknown scene asset",
+        "read_only": true,
+        "session_ready": false
+      }
+    },
+    {
+      "endpoint": "stale-asset",
+      "http_status": 409,
+      "detail": {
+        "code": "asset_revision_changed",
+        "message": "Asset digest changed; reload the scene manifest",
+        "read_only": true,
+        "session_ready": false
+      }
+    }
+  ],
+  "asset_count": 23,
+  "native_identity_and_recording_unchanged": true,
+  "native_process_unchanged": true,
+  "physics_started_or_stopped": false,
+  "m1_acceptance": false,
+  "gateway_job": {
+    "pid": 1155600,
+    "pgid": 1155600,
+    "argv": [
+      "/home/liaozhengyan/Desktop/uniRobotPlatform/envs/gateway-py314/bin/python",
+      "-m",
+      "uvicorn",
+      "unirobot.api:app",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "18941"
+    ],
+    "cwd": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-read-20261023T155543Z-cef9ddedf781",
+    "bind": "127.0.0.1:18941",
+    "allow_launch": false,
+    "source_release": "m1-read-20261023T155543Z-cef9ddedf781",
+    "native_mutations": false
+  }
+}

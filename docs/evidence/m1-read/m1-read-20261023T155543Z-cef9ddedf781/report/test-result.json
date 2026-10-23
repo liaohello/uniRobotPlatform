@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "elapsed_s": 4.323321580886841,
+  "command": [
+    "/home/liaozhengyan/Desktop/uniRobotPlatform/envs/gateway-py314/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/test_api.py",
+    "backend/tests/test_mobilecar.py",
+    "backend/tests/test_drafts.py",
+    "backend/tests/test_mobilecar_read.py",
+    "-q",
+    "--junitxml=/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-read-20261023T155543Z-cef9ddedf781/report/focused.junit.xml"
+  ],
+  "synthetic_fixtures_not_m1_acceptance": true
+}

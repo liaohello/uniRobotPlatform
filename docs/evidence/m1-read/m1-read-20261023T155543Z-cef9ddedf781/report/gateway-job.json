@@ -1,0 +1,19 @@
+{
+  "pid": 1155600,
+  "pgid": 1155600,
+  "argv": [
+    "/home/liaozhengyan/Desktop/uniRobotPlatform/envs/gateway-py314/bin/python",
+    "-m",
+    "uvicorn",
+    "unirobot.api:app",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "18941"
+  ],
+  "cwd": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-read-20261023T155543Z-cef9ddedf781",
+  "bind": "127.0.0.1:18941",
+  "allow_launch": false,
+  "source_release": "m1-read-20261023T155543Z-cef9ddedf781",
+  "native_mutations": false
+}

@@ -1,0 +1,140 @@
+[
+  {
+    "asset_id": "base_link",
+    "bytes": 525884,
+    "sha256": "9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223",
+    "http_status": 200
+  },
+  {
+    "asset_id": "back_shell_middle_link",
+    "bytes": 293384,
+    "sha256": "b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030",
+    "http_status": 200
+  },
+  {
+    "asset_id": "back_shell_black_link",
+    "bytes": 371284,
+    "sha256": "a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049",
+    "http_status": 200
+  },
+  {
+    "asset_id": "lidar_frame",
+    "bytes": 191734,
+    "sha256": "94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096",
+    "http_status": 200
+  },
+  {
+    "asset_id": "wheel_left_front_link",
+    "bytes": 3299084,
+    "sha256": "2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680",
+    "http_status": 200
+  },
+  {
+    "asset_id": "wheel_left_back_link",
+    "bytes": 3278784,
+    "sha256": "22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2",
+    "http_status": 200
+  },
+  {
+    "asset_id": "wheel_right_front_link",
+    "bytes": 3276484,
+    "sha256": "9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9",
+    "http_status": 200
+  },
+  {
+    "asset_id": "wheel_right_back_link",
+    "bytes": 4184384,
+    "sha256": "68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8",
+    "http_status": 200
+  },
+  {
+    "asset_id": "imu_link",
+    "bytes": 293384,
+    "sha256": "2d3f2e16a2150d97c01ed0ff6101fb5815bfde44143871dc8368149cd024e222",
+    "http_status": 200
+  },
+  {
+    "asset_id": "link1",
+    "bytes": 1020984,
+    "sha256": "7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894",
+    "http_status": 200
+  },
+  {
+    "asset_id": "link2",
+    "bytes": 1215334,
+    "sha256": "553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5",
+    "http_status": 200
+  },
+  {
+    "asset_id": "link3",
+    "bytes": 1215634,
+    "sha256": "cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd",
+    "http_status": 200
+  },
+  {
+    "asset_id": "link4",
+    "bytes": 1174984,
+    "sha256": "158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa",
+    "http_status": 200
+  },
+  {
+    "asset_id": "link5",
+    "bytes": 94084,
+    "sha256": "c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7",
+    "http_status": 200
+  },
+  {
+    "asset_id": "gripper_link",
+    "bytes": 1041384,
+    "sha256": "31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a",
+    "http_status": 200
+  },
+  {
+    "asset_id": "camera_connect_link",
+    "bytes": 41084,
+    "sha256": "1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212",
+    "http_status": 200
+  },
+  {
+    "asset_id": "depth_cam_link",
+    "bytes": 1169884,
+    "sha256": "4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958",
+    "http_status": 200
+  },
+  {
+    "asset_id": "gripper_base_link",
+    "bytes": 105284,
+    "sha256": "46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8",
+    "http_status": 200
+  },
+  {
+    "asset_id": "gripper_left_link",
+    "bytes": 19284,
+    "sha256": "9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f",
+    "http_status": 200
+  },
+  {
+    "asset_id": "gripper_right_link",
+    "bytes": 19284,
+    "sha256": "5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598",
+    "http_status": 200
+  },
+  {
+    "asset_id": "guide_rod_link",
+    "bytes": 12084,
+    "sha256": "d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a",
+    "http_status": 200
+  },
+  {
+    "asset_id": "left_jaw_link",
+    "bytes": 46684,
+    "sha256": "47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5",
+    "http_status": 200
+  },
+  {
+    "asset_id": "right_jaw_link",
+    "bytes": 49584,
+    "sha256": "37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c",
+    "http_status": 200
+  }
+]
