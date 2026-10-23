@@ -1,0 +1,261 @@
+{
+  "remote_release": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-geometry-20261023T192202Z-cdfc7472e5de",
+  "files": [
+    {
+      "path": "geometry/assets/back_shell_black_link.stl",
+      "sha256": "aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+      "size_bytes": 371284
+    },
+    {
+      "path": "geometry/assets/back_shell_middle_link.stl",
+      "sha256": "69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+      "size_bytes": 293384
+    },
+    {
+      "path": "geometry/assets/base_link.stl",
+      "sha256": "a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae",
+      "size_bytes": 525884
+    },
+    {
+      "path": "geometry/assets/camera_connect_link.stl",
+      "sha256": "2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+      "size_bytes": 41084
+    },
+    {
+      "path": "geometry/assets/depth_cam_link.stl",
+      "sha256": "763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+      "size_bytes": 1169884
+    },
+    {
+      "path": "geometry/assets/gripper_base_link.stl",
+      "sha256": "d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+      "size_bytes": 105284
+    },
+    {
+      "path": "geometry/assets/gripper_left_link.stl",
+      "sha256": "5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+      "size_bytes": 19284
+    },
+    {
+      "path": "geometry/assets/gripper_link.stl",
+      "sha256": "debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+      "size_bytes": 1041384
+    },
+    {
+      "path": "geometry/assets/gripper_right_link.stl",
+      "sha256": "c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+      "size_bytes": 19284
+    },
+    {
+      "path": "geometry/assets/guide_rod_link.stl",
+      "sha256": "48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+      "size_bytes": 12084
+    },
+    {
+      "path": "geometry/assets/imu_link.stl",
+      "sha256": "03e01c87ba3eb6bdbb8f62fcd4d8187bcca1b284a088af0a653a5de7ee7df924",
+      "size_bytes": 293384
+    },
+    {
+      "path": "geometry/assets/left_jaw_link.stl",
+      "sha256": "abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+      "size_bytes": 46684
+    },
+    {
+      "path": "geometry/assets/lidar_frame.stl",
+      "sha256": "ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+      "size_bytes": 191734
+    },
+    {
+      "path": "geometry/assets/link1.stl",
+      "sha256": "28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+      "size_bytes": 1020984
+    },
+    {
+      "path": "geometry/assets/link2.stl",
+      "sha256": "c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+      "size_bytes": 1215334
+    },
+    {
+      "path": "geometry/assets/link3.stl",
+      "sha256": "87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+      "size_bytes": 1215634
+    },
+    {
+      "path": "geometry/assets/link4.stl",
+      "sha256": "e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+      "size_bytes": 1174984
+    },
+    {
+      "path": "geometry/assets/link5.stl",
+      "sha256": "021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+      "size_bytes": 94084
+    },
+    {
+      "path": "geometry/assets/right_jaw_link.stl",
+      "sha256": "c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+      "size_bytes": 49584
+    },
+    {
+      "path": "geometry/assets/wheel_left_back_link.stl",
+      "sha256": "d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+      "size_bytes": 3278784
+    },
+    {
+      "path": "geometry/assets/wheel_left_front_link.stl",
+      "sha256": "d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+      "size_bytes": 3299084
+    },
+    {
+      "path": "geometry/assets/wheel_right_back_link.stl",
+      "sha256": "9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+      "size_bytes": 4184384
+    },
+    {
+      "path": "geometry/assets/wheel_right_front_link.stl",
+      "sha256": "a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+      "size_bytes": 3276484
+    },
+    {
+      "path": "geometry/bundle.json",
+      "sha256": "a5f4a90ca5988ba0e7e3accba2212b38939d8e420a3882b3f9cc7a344d9e20f3",
+      "size_bytes": 150609
+    },
+    {
+      "path": "report/asset-checks.json",
+      "sha256": "67e2f3a9cd07fe548c36dea71314d43e1b01fbdddebdfe1f88bc4e5fd864045a",
+      "size_bytes": 3889
+    },
+    {
+      "path": "report/capabilities.json",
+      "sha256": "b9df1248cea0faef5dd659ae3d7725800b7fbed02a86d7fa3d897e91ac8843b3",
+      "size_bytes": 2549
+    },
+    {
+      "path": "report/catalog.live.yaml",
+      "sha256": "d7cdce23265c5bdef88a38737d1c2ad8263768825cf6876d20d4fac13b95deeb",
+      "size_bytes": 10741
+    },
+    {
+      "path": "report/environment.txt",
+      "sha256": "e6233d7f0ff296f34fdeb69c742081bfd648336d9ba1ee76ec661c8c2fac81a9",
+      "size_bytes": 529
+    },
+    {
+      "path": "report/focused.junit.xml",
+      "sha256": "22bf6d7dad59d2bc7121df6a604a85bee14724a68231ae550dd492ef46d16833",
+      "size_bytes": 6992
+    },
+    {
+      "path": "report/focused.log",
+      "sha256": "3c2a6734837575919bd1feb440e020fdcd901b6aa0a22d0d207aded4ec30fece",
+      "size_bytes": 643
+    },
+    {
+      "path": "report/frozen-before-openapi.json",
+      "sha256": "23ca7c0d256191f162a0bbf4ad6bb313f417e6a3e22d2287b99e3358b24a0212",
+      "size_bytes": 39925
+    },
+    {
+      "path": "report/frozen-before-scene.json",
+      "sha256": "a04bb22cae74326dbd638498b95c67daf4ff00b4ec4f6ffdd93497e9279e47fd",
+      "size_bytes": 96663
+    },
+    {
+      "path": "report/frozen-service-check.json",
+      "sha256": "608453f985e88f6f5f06c1752b385816f56b9d18bd8512e37201f0e365984c1f",
+      "size_bytes": 190
+    },
+    {
+      "path": "report/gateway-job.json",
+      "sha256": "72805f257b20d928ab584d92a610edf68e72bb99a9be04494e9b4dd175c169cc",
+      "size_bytes": 497
+    },
+    {
+      "path": "report/geometry-export-summary.json",
+      "sha256": "0cd8ecdb6a0dca6e89d4c39c1de5bfa02911e46be5d53a57a50a14688e00705f",
+      "size_bytes": 12462
+    },
+    {
+      "path": "report/geometry-export.log",
+      "sha256": "48fa619aaab7593c6a76efba57f712a59105d790fd26de2c046ab5e113c1ef99",
+      "size_bytes": 149
+    },
+    {
+      "path": "report/geometry-fixture.log",
+      "sha256": "6b532cfc5eb3892c37c15b81fd7e0f4534df4fbd194654e34b259604ecd89f37",
+      "size_bytes": 308
+    },
+    {
+      "path": "report/live-read-check.json",
+      "sha256": "ff5360a784cf6ddf52b7738d58bb46a5ae5276ce2230405f5a12e0869f842704",
+      "size_bytes": 2292
+    },
+    {
+      "path": "report/native-after.json",
+      "sha256": "16bd4d07e40996698dbc9eef87288302fb357c7bb0058e43a2fa178c2aef8233",
+      "size_bytes": 17506
+    },
+    {
+      "path": "report/native-before-after-summary.json",
+      "sha256": "3840aa629ff80b8f3c8c9640efd0740dd4835e5bf7454e4c1201181e05f72a4b",
+      "size_bytes": 2052
+    },
+    {
+      "path": "report/native-before-health.json",
+      "sha256": "5b40086122b780e6e71fbaea8426f6e266583148d7280c57b72d742e227e2005",
+      "size_bytes": 469
+    },
+    {
+      "path": "report/native-before-snapshot.json",
+      "sha256": "406f496b613b369280bd86f5b63829bdddc80fb8db78fe26dbe548db2422c1ca",
+      "size_bytes": 12513
+    },
+    {
+      "path": "report/native-before.json",
+      "sha256": "3e7d6c6df03096dd4d18ee654cfaab603d82c9d8a0aca86d7a73b98c15b00d4c",
+      "size_bytes": 17515
+    },
+    {
+      "path": "report/openapi.json",
+      "sha256": "d0244ba273da84d3a42f90ae2f3dcf7bd5123b4dcd3388d1a893d9f624d73714",
+      "size_bytes": 42063
+    },
+    {
+      "path": "report/real-geometry-sample.json",
+      "sha256": "3a4588298891e64b76dfaf8704df9f3199df4d79a914887864c8311ff3243389",
+      "size_bytes": 2904
+    },
+    {
+      "path": "report/scene.json",
+      "sha256": "eb3f90d50cf45d33c2934513d60162765b4a50c5822fb7484c84bc8efd776b60",
+      "size_bytes": 187185
+    },
+    {
+      "path": "report/snapshot.json",
+      "sha256": "2468c941180ca5dead961b687c41f2f44a4f1179338474c22d05d23214f592fe",
+      "size_bytes": 14124
+    },
+    {
+      "path": "report/stale-asset.json",
+      "sha256": "92ec1cee7ecc170051ee6553e4691ac5fbd3b2672e377f673dbc767915b4084e",
+      "size_bytes": 153
+    },
+    {
+      "path": "report/test-result.json",
+      "sha256": "007880340ded27f97bc22c27bbe6db9734c9159e809249ac56d422a8de8b3705",
+      "size_bytes": 575
+    },
+    {
+      "path": "report/unknown-asset.json",
+      "sha256": "fb5cd8a90846128e93ac758ffea684c23685c0edd3df0a6579cc7fc6efbc5f62",
+      "size_bytes": 115
+    },
+    {
+      "path": "source-manifest.json",
+      "sha256": "2e95e53a5860b8762c3682428ab4d101b72fd9e9af984bdd1f80523febd79ac8",
+      "size_bytes": 5772
+    }
+  ],
+  "geometry_rebuild_command": "see docs/backend-m1-geometry.md; no active native restart"
+}

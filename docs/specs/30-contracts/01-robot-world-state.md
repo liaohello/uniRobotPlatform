@@ -6,7 +6,7 @@
 
 > 本文件已按主题迁入当前目录；需求确认程度以原文标记为准。文档迁移不表示已实现、已验收或技术栈已冻结。后续在此维护主题正文，总册保留历史。
 
-版本：V0.7｜更新日期：2026-10-23（America/Los_Angeles）；通用字段草案原文保留。
+版本：V0.8｜更新日期：2026-10-23（America/Los_Angeles）；通用字段草案原文保留。
 
 状态：通用部分为接口概念草案；下文 mobileCar read v1 是已实现的 HTTP 读取子集，不代表 Session/控制/录制/回放已接通。
 
@@ -59,9 +59,22 @@ Snapshot 的明确投影：
 
 对象ID在当前编译清单中稳定，使用 `body:{URL编码名称}`、`joint:{URL编码名称}` 和 `geom:{URL编码body}/{URL编码geom}`；调用方同时保留adapter/运行/资源身份。world_links是编译初始布局，以 `world_pose_semantics=compiled_initial_layout_not_live_object_state` 标明，不作为在线物体真值。mesh字节只从已配置native服务的固定资产路径取得，外部URI不透传。
 
-SceneManifest几何参数保留原生renderer语义；mesh的`size_m`数组实际表示各轴缩放，不能把所有geometry尺寸数组都解释成普通物体的长宽高。
+read-1 SceneManifest保留原生字段；mesh的`size_m`数组实际表示各轴缩放，不能把所有geometry尺寸数组都解释成普通物体的长宽高。该版本原始STL与编译后geom位姿存在坐标组合问题，不作为已正确装配的3D资产契约；冻结18941保持原行为，修复以独立候选提供如下。
 
 读取使用网络边界类型检查、有限数值/向量长度/关节顺序检查，不以默认零补状态。未知native字段被丢弃，默认不返回diagnostics、contact_summary、plan或Oracle；该投影不冒充受限Policy Observation API。所有mobileCar读取禁止缓存，断连503、外部响应不兼容502、身份变化409，错误提供`detail.code/message`，不附原始响应体；具体样例与限制见交付记录。
+
+<a id="mobilecar-geometry-v1"></a>
+## mobileCar geometry v1：独立只读候选
+
+已部署服务器18942；不替换冻结18941。候选仅scene使用 `schema_version=unirobot-mobilecar-geometry-1`、`data_source=live_native_http_with_verified_compiled_geometry`；capabilities/snapshot仍使用read-1。端点路径不变，资产查询摘要变化。完整类型为 `backend/src/unirobot/mobilecar_geometry.py`，真实样例、来源、错误、验证与前端适配见[候选交付记录](../../backend-m1-geometry.md)。
+
+- STL直接取同版本MuJoCo编译模型的 `mesh_vert/mesh_face`，单位m、mesh `size_m=[1,1,1]`。保留编译后的geom位姿，客户端只应用此位姿一次，再使用既有body/joint层级；不得叠加mesh_scale/mesh_pos/mesh_quat。primitive尺寸、body/joint/geom变换、axis、对象ID和RGBA不变。
+- 每个asset新增 `coordinate_space=mujoco_compiled_mesh`、`units=m`、`mesh_preprocessing_applied=true`、原STL `source_sha256` 和 `source_mesh_name`。`sha256/uri`指新编译STL，不能混用旧字节/摘要。
+- geom `group` 为实际编译值，新增 `contype/conaffinity`；`collision=bool(contype or conaffinity)`仅描述动态接触过滤参与，不表示碰撞专用外观或当前接触，不可据此隐藏所有可见几何。alpha=0保持透明，显示策略由前端负责。
+- `geometry_provenance` 绑定runtime/resource、compiler/version、native scene/模型输入/compiled scene/native builder/bundle摘要；范围是静态编译与在线manifest一致，未读取在线C内存或当前contacts。继续 `deployed_content_verified=false`、`session_ready=false`，不构成Session/初态确认或控制授权。
+- 运行身份或native场景与导出不同返回409 `geometry_source_changed`，不回退原始STL；未知资产404、旧摘要409，bundle/资产损坏拒绝启动。read-1的断连/身份变化错误保留。
+
+编译导出只使用MjModel，不创建MjData/物理循环、不改native输入、不执行运动/RESET/录制。已验证53项API回归、非均匀缩放/偏心/旋转数值模型、真实23资产HTTP/hash与冻结服务不变；整车装配和交互视觉验收仍由前端完成，不外推为M1闭环通过。
 
 ## 关联文档
 

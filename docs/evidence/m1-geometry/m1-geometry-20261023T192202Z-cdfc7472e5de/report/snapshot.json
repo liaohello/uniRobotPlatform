@@ -1,0 +1,398 @@
+{
+  "schema_version": "unirobot-mobilecar-read-1",
+  "data_source": "live_native_http",
+  "adapter_id": "mobilecar",
+  "robot_id": "landerpi",
+  "read_only": true,
+  "session_ready": false,
+  "platform_session_id": null,
+  "retrieved_at": "2026-10-23T19:23:11+00:00",
+  "runtime_identity": {
+    "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+    "backend_generation": 1,
+    "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+  },
+  "resource_identity": {
+    "contract_version": "mobilecar-1.0",
+    "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+    "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "scene_id": "mobile_pick"
+  },
+  "interface_profile": "g4a1-1.0",
+  "recording_required_for_motion": true,
+  "resource_matches_pin": true,
+  "deployed_content_verified": false,
+  "data": {
+    "time": {
+      "episode_started_backend_monotonic_s": 558366.667448889,
+      "backend_monotonic_s": 956455.799135563,
+      "sim_time_s": 398076.987285774,
+      "feedback_time_s": 956455.797875799,
+      "wall_utc": "2026-10-23T19:23:11.284794Z",
+      "clock_id": "backend_monotonic",
+      "control_tick_id": "tick_039807699"
+    },
+    "arm_joint_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5"
+    ],
+    "actual": {
+      "base": {
+        "frame_id": "base_link",
+        "position_world_sim_m": [
+          0.1386513174901792,
+          -1.9292933451084364e-05,
+          0.05321414659290786
+        ],
+        "orientation_world_sim_xyzw": [
+          -1.1200977681234403e-06,
+          5.463690980384025e-05,
+          1.1716395039565943e-06,
+          0.9999999985060893
+        ],
+        "vx_m_s": 2.9483761857154133e-16,
+        "vy_m_s": 4.892140771507817e-17,
+        "wz_rad_s": -4.490126024562034e-16,
+        "stopped": true,
+        "stop_latched": true
+      },
+      "arm": {
+        "user_joint_positions_rad": [
+          -2.1849465462709324e-12,
+          3.34619025497921e-14,
+          2.2587515638924767e-14,
+          -4.6629367034256575e-15,
+          -1.0156415362208365e-12
+        ],
+        "model_joint_positions_rad": [
+          -2.1849465462709324e-12,
+          3.34619025497921e-14,
+          2.2587515638924767e-14,
+          -1.5707963267949012,
+          -1.0156415362208365e-12
+        ],
+        "joint_velocities_rad_s": [
+          2.313263778677683e-15,
+          2.1833096265247573e-16,
+          -4.649617601766296e-15,
+          2.3833657163801968e-14,
+          5.630105159977674e-18
+        ],
+        "joint_torques_nm": [
+          0.0014711721051487196,
+          0.16853927342275937,
+          0.16542863598162252,
+          0.1605668732787784,
+          -1.6194806373868714e-05
+        ],
+        "joint_margin_rad": [
+          2.089999999997815,
+          2.0899999999999666,
+          2.089999999999977,
+          0.5192036732050986,
+          2.0899999999989842
+        ],
+        "model_limits_rad": [
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ]
+        ],
+        "coordinates_status": "user_defined_photo_pose_not_hardware_500"
+      },
+      "gripper": {
+        "width_m": 0.024999990231479606,
+        "model_drive_position_rad": -1.0776330776100003
+      },
+      "tcp": {
+        "frame_id": "world_sim",
+        "position_m": [
+          0.3167549651198854,
+          0.0024434952467464566,
+          0.3009214429907374
+        ],
+        "orientation_xyzw": [
+          -0.0029808810521364452,
+          0.7097262160226515,
+          -0.0031127639698901306,
+          0.70446442304689
+        ],
+        "position_error_m": null,
+        "orientation_error_rad": null,
+        "held": false
+      },
+      "model_joint_positions_rad": {
+        "front_left_joint": -0.2617848318544784,
+        "front_left_roller_0_joint": 1.6948261380312354e-07,
+        "front_left_roller_1_joint": 1.2476438534079204e-07,
+        "front_left_roller_2_joint": 1.0100105773517386e-07,
+        "front_left_roller_3_joint": 1.0466764049014354e-07,
+        "front_left_roller_4_joint": 1.3467568302064417e-07,
+        "front_left_roller_5_joint": 1.8315992702829117e-07,
+        "front_left_roller_6_joint": 0.006693181134716118,
+        "front_left_roller_7_joint": -0.08367698679271734,
+        "front_left_roller_8_joint": 3.051244029470952e-07,
+        "front_left_roller_9_joint": 3.0143674016961407e-07,
+        "front_left_roller_10_joint": 2.7152950545371484e-07,
+        "front_left_roller_11_joint": 2.2322314363944714e-07,
+        "rear_left_joint": -0.26196760351775833,
+        "rear_left_roller_0_joint": -3.015684153118343e-07,
+        "rear_left_roller_1_joint": -3.1402563783656554e-07,
+        "rear_left_roller_2_joint": -2.969010162669134e-07,
+        "rear_left_roller_3_joint": -2.547292886632389e-07,
+        "rear_left_roller_4_joint": -1.9890389738816697e-07,
+        "rear_left_roller_5_joint": -1.4464829885837907e-07,
+        "rear_left_roller_6_joint": 0.012002664694762438,
+        "rear_left_roller_7_joint": 0.06869814532751138,
+        "rear_left_roller_8_joint": -1.1001682472269764e-07,
+        "rear_left_roller_9_joint": -1.5184114969718885e-07,
+        "rear_left_roller_10_joint": -2.080192055240166e-07,
+        "rear_left_roller_11_joint": -2.628165855913644e-07,
+        "front_right_joint": -0.26177952766793394,
+        "front_right_roller_0_joint": -3.1014044001848565e-07,
+        "front_right_roller_1_joint": -3.092151010730671e-07,
+        "front_right_roller_2_joint": -2.798842490445673e-07,
+        "front_right_roller_3_joint": -2.2987952910863815e-07,
+        "front_right_roller_4_joint": -1.728673774491131e-07,
+        "front_right_roller_5_joint": -1.235578799163981e-07,
+        "front_right_roller_6_joint": -0.019342550972723496,
+        "front_right_roller_7_joint": -0.04256233042483266,
+        "front_right_roller_8_joint": -1.262151006118771e-07,
+        "front_right_roller_9_joint": -1.7621402863164294e-07,
+        "front_right_roller_10_joint": -2.3331264161617628e-07,
+        "front_right_roller_11_joint": -2.8237247859093227e-07,
+        "rear_right_joint": -0.26197294911062624,
+        "rear_right_roller_0_joint": 1.6782984387060696e-07,
+        "rear_right_roller_1_joint": 1.0470287751206084e-07,
+        "rear_right_roller_2_joint": 6.783037544831911e-08,
+        "rear_right_roller_3_joint": 6.752423155190606e-08,
+        "rear_right_roller_4_joint": 1.0379824457432764e-07,
+        "rear_right_roller_5_joint": 1.6649849905778241e-07,
+        "rear_right_roller_6_joint": -0.004805689676954865,
+        "rear_right_roller_7_joint": 0.0044895202144712735,
+        "rear_right_roller_8_joint": 3.394390990469647e-07,
+        "rear_right_roller_9_joint": 3.3984299105682517e-07,
+        "rear_right_roller_10_joint": 3.0361898983063783e-07,
+        "rear_right_roller_11_joint": 2.4078116839881945e-07,
+        "joint1": -2.1849465462709324e-12,
+        "joint2": 3.34619025497921e-14,
+        "joint3": 2.2587515638924767e-14,
+        "joint4": -1.5707963267949012,
+        "joint5": -1.0156415362208365e-12,
+        "gripper_base_joint": -1.0776330776100003,
+        "gripper_left_join": 1.6164555010235442,
+        "gripper_right_joint": 1.6164437321936282,
+        "left_jaw_joint": 0.01248405195255844,
+        "right_jaw_joint": -0.012515957816161872
+      }
+    },
+    "target": {
+      "base_velocity": {
+        "frame_id": "base_link",
+        "vx_m_s": 0.0,
+        "vy_m_s": 0.0,
+        "wz_rad_s": 0.0
+      },
+      "user_joint_positions_rad": [
+        -2.1849604256104818e-12,
+        3.344156860706527e-14,
+        2.2578702971480356e-14,
+        -4.6629367034256575e-15,
+        -1.0156417584983402e-12
+      ],
+      "model_joint_positions_rad": [
+        -2.1849604256104818e-12,
+        3.344156860706527e-14,
+        2.2578702971480356e-14,
+        -1.5707963267949012,
+        -1.0156417584983402e-12
+      ],
+      "gripper_width_m": 0.024999991920466903,
+      "gripper_model_drive_position_rad": -1.0776330048507736,
+      "command_id": null,
+      "tcp": null
+    },
+    "preview": null,
+    "sensors": [
+      {
+        "kind": "rgb",
+        "available": true,
+        "fresh": true,
+        "sample_id": "rgbd_e775a626000a46228a269ce7a8bc36a9",
+        "stream_id": "rgbd",
+        "measurement_time_s": 956455.711681551,
+        "arrival_time_s": 956455.746708988,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": 0.35639322916666666,
+        "quality": "simulated_nominal_preview",
+        "capture_sim_time_s": 398076.897285775,
+        "capture_backend_monotonic_s": 956455.711681551,
+        "capture_control_tick_id": "tick_039807690",
+        "feedback_sample_id": "joint_feedback_039807690",
+        "observation_age_s": 0.035027437028475106,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "native_asset_uri": null,
+        "frame_id": null
+      },
+      {
+        "kind": "depth",
+        "available": true,
+        "fresh": true,
+        "sample_id": "rgbd_e775a626000a46228a269ce7a8bc36a9",
+        "stream_id": "rgbd",
+        "measurement_time_s": 956455.711681551,
+        "arrival_time_s": 956455.746708988,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": 0.35639322916666666,
+        "quality": "simulated_nominal_preview",
+        "capture_sim_time_s": 398076.897285775,
+        "capture_backend_monotonic_s": 956455.711681551,
+        "capture_control_tick_id": "tick_039807690",
+        "feedback_sample_id": "joint_feedback_039807690",
+        "observation_age_s": 0.035027437028475106,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "native_asset_uri": null,
+        "frame_id": null
+      },
+      {
+        "kind": "lidar",
+        "available": true,
+        "fresh": true,
+        "sample_id": "laser_039807690",
+        "stream_id": "lidar",
+        "measurement_time_s": 956455.708919147,
+        "arrival_time_s": 956455.708919147,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": null,
+        "quality": "simulated_raycast",
+        "capture_sim_time_s": 398076.897285775,
+        "capture_backend_monotonic_s": 956455.708919147,
+        "capture_control_tick_id": "tick_039807690",
+        "feedback_sample_id": null,
+        "observation_age_s": 0.0,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "native_asset_uri": null,
+        "frame_id": null
+      },
+      {
+        "kind": "imu",
+        "available": true,
+        "fresh": true,
+        "sample_id": "imu_039807699",
+        "stream_id": "imu",
+        "measurement_time_s": 956455.797877969,
+        "arrival_time_s": 956455.797877969,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": null,
+        "quality": "simulated_nominal",
+        "capture_sim_time_s": 398076.987285774,
+        "capture_backend_monotonic_s": 956455.797877969,
+        "capture_control_tick_id": "tick_039807699",
+        "feedback_sample_id": null,
+        "observation_age_s": 0.0,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "native_asset_uri": null,
+        "frame_id": null
+      },
+      {
+        "kind": "encoders",
+        "available": true,
+        "fresh": true,
+        "sample_id": "encoders_039807699",
+        "stream_id": "encoders",
+        "measurement_time_s": 956455.797877969,
+        "arrival_time_s": 956455.797877969,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": null,
+        "quality": "simulated_nominal",
+        "capture_sim_time_s": 398076.987285774,
+        "capture_backend_monotonic_s": 956455.797877969,
+        "capture_control_tick_id": "tick_039807699",
+        "feedback_sample_id": null,
+        "observation_age_s": 0.0,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "native_asset_uri": null,
+        "frame_id": null
+      },
+      {
+        "kind": "joint_feedback",
+        "available": true,
+        "fresh": true,
+        "sample_id": "joint_feedback_039807699",
+        "stream_id": "joint_feedback",
+        "measurement_time_s": 956455.797877969,
+        "arrival_time_s": 956455.797877969,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": null,
+        "quality": "simulated_nominal",
+        "capture_sim_time_s": 398076.987285774,
+        "capture_backend_monotonic_s": 956455.797877969,
+        "capture_control_tick_id": "tick_039807699",
+        "feedback_sample_id": null,
+        "observation_age_s": 0.0,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "native_asset_uri": null,
+        "frame_id": null
+      },
+      {
+        "kind": "image_transforms",
+        "available": true,
+        "fresh": true,
+        "sample_id": "rgbd_e775a626000a46228a269ce7a8bc36a9",
+        "stream_id": "rgbd",
+        "measurement_time_s": 956455.711681551,
+        "arrival_time_s": 956455.746708988,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": 0.35639322916666666,
+        "quality": "simulated_nominal_preview",
+        "capture_sim_time_s": 398076.897285775,
+        "capture_backend_monotonic_s": 956455.711681551,
+        "capture_control_tick_id": "tick_039807690",
+        "feedback_sample_id": "joint_feedback_039807690",
+        "observation_age_s": 0.035027437028475106,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "native_asset_uri": null,
+        "frame_id": null
+      }
+    ],
+    "sensor_media_status": "not_exposed",
+    "authority": {
+      "base_owner_session_id": null,
+      "arm_owner_session_id": null,
+      "active_session_id": null,
+      "active_operator_kind": null,
+      "authorizes_caller": false,
+      "lease_status": "not_exposed"
+    },
+    "safety_latched": true,
+    "recording": {
+      "status": "IDLE",
+      "command_capture_ready": false,
+      "recording_segment_id": null,
+      "episode_id": null,
+      "queued_events": 0,
+      "dropped_events": 0,
+      "error": null
+    },
+    "task_phase": "OBSERVE"
+  }
+}

@@ -248,6 +248,20 @@ class SceneRead(ReadEnvelope):
     world_pose_semantics: Literal["compiled_initial_layout_not_live_object_state"] = "compiled_initial_layout_not_live_object_state"
 
 
+def scene_objects(data: SceneData) -> list[ObjectIdentity]:
+    objects = []
+    # Native names are stable only within the exact resource identity.
+    for kind, links in (("robot_link", data.links), ("world_link", data.world_links)):
+        for link in links:
+            object_id = f"body:{quote(link.name, safe='')}"
+            objects.append(ObjectIdentity(object_id=object_id, kind=kind, native_name=link.name, parent_object_id=f"body:{quote(link.parent_name, safe='')}" if link.parent_name else None))
+            if link.joint_name:
+                objects.append(ObjectIdentity(object_id=f"joint:{quote(link.joint_name, safe='')}", kind="joint", native_name=link.joint_name, parent_object_id=object_id))
+            for geom in link.geoms:
+                objects.append(ObjectIdentity(object_id=f"geom:{quote(link.name, safe='')}/{quote(geom.name, safe='')}", kind="geom", native_name=geom.name, parent_object_id=object_id))
+    return objects
+
+
 class CapabilitiesRead(ReadEnvelope):
     data: CapabilitiesData
     platform_commands_available: Literal[False] = False
@@ -360,19 +374,9 @@ class MobileCarReadService:
     def scene(self) -> SceneRead:
         before = self._read("/api/v1/health", Health)
         data = self._read("/api/v1/scene", SceneData)
-        objects = []
-        # Native body/joint names are stable only within the exact resource identity.
-        for kind, links in (("robot_link", data.links), ("world_link", data.world_links)):
-            for link in links:
-                object_id = f"body:{quote(link.name, safe='')}"
-                objects.append(ObjectIdentity(object_id=object_id, kind=kind, native_name=link.name, parent_object_id=f"body:{quote(link.parent_name, safe='')}" if link.parent_name else None))
-                if link.joint_name:
-                    objects.append(ObjectIdentity(object_id=f"joint:{quote(link.joint_name, safe='')}", kind="joint", native_name=link.joint_name, parent_object_id=object_id))
-                for geom in link.geoms:
-                    objects.append(ObjectIdentity(object_id=f"geom:{quote(link.name, safe='')}/{quote(geom.name, safe='')}", kind="geom", native_name=geom.name, parent_object_id=object_id))
         for asset in data.mesh_assets:
             asset.uri = f"/api/v1/mobilecar/scene/assets/{asset.asset_id}?sha256={asset.sha256}"
-        return SceneRead(**self._finish(before, SceneIdentity.model_validate(data.model_dump())), data=data, objects=objects)
+        return SceneRead(**self._finish(before, SceneIdentity.model_validate(data.model_dump())), data=data, objects=scene_objects(data))
 
     def snapshot(self) -> SnapshotRead:
         before = self._read("/api/v1/health", Health)

@@ -1,0 +1,17 @@
+{
+  "exit_code": 0,
+  "elapsed_s": 5.174589157104492,
+  "command": [
+    "/home/liaozhengyan/Desktop/uniRobotPlatform/envs/gateway-py314/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/test_api.py",
+    "backend/tests/test_mobilecar.py",
+    "backend/tests/test_drafts.py",
+    "backend/tests/test_mobilecar_read.py",
+    "backend/tests/test_mobilecar_geometry.py",
+    "-q",
+    "--junitxml=/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-geometry-20261023T192202Z-cdfc7472e5de/report/focused.junit.xml"
+  ],
+  "synthetic_fixtures_not_m1_acceptance": true
+}

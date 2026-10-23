@@ -1,0 +1,67 @@
+{
+  "before_health": {
+    "status": "ok",
+    "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+    "backend_generation": 1,
+    "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+    "recording_status": "IDLE",
+    "recording_required_for_motion": true,
+    "interface_profile": "g4a1-1.0",
+    "observation_profile_id": "g2a-rgbd-5hz-original",
+    "navigation_profile_id": null,
+    "ui": {
+      "adaptive_rendering": true,
+      "preferred_pixel_ratio": 1.0,
+      "max_pixel_ratio": 1.5,
+      "static_render_interval_s": 0.1,
+      "shadow_map_size": 512,
+      "snapshot_hz": 15.0
+    }
+  },
+  "after_health": {
+    "status": "ok",
+    "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+    "backend_generation": 1,
+    "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+    "recording_status": "IDLE",
+    "recording_required_for_motion": true,
+    "interface_profile": "g4a1-1.0",
+    "observation_profile_id": "g2a-rgbd-5hz-original",
+    "navigation_profile_id": null,
+    "ui": {
+      "adaptive_rendering": true,
+      "preferred_pixel_ratio": 1.0,
+      "max_pixel_ratio": 1.5,
+      "static_render_interval_s": 0.1,
+      "shadow_map_size": 512,
+      "snapshot_hz": 15.0
+    }
+  },
+  "before_recording": {
+    "status": "IDLE",
+    "episode_id": null,
+    "recording_segment_id": null,
+    "command_capture_ready": false,
+    "queued_events": 0,
+    "dropped_events": 0,
+    "error": null
+  },
+  "after_recording": {
+    "status": "IDLE",
+    "episode_id": null,
+    "recording_segment_id": null,
+    "command_capture_ready": false,
+    "queued_events": 0,
+    "dropped_events": 0,
+    "error": null
+  },
+  "before_process": {
+    "pid": 941842,
+    "cmdline": "../../envs/g2a-py310-mujoco316/bin/python -m mobilecar --config configs/g4a2_server.yaml --host 127.0.0.1 --port 8792 "
+  },
+  "after_process": {
+    "pid": 941842,
+    "cmdline": "../../envs/g2a-py310-mujoco316/bin/python -m mobilecar --config configs/g4a2_server.yaml --host 127.0.0.1 --port 8792 "
+  },
+  "identity_recording_and_process_unchanged": true
+}

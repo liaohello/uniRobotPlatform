@@ -1,0 +1,378 @@
+version: '0.1'
+adapters:
+- id: mobilecar
+  title: mobileCar · LanderPi 运行时
+  project_root: /home/liaozhengyan/Desktop/mobileCar
+  base_url: http://127.0.0.1:8792
+  health_path: /api/v1/health
+  console_path: /
+  launch:
+    argv:
+    - .venv/bin/mobilecar
+    - --backend
+    - mujoco
+    - --require-recording
+    env:
+      MUJOCO_GL: egl
+  notes:
+  - 服务端 Linux/EGL；本地 Windows 仅做探活与准备运行，不启动 MuJoCo。
+  - HTTP 与 WebSocket 由 mobilecar-1.0 合同维护。
+- id: bimanual
+  title: bimanual_proj · 双 SO101
+  project_root: ../bimanual_proj
+  base_url: http://127.0.0.1:18885
+  health_path: /api/health
+  console_path: /tasks
+  launch:
+    argv:
+    - python
+    - -m
+    - bimanual.ops
+    - --port
+    - '18885'
+  notes:
+  - ops 服务启动后会在终端输出本地访问 token；变更类接口需要该 token。
+  - 训练/推理需要独立的 bimanual-train 环境（MuJoCo 3.11 + CUDA torch）。
+- id: landerpi
+  title: mujoco_learning · LanderPi 仿真栈
+  project_root: ../mujoco_learning
+  base_url: http://127.0.0.1:8765
+  health_path: /api/health
+  console_path: /
+  launch:
+    argv:
+    - python
+    - examples/landerpi/run_local_debug_console.py
+    - --port
+    - '8765'
+    - --mode
+    - combined
+    - --no-browser
+  notes:
+  - 调试控制台只监听 loopback。
+  - 导航/建图依赖 ROS 2 Humble，需在 ROS 环境中单独启动。
+robots:
+- id: landerpi
+  title: LanderPi 移动操作机器人
+  adapter_id: mobilecar
+  summary: 四麦轮底盘 + 五轴机械臂 + 独立夹爪 + link4 RGB-D；仿真与实车共用能力描述。
+  capabilities:
+  - base.mecanum
+  - base.nav2
+  - arm.5dof
+  - gripper
+  - sensor.rgb
+  - sensor.depth
+  - sensor.lidar
+  - sensor.imu
+  - bus.ros2
+  model_ref: ../mobileCar/configs/robots
+  notes:
+  - mobileCar 与 mujoco_learning 使用不同的 MuJoCo 版本，同一机器人由不同适配器承载。
+- id: so101_dual
+  title: 双 SO101 协作臂
+  adapter_id: bimanual
+  summary: 左右各 5 个运动关节 + 夹爪，公开动作为 12 维；中央与左右腕 RGB。
+  capabilities:
+  - arm.5dof
+  - gripper
+  - sensor.rgb
+  - sensor.depth
+  - format.lerobot
+  model_ref: ../bimanual_proj/so-101-urdf
+  notes:
+  - 实体主臂桥接尚未在代码中验收，故不声明 leader.so101 能力。
+tasks:
+- id: mobilecar.g1.teleop
+  title: 整车遥操作与原始 Episode
+  summary: 第三人称整车遥操作：底盘、五轴臂、夹爪与只读回放，按 mobilecar-1.0 录制原始 Episode。
+  robot_id: landerpi
+  template: DATA-COLLECTION
+  maturity: verified
+  modes:
+  - teleop
+  capabilities:
+  - base.mecanum
+  - arm.5dof
+  - gripper
+  - sensor.rgb
+  - sensor.depth
+  evidence:
+  - docs/acceptance_report.md
+  - docs/interface_contract_v1.md
+  native_launch: mobilecar --backend mujoco --require-recording
+  native_console: /
+  caveats:
+  - G1 范围不含导航、训练、LeRobot 正式导出或实车运动。
+  spec_refs:
+  - REQ-PRD-001
+  - PAGE-03
+- id: mobilecar.g2a.human_demo
+  title: 第三人称人工示教采集
+  summary: 5 Hz RGB-D/本体观测与时间、变换可靠性加固后的人工示教采集，输出质量与资格报告。
+  robot_id: landerpi
+  template: DATA-COLLECTION
+  maturity: verified
+  modes:
+  - human_demo
+  capabilities:
+  - base.mecanum
+  - arm.5dof
+  - gripper
+  - sensor.rgb
+  - sensor.depth
+  evidence:
+  - docs/g2a_server_report.md
+  - docs/g2b_report.md
+  native_launch: mobilecar --config configs/g2a_server.yaml
+  native_console: /
+  caveats:
+  - G2B 训练资格仍为 false；G2A 报告不覆盖 G1 资格文件。
+  spec_refs:
+  - REQ-REC-001
+  - REQ-DATA-001
+- id: mobilecar.g3b.nav_point
+  title: 建图、重定位与 Nav2 到点
+  summary: 两场景建图与重载定位、RViz 设点、Nav2 全向到点、人工接管与失效停车。
+  robot_id: landerpi
+  template: NAV-POINT
+  maturity: verified
+  modes:
+  - expert
+  - teleop
+  capabilities:
+  - base.mecanum
+  - base.nav2
+  - sensor.lidar
+  - sensor.imu
+  - bus.ros2
+  evidence:
+  - docs/g3b_report.md
+  - docs/g3b_demo_record.md
+  native_launch: mobilecar --config configs/g3b_server_room_a.yaml
+  native_console: /
+  caveats:
+  - 导航 Episode 的 training_qualified=false，本轮不进入训练或实车。
+  - 设点仍依赖 RViz，尚未接入统一 Waypoint 编辑。
+  spec_refs:
+  - REQ-NAV-002
+  - REQ-NAV-003
+  - PAGE-03
+- id: mobilecar.g4a1.nearfield_grasp
+  title: 固定底盘近场 RGB-D 抓取
+  summary: 固定底盘与受限 link4 RGB-D 下的中央/偏移抓取，六维动作接口与采集就绪报告。
+  robot_id: landerpi
+  template: MOBILE-GRASP
+  maturity: verified
+  modes:
+  - teleop
+  - expert
+  capabilities:
+  - arm.5dof
+  - gripper
+  - sensor.rgb
+  - sensor.depth
+  evidence:
+  - docs/g4a1_report.md
+  - docs/evidence/g4a1_server_artifact_index.json
+  native_launch: mobilecar --config configs/g4a1_server.yaml
+  native_console: /
+  caveats:
+  - parent split 与正式出口尚未评估，训练资格仍为 false。
+  spec_refs:
+  - REQ-OBS-001
+  - PAGE-03
+- id: mobilecar.g4a2.human_demo
+  title: 近场人工示教采集（G4A-2）
+  summary: 固定底盘近场抓取的真人示教采集：界面、记录、检查与导出已准备，真人试点待执行。
+  robot_id: landerpi
+  template: DATA-COLLECTION
+  maturity: experimental
+  modes:
+  - human_demo
+  capabilities:
+  - arm.5dof
+  - gripper
+  - sensor.rgb
+  - sensor.depth
+  evidence:
+  - docs/goals/G4A2_human_demonstrations_export.md
+  - docs/post_g4a1_execution_plan.md
+  native_launch: mobilecar --config configs/g4a2_server.yaml
+  native_console: /g4a2
+  caveats:
+  - 真人试点尚未实际操作和审计。
+  - 现有采集页存在图片闪烁、停止反馈与操作模式入口问题。
+  spec_refs:
+  - REQ-LEADER-001
+  - REQ-REC-001
+- id: bimanual.p3.sorting_direct
+  title: 双臂直接分类（direct）
+  summary: 四物体颜色分类，供给臂直接放入目标容器；脚本专家冻结清单 100/100。
+  robot_id: so101_dual
+  template: BI-DIRECT
+  maturity: verified
+  modes:
+  - expert
+  - batch
+  capabilities:
+  - arm.5dof
+  - gripper
+  - sensor.rgb
+  - sensor.depth
+  evidence:
+  - docs/p3_acceptance.md
+  native_launch: bimanual run --profile direct --seed {seed}
+  caveats:
+  - 脚本专家成功率不是学习策略成功率。
+  - 25 mm / 12 g 方块、近侧轴对齐案例；连续随机 yaw 未认证。
+  spec_refs:
+  - REQ-OBS-002
+  - PAGE-03
+- id: bimanual.p3.sorting_transfer
+  title: 双臂台面中转（transfer）
+  summary: 供给臂放入公共区，接收臂在完整交接事件链与 lease 下接取；脚本专家 100/100。
+  robot_id: so101_dual
+  template: BI-TABLE-TRANSFER
+  maturity: verified
+  modes:
+  - expert
+  - batch
+  capabilities:
+  - arm.5dof
+  - gripper
+  - sensor.rgb
+  - sensor.depth
+  evidence:
+  - docs/p3_acceptance.md
+  - configs/certification/p3_certificate.json
+  native_launch: bimanual run --profile transfer --seed {seed}
+  caveats:
+  - 认证绑定模型、场景与抓取配置摘要；关键配置改变后需重新 certify。
+  spec_refs:
+  - REQ-OBS-002
+  - PAGE-03
+- id: bimanual.p4.collect
+  title: 官方 LeRobot 示范采集
+  summary: 按预注册协议采集 direct 50 + transfer 50 条成功示范，官方加载器读取与物理回放通过。
+  robot_id: so101_dual
+  template: DATA-COLLECTION
+  maturity: verified
+  modes:
+  - expert
+  capabilities:
+  - arm.5dof
+  - gripper
+  - sensor.rgb
+  - format.lerobot
+  evidence:
+  - docs/p4_collection.md
+  native_launch: bimanual collect --output outputs/collections/{run_id}
+  caveats:
+  - 采集筛选比例不是学习策略成功率。
+  spec_refs:
+  - REQ-DATA-002
+- id: bimanual.p5.act_rollout
+  title: ACT 策略推理与评估
+  summary: 冻结 checkpoint 在冻结场景清单上闭环推理、物理评分与视频审计。
+  robot_id: so101_dual
+  template: POLICY-ROLLOUT
+  maturity: experimental
+  modes:
+  - policy
+  capabilities:
+  - arm.5dof
+  - gripper
+  - sensor.rgb
+  - format.lerobot
+  evidence:
+  - docs/p5_acceptance.md
+  - docs/current_development_plan.md
+  native_launch: bimanual infer --checkpoint {checkpoint} --profile direct --seed
+    {seed} --output outputs/infer/{run_id}
+  caveats:
+  - dev20 为 0/20；窗口短测仅局部完成，P5-F 正式评估未开始。
+  - 需要独立 CUDA 环境 bimanual-train，不能与 mobileCar 合并进程。
+  spec_refs:
+  - REQ-TRAIN-002
+  - REQ-EVAL-001
+- id: landerpi.p10.p11a.mapping_slam
+  title: 建图与扫描匹配定位
+  summary: D500 扫描与历史 EKF 位姿建立局部占据栅格；扫描匹配与 map→odom 修正，含退化、过期与失联拒绝。
+  robot_id: landerpi
+  adapter_id: landerpi
+  template: NAV-ROUTE
+  maturity: verified
+  modes:
+  - expert
+  - replay
+  capabilities:
+  - base.mecanum
+  - sensor.lidar
+  - sensor.imu
+  - sensor.rgb
+  - sensor.depth
+  evidence:
+  - experiments/landerpi/acceptance/P10_mapping.md
+  - experiments/landerpi/acceptance/P11A_slam_frontend.md
+  native_launch: python examples/landerpi/inspect_slam_frontend.py
+  caveats:
+  - 建图/定位是路线执行的前置能力，本身不是完整 NAV-ROUTE 任务。
+  - 动力学与相机内参尚未经过实车标定。
+  spec_refs:
+  - REQ-NAV-003
+  - PAGE-02
+- id: landerpi.p12.estimated_navigation
+  title: 估计位姿导航（P12）
+  summary: 估计位姿与观测地图下的到点导航，输出失控、超时与停稳证据。
+  robot_id: landerpi
+  adapter_id: landerpi
+  template: NAV-POINT
+  maturity: experimental
+  modes:
+  - expert
+  - replay
+  capabilities:
+  - base.mecanum
+  - sensor.lidar
+  - sensor.imu
+  - sensor.rgb
+  - sensor.depth
+  - bus.ros2
+  evidence:
+  - docs/landerpi_estimated_stack.md
+  - experiments/landerpi/acceptance/P11A_slam_frontend.md
+  native_launch: python examples/landerpi/run_estimated_stack.py --stage p12 --output
+    outputs/estimated_nav/{run_id}
+  caveats:
+  - 本机 18/18、服务器 17/18，当时版本未通过两端完整验收。
+  spec_refs:
+  - REQ-NAV-002
+  - PAGE-03
+- id: landerpi.p13d.visual_pick
+  title: 估计导航 + 视觉抓取（P13D）
+  summary: 串联导航停车、视觉观测与移动抓取，支持受限撤回换位。
+  robot_id: landerpi
+  adapter_id: landerpi
+  template: MOBILE-GRASP
+  maturity: experimental
+  modes:
+  - expert
+  capabilities:
+  - base.mecanum
+  - arm.5dof
+  - gripper
+  - sensor.rgb
+  - sensor.depth
+  - bus.ros2
+  evidence:
+  - docs/landerpi_estimated_stack.md
+  - docs/landerpi_mobile_visual_pick.md
+  native_launch: python examples/landerpi/run_estimated_stack.py --stage p13d --output
+    outputs/estimated_pick/{run_id}
+  caveats:
+  - 三起点理想探针每端 2/3，尚未完成。
+  - 局部完成不能当作整链通过。
+  spec_refs:
+  - REQ-OBS-001
+  - PAGE-03

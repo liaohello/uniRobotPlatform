@@ -1,0 +1,6 @@
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.004s
+
+OK
+{"fixture": "nonuniform_scale_offcentre_rotated_tetrahedron", "max_body_frame_error_m": 8.836669634102765e-09, "old_raw_stl_compiled_pose_error_m": 0.1991931146966245, "triangles": 4, "physics_state_calls": 0}

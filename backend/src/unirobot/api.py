@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,7 @@ from .runtime import (
 )
 from .mobilecar import MobileCarIntegration
 from .mobilecar_read import CapabilitiesRead, MobileCarReadService, ReadServiceError, SceneRead, SnapshotRead
+from .mobilecar_geometry import CompiledGeometryReadService, CompiledSceneRead, GeometryBundle
 from .drafts import CreateDraft, CreateSession, DraftConflict, DraftNotFound, DraftStore, SaveDraft, ValidateDraft
 from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH
 
@@ -48,7 +50,7 @@ def _catalog(request: Request) -> Catalog:
     return request.app.state.catalog
 
 
-def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | None = None) -> FastAPI:
+def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | None = None, compiled_geometry_path: Path | None = None) -> FastAPI:
     path = Path(catalog_path) if catalog_path else CONFIG_PATH
 
     catalog = load_catalog(path)
@@ -74,6 +76,12 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     application.state.adapters = adapters
     application.state.manager = manager
     application.state.mobilecar_integration = MobileCarIntegration(catalog.adapters.get("mobilecar"))
+    geometry_path = compiled_geometry_path or os.environ.get("UNIROBOT_GEOMETRY_BUNDLE")
+    geometry = GeometryBundle(Path(geometry_path)) if geometry_path else None
+
+    def scene_service(request: Request):
+        integration = request.app.state.mobilecar_integration
+        return CompiledGeometryReadService(integration, geometry) if geometry else MobileCarReadService(integration)
     application.state.drafts = DraftStore(draft_db_path or DRAFT_DB_PATH, application.state.mobilecar_integration)
     application.add_middleware(
         CORSMiddleware,
@@ -109,9 +117,9 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     def mobilecar_capabilities(request: Request):
         return MobileCarReadService(request.app.state.mobilecar_integration).capabilities()
 
-    @application.get("/api/v1/mobilecar/scene", response_model=SceneRead)
+    @application.get("/api/v1/mobilecar/scene", response_model=CompiledSceneRead if geometry else SceneRead)
     def mobilecar_scene(request: Request):
-        return MobileCarReadService(request.app.state.mobilecar_integration).scene()
+        return scene_service(request).scene()
 
     @application.get("/api/v1/mobilecar/snapshot", response_model=SnapshotRead)
     def mobilecar_snapshot(request: Request):
@@ -119,7 +127,7 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
 
     @application.get("/api/v1/mobilecar/scene/assets/{asset_id}")
     def mobilecar_scene_asset(asset_id: str, request: Request, sha256: str = Query(pattern=r"^[0-9a-f]{64}$")):
-        body = MobileCarReadService(request.app.state.mobilecar_integration).asset(asset_id, sha256)
+        body = scene_service(request).asset(asset_id, sha256)
         return Response(body, media_type="model/stl", headers={"ETag": f'"{sha256}"', "Cache-Control": "no-store"})
 
     @application.middleware("http")
