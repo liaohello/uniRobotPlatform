@@ -1,0 +1,2 @@
+# Keep compact verification logs with the frontend-owned evidence.
+!**/*.log

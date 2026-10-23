@@ -1,0 +1,15 @@
+
+> unirobot-workbench@0.1.0 test
+> vitest run --maxWorkers=2 --reporter=default --reporter=json --outputFile=/home/liaozhengyan/Desktop/uniRobotPlatform/var/reports/m12a-20261023T162150Z-bf82d5697880/unit.json
+
+
+ RUN  v3.2.4 /home/liaozhengyan/Desktop/uniRobotPlatform/releases/m12a-20261023T162150Z-bf82d5697880/frontend
+
+ ✓ tests/targets.test.ts (6 tests) 93ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  00:22:53
+   Duration  559ms (transform 134ms, setup 0ms, collect 229ms, tests 93ms, environment 0ms, prepare 72ms)
+
+JSON report written to /home/liaozhengyan/Desktop/uniRobotPlatform/var/reports/m12a-20261023T162150Z-bf82d5697880/unit.json

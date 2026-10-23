@@ -1,0 +1,117 @@
+{
+  "contract_version": "mobilecar-1.0",
+  "backend_kind": "mujoco",
+  "arm_joint_names": [
+    "joint1",
+    "joint2",
+    "joint3",
+    "joint4",
+    "joint5"
+  ],
+  "arm_user_limits_rad": [
+    [
+      -2.09,
+      2.09
+    ],
+    [
+      -2.09,
+      2.09
+    ],
+    [
+      -2.09,
+      2.09
+    ],
+    [
+      -0.5192036732051033,
+      3.6607963267948964
+    ],
+    [
+      -2.09,
+      2.09
+    ]
+  ],
+  "arm_velocity_limits_rad_s": [
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6
+  ],
+  "gripper_min_width_m": 0.012000038000000005,
+  "gripper_max_width_m": 0.05,
+  "base_linear_limit_m_s": 0.05,
+  "base_yaw_limit_rad_s": 0.3,
+  "tcp_position_tolerance_m": 0.005,
+  "tcp_orientation_is_soft": true,
+  "supported_commands": [
+    "set_base_twist",
+    "zero_base",
+    "set_arm_joint_goal",
+    "set_gripper_width_goal",
+    "preview_tcp_target",
+    "execute_tcp_target",
+    "cancel",
+    "stop",
+    "reset",
+    "heartbeat",
+    "set_task_phase",
+    "start_recording",
+    "stop_recording"
+  ],
+  "sensor_streams": [
+    "rgb",
+    "depth",
+    "lidar",
+    "imu",
+    "encoders",
+    "joint_feedback",
+    "image_transforms"
+  ],
+  "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+  "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+  "scene_id": "mobile_pick",
+  "camera_parent_body": "link4",
+  "tcp_parent_body": "guide_rod_link",
+  "ground_truth_policy_visible": false,
+  "g4a2_postures": [
+    {
+      "name": "initial",
+      "purpose": "g4a1_baseline_frozen",
+      "frozen": true,
+      "arm_user_joint_positions_rad": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "gripper_width_m": 0.025
+    },
+    {
+      "name": "surround_view",
+      "purpose": "low_surround_scan",
+      "frozen": true,
+      "arm_user_joint_positions_rad": [
+        0.41,
+        -0.8,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "gripper_width_m": 0.03
+    },
+    {
+      "name": "nearfield_observe",
+      "purpose": "nearfield_observation",
+      "frozen": true,
+      "arm_user_joint_positions_rad": [
+        0.41,
+        -0.8,
+        0.0,
+        0.0,
+        0.4
+      ],
+      "gripper_width_m": 0.03
+    }
+  ]
+}

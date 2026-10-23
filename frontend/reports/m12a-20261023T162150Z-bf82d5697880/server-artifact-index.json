@@ -1,0 +1,86 @@
+{
+  "release_id": "m12a-20261023T162150Z-bf82d5697880",
+  "source_aggregate_sha256": "bf82d5697880125086002666d74046a2a103a96f868b9abee54bf2bf8b534102",
+  "status": "passed",
+  "scope": "M1.2a frozen native sample frontend only; not real Session/control/recording/replay integration",
+  "build": "passed (including tsc --noEmit)",
+  "unit_passed": 6,
+  "browser_checks": 29,
+  "native_identity_and_recording_unchanged": true,
+  "server_reports": "/home/liaozhengyan/Desktop/uniRobotPlatform/var/reports/m12a-20261023T162150Z-bf82d5697880",
+  "server_release": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m12a-20261023T162150Z-bf82d5697880",
+  "files": [
+    {
+      "path": "browser/browser.json",
+      "sha256": "9bbed31b9d4843ebf4663d4593e8bfb639aa58b8a571c0591c012eb5ef10022b",
+      "size_bytes": 10192
+    },
+    {
+      "path": "browser/workbench-final.png",
+      "sha256": "c24efa67f90912790b39346ed6213c6ba1a9798f11207f5cfc912bc5410133f9",
+      "size_bytes": 238796
+    },
+    {
+      "path": "browser/workbench-overview.png",
+      "sha256": "8915ff927b2ff227f8787e56c002f538516f591212a711a5f31dc96b6f9c7e88",
+      "size_bytes": 230955
+    },
+    {
+      "path": "browser/workbench-tcp-target.png",
+      "sha256": "85d0a0f6f9da08ab1fc753da25bada25638eafa51f477d3aee6a0447cef092a4",
+      "size_bytes": 241904
+    },
+    {
+      "path": "browser.log",
+      "sha256": "e977659837e68e882b0feb9cbfc86a93739ac2a7494e85bf6e41492191dfbb83",
+      "size_bytes": 50
+    },
+    {
+      "path": "build.log",
+      "sha256": "be74b5e90eb9f551344ee8c98eb9743df0dbed9c82f1673f6d71f02095a2c76e",
+      "size_bytes": 733
+    },
+    {
+      "path": "environment.json",
+      "sha256": "dfc993625c2f2e860decdcdbd6c88918b7a565d54eb6a814cc285bc76dae2a74",
+      "size_bytes": 250
+    },
+    {
+      "path": "native-read-only.json",
+      "sha256": "b11bda42535b9a13eb2e3397449f4f904c7c5cebd790c7e4a161bf6bcb8c3d4a",
+      "size_bytes": 466
+    },
+    {
+      "path": "preview.json",
+      "sha256": "d5c46fe8a43f0bc78c39174a0a40e23087a1eef67d3a33109a073db1a55598ff",
+      "size_bytes": 268
+    },
+    {
+      "path": "source-manifest.json",
+      "sha256": "9d01065adbb29afb334cf6d3e1fa7cc0b501285a33a86007c129a3ab63ca5387",
+      "size_bytes": 9654
+    },
+    {
+      "path": "unit.json",
+      "sha256": "ab452a44bdd18efe8b9fd4d8a5850d956467cb199ffae0a8cd09c2ff11f546f1",
+      "size_bytes": 2846
+    },
+    {
+      "path": "unit.log",
+      "sha256": "493a4cd6bbc02697761027ecd7e7f817540a4161ce775a908fd4ba6b8cd7a891",
+      "size_bytes": 671
+    }
+  ],
+  "build_assets": [
+    {
+      "path": "assets/index-BxtsKZla.js",
+      "sha256": "8c6822a8dc97881211ae34ca82a307ae7c162ca6d9c6c9cab56829d9bb1559d3",
+      "size_bytes": 1201086
+    },
+    {
+      "path": "assets/index-CiFJUq4b.css",
+      "sha256": "ea91e45afeae57a90239a734095ffe6583d06059057b4bef07853877ab03c40c",
+      "size_bytes": 159637
+    }
+  ]
+}

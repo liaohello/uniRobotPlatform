@@ -1,0 +1,286 @@
+{
+  "release_id": "m12a-20261023T162150Z-bf82d5697880",
+  "aggregate_sha256": "bf82d5697880125086002666d74046a2a103a96f868b9abee54bf2bf8b534102",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "3a31e3b111c295f45f1e49625bfe4f1abbefd61d354a91d11032a830230eb32a",
+      "size_bytes": 3640
+    },
+    {
+      "path": "docs/backend-gaps.md",
+      "sha256": "623eb6d14f5e8b6ed38fe649b3b0c9d0816f1f3cb729585e7fa2129bb47c793d",
+      "size_bytes": 4338
+    },
+    {
+      "path": "docs/provenance.md",
+      "sha256": "8a06045292cd135c1ca222f3231d4c4f5a712bde884939ebf3c1af8beccadabd",
+      "size_bytes": 1775
+    },
+    {
+      "path": "index.html",
+      "sha256": "f02d1d7e935883b240161fe48555f96313c8db0b14f244accdd2377369e1c1b9",
+      "size_bytes": 318
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "1bb055b6e003c960e116b8561b174dad8100dec2ab282c29370b0b10aa7a04bd",
+      "size_bytes": 59850
+    },
+    {
+      "path": "package.json",
+      "sha256": "db14be8e25acd34baf23201dab3785b3cd08727bfc61498c1c516b7e5d1de9de",
+      "size_bytes": 659
+    },
+    {
+      "path": "public/sample/arm-spec.json",
+      "sha256": "8d1dc917c7c76c58dcd96ab07525e247479d6295f427dd75c8ba3a13c0ecdfa9",
+      "size_bytes": 2886
+    },
+    {
+      "path": "public/sample/capabilities.json",
+      "sha256": "767312d2191e3e89c0d1c2319959f5abdbf2cc31daa4e172adf6ae3047c6e67d",
+      "size_bytes": 2206
+    },
+    {
+      "path": "public/sample/meshes/back_shell_black_link.stl",
+      "sha256": "a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049",
+      "size_bytes": 371284
+    },
+    {
+      "path": "public/sample/meshes/back_shell_middle_link.stl",
+      "sha256": "b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030",
+      "size_bytes": 293384
+    },
+    {
+      "path": "public/sample/meshes/base_link.stl",
+      "sha256": "9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223",
+      "size_bytes": 525884
+    },
+    {
+      "path": "public/sample/meshes/camera_connect_link.stl",
+      "sha256": "1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212",
+      "size_bytes": 41084
+    },
+    {
+      "path": "public/sample/meshes/depth_cam_link.stl",
+      "sha256": "4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958",
+      "size_bytes": 1169884
+    },
+    {
+      "path": "public/sample/meshes/gripper_base_link.stl",
+      "sha256": "46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8",
+      "size_bytes": 105284
+    },
+    {
+      "path": "public/sample/meshes/gripper_left_link.stl",
+      "sha256": "9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f",
+      "size_bytes": 19284
+    },
+    {
+      "path": "public/sample/meshes/gripper_link.stl",
+      "sha256": "31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a",
+      "size_bytes": 1041384
+    },
+    {
+      "path": "public/sample/meshes/gripper_right_link.stl",
+      "sha256": "5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598",
+      "size_bytes": 19284
+    },
+    {
+      "path": "public/sample/meshes/guide_rod_link.stl",
+      "sha256": "d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a",
+      "size_bytes": 12084
+    },
+    {
+      "path": "public/sample/meshes/imu_link.stl",
+      "sha256": "2d3f2e16a2150d97c01ed0ff6101fb5815bfde44143871dc8368149cd024e222",
+      "size_bytes": 293384
+    },
+    {
+      "path": "public/sample/meshes/left_jaw_link.stl",
+      "sha256": "47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5",
+      "size_bytes": 46684
+    },
+    {
+      "path": "public/sample/meshes/lidar_frame.stl",
+      "sha256": "94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096",
+      "size_bytes": 191734
+    },
+    {
+      "path": "public/sample/meshes/link1.stl",
+      "sha256": "7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894",
+      "size_bytes": 1020984
+    },
+    {
+      "path": "public/sample/meshes/link2.stl",
+      "sha256": "553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5",
+      "size_bytes": 1215334
+    },
+    {
+      "path": "public/sample/meshes/link3.stl",
+      "sha256": "cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd",
+      "size_bytes": 1215634
+    },
+    {
+      "path": "public/sample/meshes/link4.stl",
+      "sha256": "158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa",
+      "size_bytes": 1174984
+    },
+    {
+      "path": "public/sample/meshes/link5.stl",
+      "sha256": "c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7",
+      "size_bytes": 94084
+    },
+    {
+      "path": "public/sample/meshes/right_jaw_link.stl",
+      "sha256": "37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c",
+      "size_bytes": 49584
+    },
+    {
+      "path": "public/sample/meshes/wheel_left_back_link.stl",
+      "sha256": "22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2",
+      "size_bytes": 3278784
+    },
+    {
+      "path": "public/sample/meshes/wheel_left_front_link.stl",
+      "sha256": "2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680",
+      "size_bytes": 3299084
+    },
+    {
+      "path": "public/sample/meshes/wheel_right_back_link.stl",
+      "sha256": "68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8",
+      "size_bytes": 4184384
+    },
+    {
+      "path": "public/sample/meshes/wheel_right_front_link.stl",
+      "sha256": "9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9",
+      "size_bytes": 3276484
+    },
+    {
+      "path": "public/sample/provenance.json",
+      "sha256": "0bcdc534f6098e55323fceba41119bb2317a4fd9057b4436a718fc796fcd2be8",
+      "size_bytes": 5757
+    },
+    {
+      "path": "public/sample/scene.json",
+      "sha256": "4ae29235013ba992f723971e5e0870f2dd08f1161361f864b2009ebb774aee6e",
+      "size_bytes": 116370
+    },
+    {
+      "path": "public/sample/snapshot.json",
+      "sha256": "759aa9947c1241119d2946f05d18dbb09b67461012ce16af16f27f7c1418a05f",
+      "size_bytes": 15741
+    },
+    {
+      "path": "src/adapters/services.ts",
+      "sha256": "0acc91f841cb5c6d4116fdcf463a4f9c21bc39e678e8443438b8ef6a51fe859c",
+      "size_bytes": 2671
+    },
+    {
+      "path": "src/adapters/types.ts",
+      "sha256": "bfb04d9cb58f9b97b133bdb77c0f07be08ee00becaac11d2eee529b3f007315c",
+      "size_bytes": 3011
+    },
+    {
+      "path": "src/app/App.tsx",
+      "sha256": "afe1faa09403467d03995b0940601ad2bdce633f440cb4e8b0cd631c6908ba76",
+      "size_bytes": 7159
+    },
+    {
+      "path": "src/app/context.tsx",
+      "sha256": "48975010716d37b3ca1c08599dae21ab69c832dbea61c1b7c8d855061c0c0398",
+      "size_bytes": 953
+    },
+    {
+      "path": "src/app/state.ts",
+      "sha256": "9525a83df3f596e9dfee81bcc3a4a7f8730e941f334b9ee45c2eb80141f83096",
+      "size_bytes": 2046
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "b4d0cc34d5467be3a26c595b60106a9c23f9344267d0dcfb56a79000773d1dda",
+      "size_bytes": 236
+    },
+    {
+      "path": "src/viewport/kinematics.ts",
+      "sha256": "1d1b645cd8b19fc2b709c727f01928c186eb7204be2606817fc74f407dbe30f8",
+      "size_bytes": 3023
+    },
+    {
+      "path": "src/viewport/native-scene-view.d.ts",
+      "sha256": "1bf872534821f8923bc21b2d01199949c05198411995abb9da2916323509b0d7",
+      "size_bytes": 1563
+    },
+    {
+      "path": "src/viewport/native-scene-view.js",
+      "sha256": "06f4e0622c0190cdc2fc6258ab574955c5d7ac19b4bc235f48a2cb36f7d21d23",
+      "size_bytes": 24961
+    },
+    {
+      "path": "src/viewport/workbench-scene.ts",
+      "sha256": "3cbe7290e21507fa91ef5d56da252db5d2658fc496bca9c8dc2efe2073c03f9e",
+      "size_bytes": 15553
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
+      "size_bytes": 38
+    },
+    {
+      "path": "src/workbench/Icon.tsx",
+      "sha256": "82f828642921bf991bc0b6e6ae7b49646243fbf83d333afeca593bbc8e040c92",
+      "size_bytes": 1347
+    },
+    {
+      "path": "src/workbench/Layout.tsx",
+      "sha256": "29deee7706ba480279ab24b1c582b5d0ce47c466ef432b19832056cde501b21f",
+      "size_bytes": 2896
+    },
+    {
+      "path": "src/workbench/panels.tsx",
+      "sha256": "060c72d91d2be7710b7c145c313c35e78d929c706c46baabeaedaea9289682f5",
+      "size_bytes": 14030
+    },
+    {
+      "path": "src/workbench/styles.css",
+      "sha256": "f8290e1d6afe7bb2fa48fea3fd5abf6523e2b8e613dd97f1317157d123987c8b",
+      "size_bytes": 18813
+    },
+    {
+      "path": "tests/browser-workbench.py",
+      "sha256": "04339c0d9fde172b11a5964aa2c775deccd162f0fac867653be4e50b422fd851",
+      "size_bytes": 10770
+    },
+    {
+      "path": "tests/targets.test.ts",
+      "sha256": "fecee5cb41d9cbe7144c70b5b9f07d2c39e5deaa288aa67a9253f3b1c8fba3bf",
+      "size_bytes": 2584
+    },
+    {
+      "path": "tools/check-release.py",
+      "sha256": "a4d678de3654e4c3e58d3451f450478ffa7c3e994c5b219b2255b6f101939887",
+      "size_bytes": 3104
+    },
+    {
+      "path": "tools/freeze-scene.py",
+      "sha256": "d063d2fe89bb43872d3baf02734251a201d38c2e295366f1b0f9f0b34af88a18",
+      "size_bytes": 2238
+    },
+    {
+      "path": "tools/release-source.py",
+      "sha256": "0be891e1a6e48f133855fd670c776d0bde9105cb7620895489d9e6bb0afeca2f",
+      "size_bytes": 1287
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "ff8726ea9b510f1c1fd7b8cb2979e8c451f6d38305643b71611b0325f9bc6187",
+      "size_bytes": 369
+    },
+    {
+      "path": "vite.config.ts",
+      "sha256": "fcb8cdaff179c25ec62f725dbe3d9548fdd380033f1aef393099aeb005bd7148",
+      "size_bytes": 142
+    }
+  ]
+}
