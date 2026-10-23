@@ -1,8 +1,8 @@
 # Simulation｜统一在线任务工作台
 
-规范 ID：`PAGE-03` · 责任层：前端页面设计 · 版本：V0.4（2026-10-22）
+规范 ID：`PAGE-03` · 责任层：前端页面设计 · 版本：V0.7（2026-10-23）
 
-状态：页面详细草案；“每页必须有图片参考”是本轮用户要求，具体布局与新增能力仍是设计建议。图片是概念稿，不是现有可运行界面的证据。
+状态：页面详细设计与实施计划约束；统一工作台和可操作 3D 方向有用户依据，具体布局比例/技术适配仍待样板验证。图片是概念稿，不是现有可运行界面的证据。前端实现继续暂停，本轮仅重新规划，见 [S17](../../90-governance/sources/S17-3d-workbench-replan.md)。
 
 [页面总览](README.md) · [统一页面规则](../01-shell/04-visual-design-rules.md) · [冲突分析](../../90-governance/08-visual-design-conflicts.md)
 
@@ -12,7 +12,7 @@
 
 - 页面 ID：`PAGE-03`；导航归属：Run。
 - 主要对象：Runtime Session、活动配置快照、部件控制权、Recording、Episode。
-- 增量路线：A/B 首条闭环，C/D 增量。这是设计顺序，不是排期或启动实施。
+- 当前增量路线：M1 mobileCar Human 四步闭环，M2 bimanual 复用；Expert/Policy 按真实能力后续接入，同一工作台承载。这是范围和设计顺序，不是排期或启动实施。
 
 ## 图片参考
 
@@ -28,6 +28,8 @@
 | D–F 主区 | 层级树、共享 3D/地图主视口、Actual/Target 和命令状态 Inspector。 |
 | G 观测区 | LanderPi 按导航/近场配置；SO101 默认中央及左右腕三路 RGB。 |
 | H 时间轴 | 在线阶段、来源、事件和录制边界，允许折叠。 |
+
+3D 为主要操作区域；顶部配置、诊断及高级详情可折叠，不能挤掉视口或运行/录制/Owner 反馈。区域关系、首个样板范围与后续集成门槛见 [统一 3D 工作台实施计划](../../00-overview/09-page-design-delivery-plan.md)。主平台采用统一外壳/面板职责，专项轻宿主仍可独立。
 
 ## 关键操作与跳转
 
@@ -74,3 +76,9 @@
 ## 原型验证关注点
 
 参考图可查看、数据对象可追溯、同一操作只有一个权威入口；不支持的操作有明确原因。涉及运动、标注、导出或作业时，分别按主责功能验收，不能以页面截图代替验证。
+
+下一份可检查前端产物必须能加载固定真实模型、操作观察相机、联动对象树/3D/Inspector，并使用显式 Joint/TCP 工具编辑与取消同源 Target；Actual、Ghost、候选轨迹及目标辅助线的含义可辨。离线/历史/合成数据标明来源，不能显示虚假的 live、执行到位或 Session Ready。只有 TCP 球拖动或新增表单不足以完成该样板。
+
+手柄拖动与 Orbit、单击选择与双击/框选、驾驶键与文本输入必须按 pointerdown 和焦点仲裁。实际命令仍受 Owner、准备态和录制门控；预览/取消不写 Actual，失焦撤销持续输入。沿用 [交互验收](../../40-verification/01-interaction-acceptance.md) 及 [工作区验收](../../40-verification/02-workspace-runtime-acceptance.md)，不增加一套重复 TEST 编号。
+
+本轮工程方向为 React + TypeScript 外壳、Three.js SceneView 适配，Dockview 先验证尺寸/焦点/生命周期。详细适配边界在实施计划维护，不从图稿推断技术库或 API 已实现。Human/Expert/Policy 的部件控制源、仿真/任务/录制三域及只读历史回放始终保留在整体架构内。

@@ -18,3 +18,7 @@ A MuJoCo-based embodied AI simulation and 3D interaction data collection platfor
 ### V0.6 当前开发范围
 
 [mobileCar 四步闭环与 bimanual 复用](docs/specs/00-overview/10-first-task-closed-loop.md)：先场景→运行→录制→回放，再验证共享组件的宿主隔离与适配。训练/预测后续；[配置/宿主契约](docs/specs/30-contracts/07-task-scene-experiment-config.md)、[采集/回放契约](docs/specs/30-contracts/03-episode-events-annotations.md) 为当前主责。本轮仅修复规范，未改变后端和原生项目。
+
+### V0.7 统一 3D 工作台计划复评
+
+[最新前端实施计划](docs/specs/00-overview/09-page-design-delivery-plan.md)：先统一 React/TS 外壳、Three.js SceneView 复用边界，再逐项接通 mobileCar；下一份前端产物为对象树/视口/Inspector、相机与 Joint/TCP Target 可操作样板，继而接控制、录制和只读回放。诊断/元数据草案只代表接入基础。M1/M2 范围不变，前端实现继续暂停，本轮仅修订设计和计划。

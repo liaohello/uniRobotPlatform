@@ -1,0 +1,11 @@
+{
+  "snapshot_id": "m11-20261023T023547Z-8466f8d3f32a",
+  "pid": 63735,
+  "pgid": 63735,
+  "port": 18090,
+  "argv": [
+    "uvicorn",
+    "unirobot.api:app"
+  ],
+  "allow_launch": false
+}

@@ -1,12 +1,22 @@
 # Specification 修订记录
 
-规范 ID：`GOV-CHANGELOG` · 责任层：治理 · 版本：V0.6（2026-10-22）
+规范 ID：`GOV-CHANGELOG` · 责任层：治理 · 版本：V0.7（2026-10-23）
 
-状态：设计草案；S08/S09 是用户提供的分析文本，不自动视为所有细节已确认。Waypoint 范围以 S10 的用户明确选择为准。实现及产品验收均未执行。
+状态：设计草案；S08/S09 是用户提供的分析文本，不自动视为所有细节已确认。Waypoint 范围以 S10 的用户明确选择为准。诊断/草案实现证据见独立交付记录，正式 M1/M2 与工作台验收未执行。
 
 来源：[S08](sources/S08-frontend-ia-analysis.md)、[S09](sources/S09-unified-development-reuse-analysis.md)、[S10](sources/S10-waypoint-scope-confirmation.md)。
 
 [上级目录](README.md) · [总索引](../README.md)
+
+## V0.7｜2026-10-23
+
+- 按 S17 复评前端计划，恢复 S11/DEC-036 的统一架构原则与 PAGE-03 的可操作 3D 工作台交付形态；不改变 M1 mobileCar / M2 bimanual 和训练后续次序。
+- 纠正把诊断页/元数据草案的 FastAPI 静态 ES modules 选择当作主前端架构的偏差。工程方向沿既有分析采用 React + TypeScript、Three.js SceneView 封装，Dockview 先验证再采用；不重写整套 native renderer 或迁移仿真后端。
+- M1.2 内先交付对象树/视口/Inspector、相机与 Joint/TCP Target 预览/取消样板，再完成配置验证/prepared；M1.3～1.5 在同一骨架接控制/录制/历史。补焦点、Actual/Ghost/轨迹、权限/命令回执及来源/时间验收边界，复用现有 TEST 编号。
+- 同步 PAGE-03、路线、交接与交付记录的取代说明；新增 S17、DEC-052～054 并登记机器索引。历史原文、素材、运行证据和产品代码不变，不把已有32项聚焦测试/11项浏览器检查上升为工作台或真实 M1 验收。
+- 本轮只做文档与索引核对，前端生产实现继续暂停；兼容性、手势/参考系、性能及真实闭环仍待对应样板/集成验证。
+
+本轮定向文档核对通过：149个目录节点的路径/编号、89项需求的主责/TEST映射、来源和原总册字节哈希，以及14份相关 Markdown 的569个本地链接目标。`git diff --check` 通过；backend 文件与本轮修订前的哈希清单一致。两路追加只读复核确认暂停/进度说明及关键交互契约一致。以上均为文档核对，不是产品测试、库兼容性或 M1 验收。
 
 ## V0.6｜2026-10-22
 

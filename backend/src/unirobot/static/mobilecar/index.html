@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mobileCar 接入核对 · uniRobotPlatform</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="integration">
+    <header>
+      <a href="/">← 任务目录</a>
+      <p class="eyebrow">M1 · 场景 → 运行 → 录制 → 回放</p>
+      <h1>mobileCar 接入核对</h1>
+      <p>保存本次配置草案并核对当前服务。保存和检查不启动会话、RESET 或录制。</p>
+    </header>
+    <section class="panel" id="draft-editor" aria-labelledby="draft-title">
+      <h2 id="draft-title">配置草案</h2>
+      <p>固定 G1 人工预设。初态和场景布局暂不支持修改；名称与描述可独立保存。</p>
+      <label>载入草案<select data-draft-list><option value="">新草案</option></select></label>
+      <label>名称<input data-draft-name value="LanderPi 人工遥操作" maxlength="200" required></label>
+      <label>描述<textarea data-draft-description rows="3" maxlength="4000"></textarea></label>
+      <div class="actions">
+        <button type="button" data-draft-save>保存草案</button>
+        <button type="button" data-draft-validate disabled>检查已保存配置</button>
+        <button type="button" data-draft-discard>放弃修改并重新加载</button>
+      </div>
+      <p data-draft-status role="status" aria-live="polite">新草案，尚未保存。</p>
+      <p data-draft-error class="error" role="alert" hidden></p>
+      <dl data-draft-summary></dl>
+    </section>
+    <section class="panel" aria-labelledby="preset-title">
+      <div class="toolbar">
+        <div><h2 id="preset-title">LanderPi · 整车人工遥操作</h2><p>固定 mobile_pick 场景；初态编辑尚未开放。</p></div>
+        <button type="button" data-check>核对当前服务</button>
+      </div>
+      <p data-status role="status" aria-live="polite">尚未核对服务。任务目录中的在线状态不代表会话就绪。</p>
+      <p data-error class="error" role="alert" hidden></p>
+      <dl data-preset></dl>
+    </section>
+    <section class="panel" aria-labelledby="runtime-title">
+      <h2 id="runtime-title">当前运行身份</h2>
+      <p>身份取自 native 实际状态；录制开始的 RESET 会形成新的 Episode 边界。</p>
+      <dl data-runtime><dt>状态</dt><dd>尚未核对</dd></dl>
+    </section>
+    <section class="panel" aria-labelledby="checks-title">
+      <h2 id="checks-title">能力与接入差距</h2>
+      <ul data-checks class="checks"><li>读取服务后显示各项结果。</li></ul>
+      <div class="actions">
+        <button type="button" disabled aria-describedby="session-blocker">创建 prepared Session</button>
+        <button type="button" disabled aria-describedby="session-blocker">Start</button>
+      </div>
+      <p id="session-blocker">当前原生协议尚缺 Session 绑定与显式 Start。录制 start 包含 RESET，不能用于准备会话。</p>
+    </section>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

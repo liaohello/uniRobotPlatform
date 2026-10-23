@@ -1,6 +1,6 @@
 {
-  "version": "0.6",
-  "date": "2026-10-22",
+  "version": "0.7",
+  "date": "2026-10-23",
   "status": "base_specification_draft",
   "source_sha256": "995e4bf3c3fdc19f6874e1d221d5e52195db5f38e79fcac8c082b8ac9939119a",
   "packages": [
@@ -157,15 +157,15 @@
       "title": "共用契约与任务控制台的增量路线",
       "layer": "系统",
       "source_chapter": null,
-      "last_revision": "0.6"
+      "last_revision": "0.7"
     },
     {
       "path": "00-overview/09-page-design-delivery-plan.md",
       "id": "SYS-PAGE-DELIVERY",
-      "title": "页面设计收敛与任务增量计划",
+      "title": "统一 3D 工作台与任务增量实施计划",
       "layer": "系统规划",
       "source_chapter": null,
-      "last_revision": "0.6"
+      "last_revision": "0.7"
     },
     {
       "path": "00-overview/README.md",
@@ -474,7 +474,8 @@
       "id": "PAGE-03",
       "title": "Simulation｜统一在线任务工作台",
       "layer": "前端页面设计",
-      "source_chapter": null
+      "source_chapter": null,
+      "last_revision": "0.7"
     },
     {
       "path": "10-frontend/page-designs/04-episode-library.md",
@@ -939,7 +940,7 @@
       "title": "决策与方案演变记录",
       "layer": "治理",
       "source_chapter": 38,
-      "last_revision": "0.6"
+      "last_revision": "0.7"
     },
     {
       "path": "90-governance/02-open-questions.md",
@@ -979,7 +980,7 @@
       "title": "来源目录与完整性声明",
       "layer": "来源",
       "source_chapter": 43,
-      "last_revision": "0.6"
+      "last_revision": "0.7"
     },
     {
       "path": "90-governance/07-change-log.md",
@@ -987,7 +988,7 @@
       "title": "Specification 修订记录",
       "layer": "治理",
       "source_chapter": null,
-      "last_revision": "0.6"
+      "last_revision": "0.7"
     },
     {
       "path": "90-governance/08-visual-design-conflicts.md",
@@ -1227,6 +1228,14 @@
       "layer": "来源归档",
       "source_chapter": null,
       "last_revision": "0.6"
+    },
+    {
+      "path": "90-governance/sources/S17-3d-workbench-replan.md",
+      "id": "SRC-S17-3D-WORKBENCH-REPLAN",
+      "title": "S17｜统一 3D 工作台与前端执行计划复评",
+      "layer": "来源归档",
+      "source_chapter": null,
+      "last_revision": "0.7"
     }
   ],
   "supplement_sources": {
@@ -1284,6 +1293,11 @@
       "path": "90-governance/sources/S16-mobile-first-spec-repair.md",
       "sha256": "9151707aacd0c9f1aab73c08a894cc1511d87a309596b4c52ad540c6eccb3703",
       "kind": "current_user_mobile_first_scope_and_spec_repair_authorization"
+    },
+    "S17": {
+      "path": "90-governance/sources/S17-3d-workbench-replan.md",
+      "sha256": "81779eaae6a980aa615e62dba8d8cc717c5cc44c02546b19c1039ad63b17b870",
+      "kind": "current_user_3d_workbench_replan_request"
     }
   },
   "page_design_index": "10-frontend/page-designs/README.md",

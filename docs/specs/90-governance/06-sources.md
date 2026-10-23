@@ -83,3 +83,7 @@ S08/S09 原文件按字节归档；其中远程图片/仓库声明不构成本�
 ## V0.6 当前范围与修复授权
 
 [S16](sources/S16-mobile-first-spec-repair.md)：用户明确 mobileCar 四步闭环优先、bimanual 验证复用，并在只读审核后授权修复、继续使用多 agents。替换 V0.5 的首发顺序/训练前置建议，保留完整数据/模型流程为后续目标；轻量工具与平台可有不同宿主，不强制共享可写全局状态。原生 mobileCar 仅做静态接口核对，没有启动仿真、迁移工程或执行产品验收。
+
+## V0.7 前端执行计划复评
+
+[S17](sources/S17-3d-workbench-replan.md)：当前用户要求依据已有设计和 Specification 重新规划好操作的 3D 界面，并明确可用多 agent 核定。重申 S11 的统一前端架构原则，保留 S16 的阶段/轻量宿主边界。具体 React/TS、SceneView 封装、Dockview 验证与样板顺序是本轮工程建议，不虚构历史库选型确认；本轮仅修订文档，前端实现继续暂停。来源字节哈希登记于 catalog.json 与 traceability.json。

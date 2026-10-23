@@ -1,0 +1,101 @@
+{
+  "snapshot_id": "m12-20261023T054437Z-4291d55594b5",
+  "source_aggregate_sha256": "4291d55594b50fc5afb328faf88f6126ec4fa9d97f7e79fcb8853bbc3fed8781",
+  "executed_on": "server",
+  "server_project_root": "/home/liaozhengyan/Desktop/uniRobotPlatform",
+  "server_report_relative_path": "var/reports/m12-20261023T054437Z-4291d55594b5",
+  "source_files": 32,
+  "focused_tests": {
+    "passed": 32,
+    "junit": "focused.junit.xml"
+  },
+  "browser_checks": {
+    "passed": 11,
+    "reports": [
+      "browser.json",
+      "draft-browser.json"
+    ]
+  },
+  "restart_persistence": true,
+  "native_simulation_started": false,
+  "m1_product_acceptance": "not_executed",
+  "draft_database_relative_path": "var/reports/m12-20261023T054437Z-4291d55594b5/browser-drafts.sqlite3",
+  "draft_database_sha256": "5481be30f4d3864ac182ac5289d17d0287501f073cf4dc696778e5ed27390935",
+  "files": [
+    {
+      "path": "source-manifest.json",
+      "sha256": "5110c920c28111707e2f8d888863c48cfef791e9b0142d5557ba1bbf30bc5991",
+      "size_bytes": 5729
+    },
+    {
+      "path": "environment.txt",
+      "sha256": "3745081a38bb25136b9fcc28e1f29219e3c19e7403a151a04df1076db3092daa",
+      "size_bytes": 483
+    },
+    {
+      "path": "focused.junit.xml",
+      "sha256": "40f5a1d24374c8342b755e2ab45889262f510eb8d0404d02a0d0021be24bfee4",
+      "size_bytes": 4334
+    },
+    {
+      "path": "focused.log",
+      "sha256": "9f55467d21fe9468d832d7c3c353f648042273ae1695f864901e794ba50a3d27",
+      "size_bytes": 643
+    },
+    {
+      "path": "browser.json",
+      "sha256": "5f1a08903f2ca88c2312df2d1d77d63775fc896cbc218df33084a3a14924c652",
+      "size_bytes": 6602
+    },
+    {
+      "path": "draft-browser.json",
+      "sha256": "785ca63e9a6f3aa8f20f0754bcf602f6badaa230aeef1bb2dff1a63ab2ca2767",
+      "size_bytes": 444
+    },
+    {
+      "path": "browser_mobilecar.py.log",
+      "sha256": "e01f0d70d6e9cf786fad9f72b1fea74d8f6ac291299f640dcec7df8b467be038",
+      "size_bytes": 324
+    },
+    {
+      "path": "browser_drafts.py.log",
+      "sha256": "8b8c931a8c3b5b47f161a0b2f04b30999b61c408317e4cc4ef108a0ad550e2f2",
+      "size_bytes": 410
+    },
+    {
+      "path": "persistence.json",
+      "sha256": "78a26f66bc04b2e9aa6b505a95fe040b146dc3b049286b4a63d4513bc706aab6",
+      "size_bytes": 43
+    },
+    {
+      "path": "native-before-after.json",
+      "sha256": "2ffcf8f0811cbb90bf22d5ad13cce74b6b735cde6f39c70f2fd3c09ec135b1d4",
+      "size_bytes": 795
+    },
+    {
+      "path": "job.json",
+      "sha256": "0ee524b3f001881d3defe20d6b290a5e5ca190d4a67209110dcd89f72a4d648a",
+      "size_bytes": 136
+    },
+    {
+      "path": "job-exit.json",
+      "sha256": "8bcb98bed0f271b5b04d6560e13f76985687ed77b0e30ba8d50b50cbb6e5851c",
+      "size_bytes": 69
+    },
+    {
+      "path": "mobilecar-preflight.png",
+      "sha256": "90c92b742b33c457c56cb0ac1c810e32e91269a698bef354a80e88fa7356e2ec",
+      "size_bytes": 332857
+    },
+    {
+      "path": "mobilecar-preflight-mobile.png",
+      "sha256": "20c3c8bd458f0ebdd9dbbaef511a187a5f75455a80c3cf088faac30a3f228cea",
+      "size_bytes": 313372
+    },
+    {
+      "path": "draft-editor.png",
+      "sha256": "cad9acaf69a36701dc02d0665e0f971d82c34892e5d4af61ea96ad12adc7af7f",
+      "size_bytes": 56418
+    }
+  ]
+}

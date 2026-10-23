@@ -163,3 +163,7 @@ Operator View 只控制操作者展示；Policy Observation 声明模型输入�
 PointGoal 可按任务协议把已知目标坐标提供给策略；ObjectNav 的目标实例真值只在布局/评估通道，不因 UI 可见就泄露给 Policy。真值、操作者可见信息、策略观测和评分通道分别声明。
 
 参考 [任务字段](../10-frontend/02-scene-setup/02-task-template-configuration.md)、[路线契约](08-navigation-map-route.md)、[场景版本](../20-backend/01-session-scene/02-scene-config-versions.md)、[时间/单位](04-time-frames-units.md)、[TEST-CONFIG-002～006](../40-verification/06-scene-setup-first-loop.md)。
+
+## M1.2 当前实现切片
+
+固定 G1 recipe 的持久草案保存/重载、baseRevision冲突、元数据与执行修订分离、依赖过期和迟到结果拒绝已实现，精确 HTTP 字段与服务器证据见 [M1.2 交付记录](../../m1.2-drafts.md)。初态可写字段为空，必需的 native Session 绑定仍unsupported；验证不会签发Passed/ValidatedSnapshot，Session创建返回409/unsupported。上述完整快照/创建契约仍是后续必须实现的要求，不能由当前元数据草案功能替代。
