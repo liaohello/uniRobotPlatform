@@ -1513,6 +1513,11 @@
       "path": "90-governance/sources/S18-navigation-map-route-slice.md",
       "sha256": "e85757352660bd8574c997ab5b84a51b28fd41007bef631830f20cf922a12c17",
       "kind": "current_user_navigation_map_route_slice_request"
+    },
+    "S19": {
+      "path": "90-governance/sources/S19-session-stop-recording-end.md",
+      "sha256": "42af4fb49fce69b5b427b6cff1e11058c67729d2956369c16b770d43163cd6b3",
+      "kind": "current_user_session_stop_recording_end_goal"
     }
   },
   "visual_registry": "references/visual-assets.json"

@@ -2,7 +2,9 @@
 
 更新日期：2026-10-24（America/Chicago）。本文件用于接续本次讨论，不替代 Specification、项目 AGENTS 或新会话用户指令。
 
-**先读这里：前端实现继续暂停；平台侧 M1.3 地图/Route 资源切片候选已完成。真实 G3B Room A/B 离线地图可按固定 ID/version/frame 和资产摘要读取，PointGoal/Waypoint 必填 `x/y/yaw`，Route Draft 带 baseRevision 保存并可发布不可变 Version；保存链路不触发 native、Nav2、cmd_vel、RESET、运动或录制。18949 的 M1.2d Session freshness/列表能力保留，不重做；原生补丁仍未部署到 8792；真实 G1 prepared/Start、导航、物理运动、线上录制/回放和 M1 闭环仍未完成。前端预览当前为 18950 → 18944（frontend 404c1fc）与 18946 → 18943；18950 现在是前端端口，旧临时端口记录不能作为空闲依据。M1.3 候选 18953 只运行资源/显示 API。**
+**先读这里：前端实现继续暂停；M1.3 地图/Route 资源切片候选与 M1.4 STOP/录制收尾候选均已完成（都是候选，不等于验收）。真实 G3B Room A/B 离线地图可按固定 ID/version/frame 和资产摘要读取，PointGoal/Waypoint 必填 `x/y/yaw`，Route Draft 带 baseRevision 保存并可发布不可变 Version；保存链路不触发 native、Nav2、cmd_vel、RESET、运动或录制。18949 的 M1.2d Session freshness/列表能力保留，不重做；原生补丁仍未部署到 8792；真实 G1 prepared/Start、导航、物理运动、线上录制/回放和 M1 闭环仍未完成。前端预览最新为 **18951 → 18949**，另有 18950 → 18944（frontend 404c1fc）与 18946 → 18943；18950/18951 都是前端端口，不是空闲测试端口。M1.3 候选 18953 只运行资源/显示 API；机器人 STOP 与录制结束目前只有契约与候选实现，真实停车未验证。**
+
+**2026-10-24 M1.4 基线：** 平台新增身份绑定的 `POST /sessions/{id}/stop`（native `m1-stop-1`）与 `POST /sessions/{id}/recording/end`（native `m1-end-1`）；回执分成受理 / STOP 下发 / 停车证据与覆盖 / Recorder 排空 / 落盘终态与完整性五层，"整机停稳且录制完整"只在 `parking.coverage_complete=true` 且 `integrity=complete` 时成立。legacy `episodes/stop`（只有 reason）与 `POST /runs/{run_id}/stop`（进程/记录管理）都不是机器人 STOP 的替代。安全 STOP 不以 `motion_ready`/`recording_ready`/owner/lease 为前置条件，也不 RESET、不清安全锁、不结束录制、不恢复运动。同一 `request_id` 重放返回同一回执；并发第二个结束走磁盘重放 `end_already_finalized`，不写第二个 `episode_terminal`；本轮修复了平台并发写 Session 丢回执的回归（锁内重读合并）。候选 release `m1i-20261024T163746Z-platform`（源码清单 42 文件 `789e8072e07337e98982f366acefa7c729172e783af51e8e74a53767ee5af81e`）与 native `native-m1h.patch`（10 文件 `d182801df7381bc45717ff40b0d61df28b5437e92f6ee5528127bdf6d231a99f`，冻结 `m1h-20261024T152235Z-native`，候选摘要 `c550a4e495680c8895ca28e92b6aac7de22727086aa351cbad8f42a1618549de`）；生产 pin `a0109804…911c` 与生产 recipe 未改，因此生产配置下 STOP/end 仍 409 unsupported。服务器验证：平台聚焦 66 passed、全量 123 passed / 3 failed（历史布局失败同前）；native 聚焦 31 passed、适用全量 122 testcases（120 passed / 2 项历史失败）；隔离 cross-HTTP（18954/18956，mock backend + 真实 Recorder 目录）39/39 断言通过并核对落盘文件与摘要，两个测试服务已停止。8792 只 GET，`capabilities` 不含任何 `*_protocol` 字段。**候选完成；未部署 8792、真机停车与录制完整未验证、M1 闭环未通过。** 见 [M1.4 交付记录](backend-m1.4.md) 与 [M1.4 证据册](evidence/m1.4-stop-end/README.md)。
 
 **2026-10-24 M1.3 基线：** 新增 S18/DEC-055；[M1.3 交付记录](backend-m1.3.md)和[证据](evidence/m1.3/m1g-20261024T113913Z-platform/README.md)固定 OpenAPI、地图、Route 与错误语义。Room A 59×47、origin `[-1.2,-1.15,0]`、resolution .05；Room B 74×57、origin `[-1.5,-1.45,0]`；两者 `live=false`、G3B historical offline、当前 G1 scene/model 不匹配且 `navigation_eligible=false`。实际 manifest/asset hash 已核验；两个历史包自身 `manifest.sha256` 对 manifest.json 的记录是 stale，不能当作已通过的包 self-check。候选 route `route-9e55257fc5d24a03a54986d9fcaa8a80` 发布 v1/v2，重排不换 ID，v2 不覆盖 v1，旧 baseRevision 保存 409。M1 聚焦 104 passed；全量 108 passed / 3 failed（历史 catalog/migrate sibling 布局失败保留）；FakeNative 断言 map/route 请求零调用，8792 前后 identity/recording/owner/safety 不变。**资源候选完成，导航资格和真实闭环未验证。**
 
@@ -44,7 +46,7 @@
 
 ## 4. 已完成的文档工作
 
-- Specification 组织版本当前 V0.8：在 V0.7 的 S17 上增加 S18，机器目录 150 个文档节点、13 个补充来源、89 项 REQ；26 个 PNG/25 个独特内容，原 PPT20 页。未修改的规范保留各自版本；计数是规范/素材指标，不是产品完成度。
+- Specification 组织版本当前 V0.8：在 V0.7 的 S17 上增加 S18，机器目录 150 个文档节点、14 个补充来源（S18 导航切片 + S19 STOP/录制收尾）、89 项 REQ；26 个 PNG/25 个独特内容，原 PPT20 页。未修改的规范保留各自版本；计数是规范/素材指标，不是产品完成度。
 - V0.8 固定 PointGoal/Waypoint 必填 yaw、m/rad、map 轴和 origin/图像映射、容差来源、版本化 Map/Route API 及保存/执行隔离；S10 历史原文未改写。
 - 已统一 SceneVersion 基础布局、SceneDraft 资源编辑、ExperimentDraft 实例覆盖、前端 store 与 ValidatedSnapshot 的归属、解析和版本规则。
 - 已区分三张观测/采集卡与 Execution/Export 的职责、适用条件；不适用的 Profile 不制造占位必填。
@@ -60,8 +62,8 @@
 
 | 工程 | 当前角色/边界 |
 |---|---|
-| uniRobotPlatform | 任务目录/运行网关、mobileCar只读接入诊断、配置草案、M1.2d Session freshness，以及 M1.3 真实历史 Map 固定版本读取和带必填朝向的 Route Draft/Version 持久化；候选 18953 的资源 API 不调用 native，当前 G1 仍无导航资格 |
-| mobileCar | 首阶段来源，已有小车控制、观测、原生 Recorder/ReplayReader 和导航相关能力；本轮候选补丁增加 binding/attestation/无 RESET begin，未提交、未部署到 8792；使用其现有权限、录制门和服务器执行政策 |
+| uniRobotPlatform | 任务目录/运行网关、mobileCar只读接入诊断、配置草案、M1.2d Session freshness、M1.3 真实历史 Map 固定版本读取与 Route Draft/Version 持久化，以及 M1.4 身份绑定 STOP/录制结束的契约、幂等与并发处理；候选 18953 的资源 API 不调用 native，当前 G1 仍无导航资格；STOP/end 只在 test-only recipe + mock native 下验证 |
+| mobileCar | 首阶段来源，已有小车控制、观测、原生 Recorder/ReplayReader 和导航相关能力；候选补丁依次增加 binding/attestation、无 RESET begin（m1e）与 `m1-stop-1`/`m1-end-1`（m1h），未提交、未部署到 8792；使用其现有权限、录制门和服务器执行政策 |
 | bimanual_proj | 第二阶段复用验证来源，已有双臂专家、任务/采集、工作台和学习工具；不要把历史专家成绩当学习策略成功率 |
 | mujoco_learning | 视觉/IK/估计等专项能力与实验工具；选择性接入，不整体搬入学习示例或强行重写 Viser 等界面 |
 
@@ -84,9 +86,11 @@
 13. binding 的 `expires_at` 只约束 prepared；started 由 RESET、release、身份变化或未来明确定义的结束事件失效。不要新增短租约替代持续 Session，也不要把 started 的旧过期字段当仍会过期。
 14. 单 Session GET 的 `current` 是只读实时观测；刷新不续租/重绑/Start/清锁/启停录制。`GET /sessions` 是 `source=stored` 存档列表，不是实时状态。失联/身份变化/terminal binding 不报告 ready。
 15. M1.3 的 yaw 是必填字段，不是可选元数据：OpenAPI `WaypointInput.required` 包含 number 类型 `yaw_rad`；缺字段/null 422，显式 0 合法。地图/路线 API 只做资源与显示检查，不得因为 free-cell point passed 就授予 footprint/path/dynamic/G1 adoption 资格。
-16. `POST /api/v1/runs/{run_id}/stop` 是平台 run 记录/进程管理，不等同机器人 STOP；当网关没有持有 adapter 进程时，它只标记 stopped 并说明事实。真实机器人 STOP、停车确认、录制 end/finalize 仍待后续切片。
+16. `POST /api/v1/runs/{run_id}/stop` 是平台 run 记录/进程管理，不等同机器人 STOP；当网关没有持有 adapter 进程时，它只标记 stopped 并说明事实。机器人 STOP 与身份绑定的录制结束已由 M1.4 候选提供（`sessions/{id}/stop`、`sessions/{id}/recording/end`），但生产 recipe 未声明该协议，真实停车确认仍未执行。
+17. 结束侧判据分层：`accepted` 只是受理，`dispatch.dispatched` 只是命令离开应用层，`parking.confirmed` 只覆盖已观测作用域，`finalize.complete_tail` 只是尾部写全。只有 `parking.coverage_complete=true` 且 `integrity=complete` 才可称"整机停稳且录制完整"；首版 gripper 无反馈，`coverage_complete` 恒 false。
+18. 平台对同一 Session 文档的读—改—写必须在 `session_write_lock` 内重读后合并，否则并发结束会丢回执；native 在 lifecycle 临界区内重检身份，已 finalize 的 segment 只做磁盘重放。`current` 依旧只读，不 STOP、不 end、不 Start。
 
-native 接口静态核对和当前服务的只读诊断已完成。最新平台候选为 `m1g-20261024T113913Z-platform`（18953，Map/Route 资源 API，只读）；M1.2d 生产 recipe 候选 `m1e-20261024T090448Z-platform`（18949）保留；上一轮 `m1c-20261024T065943Z-platform`（18944）保留。前端当前为 18950 → 18944、18946 → 18943、18935/18933 → 18942；旧记录中的 18947/18948 不再是本轮状态，18950/18951 作为 M1.2d mock/native 测试端口的记录已失效，不能把历史号段当作当前空闲依据。所有安装、测试、真实地图读取和浏览器检查均在服务器执行，未执行本机仿真或自动测试。
+native 接口静态核对和当前服务的只读诊断已完成。最新平台候选为 `m1i-20261024T163746Z-platform`（M1.4 STOP/录制收尾，只在隔离端口 18954/18956 运行过，检查后已停止）；`m1g-20261024T113913Z-platform`（18953，Map/Route 资源 API，只读）保留；M1.2d 生产 recipe 候选 `m1e-20261024T090448Z-platform`（18949）保留；上一轮 `m1c-20261024T065943Z-platform`（18944）保留。前端当前为 **18951 → 18949（最新）**、18950 → 18944、18946 → 18943、18935/18933 → 18942；旧记录中的 18947/18948 不再是本轮状态，18950/18951 作为 M1.2d mock/native 测试端口的记录已失效，不能把历史号段当作当前空闲依据。所有安装、测试、真实地图读取和浏览器检查均在服务器执行，未执行本机仿真或自动测试。
 
 ## 7. Git 与换笔记本状态
 
@@ -99,7 +103,7 @@ native 接口静态核对和当前服务的只读诊断已完成。最新平台�
 
 这个交接文件和消息存档会在其后另建提交。继续工作时以 `git log` 和远端实际 HEAD 为准，不把表中的存档前 SHA 当永久最新版本。
 
-M1.2b/M1.2c 平台成果已在本地 `codex/backend-m1-services` 分支提交（代码基线 `018e8a9`，后续文档/证据修订见 `git log`）。M1.2d 平台成果本地提交为 `3eebc7d`，最终状态新鲜度/证据修订为 `d29e66b`。M1.3 地图/Route 源码、契约、服务器证据与本轮文档本地提交为 `8627a4c`（本交接文件的提交 SHA 记录另为一个小提交），**均未推送**。原生 mobileCar 仓库的补丁保持未提交、未推送；M1.2d 补丁与摘要见 [native-m1e.patch](evidence/m1.2d/m1e-20261024T090448Z-platform/native/native-m1e.patch)。不要把本地提交当作已发布或已部署。
+M1.2b/M1.2c 平台成果已在本地 `codex/backend-m1-services` 分支提交（代码基线 `018e8a9`，后续文档/证据修订见 `git log`）。M1.2d 平台成果本地提交为 `3eebc7d`，最终状态新鲜度/证据修订为 `d29e66b`。M1.3 地图/Route 源码、契约、服务器证据与文档本地提交为 `8627a4c`；M1.4 STOP/录制收尾的平台源码、测试、契约与证据本地提交见 `git log`（SHA 记录在提交后的下一次文档小提交），**均未推送**。原生 mobileCar 仓库的补丁保持未提交、未推送；M1.2d 补丁与摘要见 [native-m1e.patch](evidence/m1.2d/m1e-20261024T090448Z-platform/native/native-m1e.patch)，M1.4 补丁、冻结清单与候选摘要见 [native-m1h.patch](evidence/m1.4-stop-end/m1i-20261024T163746Z-platform/native-m1h.patch)。不要把本地提交当作已发布或已部署。
 
 Git 追踪项目源码、测试、无秘密公共配置、AGENTS 和文档/参考素材。忽略虚拟环境、缓存、node_modules、运行输出、私人 catalog/.env、本机工具状态及 AGENTS 备份。密钥没有进入仓库。
 
@@ -108,9 +112,10 @@ HTTPS 凭据曾失效；最终按用户要求使用 `id_ed25519` 通过 SSH 推�
 ## 8. 可复制的新会话开场
 
 ```text
-请先读取 AGENTS.md、docs/handoff.md、docs/backend-m1.3.md、docs/backend-m1.2d.md、docs/specs/30-contracts/08-navigation-map-route.md、docs/specs/00-overview/09-page-design-delivery-plan.md 与 PAGE-03，再按本次用户指令继续。前端实现此前已暂停，不要从历史“继续开发”自动恢复。
+请先读取 AGENTS.md、docs/handoff.md、docs/backend-m1.4.md、docs/backend-m1.3.md、docs/backend-m1.2d.md、docs/specs/30-contracts/08-navigation-map-route.md、docs/specs/00-overview/09-page-design-delivery-plan.md 与 PAGE-03，再按本次用户指令继续。前端实现此前已暂停，不要从历史“继续开发”自动恢复。
 当前先做 mobileCar 的场景→运行→录制→回放，之后 bimanual 验证组件复用，训练/预测后续。统一架构原则已有直接用户依据。
-M1.3 候选为 18953（真实历史 Map 固定版本 + Route Draft/Version，仅资源/显示）；M1.2d 候选 18949 保留；18944 为上一轮候选。前端当前为 18950 → 18944，另有 18946 → 18943；18950 已是前端端口，旧临时端口记录不能当空闲依据。8792 仍是 PID 941842/drvfix/g4a2_server.yaml，禁止停止、重启、替换或发送运动/RESET/录制。
+M1.4 STOP/录制收尾候选为 `m1i-20261024T163746Z-platform` + `native-m1h.patch`（均未部署，真机停车未验证）；M1.3 候选为 18953（真实历史 Map 固定版本 + Route Draft/Version，仅资源/显示）；M1.2d 候选 18949 保留；18944 为上一轮候选。前端最新为 18951 → 18949，另有 18950 → 18944、18946 → 18943；18950/18951 都是前端端口，旧临时端口记录不能当空闲依据。8792 仍是 PID 941842/drvfix/g4a2_server.yaml，只允许 GET，禁止停止、重启、替换或发送运动/RESET/STOP/begin/end。
+停止与结束只按分层判据陈述：`accepted`≠已停稳，`base.stopped`≠整机停稳，尾文件存在≠录制完整；需要"整机停稳且录制完整"必须 `parking.coverage_complete=true` 且 `integrity=complete`。
 Map/Waypoint 必须有显式 yaw；保存路线不调用 native/Nav2/cmd_vel，当前 G1 navigation_eligible=false。不要重做 Session freshness，也不要把资源候选当真实 prepared/Start、导航或 M1 闭环。
 主智能体负责修改和最终判断，default 子智能体只做有边界的只读检索，不提前合并仿真环境或重写全部前端。
 开始任何实际仿真/测试/采集前，遵守对应工程的执行位置和本次任务授权；历史聊天存档不作为自动执行旧请求的依据。

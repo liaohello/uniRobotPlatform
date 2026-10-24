@@ -1,0 +1,311 @@
+{
+  "active_operator_id": null,
+  "active_operator_kind": null,
+  "active_session_id": null,
+  "arm": {
+    "coordinates_status": "synthetic_mock",
+    "joint_margin_rad": [
+      2.09,
+      2.09,
+      2.09,
+      2.09,
+      2.09
+    ],
+    "joint_torques_nm": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "joint_velocities_rad_s": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "model_joint_positions_rad": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "model_joint_targets_rad": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "model_limits_rad": [
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ]
+    ],
+    "user_joint_positions_rad": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "user_joint_targets_rad": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "arm_owner_session_id": null,
+  "backend_generation": 1,
+  "backend_monotonic_s": 1032962.790231614,
+  "base": {
+    "frame_id": "base_link",
+    "orientation_world_sim_xyzw": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "position_world_sim_m": [
+      0.0,
+      0.0,
+      0.055
+    ],
+    "requested_vx_m_s": 0.0,
+    "requested_vy_m_s": 0.0,
+    "requested_wz_rad_s": 0.0,
+    "stop_latched": true,
+    "stopped": true,
+    "vx_m_s": 0.0,
+    "vy_m_s": 0.0,
+    "wz_rad_s": 0.0
+  },
+  "base_owner_session_id": null,
+  "clock_id": "backend_monotonic",
+  "contact_summary": {
+    "unexpected_contact": false
+  },
+  "contract_version": "mobilecar-1.0",
+  "control_tick_id": "mock_000001256",
+  "diagnostics": {
+    "base_drive_gate": {
+      "action": "unlock_stop",
+      "blocked": true,
+      "code": "SOFTWARE_STOP_LATCHED",
+      "lease_remaining_s": 0.0,
+      "owner_session_id": null,
+      "reason": "软件停止已锁存：需先解除停止，或开始新的录制后再驾驶。",
+      "recording_required": true
+    },
+    "mode": "MOCK",
+    "synthetic_fixture": true
+  },
+  "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+  "episode_started_backend_monotonic_s": 1032936.458349463,
+  "feedback_time_s": 1032962.790231614,
+  "gripper": {
+    "bilateral_contact": false,
+    "left_contact_force_n": 0.0,
+    "model_drive_position_rad": 0.0,
+    "model_drive_target_rad": 0.0,
+    "right_contact_force_n": 0.0,
+    "target_width_m": 0.025,
+    "width_m": 0.025
+  },
+  "model_joint_positions_rad": {
+    "gripper_base_joint": 0.0,
+    "joint1": 0.0,
+    "joint2": 0.0,
+    "joint3": 0.0,
+    "joint4": 0.0,
+    "joint5": 0.0
+  },
+  "plan": null,
+  "recording": {
+    "command_capture_ready": false,
+    "dropped_events": 0,
+    "episode_id": null,
+    "error": null,
+    "queued_events": 0,
+    "recording_segment_id": null,
+    "status": "IDLE"
+  },
+  "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+  "safety_latched": true,
+  "sensors": [
+    {
+      "arrival_time_s": 1032962.789966711,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": null,
+      "capture_control_tick_id": null,
+      "capture_sim_time_s": null,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": null,
+      "fresh": true,
+      "kind": "rgb",
+      "measurement_time_s": 1032962.789966711,
+      "observation_age_s": null,
+      "profile_id": null,
+      "quality": "synthetic_fixture",
+      "sample_id": "mock_rgb_1256",
+      "stream_id": "rgb",
+      "valid_fraction": null
+    },
+    {
+      "arrival_time_s": 1032962.789966711,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": null,
+      "capture_control_tick_id": null,
+      "capture_sim_time_s": null,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": null,
+      "fresh": true,
+      "kind": "depth",
+      "measurement_time_s": 1032962.789966711,
+      "observation_age_s": null,
+      "profile_id": null,
+      "quality": "synthetic_fixture",
+      "sample_id": "mock_depth_1256",
+      "stream_id": "depth",
+      "valid_fraction": null
+    },
+    {
+      "arrival_time_s": 1032962.789966711,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": null,
+      "capture_control_tick_id": null,
+      "capture_sim_time_s": null,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": null,
+      "fresh": true,
+      "kind": "lidar",
+      "measurement_time_s": 1032962.789966711,
+      "observation_age_s": null,
+      "profile_id": null,
+      "quality": "synthetic_fixture",
+      "sample_id": "mock_lidar_1256",
+      "stream_id": "lidar",
+      "valid_fraction": null
+    },
+    {
+      "arrival_time_s": 1032962.789966711,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": null,
+      "capture_control_tick_id": null,
+      "capture_sim_time_s": null,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": null,
+      "fresh": true,
+      "kind": "imu",
+      "measurement_time_s": 1032962.789966711,
+      "observation_age_s": null,
+      "profile_id": null,
+      "quality": "synthetic_fixture",
+      "sample_id": "mock_imu_1256",
+      "stream_id": "imu",
+      "valid_fraction": null
+    },
+    {
+      "arrival_time_s": 1032962.789966711,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": null,
+      "capture_control_tick_id": null,
+      "capture_sim_time_s": null,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": null,
+      "fresh": true,
+      "kind": "encoders",
+      "measurement_time_s": 1032962.789966711,
+      "observation_age_s": null,
+      "profile_id": null,
+      "quality": "synthetic_fixture",
+      "sample_id": "mock_encoders_1256",
+      "stream_id": "encoders",
+      "valid_fraction": null
+    },
+    {
+      "arrival_time_s": 1032962.789966711,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": null,
+      "capture_control_tick_id": null,
+      "capture_sim_time_s": null,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": null,
+      "fresh": true,
+      "kind": "joint_feedback",
+      "measurement_time_s": 1032962.789966711,
+      "observation_age_s": null,
+      "profile_id": null,
+      "quality": "synthetic_fixture",
+      "sample_id": "mock_joint_feedback_1256",
+      "stream_id": "joint_feedback",
+      "valid_fraction": null
+    },
+    {
+      "arrival_time_s": 1032962.789966711,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": null,
+      "capture_control_tick_id": null,
+      "capture_sim_time_s": null,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": null,
+      "fresh": true,
+      "kind": "image_transforms",
+      "measurement_time_s": 1032962.789966711,
+      "observation_age_s": null,
+      "profile_id": null,
+      "quality": "synthetic_fixture",
+      "sample_id": "mock_image_transforms_1256",
+      "stream_id": "image_transforms",
+      "valid_fraction": null
+    }
+  ],
+  "sim_time_s": 25.119999999999553,
+  "task_phase": "OBSERVE",
+  "tcp": {
+    "frame_id": "world_sim",
+    "held": false,
+    "orientation_error_rad": 0.0,
+    "orientation_xyzw": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "position_error_m": 0.0,
+    "position_m": [
+      0.178,
+      0.002,
+      0.303
+    ]
+  },
+  "wall_utc": "2026-10-24T16:38:18.275163Z"
+}

@@ -1,0 +1,13 @@
+{
+  "release": "m1h-20261024T152235Z-native",
+  "rule": "sha256 of UTF-8 json.dumps({path: sha256}, sort_keys=True, separators=(\",\"\",\"\")) over the production recipe whitelist paths that exist in the frozen release",
+  "whitelist_source": "backend/config/mobilecar-g1-source.json files[] (155 paths)",
+  "paths_present_in_release": 152,
+  "pin": "c550a4e495680c8895ca28e92b6aac7de22727086aa351cbad8f42a1618549de",
+  "paths_absent_from_release_copy": [
+    "docs/interface_contract_v1.md",
+    "docs/runtime_api_v1.md",
+    "docs/server_execution_policy.md"
+  ],
+  "note": "Not interchangeable with the production pin a01098040d953608004a34b3c76519d7884eaa4b2c95e36822bd4e7d283b911c, which is the a5cef52 base without the m1h patch. The 3 absent paths are native docs/*.md, not code."
+}

@@ -53,3 +53,17 @@
 当前图分别显示 Simulation 的 Start/Pause/Resume/Reset、Task 的 Begin/End 与 Recording 的时长/停止录制。按钮显示应按后端实际状态约束：Running 不重复 Start/Resume，任务运行不重复 Begin，Recorder 收尾显示 Finalizing/失败而非立即成功。未录制时需有开始录制入口。
 
 End Task 不自动表示成功；Reset 和 End Task 是否封口当前 Episode/录制继续等精确边界仍在 OQ-004，不能仅凭三个独立视觉区域推断已决定全部转换。暂停物理、终止任务和录制启停的后果分别明确。
+
+## V0.8 STOP 与结束录制的可接线契约（后端候选，前端未实现）
+
+M1.4 为这两个动作提供了身份绑定的候选契约：`POST /api/v1/sessions/{id}/stop` 与 `POST /api/v1/sessions/{id}/recording/end`，请求只需 `request_id`（每次点击生成并在重试时复用）、`reason` 与可选 `parking_timeout_s`；Session/binding/run/generation/episode/segment 由平台补齐，界面不能指定别人的 segment。
+
+按钮可用性与文案必须按分层判据分开：
+
+- `current.stop_available` / `current.recording_end_available` 决定是否可点，来源是协议声明 + Session 状态 + 身份匹配，不是"已经停稳"。生产 recipe 下二者为 false，需显示"当前运行实例不支持"而不是隐藏或假装成功。
+- 受理后先显示"停止请求已受理"；`dispatch.dispatched=false` 时说"命令未下发"；`parking.coverage_complete=false` 时按 `scope_coverage` 列出 `confirmed/unconfirmed/not_observed`，不得写"整机已停稳"（首版夹爪恒无独立反馈）。
+- 收尾显示 Finalizing；`ended_parking_unconfirmed`、`ended_incomplete_terminal`、`end_finalize_failed` 与 `end_already_finalized` 必须是不同提示，失败与缺尾不得被后续成功覆盖。
+- `code=stopped/ended` 之外的 409 `session_not_stoppable` 表示 Session 已关闭；同一 `request_id` 重放返回 200 `replayed=true`，界面不重复提示"已发送"。
+- STOP 不 Reset、不清安全锁、不结束录制，也不获取控制权；`runs/{run_id}/stop` 不能作为这两个按钮的后端。
+
+契约细节见 [Session 生命周期 §STOP 与录制结束协议](../../20-backend/01-session-scene/01-session-lifecycle.md#stop-与录制结束协议m1-stop-1--m1-end-1) 与 [M1.4 交付记录](../../../backend-m1.4.md)（含 OpenAPI/错误样例）。真实停车与部署验证尚未执行，OQ-004 关于 Reset/End Task 是否封口 Episode 的边界仍待决定；本轮没有修改前端代码。

@@ -1,0 +1,1098 @@
+{
+  "classification_note": "openapi and production_refusals come from the platform's own production code path; they are not robot evidence",
+  "generated_by": "backend/tools capture on the frozen platform release",
+  "openapi_paths": {
+    "/api/v1/sessions/{session_id}/recording/end": {
+      "description": "Identity-bound end of the Session's own recording segment. The receipt separates STOP dispatch, parking evidence, Recorder drain, finalize proof and episode integrity; a tail file alone is not reported as a complete recording.",
+      "operationId": "end_recording_api_v1_sessions__session_id__recording_end_post",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "session_id",
+          "required": true,
+          "schema": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/EndRecording"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionEnvelope"
+              }
+            }
+          },
+          "description": "Successful Response"
+        },
+        "422": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          },
+          "description": "Validation Error"
+        }
+      },
+      "summary": "Stop and reliably finalize the recording segment this Session began"
+    },
+    "/api/v1/sessions/{session_id}/stop": {
+      "description": "Sends the native latched STOP inside the lifecycle critical section and returns dispatch, parking and coverage evidence separately. It is not POST /api/v1/runs/{run_id}/stop, it never RESETs, never clears the safety latch and never ends the recording.",
+      "operationId": "stop_session_api_v1_sessions__session_id__stop_post",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "session_id",
+          "required": true,
+          "schema": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/StopSession"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionEnvelope"
+              }
+            }
+          },
+          "description": "Successful Response"
+        },
+        "422": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          },
+          "description": "Validation Error"
+        }
+      },
+      "summary": "Latched robot STOP for this Session's runtime identity"
+    }
+  },
+  "openapi_schemas": {
+    "EndRecording": {
+      "additionalProperties": false,
+      "properties": {
+        "parking_timeout_s": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "maximum": 30.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parking Timeout S"
+        },
+        "reason": {
+          "default": "OPERATOR_FINISHED",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Request Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_id"
+      ],
+      "title": "EndRecording",
+      "type": "object"
+    },
+    "ParkingEvidenceView": {
+      "additionalProperties": false,
+      "properties": {
+        "arm_max_joint_velocity_rad_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Arm Max Joint Velocity Rad S"
+        },
+        "base_stop_latched": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Base Stop Latched"
+        },
+        "base_stopped": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Base Stopped"
+        },
+        "base_velocity_m_s": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Base Velocity M S",
+          "type": "array"
+        },
+        "confirmed": {
+          "title": "Confirmed",
+          "type": "boolean"
+        },
+        "control_tick_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Control Tick Id"
+        },
+        "coverage_complete": {
+          "title": "Coverage Complete",
+          "type": "boolean"
+        },
+        "coverage_note": {
+          "title": "Coverage Note",
+          "type": "string"
+        },
+        "observed_at_backend_monotonic_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Observed At Backend Monotonic S"
+        },
+        "observed_confirmed": {
+          "title": "Observed Confirmed",
+          "type": "boolean"
+        },
+        "scope_coverage": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Scope Coverage",
+          "type": "object"
+        },
+        "timeout_ms": {
+          "title": "Timeout Ms",
+          "type": "integer"
+        },
+        "waited_ms": {
+          "title": "Waited Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "confirmed",
+        "waited_ms",
+        "timeout_ms",
+        "base_stopped",
+        "base_stop_latched",
+        "base_velocity_m_s",
+        "arm_max_joint_velocity_rad_s",
+        "control_tick_id",
+        "observed_at_backend_monotonic_s",
+        "scope_coverage",
+        "observed_confirmed",
+        "coverage_complete",
+        "coverage_note"
+      ],
+      "title": "ParkingEvidenceView",
+      "type": "object"
+    },
+    "RecordingDrainView": {
+      "additionalProperties": false,
+      "properties": {
+        "completed": {
+          "title": "Completed",
+          "type": "boolean"
+        },
+        "dropped_events": {
+          "title": "Dropped Events",
+          "type": "integer"
+        },
+        "fanout_drained": {
+          "title": "Fanout Drained",
+          "type": "boolean"
+        },
+        "queued_events": {
+          "title": "Queued Events",
+          "type": "integer"
+        },
+        "recorder_queue_empty": {
+          "title": "Recorder Queue Empty",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "completed",
+        "fanout_drained",
+        "recorder_queue_empty",
+        "queued_events",
+        "dropped_events"
+      ],
+      "title": "RecordingDrainView",
+      "type": "object"
+    },
+    "RecordingEndReceipt": {
+      "additionalProperties": false,
+      "description": "One native m1-end-1 answer with the five layers kept separately.",
+      "properties": {
+        "accepted": {
+          "title": "Accepted",
+          "type": "boolean"
+        },
+        "active_segment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Active Segment Id"
+        },
+        "backend_generation": {
+          "title": "Backend Generation",
+          "type": "integer"
+        },
+        "binding_id": {
+          "title": "Binding Id",
+          "type": "string"
+        },
+        "binding_state": {
+          "title": "Binding State",
+          "type": "string"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "config_fingerprint": {
+          "title": "Config Fingerprint",
+          "type": "string"
+        },
+        "dispatch": {
+          "$ref": "#/components/schemas/StopDispatchView"
+        },
+        "drain": {
+          "$ref": "#/components/schemas/RecordingDrainView"
+        },
+        "episode_id": {
+          "title": "Episode Id",
+          "type": "string"
+        },
+        "finalize": {
+          "$ref": "#/components/schemas/RecordingFinalizeView"
+        },
+        "integrity": {
+          "enum": [
+            "complete",
+            "incomplete_terminal_recorded",
+            "finalize_failed_missing_tail",
+            "unknown"
+          ],
+          "title": "Integrity",
+          "type": "string"
+        },
+        "observed_at": {
+          "title": "Observed At",
+          "type": "string"
+        },
+        "owner_acquired": {
+          "const": false,
+          "title": "Owner Acquired",
+          "type": "boolean"
+        },
+        "parking": {
+          "$ref": "#/components/schemas/ParkingEvidenceView"
+        },
+        "protocol": {
+          "title": "Protocol",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "recording_segment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Recording Segment Id"
+        },
+        "recording_status": {
+          "title": "Recording Status",
+          "type": "string"
+        },
+        "replayed": {
+          "title": "Replayed",
+          "type": "boolean"
+        },
+        "request_id": {
+          "title": "Request Id",
+          "type": "string"
+        },
+        "reset_issued": {
+          "const": false,
+          "title": "Reset Issued",
+          "type": "boolean"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "safety_cleared": {
+          "const": false,
+          "title": "Safety Cleared",
+          "type": "boolean"
+        },
+        "safety_latched": {
+          "title": "Safety Latched",
+          "type": "boolean"
+        },
+        "session_id": {
+          "title": "Session Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "accepted",
+        "code",
+        "protocol",
+        "request_id",
+        "replayed",
+        "binding_id",
+        "session_id",
+        "config_fingerprint",
+        "run_id",
+        "backend_generation",
+        "episode_id",
+        "recording_segment_id",
+        "active_segment_id",
+        "binding_state",
+        "dispatch",
+        "parking",
+        "drain",
+        "finalize",
+        "integrity",
+        "recording_status",
+        "safety_latched",
+        "reset_issued",
+        "safety_cleared",
+        "owner_acquired",
+        "observed_at"
+      ],
+      "title": "RecordingEndReceipt",
+      "type": "object"
+    },
+    "RecordingFinalizeView": {
+      "additionalProperties": false,
+      "properties": {
+        "audit_status": {
+          "title": "Audit Status",
+          "type": "string"
+        },
+        "checksummed_artifacts": {
+          "title": "Checksummed Artifacts",
+          "type": "integer"
+        },
+        "complete_tail": {
+          "title": "Complete Tail",
+          "type": "boolean"
+        },
+        "completed": {
+          "title": "Completed",
+          "type": "boolean"
+        },
+        "dropped_events": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dropped Events"
+        },
+        "episode_complete_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Episode Complete Sha256"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error"
+        },
+        "event_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Event Count"
+        },
+        "preserved_records": {
+          "title": "Preserved Records",
+          "type": "boolean"
+        },
+        "recording_status": {
+          "title": "Recording Status",
+          "type": "string"
+        },
+        "storage_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Storage Ref"
+        },
+        "terminal_event_written": {
+          "title": "Terminal Event Written",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "completed",
+        "error",
+        "terminal_event_written",
+        "complete_tail",
+        "recording_status",
+        "audit_status",
+        "event_count",
+        "dropped_events",
+        "storage_ref",
+        "episode_complete_sha256",
+        "checksummed_artifacts",
+        "preserved_records"
+      ],
+      "title": "RecordingFinalizeView",
+      "type": "object"
+    },
+    "SessionCurrent": {
+      "additionalProperties": false,
+      "properties": {
+        "binding": {
+          "$ref": "#/components/schemas/CurrentBinding"
+        },
+        "blockers": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Blockers",
+          "type": "array"
+        },
+        "control_scope_granted": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Control Scope Granted",
+          "type": "array"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error"
+        },
+        "last_end_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last End Code"
+        },
+        "last_stop_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Stop Code"
+        },
+        "motion_ready": {
+          "title": "Motion Ready",
+          "type": "boolean"
+        },
+        "observed_at": {
+          "title": "Observed At",
+          "type": "string"
+        },
+        "owner": {
+          "$ref": "#/components/schemas/CurrentOwner"
+        },
+        "recipe_fingerprint_matches": {
+          "title": "Recipe Fingerprint Matches",
+          "type": "boolean"
+        },
+        "recording": {
+          "$ref": "#/components/schemas/CurrentRecording"
+        },
+        "recording_begin_available": {
+          "title": "Recording Begin Available",
+          "type": "boolean"
+        },
+        "recording_begin_required": {
+          "title": "Recording Begin Required",
+          "type": "boolean"
+        },
+        "recording_end_available": {
+          "title": "Recording End Available",
+          "type": "boolean"
+        },
+        "recording_end_protocol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Recording End Protocol"
+        },
+        "recording_integrity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Recording Integrity"
+        },
+        "recording_ready": {
+          "title": "Recording Ready",
+          "type": "boolean"
+        },
+        "recording_required_for_motion": {
+          "title": "Recording Required For Motion",
+          "type": "boolean"
+        },
+        "runtime_identity": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/RuntimeIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "runtime_identity_matches": {
+          "title": "Runtime Identity Matches",
+          "type": "boolean"
+        },
+        "safety_latched": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Safety Latched"
+        },
+        "session_stop_protocol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Session Stop Protocol"
+        },
+        "snapshot_eligible": {
+          "title": "Snapshot Eligible",
+          "type": "boolean"
+        },
+        "snapshot_id": {
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "source": {
+          "const": "live_native_read_only",
+          "default": "live_native_read_only",
+          "title": "Source",
+          "type": "string"
+        },
+        "start_available": {
+          "title": "Start Available",
+          "type": "boolean"
+        },
+        "status": {
+          "enum": [
+            "prepared",
+            "started",
+            "expired",
+            "invalidated",
+            "released",
+            "offline",
+            "identity_changed",
+            "snapshot_ineligible",
+            "unverified"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "stop_available": {
+          "title": "Stop Available",
+          "type": "boolean"
+        },
+        "valid": {
+          "title": "Valid",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "observed_at",
+        "valid",
+        "status",
+        "error",
+        "runtime_identity",
+        "runtime_identity_matches",
+        "binding",
+        "snapshot_id",
+        "snapshot_eligible",
+        "recipe_fingerprint_matches",
+        "control_scope_granted",
+        "recording_required_for_motion",
+        "recording_begin_required",
+        "recording",
+        "owner",
+        "safety_latched",
+        "recording_ready",
+        "motion_ready",
+        "start_available",
+        "recording_begin_available",
+        "stop_available",
+        "recording_end_available",
+        "session_stop_protocol",
+        "recording_end_protocol",
+        "last_stop_code",
+        "last_end_code",
+        "recording_integrity",
+        "blockers"
+      ],
+      "title": "SessionCurrent",
+      "type": "object"
+    },
+    "StopDispatchView": {
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Command Id"
+        },
+        "dispatched": {
+          "title": "Dispatched",
+          "type": "boolean"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "status_detail": {
+          "title": "Status Detail",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dispatched",
+        "command_id",
+        "status",
+        "status_detail"
+      ],
+      "title": "StopDispatchView",
+      "type": "object"
+    },
+    "StopReceipt": {
+      "additionalProperties": false,
+      "description": "One native m1-stop-1 answer; parking.coverage_complete is the only whole-robot proof.",
+      "properties": {
+        "accepted": {
+          "title": "Accepted",
+          "type": "boolean"
+        },
+        "backend_generation": {
+          "title": "Backend Generation",
+          "type": "integer"
+        },
+        "binding_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Binding Id"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "config_fingerprint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Config Fingerprint"
+        },
+        "dispatch": {
+          "$ref": "#/components/schemas/StopDispatchView"
+        },
+        "episode_id": {
+          "title": "Episode Id",
+          "type": "string"
+        },
+        "motion_restored": {
+          "const": false,
+          "title": "Motion Restored",
+          "type": "boolean"
+        },
+        "observed_at": {
+          "title": "Observed At",
+          "type": "string"
+        },
+        "owner_cleared_after_stop": {
+          "title": "Owner Cleared After Stop",
+          "type": "boolean"
+        },
+        "parking": {
+          "$ref": "#/components/schemas/ParkingEvidenceView"
+        },
+        "protocol": {
+          "title": "Protocol",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "recording_segment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Recording Segment Id"
+        },
+        "recording_status": {
+          "title": "Recording Status",
+          "type": "string"
+        },
+        "recording_touched": {
+          "const": false,
+          "title": "Recording Touched",
+          "type": "boolean"
+        },
+        "replayed": {
+          "title": "Replayed",
+          "type": "boolean"
+        },
+        "request_id": {
+          "title": "Request Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "safety_latched": {
+          "title": "Safety Latched",
+          "type": "boolean"
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Session Id"
+        }
+      },
+      "required": [
+        "accepted",
+        "code",
+        "protocol",
+        "request_id",
+        "replayed",
+        "binding_id",
+        "session_id",
+        "config_fingerprint",
+        "run_id",
+        "backend_generation",
+        "episode_id",
+        "dispatch",
+        "parking",
+        "owner_cleared_after_stop",
+        "safety_latched",
+        "recording_status",
+        "recording_segment_id",
+        "recording_touched",
+        "motion_restored",
+        "observed_at"
+      ],
+      "title": "StopReceipt",
+      "type": "object"
+    },
+    "StopSession": {
+      "additionalProperties": false,
+      "properties": {
+        "parking_timeout_s": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "maximum": 30.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parking Timeout S"
+        },
+        "reason": {
+          "default": "OPERATOR_STOP",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Request Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_id"
+      ],
+      "title": "StopSession",
+      "type": "object"
+    }
+  },
+  "production_current_availability": {
+    "recording_end_available": false,
+    "recording_end_protocol": null,
+    "session_stop_protocol": null,
+    "stop_available": false
+  },
+  "production_refusals": {
+    "recording_end": {
+      "envelope": {
+        "detail": {
+          "code": "recording_end_unsupported",
+          "declared": null,
+          "message": "The execution recipe does not require a recording end protocol",
+          "required_protocol": null
+        }
+      },
+      "http_status": 409
+    },
+    "request_bodies": {
+      "recording_end": {
+        "parking_timeout_s": null,
+        "reason": "OPERATOR_FINISHED",
+        "request_id": "end-1"
+      },
+      "stop": {
+        "parking_timeout_s": null,
+        "reason": "OPERATOR_STOP",
+        "request_id": "stop-1"
+      }
+    },
+    "stop": {
+      "envelope": {
+        "detail": {
+          "code": "stop_unsupported",
+          "declared": null,
+          "message": "The execution recipe does not require a robot STOP protocol",
+          "required_protocol": null
+        }
+      },
+      "http_status": 409
+    }
+  },
+  "session_current_stop_end_fields": {
+    "last_end_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Last End Code"
+    },
+    "last_stop_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Last Stop Code"
+    },
+    "recording_end_available": {
+      "title": "Recording End Available",
+      "type": "boolean"
+    },
+    "recording_end_protocol": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Recording End Protocol"
+    },
+    "recording_integrity": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Recording Integrity"
+    },
+    "session_stop_protocol": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Session Stop Protocol"
+    },
+    "stop_available": {
+      "title": "Stop Available",
+      "type": "boolean"
+    }
+  }
+}

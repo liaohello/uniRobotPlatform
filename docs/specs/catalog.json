@@ -1,7 +1,7 @@
 {
   "version": "0.8",
   "date": "2026-10-24",
-  "status": "base_specification_draft",
+  "status": "V0.8：新增 S19 STOP/录制收尾候选来源；150 个文档节点、14 个补充来源。",
   "source_sha256": "995e4bf3c3fdc19f6874e1d221d5e52195db5f38e79fcac8c082b8ac9939119a",
   "packages": [
     {
@@ -1312,6 +1312,11 @@
       "path": "90-governance/sources/S18-navigation-map-route-slice.md",
       "sha256": "e85757352660bd8574c997ab5b84a51b28fd41007bef631830f20cf922a12c17",
       "kind": "current_user_navigation_map_route_slice_request"
+    },
+    "S19": {
+      "path": "90-governance/sources/S19-session-stop-recording-end.md",
+      "sha256": "42af4fb49fce69b5b427b6cff1e11058c67729d2956369c16b770d43163cd6b3",
+      "kind": "current_user_session_stop_recording_end_goal"
     }
   },
   "page_design_index": "10-frontend/page-designs/README.md",

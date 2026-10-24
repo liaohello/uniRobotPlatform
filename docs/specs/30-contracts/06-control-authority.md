@@ -52,6 +52,10 @@ stateDiagram-v2
 
 向刚体施加外力属于环境 / 物理干预，可在实验允许时与 Policy 同时发生；它不自动把动作控制权改为 Human。是否允许并行、作用范围和记录条件需在实验配置里显式定义。
 
+## STOP 与控制权（M1.4 候选）
+
+身份绑定的安全 STOP 不属于接管/交还流程：它不申请、不获取也不转移 owner，不作为 `motion_ready`/`recording_ready`/lease 的下游条件，因此不得被新增权限门槛挡住既有紧急停止。回执单独报告事实：`owner_cleared_after_stop`（native 是否顺带清了 owner）、`safety_latched`（STOP 后是否仍安全锁定）、`motion_restored=false`（绝不声称恢复运动）。恢复运动、解除安全锁与重新交接控制权仍是未实现的独立动作，需要各自的授权判定。见 [Session 生命周期](../20-backend/01-session-scene/01-session-lifecycle.md#stop-与录制结束协议m1-stop-1--m1-end-1)。
+
 ## 关联文档
 
 - [独立状态域与运行模型](../00-overview/04-runtime-state-domains.md)

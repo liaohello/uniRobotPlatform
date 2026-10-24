@@ -14,6 +14,7 @@ import json
 import os
 import re
 import sqlite3
+import threading
 import urllib.error
 import urllib.request
 from contextlib import closing
@@ -29,13 +30,20 @@ from .mobilecar_read import CapabilitiesData, MobileCarReadService, NativeSnapsh
 from .recipe import Recipe, RecipeError, canonical, derived_user_limits, digest
 
 BINDING_TIMEOUT_S = 3.0
+# A native STOP/end call waits for the parking proof and the Recorder drain inside one
+# lifecycle critical section, so it cannot reuse the 3s read timeout.
+LIFECYCLE_WRITE_TIMEOUT_S = 45.0
+LIFECYCLE_RECEIPT_HISTORY = 16
 TOLERANCE = 1e-9
 BINDING_PATHS = (
     "/api/v1/session/prepare",
     "/api/v1/session/start",
     "/api/v1/session/release",
+    "/api/v1/session/stop",
 )
 RECORDING_BEGIN_PATH = "/api/v1/recording/begin"
+RECORDING_END_PATH = "/api/v1/recording/end"
+SESSION_STOP_PATH = "/api/v1/session/stop"
 
 
 class CapabilitiesWithAttestation(CapabilitiesData):
@@ -45,6 +53,8 @@ class CapabilitiesWithAttestation(CapabilitiesData):
     scene_manifest_sha256: StrictStr | None = None
     session_binding_protocol: StrictStr | None = None
     recording_begin_protocol: StrictStr | None = None
+    session_stop_protocol: StrictStr | None = None
+    recording_end_protocol: StrictStr | None = None
     runtime_python_version: StrictStr | None = None
     runtime_package_versions: dict[str, StrictStr] | None = None
 
@@ -75,6 +85,8 @@ class Observation(Contract):
     scene_manifest_attestation: str | None
     session_binding_protocol: str | None
     recording_begin_protocol: str | None
+    session_stop_protocol: str | None
+    recording_end_protocol: str | None
     runtime_python_version: str | None
     runtime_package_versions: dict[str, str] | None
     scene_manifest_sha256: str
@@ -190,7 +202,7 @@ class SessionExecution(Contract):
     motion_ready: bool
     motion_blockers: list[str]
     observed_at: str
-    source: Literal["prepared", "native_start", "native_recording_begin"]
+    source: Literal["prepared", "native_start", "native_recording_begin", "native_recording_end"]
 
 
 class RecordingBeginReceipt(Contract):
@@ -215,9 +227,141 @@ class RecordingAttempt(Contract):
     reason: str = ""
 
 
+class StopAttempt(Contract):
+    at: str
+    request_id: str
+    result: Literal["stopped", "refused", "result_unknown"]
+    code: str = ""
+    reason: str = ""
+
+
+class RecordingEndAttempt(Contract):
+    at: str
+    request_id: str
+    result: Literal["ended", "refused", "result_unknown"]
+    code: str = ""
+    reason: str = ""
+
+
+class StopDispatchView(Contract):
+    dispatched: bool
+    command_id: str | None
+    status: str
+    status_detail: str
+
+
+class ParkingEvidenceView(Contract):
+    confirmed: bool
+    waited_ms: int
+    timeout_ms: int
+    base_stopped: bool | None
+    base_stop_latched: bool | None
+    base_velocity_m_s: list[float]
+    arm_max_joint_velocity_rad_s: float | None
+    control_tick_id: str | None
+    observed_at_backend_monotonic_s: float | None
+    scope_coverage: dict[str, str]
+    observed_confirmed: bool
+    coverage_complete: bool
+    coverage_note: str
+
+
+class RecordingDrainView(Contract):
+    completed: bool
+    fanout_drained: bool
+    recorder_queue_empty: bool
+    queued_events: int
+    dropped_events: int
+
+
+class RecordingFinalizeView(Contract):
+    completed: bool
+    error: str | None
+    terminal_event_written: bool
+    complete_tail: bool
+    recording_status: str
+    audit_status: str
+    event_count: int | None
+    dropped_events: int | None
+    storage_ref: str | None
+    episode_complete_sha256: str | None
+    checksummed_artifacts: int
+    preserved_records: bool
+
+
+class StopReceipt(Contract):
+    """One native m1-stop-1 answer; parking.coverage_complete is the only whole-robot proof."""
+
+    accepted: bool
+    code: str
+    reason: str = ""
+    protocol: StrictStr
+    request_id: str
+    replayed: bool
+    binding_id: str | None
+    session_id: str | None
+    config_fingerprint: str | None
+    run_id: str
+    backend_generation: int
+    episode_id: str
+    dispatch: StopDispatchView
+    parking: ParkingEvidenceView
+    owner_cleared_after_stop: bool
+    safety_latched: bool
+    recording_status: str
+    recording_segment_id: str | None
+    recording_touched: Literal[False]
+    motion_restored: Literal[False]
+    observed_at: str
+
+
+class RecordingEndReceipt(Contract):
+    """One native m1-end-1 answer with the five layers kept separately."""
+
+    accepted: bool
+    code: str
+    reason: str = ""
+    protocol: StrictStr
+    request_id: str
+    replayed: bool
+    binding_id: str
+    session_id: str
+    config_fingerprint: str
+    run_id: str
+    backend_generation: int
+    episode_id: str
+    recording_segment_id: str | None
+    active_segment_id: str | None
+    binding_state: str
+    dispatch: StopDispatchView
+    parking: ParkingEvidenceView
+    drain: RecordingDrainView
+    finalize: RecordingFinalizeView
+    integrity: Literal["complete", "incomplete_terminal_recorded",
+                       "finalize_failed_missing_tail", "unknown"]
+    recording_status: str
+    safety_latched: bool
+    reset_issued: Literal[False]
+    safety_cleared: Literal[False]
+    owner_acquired: Literal[False]
+    observed_at: str
+
+
 class BeginRecording(Contract):
     operator_id: StrictStr = Field(min_length=1)
     view_source: StrictStr = Field(default="third_person_3d", min_length=1)
+
+
+class StopSession(Contract):
+    request_id: StrictStr = Field(min_length=1, max_length=128)
+    reason: StrictStr = Field(default="OPERATOR_STOP", min_length=1, max_length=64)
+    parking_timeout_s: float | None = Field(default=None, gt=0, le=30)
+
+
+class EndRecording(Contract):
+    request_id: StrictStr = Field(min_length=1, max_length=128)
+    reason: StrictStr = Field(default="OPERATOR_FINISHED", min_length=1, max_length=64)
+    parking_timeout_s: float | None = Field(default=None, gt=0, le=30)
 
 
 class CurrentBinding(Contract):
@@ -269,6 +413,13 @@ class SessionCurrent(Contract):
     motion_ready: bool
     start_available: bool
     recording_begin_available: bool
+    stop_available: bool
+    recording_end_available: bool
+    session_stop_protocol: str | None
+    recording_end_protocol: str | None
+    last_stop_code: str | None
+    last_end_code: str | None
+    recording_integrity: str | None
     blockers: list[str]
 
 
@@ -293,6 +444,13 @@ class PreparedSession(Contract):
     start_receipt: StartReceipt | None = None
     recording_begin_attempts: list[RecordingAttempt] = Field(default_factory=list)
     recording_begin_receipt: RecordingBeginReceipt | None = None
+    stop_attempts: list[StopAttempt] = Field(default_factory=list)
+    stop_receipt: StopReceipt | None = None
+    stop_receipts: list[StopReceipt] = Field(default_factory=list)
+    recording_end_attempts: list[RecordingEndAttempt] = Field(default_factory=list)
+    recording_end_receipt: RecordingEndReceipt | None = None
+    recording_end_receipts: list[RecordingEndReceipt] = Field(default_factory=list)
+    closed_at: str | None = None
     current: SessionCurrent | None = None
 
 
@@ -393,6 +551,8 @@ class Validator:
             scene_manifest_attestation=capabilities.scene_manifest_sha256,
             session_binding_protocol=capabilities.session_binding_protocol,
             recording_begin_protocol=capabilities.recording_begin_protocol,
+            session_stop_protocol=capabilities.session_stop_protocol,
+            recording_end_protocol=capabilities.recording_end_protocol,
             runtime_python_version=capabilities.runtime_python_version,
             runtime_package_versions=(
                 dict(capabilities.runtime_package_versions)
@@ -587,10 +747,11 @@ class NativeBindingClient:
     def __init__(self, integration: MobileCarIntegration) -> None:
         self.integration = integration
 
-    def _call(self, method: str, path: str, body: dict | None = None) -> dict:
+    def _call(self, method: str, path: str, body: dict | None = None,
+              *, timeout_s: float = BINDING_TIMEOUT_S) -> dict:
         if (
             path not in BINDING_PATHS
-            and path != RECORDING_BEGIN_PATH
+            and path not in (RECORDING_BEGIN_PATH, RECORDING_END_PATH)
             and not re.fullmatch(r"/api/v1/session/prepared/[A-Za-z0-9_.-]{1,128}", path)
         ):
             raise BindingError("binding_path_rejected", f"not a declared binding path: {path}")
@@ -605,7 +766,7 @@ class NativeBindingClient:
             if token:
                 request.add_header("Authorization", f"Bearer {token}")
         try:
-            with self.integration._opener.open(request, timeout=BINDING_TIMEOUT_S) as response:
+            with self.integration._opener.open(request, timeout=timeout_s) as response:
                 payload = response.read(1024 * 1024 + 1)
         except urllib.error.HTTPError as exc:
             raise BindingError("binding_http_error", f"{path}: HTTP {exc.code}",
@@ -699,6 +860,99 @@ class NativeBindingClient:
         if not isinstance(value["recording_segment_id"], str) or not value["recording_segment_id"]:
             raise BindingError("recording_not_durable", "native did not report a recording segment")
         return value
+
+    def stop_session(self, *, request_id: str, reason: str, parking_timeout_s: float | None,
+                     identity: RuntimeIdentity, binding_id: str | None = None,
+                     session_id: str | None = None, config_fingerprint: str | None = None) -> dict:
+        """m1-stop-1 call. A refused stop is a normal answer; a contract breach is not."""
+        value = self._call("POST", SESSION_STOP_PATH, {
+            "contract_version": "mobilecar-1.0",
+            "request_id": request_id,
+            "run_id": identity.run_id,
+            "backend_generation": identity.backend_generation,
+            "episode_id": identity.episode_id,
+            "binding_id": binding_id,
+            "session_id": session_id,
+            "config_fingerprint": config_fingerprint,
+            "reason": reason,
+            "parking_timeout_s": parking_timeout_s,
+        }, timeout_s=LIFECYCLE_WRITE_TIMEOUT_S)
+        self._require(value, ("accepted", "code", "protocol", "request_id", "replayed", "run_id",
+                              "backend_generation", "episode_id", "dispatch", "parking",
+                              "owner_cleared_after_stop", "safety_latched", "recording_status",
+                              "recording_touched", "motion_restored"))
+        self._check_lifecycle_answer(value, protocol="m1-stop-1", request_id=request_id, identity=identity)
+        StopReceipt.model_validate({**value, "observed_at": utc_now()})
+        return value
+
+    def end_recording(self, *, request_id: str, reason: str, parking_timeout_s: float | None,
+                      binding_id: str, session_id: str, config_fingerprint: str,
+                      recording_segment_id: str, identity: RuntimeIdentity) -> dict:
+        """m1-end-1 call bound to the segment this Session began."""
+        value = self._call("POST", RECORDING_END_PATH, {
+            "contract_version": "mobilecar-1.0",
+            "request_id": request_id,
+            "binding_id": binding_id,
+            "session_id": session_id,
+            "config_fingerprint": config_fingerprint,
+            "run_id": identity.run_id,
+            "backend_generation": identity.backend_generation,
+            "episode_id": identity.episode_id,
+            "recording_segment_id": recording_segment_id,
+            "reason": reason,
+            "parking_timeout_s": parking_timeout_s,
+        }, timeout_s=LIFECYCLE_WRITE_TIMEOUT_S)
+        self._require(value, ("accepted", "code", "protocol", "request_id", "replayed", "binding_id",
+                              "session_id", "config_fingerprint", "run_id", "backend_generation",
+                              "episode_id", "recording_segment_id", "binding_state", "dispatch",
+                              "parking", "drain", "finalize", "integrity", "recording_status",
+                              "safety_latched", "reset_issued", "safety_cleared", "owner_acquired"))
+        self._check_lifecycle_answer(value, protocol="m1-end-1", request_id=request_id, identity=identity)
+        if value["binding_id"] != binding_id or value["session_id"] != session_id:
+            raise BindingError("end_binding_mismatch", "native echoed another binding or Session")
+        if value["recording_segment_id"] != recording_segment_id:
+            raise BindingError("end_segment_mismatch", "native echoed another recording segment")
+        if value["reset_issued"] is not False or value["safety_cleared"] is not False \
+                or value["owner_acquired"] is not False:
+            raise BindingError("end_did_extra_side_effects",
+                               "native end performed an action outside STOP and Recorder finalization")
+        if value["accepted"] is True and value["integrity"] == "complete":
+            if value["finalize"]["complete_tail"] is not True:
+                raise BindingError("end_not_complete_tail", "native reported complete integrity without a tail record")
+            if not isinstance(value["finalize"].get("episode_complete_sha256"), str) or not re.fullmatch(
+                r"[0-9a-f]{64}", str(value["finalize"].get("episode_complete_sha256"))
+            ):
+                raise BindingError("end_missing_tail_digest", "native reported a complete tail without a file digest")
+        RecordingEndReceipt.model_validate({**value, "observed_at": utc_now()})
+        return value
+
+    @staticmethod
+    def _check_lifecycle_answer(value: dict, *, protocol: str, request_id: str,
+                                identity: RuntimeIdentity) -> None:
+        if value.get("protocol") != protocol:
+            raise BindingError("lifecycle_protocol_mismatch", f"native answered with {value.get('protocol')}")
+        if value.get("request_id") != request_id:
+            raise BindingError("lifecycle_request_mismatch", "native answered a different request_id")
+        if protocol == "m1-stop-1" and (value.get("recording_touched") is not False
+                                        or value.get("motion_restored") is not False):
+            raise BindingError("stop_did_extra_side_effects",
+                               "native stop touched the recording or restored motion")
+        # A refusal legitimately echoes the live runtime, which is exactly what the
+        # caller was told did not match; only an accepted answer must agree.
+        if value.get("accepted") is not True:
+            return
+        mismatch = [
+            key for key, expected in (
+                ("run_id", identity.run_id),
+                ("backend_generation", identity.backend_generation),
+                ("episode_id", identity.episode_id),
+            ) if value.get(key) != expected
+        ]
+        if mismatch:
+            raise BindingError(
+                "lifecycle_identity_mismatch",
+                "accepted native stop/end does not belong to the observed runtime: " + ", ".join(mismatch),
+            )
 
     @staticmethod
     def _verify(value: dict, session_id: str, config_fingerprint: str, identity: RuntimeIdentity,
@@ -813,6 +1067,9 @@ class PreparationService:
         self.validator = validator
         self.recipe = recipe
         self.binding = NativeBindingClient(validator.integration)
+        # Guards only the short read-modify-write of one Session document. Network calls to
+        # native happen outside it, so a slow STOP never blocks another Session write.
+        self.session_write_lock = threading.Lock()
 
     def snapshot(self, draft: dict) -> tuple[dict, bool]:
         observation = self.validator.observe()
@@ -1159,6 +1416,177 @@ class PreparationService:
         self._record_recording_attempt(session, "begun", "")
         return session, False
 
+    def _lifecycle_guard(self, session_id: str, *, require_started: bool) -> tuple[dict, Observation, RuntimeIdentity, NativeBinding]:
+        """Shared preconditions for STOP and recording end: identity, not motion readiness."""
+        session = self.store.get_session(session_id)
+        if session["state"] not in ({"prepared", "active"} if not require_started else {"active"}):
+            raise PreparationError(
+                "session_not_stoppable",
+                f"Session is {session['state']}; STOP and recording end need a bound Session",
+            )
+        if session["recipe_fingerprint"] != self.recipe.fingerprint:
+            raise PreparationError("recipe_changed", "The execution recipe changed; revalidate the configuration")
+        try:
+            snapshot = self.store.get_snapshot(session["snapshot_id"])
+        except PreparationError as exc:
+            raise PreparationError(exc.code, str(exc)) from exc
+        if not snapshot["execution_eligible"] or snapshot["recipe_fingerprint"] != self.recipe.fingerprint:
+            raise PreparationError("snapshot_not_eligible", "The accepted snapshot is no longer execution eligible")
+        try:
+            observation = self.validator.observe()
+        except ReadServiceError as exc:
+            raise PreparationError(exc.code, str(exc), exc.status_code) from exc
+        identity = RuntimeIdentity.model_validate(session["native_identity"])
+        if observation.runtime_identity != identity:
+            raise PreparationError("runtime_identity_changed", "Native runtime changed; re-observe before stopping")
+        binding = NativeBinding.model_validate(session["native_binding"])
+        if binding.status != "verified" or binding.binding_id is None or binding.config_fingerprint is None:
+            raise PreparationError("native_binding_unverified", "Native Session binding was never verified")
+        return session, observation, identity, binding
+
+    @staticmethod
+    def _remembered_receipt(session: dict, list_key: str, latest_key: str, request_id: str) -> dict | None:
+        stored = session.get(list_key) or []
+        for receipt in reversed(stored):
+            if receipt.get("request_id") == request_id:
+                return receipt
+        latest = session.get(latest_key)
+        return latest if latest is not None and latest.get("request_id") == request_id else None
+
+    @staticmethod
+    def _store_receipt(session: dict, list_key: str, latest_key: str, receipt: dict) -> None:
+        history = [*(session.get(list_key) or []), receipt]
+        session[list_key] = history[-LIFECYCLE_RECEIPT_HISTORY:]
+        session[latest_key] = receipt
+
+    def stop_session(self, session_id: str, request: dict) -> tuple[dict, bool]:
+        session = self.store.get_session(session_id)
+        if self._remembered_receipt(session, "stop_receipts", "stop_receipt", request["request_id"]) is not None:
+            return session, True
+        session, observation, identity, binding = self._lifecycle_guard(session_id, require_started=False)
+        required = self.recipe.required_protocols.get("session_stop")
+        if required is None:
+            raise PreparationError(
+                "stop_unsupported",
+                "The execution recipe does not require a robot STOP protocol",
+                detail={"required_protocol": None, "declared": observation.session_stop_protocol},
+            )
+        if observation.session_stop_protocol != required:
+            raise PreparationError(
+                "stop_unsupported",
+                "Native does not declare the required session STOP protocol",
+                detail={"required_protocol": required, "declared": observation.session_stop_protocol},
+            )
+        try:
+            stopped = self.binding.stop_session(
+                request_id=request["request_id"], reason=request["reason"],
+                parking_timeout_s=request["parking_timeout_s"], identity=identity,
+                binding_id=binding.binding_id, session_id=session_id,
+                config_fingerprint=binding.config_fingerprint,
+            )
+        except BindingError as exc:
+            result = "refused" if exc.http_status is not None else "result_unknown"
+            self._record_failure(session_id, "stop_attempts", StopAttempt(
+                at=utc_now(), request_id=request["request_id"], result=result,
+                code="", reason=str(exc)[:400]).model_dump())
+            raise PreparationError("native_stop_failed", str(exc), 504 if exc.transport else 409) from exc
+        receipt = StopReceipt.model_validate({**stopped, "observed_at": utc_now()})
+        attempt = StopAttempt(at=utc_now(), request_id=request["request_id"],
+                               result="stopped" if receipt.accepted else "refused",
+                               code=receipt.code, reason=receipt.reason[:400]).model_dump()
+        def commit(document: dict) -> None:
+            self._store_receipt(document, "stop_receipts", "stop_receipt", receipt.model_dump())
+            document["stop_attempts"] = [*(document.get("stop_attempts") or []), attempt]
+        return self._commit_lifecycle(session_id, commit), receipt.replayed
+
+    def end_recording(self, session_id: str, request: dict) -> tuple[dict, bool]:
+        session = self.store.get_session(session_id)
+        if self._remembered_receipt(session, "recording_end_receipts", "recording_end_receipt",
+                                    request["request_id"]) is not None:
+            return session, True
+        session, observation, identity, binding = self._lifecycle_guard(session_id, require_started=True)
+        required = self.recipe.required_protocols.get("recording_end")
+        if required is None:
+            raise PreparationError(
+                "recording_end_unsupported",
+                "The execution recipe does not require a recording end protocol",
+                detail={"required_protocol": None, "declared": observation.recording_end_protocol},
+            )
+        if observation.recording_end_protocol != required:
+            raise PreparationError(
+                "recording_end_unsupported",
+                "Native does not declare the required recording end protocol",
+                detail={"required_protocol": required, "declared": observation.recording_end_protocol},
+            )
+        begun = session.get("recording_begin_receipt")
+        if begun is None:
+            raise PreparationError("recording_not_begun", "This Session never began a recording segment")
+        segment = str(begun["recording_segment_id"])
+        try:
+            ended = self.binding.end_recording(
+                request_id=request["request_id"], reason=request["reason"],
+                parking_timeout_s=request["parking_timeout_s"], binding_id=binding.binding_id,
+                session_id=session_id, config_fingerprint=binding.config_fingerprint,
+                recording_segment_id=segment, identity=identity,
+            )
+        except BindingError as exc:
+            result = "refused" if exc.http_status is not None else "result_unknown"
+            self._record_failure(session_id, "recording_end_attempts", RecordingEndAttempt(
+                at=utc_now(), request_id=request["request_id"], result=result,
+                code="", reason=str(exc)[:400]).model_dump())
+            raise PreparationError("native_recording_end_failed", str(exc), 504 if exc.transport else 409) from exc
+        receipt = RecordingEndReceipt.model_validate({**ended, "observed_at": utc_now()})
+        attempt = RecordingEndAttempt(
+            at=utc_now(), request_id=request["request_id"],
+            result="ended" if receipt.accepted else "refused",
+            code=receipt.code, reason=receipt.reason[:400]).model_dump()
+
+        def commit(document: dict) -> None:
+            self._store_receipt(document, "recording_end_receipts", "recording_end_receipt",
+                                receipt.model_dump())
+            document["recording_end_attempts"] = [
+                *(document.get("recording_end_attempts") or []), attempt]
+            if receipt.accepted:
+                # The segment reached a durable terminal record, so this Session's collection
+                # is closed. Integrity stays on the receipt: an INCOMPLETE tail never becomes
+                # "complete" and the historical failure is not wiped.
+                now = utc_now()
+                execution = SessionExecution.model_validate(document["execution"])
+                document["state"] = "closed"
+                document["closed_at"] = now
+                document["execution"] = SessionExecution(
+                    control_scope_granted=execution.control_scope_granted,
+                    owner=execution.owner,
+                    recording_required_for_motion=execution.recording_required_for_motion,
+                    recording_begin_required=execution.recording_begin_required,
+                    recording_ready=False,
+                    motion_ready=False,
+                    motion_blockers=[*execution.motion_blockers, "recording_closed"],
+                    observed_at=now,
+                    source="native_recording_end",
+                ).model_dump()
+
+        return self._commit_lifecycle(session_id, commit), receipt.replayed
+
+    def _commit_lifecycle(self, session_id: str, mutate) -> dict:
+        """Merge one lifecycle outcome into the freshest stored Session document.
+
+        The gateway is a single process, so this lock plus a re-read is enough to keep two
+        concurrent answers from overwriting each other's receipt history.
+        """
+        with self.session_write_lock:
+            document = self.store.get_session(session_id)
+            mutate(document)
+            document["updated_at"] = utc_now()
+            self.store.update_session(document)
+        return document
+
+    def _record_failure(self, session_id: str, key: str, attempt: dict) -> None:
+        """Record a refused or unknown-result attempt. No receipt is invented for it."""
+        def commit(document: dict) -> None:
+            document[key] = [*(document.get(key) or []), attempt]
+        self._commit_lifecycle(session_id, commit)
+
     def current_observation(self, session: dict) -> SessionCurrent:
         """Read-only live view; never writes, starts, renews or rebinds."""
         now = utc_now()
@@ -1180,6 +1608,13 @@ class PreparationService:
                 source="prepared",
             )
         blockers: list[str] = []
+        stored_stop = session.get("stop_receipt")
+        stored_end = session.get("recording_end_receipt")
+        history = {
+            "last_stop_code": stored_stop["code"] if stored_stop else None,
+            "last_end_code": stored_end["code"] if stored_end else None,
+            "recording_integrity": stored_end["integrity"] if stored_end else None,
+        }
 
         def add(key: str) -> None:
             if key not in blockers:
@@ -1229,6 +1664,9 @@ class PreparationService:
                 ),
                 safety_latched=None, recording_ready=False, motion_ready=False,
                 start_available=False, recording_begin_available=False,
+                stop_available=False, recording_end_available=False,
+                session_stop_protocol=None, recording_end_protocol=None,
+                **history,
                 blockers=blockers,
             )
 
@@ -1341,6 +1779,20 @@ class PreparationService:
             and not observation.safety_latched and not owners
             and bool(execution.control_scope_granted)
         )
+        required_stop = self.recipe.required_protocols.get("session_stop")
+        required_end = self.recipe.required_protocols.get("recording_end")
+        stop_available = bool(
+            valid and session["state"] in {"prepared", "active"}
+            and binding_state in {"prepared", "started"}
+            and required_stop is not None and observation.session_stop_protocol == required_stop
+        )
+        begun_segment = (session.get("recording_begin_receipt") or {}).get("recording_segment_id")
+        recording_end_available = bool(
+            valid and session["state"] == "active" and binding_state == "started"
+            and required_end is not None and observation.recording_end_protocol == required_end
+            and begun_segment is not None and observation.recording_segment_id == begun_segment
+            and observation.recording_status in {"STARTING", "RECORDING", "DRAINING"}
+        )
         if not identity_matches:
             status = "identity_changed"
         elif binding_state in {"expired", "invalidated", "released"}:
@@ -1385,6 +1837,11 @@ class PreparationService:
             recording_ready=recording_ready, motion_ready=motion_ready,
             start_available=start_available,
             recording_begin_available=recording_begin_available,
+            stop_available=stop_available,
+            recording_end_available=recording_end_available,
+            session_stop_protocol=observation.session_stop_protocol,
+            recording_end_protocol=observation.recording_end_protocol,
+            **history,
             blockers=blockers,
         )
 

@@ -1,0 +1,7 @@
+extends: /home/liaozhengyan/Desktop/mobileCar/releases/m1h-20261024T152235Z-native/configs/default.yaml
+profile: m1i-cross-http-testonly-mock-no-physics
+backend:
+  kind: mock
+recording:
+  required_for_motion: true
+  root: /home/liaozhengyan/Desktop/mobileCar/var/runs/m1i-cross-163748

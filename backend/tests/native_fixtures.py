@@ -19,7 +19,11 @@ from fastapi.testclient import TestClient
 from unirobot.api import create_app
 from unirobot.contracts import AdapterConfig
 from unirobot.mobilecar import MobileCarIntegration
+from unirobot.prepare import RECORDING_BEGIN_PATH, RECORDING_END_PATH, SESSION_STOP_PATH
 from unirobot.recipe import Recipe, canonical, digest, load_recipe
+
+STOP_PROTOCOL = "m1-stop-1"
+END_PROTOCOL = "m1-end-1"
 
 IDENTITY = {"run_id": "fixture-run", "backend_generation": 1, "episode_id": "fixture-episode"}
 ASSET_BODY = b"synthetic compiled mesh, not a product model"
@@ -37,6 +41,12 @@ class FakeNative:
         self.fail_path: str | None = None
         self.recording_status = "IDLE"
         self.recording_segment_id: str | None = None
+        self.dispatch_accepted = True
+        self.parking_confirmed = True
+        self.arm_observed = "confirmed"
+        self.stop_receipts: dict[str, dict] = {}
+        self.end_receipts: dict[str, dict] = {}
+        self.end_integrity = "complete"
 
     def open(self, request, *, timeout):
         path = urlsplit(request.full_url).path
@@ -47,13 +57,103 @@ class FakeNative:
             self.bodies.append((path, payload))
         if path == self.fail_path:
             raise urllib.error.URLError("synthetic connection failure")
-        if path.startswith("/api/v1/session/") or path == "/api/v1/recording/begin":
+        if path.startswith("/api/v1/session/") or path in (RECORDING_BEGIN_PATH, RECORDING_END_PATH):
             return self._session(method, path, payload)
         body = self.payloads[path]
         return io.BytesIO(body if isinstance(body, bytes) else json.dumps(body).encode())
 
     def _json(self, value: dict) -> io.BytesIO:
         return io.BytesIO(json.dumps(value).encode())
+
+    def _dispatch(self) -> dict:
+        return {
+            "dispatched": self.dispatch_accepted,
+            "command_id": "stop_fixture_1" if self.dispatch_accepted else None,
+            "status": "DISPATCHED" if self.dispatch_accepted else "REJECTED",
+            "status_detail": "" if self.dispatch_accepted else "injected backend refusal",
+        }
+
+    def _parking(self) -> dict:
+        coverage = {"base": "confirmed" if self.parking_confirmed else "unconfirmed",
+                    "arm": self.arm_observed, "gripper": "not_observed"}
+        return {
+            "confirmed": self.parking_confirmed, "waited_ms": 21, "timeout_ms": 5000,
+            "base_stopped": self.parking_confirmed, "base_stop_latched": True,
+            "base_velocity_m_s": [0.0, 0.0, 0.0], "arm_max_joint_velocity_rad_s": 0.0,
+            "control_tick_id": "tick-1", "observed_at_backend_monotonic_s": 44.0,
+            "scope_coverage": coverage,
+            "observed_confirmed": all(value != "unconfirmed" for value in coverage.values()),
+            "coverage_complete": all(value == "confirmed" for value in coverage.values()),
+            "coverage_note": "fixture coverage note",
+        }
+
+    def _no_action(self) -> tuple[dict, dict]:
+        return (
+            {"dispatched": False, "command_id": None, "status": "not_sent", "status_detail": ""},
+            {"confirmed": False, "waited_ms": 0, "timeout_ms": 0, "base_stopped": None,
+             "base_stop_latched": None, "base_velocity_m_s": [], "arm_max_joint_velocity_rad_s": None,
+             "control_tick_id": None, "observed_at_backend_monotonic_s": None, "scope_coverage": {},
+             "observed_confirmed": False, "coverage_complete": False, "coverage_note": "no STOP was dispatched"},
+        )
+
+    def _stop_answer(self, body: dict, *, code: str, accepted: bool, reason: str = "",
+                     dispatched: bool = True) -> dict:
+        health = self.payloads["/api/v1/health"]
+        recording = self.payloads["/api/v1/snapshot"]["recording"]
+        dispatch, parking = (self._dispatch(), self._parking()) if dispatched else self._no_action()
+        return {
+            "accepted": accepted, "code": code, "reason": reason, "protocol": STOP_PROTOCOL,
+            "request_id": body.get("request_id"), "replayed": False,
+            "binding_id": body.get("binding_id"), "session_id": body.get("session_id"),
+            "config_fingerprint": body.get("config_fingerprint"),
+            "run_id": health["run_id"], "backend_generation": health["backend_generation"],
+            "episode_id": health["episode_id"],
+            "dispatch": dispatch, "parking": parking,
+            "owner_cleared_after_stop": accepted, "safety_latched": False,
+            "recording_status": recording["status"],
+            "recording_segment_id": recording["recording_segment_id"],
+            "recording_touched": False, "motion_restored": False,
+        }
+
+    def _end_answer(self, body: dict, *, code: str, accepted: bool, integrity: str,
+                    reason: str = "", dispatched: bool = True, recording_status: str | None = None) -> dict:
+        health = self.payloads["/api/v1/health"]
+        recording = self.payloads["/api/v1/snapshot"]["recording"]
+        dispatch, parking = (self._dispatch(), self._parking()) if dispatched else self._no_action()
+        complete = integrity == "complete"
+        failed_tail = integrity == "finalize_failed_missing_tail"
+        return {
+            "accepted": accepted, "code": code, "reason": reason, "protocol": END_PROTOCOL,
+            "request_id": body.get("request_id"), "replayed": False,
+            "binding_id": body.get("binding_id"), "session_id": body.get("session_id"),
+            "config_fingerprint": body.get("config_fingerprint"),
+            "run_id": health["run_id"], "backend_generation": health["backend_generation"],
+            "episode_id": health["episode_id"],
+            "recording_segment_id": body.get("recording_segment_id"),
+            "active_segment_id": recording["recording_segment_id"],
+            "binding_state": "started",
+            "dispatch": dispatch, "parking": parking,
+            "drain": {"completed": complete, "fanout_drained": False, "recorder_queue_empty": True,
+                      "queued_events": 0, "dropped_events": 0},
+            "finalize": {
+                "completed": complete or integrity == "incomplete_terminal_recorded",
+                "error": "injected finalize failure" if failed_tail else None,
+                "terminal_event_written": not failed_tail,
+                "complete_tail": not failed_tail,
+                "recording_status": "COMPLETE" if complete else ("FAILED" if not failed_tail else "UNKNOWN"),
+                "audit_status": "COMPLETE" if complete else "INCOMPLETE",
+                "event_count": 12 if complete else None,
+                "dropped_events": 0,
+                "storage_ref": (f"{health['run_id']}/episodes/{health['episode_id']}" if not failed_tail else None),
+                "episode_complete_sha256": "a" * 64 if not failed_tail else None,
+                "checksummed_artifacts": 4 if complete else 0,
+                "preserved_records": True,
+            },
+            "integrity": integrity,
+            "recording_status": recording_status or recording["status"],
+            "safety_latched": False, "reset_issued": False, "safety_cleared": False,
+            "owner_acquired": False,
+        }
 
     def _session(self, method: str, path: str, body: dict):
         if not self.binding:
@@ -151,12 +251,72 @@ class FakeNative:
                 "recording_required_for_motion": True,
                 "recording_begin_required": True, "durable_start_records": True,
             })
+        if method == "POST" and path == SESSION_STOP_PATH:
+            remembered = self.stop_receipts.get(body.get("request_id"))
+            if remembered is not None:
+                return self._json({**remembered, "replayed": True})
+            health = self.payloads["/api/v1/health"]
+            if any(body.get(key) != health[key] for key in IDENTITY):
+                return self._json(self._stop_answer(body, code="stop_runtime_identity_mismatch",
+                                                    accepted=False, reason="fixture identity mismatch",
+                                                    dispatched=False))
+            if body.get("binding_id") is not None and self.bindings.get(body["binding_id"]) is None:
+                return self._json(self._stop_answer(body, code="stop_binding_not_found", accepted=False,
+                                                    reason="fixture binding unknown", dispatched=False))
+            dispatch, parking = self._dispatch(), self._parking()
+            if not dispatch["dispatched"]:
+                answer = self._stop_answer(body, code="stop_dispatch_failed", accepted=False,
+                                           reason="fixture backend refusal")
+            elif not parking["confirmed"]:
+                answer = self._stop_answer(body, code="stop_dispatched_parking_unconfirmed", accepted=False,
+                                           reason="fixture parking not confirmed")
+            elif not parking["observed_confirmed"]:
+                answer = self._stop_answer(body, code="stopped_partial_coverage", accepted=True,
+                                           reason="fixture partial coverage")
+            else:
+                answer = self._stop_answer(body, code="stopped", accepted=True)
+            self.stop_receipts[body["request_id"]] = answer
+            return self._json(answer)
+        if method == "POST" and path == RECORDING_END_PATH:
+            remembered = self.end_receipts.get(body.get("request_id"))
+            if remembered is not None:
+                return self._json({**remembered, "replayed": True})
+            health = self.payloads["/api/v1/health"]
+            if any(body.get(key) != health[key] for key in IDENTITY):
+                return self._json(self._end_answer(body, code="end_runtime_identity_mismatch", accepted=False,
+                                                   integrity="unknown", reason="fixture identity mismatch",
+                                                   dispatched=False))
+            if self.bindings.get(body.get("binding_id") or "") is None:
+                return self._json(self._end_answer(body, code="end_binding_not_found", accepted=False,
+                                                   integrity="unknown", reason="fixture binding unavailable",
+                                                   dispatched=False))
+            if self.recording_segment_id != body.get("recording_segment_id"):
+                return self._json(self._end_answer(body, code="end_segment_mismatch", accepted=False,
+                                                   integrity="unknown", reason="fixture segment is not current",
+                                                   dispatched=False))
+            if self.end_integrity == "finalize_failed_missing_tail":
+                answer = self._end_answer(body, code="end_finalize_failed", accepted=False,
+                                          integrity="finalize_failed_missing_tail",
+                                          reason="fixture finalize failed")
+                self.end_receipts[body["request_id"]] = answer
+                return self._json(answer)
+            recording = self.payloads["/api/v1/snapshot"]["recording"]
+            recording.update(status="COMPLETE", command_capture_ready=False)
+            self.recording_status = "COMPLETE"
+            self.payloads["/api/v1/health"]["recording_status"] = "COMPLETE"
+            integrity = self.end_integrity
+            code = "ended" if integrity == "complete" else "ended_incomplete_terminal"
+            answer = self._end_answer(body, code=code, accepted=True, integrity=integrity,
+                                      recording_status="COMPLETE")
+            self.end_receipts[body["request_id"]] = answer
+            return self._json(answer)
         raise urllib.error.HTTPError(path, 404, "not found", {}, None)
 
 
 def build_payloads(*, interface_profile: str | None = None, declare_protocols: bool = False,
                    safety_latched: bool = False, owners: tuple[str | None, str | None] = (None, None),
-                   recording_status: str = "IDLE", user_limit_shift: float = 0.0) -> dict:
+                   recording_status: str = "IDLE", user_limit_shift: float = 0.0,
+                   stop_end: bool = False) -> dict:
     recipe = load_recipe()
     expected = recipe.expected
     kinematics = recipe.kinematics
@@ -197,6 +357,9 @@ def build_payloads(*, interface_profile: str | None = None, declare_protocols: b
     if declare_protocols:
         capabilities["session_binding_protocol"] = recipe.required_protocols["session_binding"]
         capabilities["recording_begin_protocol"] = recipe.required_protocols["recording_begin"]
+        if stop_end:
+            capabilities["session_stop_protocol"] = STOP_PROTOCOL
+            capabilities["recording_end_protocol"] = END_PROTOCOL
     snapshot = {
         **IDENTITY, "contract_version": "mobilecar-1.0",
         "episode_started_backend_monotonic_s": 0.0, "backend_monotonic_s": 20.0, "sim_time_s": 2.0,
@@ -231,10 +394,10 @@ def build_payloads(*, interface_profile: str | None = None, declare_protocols: b
     }
 
 
-def fixture_app(tmp_path, *, binding: bool = False, **payload_kwargs):
+def fixture_app(tmp_path, *, binding: bool = False, stop_end: bool = False, **payload_kwargs):
     integration = MobileCarIntegration(
         AdapterConfig(id="mobilecar", title="fixture", project_root="unused", base_url="http://fixture.invalid"))
-    payloads = build_payloads(**payload_kwargs)
+    payloads = build_payloads(stop_end=stop_end, **payload_kwargs)
     fake = FakeNative(copy.deepcopy(payloads), binding=binding)
     integration._opener = fake
     recipe = load_recipe()
@@ -244,6 +407,11 @@ def fixture_app(tmp_path, *, binding: bool = False, **payload_kwargs):
     # comparison can be exercised without claiming the real native scene.
     body["expected"]["scene_manifest_sha256"] = digest(payloads["/api/v1/scene"])
     body["expected"]["config_manifest_sha256"] = recipe.expected["config_manifest_sha256"]
+    if stop_end:
+        # Test-only recipe: the production recipe keeps STOP and end undeclared, so a
+        # production Session must still be refused as unsupported.
+        body["required_protocols"] = {**body["required_protocols"],
+                                      "session_stop": STOP_PROTOCOL, "recording_end": END_PROTOCOL}
     fixture_recipe = Recipe(body=body, sources=recipe.sources, pin=recipe.pin)
     app = create_app(draft_db_path=tmp_path / "prepare.sqlite3",
                      mobilecar_integration=integration, recipe=fixture_recipe)

@@ -1,0 +1,25 @@
+{
+  "action_profile_id": null,
+  "action_profile_sha256": null,
+  "action_profile_version": null,
+  "audit_status": "INCOMPLETE",
+  "contract_version": "mobilecar-1.0",
+  "d0_navigation": false,
+  "d1_language_navigation": false,
+  "d2_near_field_manipulation": false,
+  "d3_combined_task": false,
+  "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+  "gates": {},
+  "profile_id": null,
+  "profile_sha256": null,
+  "profile_version": null,
+  "reasons": [
+    "Episode audit is not COMPLETE",
+    "D2 requires complete RGB, proprioception and executable action records",
+    "physical task result is UNKNOWN"
+  ],
+  "source_operator_kind": "human_teleop",
+  "task_result": "unknown",
+  "view_source": "third_person_3d",
+  "wrist_rgb_only_eligible": false
+}

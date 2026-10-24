@@ -1,0 +1,20 @@
+{
+  "audit_status": "COMPLETE",
+  "checksums": {
+    "assessments/eligibility.json": "24a42a2c580c8335e3009c8b004f90b90771557e6d7d945b6da7664f1f5c3f82",
+    "assessments/task_assessment.json": "33ed219dc21ee14b4621103eb3ef710b33d3be784932c88461f62c42d508a41a",
+    "commands.jsonl": "1baebd5a8ff959724edfe630eab1f2ed8212347ed29d219dee6d8936285b1937",
+    "control.jsonl": "00db14599e9321fde0ed3dd9eb11cea737833e46d8c34f8ec665e39bcda0db9b",
+    "episode.json": "c1ec233fa60cb0f18bbf6dd14f6b446b1ef73f99de6a9ed8f4bdd68fe35fe2f4",
+    "events.jsonl": "aab3d31812fe152cbdb455beb717f5fd7f2fa3632e1f71ed08d362a1868483b2",
+    "initial_snapshot.json": "8064ae2c3f8e5c77d54a0098f436c78a29d984cb965b42eb6bc28779844a8d79",
+    "quality_report.json": "01cd635bf0ae86e40ed3d622f78b0aebf05e575e4dec178083d385486926192c"
+  },
+  "closed_wall_utc": "2026-10-24T16:38:18.337975Z",
+  "contract_version": "mobilecar-1.0",
+  "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+  "event_count": 6,
+  "recording_segment_id": "seg_002_03d8751946",
+  "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+  "termination_reason": "OPERATOR_FINISHED"
+}

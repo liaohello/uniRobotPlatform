@@ -1,0 +1,40 @@
+{
+  "actual_rates_hz": {},
+  "audit_status": "INCOMPLETE",
+  "contract_version": "mobilecar-1.0",
+  "counts": {
+    "assets_referenced": 0,
+    "commands": 6,
+    "control": 3,
+    "events": 14,
+    "observations": 0,
+    "segments": 2,
+    "transforms": 0
+  },
+  "coverage": {},
+  "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+  "errors": [
+    "checksum mismatch: assessments/eligibility.json",
+    "event 9: event_seq is not append-order contiguous",
+    "event 10: event_seq is not append-order contiguous",
+    "event 11: event_seq is not append-order contiguous",
+    "event 12: event_seq is not append-order contiguous",
+    "event 13: event_seq is not append-order contiguous",
+    "event 14: event_seq is not append-order contiguous"
+  ],
+  "gate_reasons": [],
+  "gates": {},
+  "generated_wall_utc": "2026-10-24T16:38:19.087340Z",
+  "max_gap_s": {},
+  "passed": false,
+  "profile_id": null,
+  "profile_sha256": null,
+  "profile_version": null,
+  "recording_status": "COMPLETE",
+  "termination_reason": "OPERATOR_FINISHED",
+  "timing": null,
+  "warnings": [
+    "Episode contains no sensor observations",
+    "control.jsonl has no actuator_reference records"
+  ]
+}

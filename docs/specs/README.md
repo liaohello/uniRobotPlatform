@@ -1,6 +1,6 @@
 # uniRobotPlatform Specification 总索引
 
-组织版本：V0.8 · 2026-10-24（America/Chicago）。状态：**Specification 文档体系；M1.3 地图/Route 资源契约与平台候选已完成，不是导航执行、真实 8792 部署或 M1 闭环验收。** 未修改节点保留各自版本。
+组织版本：V0.8 · 2026-10-24（America/Chicago）。状态：**Specification 文档体系；M1.3 地图/Route 资源切片与 M1.4 STOP/录制收尾候选已完成，分别不等于导航执行与真实停车；8792 未部署，M1 闭环验收未执行。** 未修改节点保留各自版本。
 
 本文档树吸收设计总册，将现有规则落到可继续讨论的功能节点。保留需求确认程度、建议和未决项；产品验收尚未执行。前端目录按业务工作区＋共享交互组织，后端按能力域组织，另提供按界面区域和完整功能链查找的入口。
 
@@ -131,6 +131,14 @@ docs/specs/
 - [Episode/采集契约](30-contracts/03-episode-events-annotations.md) 合并旧引用集合，以固定快照为配置权威；收敛原生 start/RESET、finalize、失败保留、索引与只读回放。原生能力不自动等于平台适配已完成。
 - [状态域](00-overview/04-runtime-state-domains.md) 补 Session lifecycle；[Collection/版本](30-contracts/05-dataset-model-lineage.md) 明确可编辑选择和不可变成员清单；[术语表](00-overview/05-glossary.md) 区分导航、工作区、页面和组件。
 - 当前 **89 项 REQ、26 PNG/25 独特内容**；旧数字保留历史标签。[新增四项验收](40-verification/06-scene-setup-first-loop.md) 与既有条目均未执行。本轮仅修改文档/机器索引，不修改产品代码、原生工程或图片。
+
+## V0.8 当前更新：身份绑定 STOP 与可靠录制结束候选（M1.4）
+
+- [S19](90-governance/sources/S19-session-stop-recording-end.md) 明确本轮 Goal：STOP 与录制结束必须受 Session/运行身份约束，回执分层，且候选实现不等于部署或真实停车验证。
+- [Session 生命周期](20-backend/01-session-scene/01-session-lifecycle.md#stop-与录制结束协议m1-stop-1--m1-end-1) 增加 `m1-stop-1`/`m1-end-1` 端点、拒绝与并发规则，允许访问的 native 路径由五个改为七个。
+- [Episode 采集契约](30-contracts/03-episode-events-annotations.md#m14-身份绑定-stop-与可靠录制结束候选m1-stop-1--m1-end-1) 与 [控制命令契约](30-contracts/02-control-intervention-commands.md#stop-回执分层m14-候选) 固定"受理 / STOP 下发 / 停车证据与覆盖 / Recorder 排空 / 落盘终态与完整性"五层；`coverage_complete` + `integrity` 才是"整机停稳且录制完整"。
+- [控制权契约](30-contracts/06-control-authority.md#stop-与控制权m14-候选) 明确安全 STOP 不是接管流程，也不得被新增 owner/lease 门槛挡住。
+- 机器目录新增 S19，补充来源 14 个、文档节点 150 个、REQ 仍 89 项。实现与无物理集成证据见 [M1.4 交付记录](../backend-m1.4.md)。
 
 ## V0.8 当前更新：版本化地图与带朝向 Route 切片
 

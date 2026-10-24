@@ -74,7 +74,7 @@ Scene Setup 的创建请求只能消费 [ValidatedSnapshot](../../30-contracts/0
 ### 保证与拒绝
 
 - prepare/start/release **不产生运动、不 RESET、不开始或结束录制、不改初态**；录制开始是独立操作，受 `recording.begin` 协议约束。
-- `recording.begin` 复用既有 Recorder，读取当前 actual snapshot；只有 `recording_start`、`feedback_initial`、`initial_snapshot.json` 已持久化并 sync 后才返回 RECORDING。录制非 IDLE/COMPLETE 时拒绝，FAILED 时明确要求先处理；本轮不定义 stop/finalize。
+- `recording.begin` 复用既有 Recorder，读取当前 actual snapshot；只有 `recording_start`、`feedback_initial`、`initial_snapshot.json` 已持久化并 sync 后才返回 RECORDING。录制非 IDLE/COMPLETE 时拒绝，FAILED 时明确要求先处理；`m1-recording-1` 只覆盖 begin，stop/finalize 由下一节的 `m1-stop-1`/`m1-end-1` 定义。
 - 任一身份字段与原生当前 runtime 不一致时拒绝（`accepted=false`/`started=false` + `reason`），不得静默改写。RESET 后所有 prepared/started binding 失效。
 - `session_id` 由平台生成，原生必须原样回显；同一 run/generation/episode 同时最多一个有效 binding，重复 prepare 返回冲突而不是覆盖。
 - `expires_at_backend_monotonic_s` 只约束 `prepared`；回读显式给出 `expires_scope="prepared"`。过期后 `start` 拒绝、回读返回 `expired`。`started` 不受准备 TTL 影响，只由 RESET、显式 release、身份变化或未来明确定义的 Session 结束事件失效；当前没有额外 Session close/end 事件，不以短租约替代持续 Session。
@@ -90,7 +90,48 @@ Scene Setup 的创建请求只能消费 [ValidatedSnapshot](../../30-contracts/0
 
 prepare 与回读必须使 `session_id`、`config_fingerprint`、`run_id`、`backend_generation`、`episode_id` 全部相等，且 `state=prepared`、`motion_commands_accepted=false`；start 还必须回显同一 `binding_id`、`state=started`、`started=true`，并给出 owner/录制/可运动字段。start 前置回读允许 `started`（用于丢失响应后的幂等恢复），但不得接受 `expired/invalidated/released`。`recording.begin` 还必须回显同一 binding/session/config 与 RECORDING、capture ready、durable start record、初始快照摘要；任一不符即 `native_recording_begin_failed`，不更新 recording-ready。
 
-平台只允许访问上述五个路径，不猜测其他端点。
+平台只允许访问上述五个路径加下一节 STOP/录制结束的两个 native 路径（共七个），不猜测其他端点。
+
+## STOP 与录制结束协议（m1-stop-1 / m1-end-1）
+
+状态：**平台侧已实现；native 侧候选补丁已在服务器以明确标注的 mock backend 完成真实 HTTP + 真实 Recorder 文件集成，未部署到任何运行实例，真实停车未验证**（2026-10-24）。实现、错误码分层与证据见 [M1.4 交付记录](../../../backend-m1.4.md) 与 [M1.4 证据册](../../../evidence/m1.4-stop-end/README.md)。
+
+### 能力声明
+
+`GET /api/v1/capabilities` 增加两个可选字段；缺省即"未声明"，平台按 unsupported 处理，不从 `m1-recording-1` 推断 end：
+
+- `session_stop_protocol: "m1-stop-1"`
+- `recording_end_protocol: "m1-end-1"`
+
+### 端点
+
+| 方法 / 路径 | 请求 | 关键响应 |
+|---|---|---|
+| POST `/api/v1/session/stop` | `contract_version, request_id, run_id, backend_generation, episode_id, binding_id?, session_id?, config_fingerprint?, reason, parking_timeout_s?` | `accepted, code, protocol="m1-stop-1", replayed, 身份回显, dispatch{dispatched,command_id,status,status_detail}, parking{confirmed,waited_ms,timeout_ms,base_stopped,base_stop_latched,base_velocity_m_s,arm_max_joint_velocity_rad_s,control_tick_id,observed_at_backend_monotonic_s,scope_coverage,observed_confirmed,coverage_complete,coverage_note}, owner_cleared_after_stop, safety_latched, recording_status, recording_segment_id, recording_touched=false, motion_restored=false` |
+| POST `/api/v1/recording/end` | 同上，另必须携带 `binding_id, session_id, config_fingerprint, recording_segment_id` | 上述分层之外再加 `active_segment_id, binding_state, drain{completed,fanout_drained,recorder_queue_empty,queued_events,dropped_events}, finalize{completed,error,terminal_event_written,complete_tail,recording_status,audit_status,event_count,storage_ref,episode_complete_sha256,checksummed_artifacts,preserved_records}, integrity ∈ complete/incomplete_terminal_recorded/finalize_failed_missing_tail/unknown, reset_issued=false, safety_cleared=false, owner_acquired=false` |
+
+平台侧对应 `POST /api/v1/sessions/{id}/stop` 与 `POST /api/v1/sessions/{id}/recording/end`，请求体只有 `request_id`、`reason`、`parking_timeout_s`；身份字段一律由平台存储的 Session 提供，前端不传。首次成功 201，幂等重放 200 + `replayed=true`。
+
+### 保证与拒绝
+
+- STOP 只下发 latch 型停止命令：不 RESET、不清安全锁、不结束录制、不获取 owner、不恢复运动；`recording_touched`/`motion_restored` 恒为 false。
+- 安全 STOP **不以** `motion_ready`、`recording_ready`、owner 或租约为前置条件；这些门槛不得挡住紧急停止。结束录制仍要求本 Session 有效 binding 与已 begin 的 segment。
+- 身份（run/generation/episode、binding、config_fingerprint、segment）在 lifecycle 临界区内重检；不符即拒绝且 `dispatch.dispatched=false`，不产生副作用。legacy `episodes/stop` 只有 reason，平台"先 GET 校验再 POST"不构成原子身份保护，不得据此声称能安全结束他人或更新的 segment。
+- `accepted=true` 只表示该 `request_id` 在此身份下被受理；`parking.confirmed=true` 只表示已观测作用域得到停稳反馈；`finalize.complete_tail=true` 只表示尾记录写全。整机停稳且录制完整的唯一判据是 `parking.coverage_complete=true` 且 `integrity=complete`，缺任何一项都必须显示为部分/未确认/失败，不得合并成一个"成功"。
+- 无反馈的作用域标 `not_observed`，失联或超时标 `unconfirmed`；不推断、不伪造。首版 gripper 无独立反馈，因此 `coverage_complete` 恒为 false。
+- 同一 `request_id` 重试返回同一回执（native 进程内另有上限 64 条的回执缓存）；传输失败或结果未知只追加 attempt（`result_unknown`），不写回执。
+- 并发结束：已 finalize 的 segment 由磁盘只读证据重放为 `end_already_finalized`（不下发第二个 STOP、不写第二个 `episode_terminal`、不结束更新的 segment）；平台对同一 Session 文档的读—改—写在锁内重读后合并，两个并发 accepted 回执各自保留；Session 关闭后的重复结束返回 409 `session_not_stoppable`，不虚构回执。
+- `FAILED`/`INCOMPLETE`、有尾但审计失败、drain 或 finalize 失败缺尾分别由 `code` + `integrity` + `finalize.error` 表达，后续成功不清除历史失败记录。
+- `parking_timeout_s`（0<v≤30，缺省用运行配置）只约束停车等待；超时与 finalize 结果是两个独立结论，不互相覆盖。
+
+### 单 Session 当前观测增补
+
+`current` 在 M1.2d 字段之外必须给出 `stop_available`、`recording_end_available`、`session_stop_protocol`、`recording_end_protocol`、`last_stop_code`、`last_end_code`、`recording_integrity`。可用性只由协议声明、Session 状态与身份匹配决定，不代表已经停稳；`current` 仍只读，不得触发 STOP、end、Start、续租或清安全锁，也不得写存储。
+
+### 平台核验规则
+
+STOP/end 的回执必须逐项回显同一 `run_id/backend_generation/episode_id`；`recording/end` 还必须回显请求的 `recording_segment_id` 与当时的 `active_segment_id`。平台只在 `accepted=true` 时强制身份一致，拒绝回执按原样保留以便诊断。`accepted=true` 但 `finalize.completed=false` 视为契约违背，不得当作收尾成功存储。
+
 
 ### 单 Session 当前观测（M1.2d）
 
@@ -108,4 +149,4 @@ prepare 与回读必须使 `session_id`、`config_fingerprint`、`run_id`、`bac
 
 ### 当前差距
 
-运行中的固定 native（8792，PID 941842，`drvfix` release，`configs/g4a2_server.yaml`）没有这些端点，且其 interface_profile/配置与 G1 配方不同。M1.2d 的候选补丁（含生命周期互斥与 prepared-only TTL）已在隔离 release 以 mock backend 完成真实 HTTP 集成，但未部署、未重启 8792；真实 G1 prepared/Start 仍需维护窗口与 G1 vs G4A2 配方口径决定。
+运行中的固定 native（8792，PID 941842，`drvfix` release，`configs/g4a2_server.yaml`）没有这些端点，且其 interface_profile/配置与 G1 配方不同。M1.2d 的候选补丁（含生命周期互斥与 prepared-only TTL）已在隔离 release 以 mock backend 完成真实 HTTP 集成；M1.4 的 STOP/end 补丁同样只在隔离 release 验证。两者都未部署、未重启 8792（其 capabilities 不含任何 `*_protocol` 字段）。真实 G1 prepared/Start、真实停车确认与 STOP/end 部署仍需维护窗口与 G1 vs G4A2 配方口径决定。

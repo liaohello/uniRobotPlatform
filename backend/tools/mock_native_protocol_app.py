@@ -40,11 +40,16 @@ def build_test_recipe(base: str) -> Recipe:
     attestation = _get(base, "/api/v1/attestation")
     if capabilities.get("backend_kind") != "mock":
         raise SystemExit("refusing to build the test recipe against a non-mock native")
-    required = {"session_binding": "m1-binding-1", "recording_begin": "m1-recording-1"}
-    if capabilities.get("session_binding_protocol") != required["session_binding"]:
-        raise SystemExit("mock native does not declare m1-binding-1")
-    if capabilities.get("recording_begin_protocol") != required["recording_begin"]:
-        raise SystemExit("mock native does not declare m1-recording-1")
+    required = {
+        "session_binding": ("session_binding_protocol", "m1-binding-1"),
+        "recording_begin": ("recording_begin_protocol", "m1-recording-1"),
+        "session_stop": ("session_stop_protocol", "m1-stop-1"),
+        "recording_end": ("recording_end_protocol", "m1-end-1"),
+    }
+    for key, (field, expected) in required.items():
+        if capabilities.get(field) != expected:
+            raise SystemExit(f"native does not declare {expected} (capabilities.{field})")
+    required_protocols = {key: value[1] for key, value in required.items()}
     resource = {key: scene[key] for key in ("contract_version", "model_id", "model_sha256", "scene_id")}
     if any(capabilities.get(key) != resource[key] for key in resource):
         raise SystemExit("mock native capabilities and scene identity disagree")
@@ -87,7 +92,7 @@ def build_test_recipe(base: str) -> Recipe:
     }
     body = {
         "recipe_id": "mobilecar.g1.teleop.mock-testonly",
-        "recipe_revision": 1,
+        "recipe_revision": 2,
         "preset": {
             "argv": ["mobilecar", "--backend", "mock", "--require-recording"],
             "env": {},
@@ -128,7 +133,7 @@ def build_test_recipe(base: str) -> Recipe:
                 },
             },
         },
-        "required_protocols": required,
+        "required_protocols": required_protocols,
         "kinematics": {
             "profile_id": kinematics["profile_id"],
             "digest": digest(kinematics),

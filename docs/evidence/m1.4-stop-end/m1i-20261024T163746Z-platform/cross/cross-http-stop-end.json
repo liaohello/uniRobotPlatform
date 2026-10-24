@@ -1,0 +1,1117 @@
+{
+  "classification": "test-only; mock backend, real native HTTP, real Recorder files",
+  "no_physics": true,
+  "production_recipe_used": false,
+  "platform_url": "http://127.0.0.1:18956",
+  "native_url": "http://127.0.0.1:18954",
+  "native_identity_before": {
+    "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+    "backend_generation": 1,
+    "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e"
+  },
+  "recording_segment_id": "seg_001_08d0a49360",
+  "concurrent_receipts": {
+    "end-race-1": {
+      "code": "ended",
+      "dispatched": true,
+      "integrity": "complete"
+    },
+    "end-race-2": {
+      "code": "end_already_finalized",
+      "dispatched": false,
+      "integrity": "complete"
+    }
+  },
+  "refusal_samples": {
+    "stop_runtime_identity_mismatch": {
+      "accepted": false,
+      "code": "stop_runtime_identity_mismatch",
+      "reason": "requested runtime identity does not match the live backend; re-observe the Session before stopping",
+      "protocol": "m1-stop-1",
+      "request_id": "stop-wrong-identity",
+      "replayed": false,
+      "binding_id": null,
+      "session_id": null,
+      "config_fingerprint": null,
+      "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+      "backend_generation": 1,
+      "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+      "dispatch": {
+        "dispatched": false,
+        "command_id": null,
+        "status": "not_sent",
+        "status_detail": ""
+      },
+      "parking": {
+        "confirmed": false,
+        "waited_ms": 0,
+        "timeout_ms": 0,
+        "base_stopped": null,
+        "base_stop_latched": null,
+        "base_velocity_m_s": [],
+        "arm_max_joint_velocity_rad_s": null,
+        "control_tick_id": null,
+        "observed_at_backend_monotonic_s": null,
+        "scope_coverage": {},
+        "observed_confirmed": false,
+        "coverage_complete": false,
+        "coverage_note": "parking proof covers the base velocity state and observed arm joint rates only; scopes reported as not_observed have no backend feedback and are never inferred"
+      },
+      "owner_cleared_after_stop": false,
+      "safety_latched": true,
+      "recording_status": "RECORDING",
+      "recording_segment_id": "seg_001_08d0a49360",
+      "recording_touched": false,
+      "motion_restored": false
+    },
+    "end_segment_mismatch": {
+      "accepted": false,
+      "code": "end_segment_mismatch",
+      "reason": "the requested segment is not the Recorder's active segment; no STOP, drain or finalize was performed",
+      "protocol": "m1-end-1",
+      "request_id": "end-unknown-segment",
+      "replayed": false,
+      "binding_id": "bind_705fe6f8151c442ea8a2ab6c8fbb4384",
+      "session_id": "ps-80dfa011ef3241a5b66dbd529050989a",
+      "config_fingerprint": "cs-676fe045e631b0b057a56323c672b7eaaf2c6f03",
+      "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+      "backend_generation": 1,
+      "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+      "recording_segment_id": "seg_not_present",
+      "active_segment_id": "seg_001_08d0a49360",
+      "binding_state": "started",
+      "dispatch": {
+        "dispatched": false,
+        "command_id": null,
+        "status": "not_sent",
+        "status_detail": ""
+      },
+      "parking": {
+        "confirmed": false,
+        "waited_ms": 0,
+        "timeout_ms": 0,
+        "base_stopped": null,
+        "base_stop_latched": null,
+        "base_velocity_m_s": [],
+        "arm_max_joint_velocity_rad_s": null,
+        "control_tick_id": null,
+        "observed_at_backend_monotonic_s": null,
+        "scope_coverage": {},
+        "observed_confirmed": false,
+        "coverage_complete": false,
+        "coverage_note": "parking proof covers the base velocity state and observed arm joint rates only; scopes reported as not_observed have no backend feedback and are never inferred"
+      },
+      "drain": {
+        "completed": false,
+        "fanout_drained": false,
+        "recorder_queue_empty": false,
+        "queued_events": 0,
+        "dropped_events": 0
+      },
+      "finalize": {
+        "completed": false,
+        "error": null,
+        "terminal_event_written": false,
+        "complete_tail": false,
+        "recording_status": "UNKNOWN",
+        "audit_status": "UNKNOWN",
+        "event_count": null,
+        "dropped_events": null,
+        "storage_ref": null,
+        "episode_complete_sha256": null,
+        "checksummed_artifacts": 0,
+        "preserved_records": false
+      },
+      "integrity": "unknown",
+      "recording_status": "COMPLETE",
+      "safety_latched": true,
+      "reset_issued": false,
+      "safety_cleared": false,
+      "owner_acquired": false
+    },
+    "end_already_finalized": {
+      "accepted": true,
+      "code": "end_already_finalized",
+      "reason": "this segment is already finalized on disk; no second STOP, drain or tail record was made",
+      "protocol": "m1-end-1",
+      "request_id": "end-old-segment-after-new",
+      "replayed": false,
+      "binding_id": "bind_705fe6f8151c442ea8a2ab6c8fbb4384",
+      "session_id": "ps-80dfa011ef3241a5b66dbd529050989a",
+      "config_fingerprint": "cs-676fe045e631b0b057a56323c672b7eaaf2c6f03",
+      "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+      "backend_generation": 1,
+      "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+      "recording_segment_id": "seg_001_08d0a49360",
+      "active_segment_id": "seg_002_03d8751946",
+      "binding_state": "started",
+      "dispatch": {
+        "dispatched": false,
+        "command_id": null,
+        "status": "not_sent",
+        "status_detail": ""
+      },
+      "parking": {
+        "confirmed": false,
+        "waited_ms": 0,
+        "timeout_ms": 0,
+        "base_stopped": null,
+        "base_stop_latched": null,
+        "base_velocity_m_s": [],
+        "arm_max_joint_velocity_rad_s": null,
+        "control_tick_id": null,
+        "observed_at_backend_monotonic_s": null,
+        "scope_coverage": {},
+        "observed_confirmed": false,
+        "coverage_complete": false,
+        "coverage_note": "parking proof covers the base velocity state and observed arm joint rates only; scopes reported as not_observed have no backend feedback and are never inferred"
+      },
+      "drain": {
+        "completed": false,
+        "fanout_drained": false,
+        "recorder_queue_empty": false,
+        "queued_events": 0,
+        "dropped_events": 0
+      },
+      "finalize": {
+        "completed": true,
+        "error": null,
+        "terminal_event_written": true,
+        "complete_tail": true,
+        "recording_status": "COMPLETE",
+        "audit_status": "COMPLETE",
+        "event_count": 8,
+        "dropped_events": 0,
+        "storage_ref": "run_b3fe4dc247ae4d8992984c43f79ce34b/episodes/episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+        "episode_complete_sha256": "957cd3e509c8e6630382e6aa02c3d4157b85cf9ded10ef23370d18120f14356a",
+        "checksummed_artifacts": 5,
+        "preserved_records": true
+      },
+      "integrity": "complete",
+      "recording_status": "RECORDING",
+      "safety_latched": true,
+      "reset_issued": false,
+      "safety_cleared": false,
+      "owner_acquired": false
+    },
+    "end_binding_not_found": {
+      "accepted": false,
+      "code": "end_binding_not_found",
+      "reason": "binding is unknown, released or evicted",
+      "protocol": "m1-end-1",
+      "request_id": "end-foreign-binding",
+      "replayed": false,
+      "binding_id": "binding-not-present",
+      "session_id": "ps-80dfa011ef3241a5b66dbd529050989a",
+      "config_fingerprint": "cs-676fe045e631b0b057a56323c672b7eaaf2c6f03",
+      "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+      "backend_generation": 1,
+      "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+      "recording_segment_id": "seg_002_03d8751946",
+      "active_segment_id": "seg_002_03d8751946",
+      "binding_state": "started",
+      "dispatch": {
+        "dispatched": false,
+        "command_id": null,
+        "status": "not_sent",
+        "status_detail": ""
+      },
+      "parking": {
+        "confirmed": false,
+        "waited_ms": 0,
+        "timeout_ms": 0,
+        "base_stopped": null,
+        "base_stop_latched": null,
+        "base_velocity_m_s": [],
+        "arm_max_joint_velocity_rad_s": null,
+        "control_tick_id": null,
+        "observed_at_backend_monotonic_s": null,
+        "scope_coverage": {},
+        "observed_confirmed": false,
+        "coverage_complete": false,
+        "coverage_note": "parking proof covers the base velocity state and observed arm joint rates only; scopes reported as not_observed have no backend feedback and are never inferred"
+      },
+      "drain": {
+        "completed": false,
+        "fanout_drained": false,
+        "recorder_queue_empty": false,
+        "queued_events": 0,
+        "dropped_events": 0
+      },
+      "finalize": {
+        "completed": false,
+        "error": null,
+        "terminal_event_written": false,
+        "complete_tail": false,
+        "recording_status": "UNKNOWN",
+        "audit_status": "UNKNOWN",
+        "event_count": null,
+        "dropped_events": null,
+        "storage_ref": null,
+        "episode_complete_sha256": null,
+        "checksummed_artifacts": 0,
+        "preserved_records": false
+      },
+      "integrity": "unknown",
+      "recording_status": "RECORDING",
+      "safety_latched": true,
+      "reset_issued": false,
+      "safety_cleared": false,
+      "owner_acquired": false
+    }
+  },
+  "checks": [
+    {
+      "name": "platform uses the test-only mock recipe",
+      "passed": true,
+      "detail": "mobilecar.g1.teleop.mock-testonly"
+    },
+    {
+      "name": "test recipe requires stop and end",
+      "passed": true,
+      "detail": {
+        "session_binding": "m1-binding-1",
+        "recording_begin": "m1-recording-1",
+        "session_stop": "m1-stop-1",
+        "recording_end": "m1-end-1"
+      }
+    },
+    {
+      "name": "native backend is the labelled mock",
+      "passed": true,
+      "detail": "mock"
+    },
+    {
+      "name": "native declares stop and end",
+      "passed": true,
+      "detail": {
+        "stop": "m1-stop-1",
+        "end": "m1-end-1"
+      }
+    },
+    {
+      "name": "test recipe validates",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "prepared session created",
+      "passed": true,
+      "detail": {
+        "session": {
+          "schema_version": "unirobot-prepared-session-1",
+          "session_id": "ps-80dfa011ef3241a5b66dbd529050989a",
+          "state": "prepared",
+          "created_at": "2026-10-24T16:38:17+00:00",
+          "updated_at": "2026-10-24T16:38:17+00:00",
+          "snapshot_id": "cs-676fe045e631b0b057a56323c672b7eaaf2c6f03",
+          "recipe_fingerprint": "10e38d5e021af83f140152f733d9d485883c034e5fcaa5c66196e625b150daf4",
+          "execution_revision": 1,
+          "fingerprint": "58419468e11fc9837b4d72050d06572c4b1d5430549ac9b6b4daeb16ff50f8a9",
+          "native_identity": {
+            "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+            "backend_generation": 1,
+            "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e"
+          },
+          "native_binding": {
+            "status": "verified",
+            "protocol": "m1-binding-1",
+            "binding_id": "bind_705fe6f8151c442ea8a2ab6c8fbb4384",
+            "native_session_id": "ps-80dfa011ef3241a5b66dbd529050989a",
+            "config_fingerprint": "cs-676fe045e631b0b057a56323c672b7eaaf2c6f03",
+            "expires_at_backend_monotonic_s": 1032992.181144305,
+            "verified_at": "2026-10-24T16:38:17+00:00",
+            "readback_sha256": "9d31441e046d5e3a89712b9b26ca9e015ab68a26fd4fd21abab6b17a3dc3d2fe",
+            "reason": null
+          },
+          "execution_eligible": true,
+          "start_available": true,
+          "execution": {
+            "control_scope_granted": [],
+            "owner": {
+              "state": "not_acquired",
+              "session_id": null,
+              "lease_expires_at_backend_monotonic_s": null
+            },
+            "recording_required_for_motion": true,
+            "recording_begin_required": true,
+            "recording_ready": false,
+            "motion_ready": false,
+            "motion_blockers": [
+              "session_not_active"
+            ],
+            "observed_at": "2026-10-24T16:38:17+00:00",
+            "source": "prepared"
+          },
+          "blocking_reasons": [],
+          "start_attempts": [],
+          "started_at": null,
+          "start_receipt": null,
+          "recording_begin_attempts": [],
+          "recording_begin_receipt": null,
+          "stop_attempts": [],
+          "stop_receipt": null,
+          "stop_receipts": [],
+          "recording_end_attempts": [],
+          "recording_end_receipt": null,
+          "recording_end_receipts": [],
+          "closed_at": null,
+          "current": null
+        },
+        "replayed": false
+      }
+    },
+    {
+      "name": "platform started without motion",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "current offers stop and end after start",
+      "passed": true,
+      "detail": {
+        "stop": true,
+        "end": false
+      }
+    },
+    {
+      "name": "stop accepted",
+      "passed": true,
+      "detail": {
+        "status": 201,
+        "code": "stopped",
+        "reason": ""
+      }
+    },
+    {
+      "name": "stop dispatch and parking are separate layers",
+      "passed": true,
+      "detail": {
+        "dispatch": {
+          "dispatched": true,
+          "command_id": "stop_7601f1e7dd754f01aa84d0b7a3ec01a0",
+          "status": "DISPATCHED",
+          "status_detail": ""
+        },
+        "parking": true
+      }
+    },
+    {
+      "name": "stop does not claim full coverage",
+      "passed": true,
+      "detail": {
+        "base": "confirmed",
+        "arm": "confirmed",
+        "gripper": "not_observed"
+      }
+    },
+    {
+      "name": "stop leaves the recording and does not reset",
+      "passed": true,
+      "detail": {
+        "recording_touched": false,
+        "motion_restored": false,
+        "recording_status": "RECORDING"
+      }
+    },
+    {
+      "name": "same stop request replays",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "replayed": true
+      }
+    },
+    {
+      "name": "wrong runtime identity is refused without dispatch",
+      "passed": true,
+      "detail": {
+        "code": "stop_runtime_identity_mismatch",
+        "dispatch": {
+          "dispatched": false,
+          "command_id": null,
+          "status": "not_sent",
+          "status_detail": ""
+        }
+      }
+    },
+    {
+      "name": "concurrent end thread finished",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "concurrent end thread finished",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "both concurrent ends answered",
+      "passed": true,
+      "detail": [
+        "end-race-1",
+        "end-race-2"
+      ]
+    },
+    {
+      "name": "at least one concurrent end was accepted",
+      "passed": true,
+      "detail": [
+        "end-race-1",
+        "end-race-2"
+      ]
+    },
+    {
+      "name": "a losing concurrent end is an explicit refusal",
+      "passed": true,
+      "detail": {}
+    },
+    {
+      "name": "every accepted concurrent end reports a durable complete tail",
+      "passed": true,
+      "detail": {
+        "end-race-1": "ended",
+        "end-race-2": "end_already_finalized"
+      }
+    },
+    {
+      "name": "exactly one concurrent end dispatched STOP and finalized",
+      "passed": true,
+      "detail": {
+        "dispatched": [
+          "end-race-1"
+        ],
+        "codes": {
+          "end-race-1": "ended",
+          "end-race-2": "end_already_finalized"
+        }
+      }
+    },
+    {
+      "name": "end accepted with complete integrity",
+      "passed": true,
+      "detail": {
+        "code": "ended",
+        "integrity": "complete",
+        "reason": ""
+      }
+    },
+    {
+      "name": "end layers stay separate",
+      "passed": true,
+      "detail": {
+        "dispatch": "DISPATCHED",
+        "parking": true,
+        "drain": {
+          "completed": true,
+          "fanout_drained": false,
+          "recorder_queue_empty": true,
+          "queued_events": 0,
+          "dropped_events": 0
+        },
+        "finalize": true
+      }
+    },
+    {
+      "name": "end issued no reset or side effects",
+      "passed": true,
+      "detail": {
+        "reset_issued": false,
+        "safety_cleared": false,
+        "owner_acquired": false
+      }
+    },
+    {
+      "name": "finalize digest matches the file on disk",
+      "passed": true,
+      "detail": {
+        "disk": "957cd3e509c8e6630382e6aa02c3d4157b85cf9ded10ef23370d18120f14356a",
+        "receipt": "957cd3e509c8e6630382e6aa02c3d4157b85cf9ded10ef23370d18120f14356a"
+      }
+    },
+    {
+      "name": "tail record names this segment",
+      "passed": true,
+      "detail": {
+        "segment": "seg_001_08d0a49360",
+        "audit": "COMPLETE"
+      }
+    },
+    {
+      "name": "concurrency left exactly one terminal event",
+      "passed": true,
+      "detail": 1
+    },
+    {
+      "name": "checksummed artifacts reported",
+      "passed": true,
+      "detail": {
+        "receipt": 5,
+        "file": 5
+      }
+    },
+    {
+      "name": "session closed after a durable end",
+      "passed": true,
+      "detail": "closed"
+    },
+    {
+      "name": "every accepted racing request keeps its own receipt",
+      "passed": true,
+      "detail": {
+        "history": [
+          "end-race-1",
+          "end-race-2"
+        ],
+        "accepted": [
+          "end-race-1",
+          "end-race-2"
+        ]
+      }
+    },
+    {
+      "name": "a retry of an accepted end replays without a new tail",
+      "passed": true,
+      "detail": {
+        "replays": {
+          "end-race-1": {
+            "first_status": 201,
+            "replay_status": 200,
+            "replayed": true,
+            "code": null
+          },
+          "end-race-2": {
+            "first_status": 201,
+            "replay_status": 200,
+            "replayed": true,
+            "code": null
+          }
+        },
+        "terminals": 1
+      }
+    },
+    {
+      "name": "runtime identity never changed",
+      "passed": true,
+      "detail": {
+        "after": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+        "generation": 1,
+        "episode": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e"
+      }
+    },
+    {
+      "name": "an unknown segment is refused without dispatch",
+      "passed": true,
+      "detail": {
+        "code": "end_segment_mismatch",
+        "active": "seg_001_08d0a49360"
+      }
+    },
+    {
+      "name": "an ended segment cannot touch a newer segment",
+      "passed": true,
+      "detail": {
+        "code": "end_already_finalized",
+        "terminals": 1
+      }
+    },
+    {
+      "name": "a foreign binding cannot end the newer segment",
+      "passed": true,
+      "detail": "end_binding_not_found"
+    },
+    {
+      "name": "the newer segment ends once",
+      "passed": true,
+      "detail": {
+        "code": "ended",
+        "terminals": 2
+      }
+    },
+    {
+      "name": "current reports closed availability",
+      "passed": true,
+      "detail": {
+        "end_available": false,
+        "last_end": "end_already_finalized",
+        "integrity": "complete"
+      }
+    },
+    {
+      "name": "repeated platform reads never reset or re-open",
+      "passed": true,
+      "detail": {
+        "identity": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+        "recording": "COMPLETE"
+      }
+    },
+    {
+      "name": "openapi exposes the two session actions",
+      "passed": true,
+      "detail": [
+        "/api/v1/runs/{run_id}/stop",
+        "/api/v1/sessions/{session_id}/recording/end",
+        "/api/v1/sessions/{session_id}/stop"
+      ]
+    }
+  ],
+  "passed": 39,
+  "native_identity_after": {
+    "contract_version": "mobilecar-1.0",
+    "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+    "backend_generation": 1,
+    "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+    "episode_started_backend_monotonic_s": 1032936.458349463,
+    "backend_monotonic_s": 1032962.931380447,
+    "sim_time_s": 25.25999999999955,
+    "feedback_time_s": 1032962.931380447,
+    "wall_utc": "2026-10-24T16:38:18.416312Z",
+    "clock_id": "backend_monotonic",
+    "control_tick_id": "mock_000001263",
+    "task_phase": "OBSERVE",
+    "base": {
+      "frame_id": "base_link",
+      "position_world_sim_m": [
+        0.0,
+        0.0,
+        0.055
+      ],
+      "orientation_world_sim_xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "vx_m_s": 0.0,
+      "vy_m_s": 0.0,
+      "wz_rad_s": 0.0,
+      "requested_vx_m_s": 0.0,
+      "requested_vy_m_s": 0.0,
+      "requested_wz_rad_s": 0.0,
+      "stopped": true,
+      "stop_latched": true
+    },
+    "arm": {
+      "user_joint_positions_rad": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "user_joint_targets_rad": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "model_joint_positions_rad": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "model_joint_targets_rad": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint_velocities_rad_s": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint_torques_nm": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "joint_margin_rad": [
+        2.09,
+        2.09,
+        2.09,
+        2.09,
+        2.09
+      ],
+      "model_limits_rad": [
+        [
+          -2.09,
+          2.09
+        ],
+        [
+          -2.09,
+          2.09
+        ],
+        [
+          -2.09,
+          2.09
+        ],
+        [
+          -2.09,
+          2.09
+        ],
+        [
+          -2.09,
+          2.09
+        ]
+      ],
+      "coordinates_status": "synthetic_mock"
+    },
+    "gripper": {
+      "width_m": 0.025,
+      "target_width_m": 0.025,
+      "model_drive_position_rad": 0.0,
+      "model_drive_target_rad": 0.0,
+      "left_contact_force_n": 0.0,
+      "right_contact_force_n": 0.0,
+      "bilateral_contact": false
+    },
+    "tcp": {
+      "frame_id": "world_sim",
+      "position_m": [
+        0.178,
+        0.002,
+        0.303
+      ],
+      "orientation_xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "position_error_m": 0.0,
+      "orientation_error_rad": 0.0,
+      "held": false
+    },
+    "sensors": [
+      {
+        "kind": "rgb",
+        "available": true,
+        "fresh": true,
+        "sample_id": "mock_rgb_1263",
+        "stream_id": "rgb",
+        "measurement_time_s": 1032962.931100689,
+        "arrival_time_s": 1032962.931100689,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": null,
+        "asset_uri": null,
+        "quality": "synthetic_fixture",
+        "capture_sim_time_s": null,
+        "capture_backend_monotonic_s": null,
+        "capture_control_tick_id": null,
+        "feedback_sample_id": null,
+        "observation_age_s": null,
+        "profile_id": null
+      },
+      {
+        "kind": "depth",
+        "available": true,
+        "fresh": true,
+        "sample_id": "mock_depth_1263",
+        "stream_id": "depth",
+        "measurement_time_s": 1032962.931100689,
+        "arrival_time_s": 1032962.931100689,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": null,
+        "asset_uri": null,
+        "quality": "synthetic_fixture",
+        "capture_sim_time_s": null,
+        "capture_backend_monotonic_s": null,
+        "capture_control_tick_id": null,
+        "feedback_sample_id": null,
+        "observation_age_s": null,
+        "profile_id": null
+      },
+      {
+        "kind": "lidar",
+        "available": true,
+        "fresh": true,
+        "sample_id": "mock_lidar_1263",
+        "stream_id": "lidar",
+        "measurement_time_s": 1032962.931100689,
+        "arrival_time_s": 1032962.931100689,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": null,
+        "asset_uri": null,
+        "quality": "synthetic_fixture",
+        "capture_sim_time_s": null,
+        "capture_backend_monotonic_s": null,
+        "capture_control_tick_id": null,
+        "feedback_sample_id": null,
+        "observation_age_s": null,
+        "profile_id": null
+      },
+      {
+        "kind": "imu",
+        "available": true,
+        "fresh": true,
+        "sample_id": "mock_imu_1263",
+        "stream_id": "imu",
+        "measurement_time_s": 1032962.931100689,
+        "arrival_time_s": 1032962.931100689,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": null,
+        "asset_uri": null,
+        "quality": "synthetic_fixture",
+        "capture_sim_time_s": null,
+        "capture_backend_monotonic_s": null,
+        "capture_control_tick_id": null,
+        "feedback_sample_id": null,
+        "observation_age_s": null,
+        "profile_id": null
+      },
+      {
+        "kind": "encoders",
+        "available": true,
+        "fresh": true,
+        "sample_id": "mock_encoders_1263",
+        "stream_id": "encoders",
+        "measurement_time_s": 1032962.931100689,
+        "arrival_time_s": 1032962.931100689,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": null,
+        "asset_uri": null,
+        "quality": "synthetic_fixture",
+        "capture_sim_time_s": null,
+        "capture_backend_monotonic_s": null,
+        "capture_control_tick_id": null,
+        "feedback_sample_id": null,
+        "observation_age_s": null,
+        "profile_id": null
+      },
+      {
+        "kind": "joint_feedback",
+        "available": true,
+        "fresh": true,
+        "sample_id": "mock_joint_feedback_1263",
+        "stream_id": "joint_feedback",
+        "measurement_time_s": 1032962.931100689,
+        "arrival_time_s": 1032962.931100689,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": null,
+        "asset_uri": null,
+        "quality": "synthetic_fixture",
+        "capture_sim_time_s": null,
+        "capture_backend_monotonic_s": null,
+        "capture_control_tick_id": null,
+        "feedback_sample_id": null,
+        "observation_age_s": null,
+        "profile_id": null
+      },
+      {
+        "kind": "image_transforms",
+        "available": true,
+        "fresh": true,
+        "sample_id": "mock_image_transforms_1263",
+        "stream_id": "image_transforms",
+        "measurement_time_s": 1032962.931100689,
+        "arrival_time_s": 1032962.931100689,
+        "clock_id": "backend_monotonic",
+        "valid_fraction": null,
+        "asset_uri": null,
+        "quality": "synthetic_fixture",
+        "capture_sim_time_s": null,
+        "capture_backend_monotonic_s": null,
+        "capture_control_tick_id": null,
+        "feedback_sample_id": null,
+        "observation_age_s": null,
+        "profile_id": null
+      }
+    ],
+    "plan": null,
+    "active_session_id": null,
+    "active_operator_id": null,
+    "active_operator_kind": null,
+    "base_owner_session_id": null,
+    "arm_owner_session_id": null,
+    "safety_latched": true,
+    "recording": {
+      "status": "COMPLETE",
+      "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+      "recording_segment_id": "seg_002_03d8751946",
+      "command_capture_ready": false,
+      "queued_events": 0,
+      "dropped_events": 0,
+      "error": null
+    },
+    "contact_summary": {
+      "unexpected_contact": false
+    },
+    "diagnostics": {
+      "mode": "MOCK",
+      "synthetic_fixture": true,
+      "base_drive_gate": {
+        "blocked": true,
+        "code": "SOFTWARE_STOP_LATCHED",
+        "reason": "\u8f6f\u4ef6\u505c\u6b62\u5df2\u9501\u5b58\uff1a\u9700\u5148\u89e3\u9664\u505c\u6b62\uff0c\u6216\u5f00\u59cb\u65b0\u7684\u5f55\u5236\u540e\u518d\u9a7e\u9a76\u3002",
+        "action": "unlock_stop",
+        "recording_required": true,
+        "owner_session_id": null,
+        "lease_remaining_s": 0.0
+      }
+    },
+    "model_joint_positions_rad": {
+      "joint1": 0.0,
+      "joint2": 0.0,
+      "joint3": 0.0,
+      "joint4": 0.0,
+      "joint5": 0.0,
+      "gripper_base_joint": 0.0
+    }
+  },
+  "stop_receipt": {
+    "accepted": true,
+    "code": "stopped",
+    "reason": "",
+    "protocol": "m1-stop-1",
+    "request_id": "stop-live",
+    "replayed": false,
+    "binding_id": "bind_705fe6f8151c442ea8a2ab6c8fbb4384",
+    "session_id": "ps-80dfa011ef3241a5b66dbd529050989a",
+    "config_fingerprint": "cs-676fe045e631b0b057a56323c672b7eaaf2c6f03",
+    "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+    "backend_generation": 1,
+    "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+    "dispatch": {
+      "dispatched": true,
+      "command_id": "stop_7601f1e7dd754f01aa84d0b7a3ec01a0",
+      "status": "DISPATCHED",
+      "status_detail": ""
+    },
+    "parking": {
+      "confirmed": true,
+      "waited_ms": 2,
+      "timeout_ms": 5000,
+      "base_stopped": true,
+      "base_stop_latched": true,
+      "base_velocity_m_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "arm_max_joint_velocity_rad_s": 0.0,
+      "control_tick_id": "mock_000001239",
+      "observed_at_backend_monotonic_s": 1032962.456179229,
+      "scope_coverage": {
+        "base": "confirmed",
+        "arm": "confirmed",
+        "gripper": "not_observed"
+      },
+      "observed_confirmed": true,
+      "coverage_complete": false,
+      "coverage_note": "parking proof covers the base velocity state and observed arm joint rates only; scopes reported as not_observed have no backend feedback and are never inferred"
+    },
+    "owner_cleared_after_stop": true,
+    "safety_latched": true,
+    "recording_status": "RECORDING",
+    "recording_segment_id": "seg_001_08d0a49360",
+    "recording_touched": false,
+    "motion_restored": false,
+    "observed_at": "2026-10-24T16:38:17+00:00"
+  },
+  "end_receipt": {
+    "accepted": true,
+    "code": "ended",
+    "reason": "",
+    "protocol": "m1-end-1",
+    "request_id": "end-race-1",
+    "replayed": false,
+    "binding_id": "bind_705fe6f8151c442ea8a2ab6c8fbb4384",
+    "session_id": "ps-80dfa011ef3241a5b66dbd529050989a",
+    "config_fingerprint": "cs-676fe045e631b0b057a56323c672b7eaaf2c6f03",
+    "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+    "backend_generation": 1,
+    "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+    "recording_segment_id": "seg_001_08d0a49360",
+    "active_segment_id": "seg_001_08d0a49360",
+    "binding_state": "started",
+    "dispatch": {
+      "dispatched": true,
+      "command_id": "stop_67dda091f2f24793831fc25d3df2c4cf",
+      "status": "DISPATCHED",
+      "status_detail": ""
+    },
+    "parking": {
+      "confirmed": true,
+      "waited_ms": 1,
+      "timeout_ms": 5000,
+      "base_stopped": true,
+      "base_stop_latched": true,
+      "base_velocity_m_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "arm_max_joint_velocity_rad_s": 0.0,
+      "control_tick_id": "mock_000001247",
+      "observed_at_backend_monotonic_s": 1032962.615010546,
+      "scope_coverage": {
+        "base": "confirmed",
+        "arm": "confirmed",
+        "gripper": "not_observed"
+      },
+      "observed_confirmed": true,
+      "coverage_complete": false,
+      "coverage_note": "parking proof covers the base velocity state and observed arm joint rates only; scopes reported as not_observed have no backend feedback and are never inferred"
+    },
+    "drain": {
+      "completed": true,
+      "fanout_drained": false,
+      "recorder_queue_empty": true,
+      "queued_events": 0,
+      "dropped_events": 0
+    },
+    "finalize": {
+      "completed": true,
+      "error": null,
+      "terminal_event_written": true,
+      "complete_tail": true,
+      "recording_status": "COMPLETE",
+      "audit_status": "COMPLETE",
+      "event_count": 8,
+      "dropped_events": 0,
+      "storage_ref": "run_b3fe4dc247ae4d8992984c43f79ce34b/episodes/episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+      "episode_complete_sha256": "957cd3e509c8e6630382e6aa02c3d4157b85cf9ded10ef23370d18120f14356a",
+      "checksummed_artifacts": 5,
+      "preserved_records": true
+    },
+    "integrity": "complete",
+    "recording_status": "COMPLETE",
+    "safety_latched": true,
+    "reset_issued": false,
+    "safety_cleared": false,
+    "owner_acquired": false,
+    "observed_at": "2026-10-24T16:38:18+00:00"
+  },
+  "episode_complete_file": {
+    "audit_status": "COMPLETE",
+    "checksums": {
+      "commands.jsonl": "f3135bc5b015c3c7d61dd77caa710a438265955e63e53a281eef38beea92d506",
+      "control.jsonl": "b45aec822d263dd547c1f0dc3833a0b2ed2657ca1ddf8562f08b8fbeb03f9a52",
+      "episode.json": "a7857b7e3127e4ca8fb4bdf527ae6594650404eca83206ee5c5ab7124635e49f",
+      "events.jsonl": "da213fd7deea77954874a793079b1a108e7beb10de6b27d158afb4792b803ddc",
+      "initial_snapshot.json": "ff677ca7f82640c16e2b1acfda89047ba292522184f65607d2832d99d75ec759"
+    },
+    "closed_wall_utc": "2026-10-24T16:38:18.114258Z",
+    "contract_version": "mobilecar-1.0",
+    "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+    "event_count": 8,
+    "recording_segment_id": "seg_001_08d0a49360",
+    "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+    "termination_reason": "OPERATOR_FINISHED"
+  },
+  "terminal_events": 2,
+  "not_covered_over_http": [
+    "parking unconfirmed (needs a never-stopping motion feed)",
+    "finalize failure without a tail (needs an injected Recorder failure)",
+    "real MuJoCo parking, physical robot STOP confirmation, 8792 deployment"
+  ]
+}

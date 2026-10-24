@@ -100,18 +100,19 @@ JUnit：[focused-m1g.junit.xml](evidence/m1.3/m1g-20261024T113913Z-platform/plat
 | 8792 | native PID 941842，drvfix/G4A2 | 只读观察，未停止/重启/修改 |
 | 18949 | M1.2d 生产 recipe 平台候选 | 保留，未重做 Session freshness |
 | 18944 | M1.2c 平台候选 | 保留，前端当前 upstream |
-| **18950 → 18944** | 前端最新预览（frontend 404c1fc） | 保留；这是当前前端端口，不能当测试空闲端口 |
+| **18951 → 18949** | 最新前端预览（代理到 M1.2d 平台候选 18949） | 保留；这是当前前端入口，不能当测试空闲端口 |
+| 18950 → 18944 | 前端预览（frontend 404c1fc） | 保留；18950 也是前端端口，不是空闲测试端口 |
 | 18946 → 18943 | 前端预览 | 保留 |
 | 18935/18933 → 18942 | 前端/几何预览 | 保留 |
 | 18932/18931/18905 | 其他既有预览/服务 | 保留 |
 | 18941/18942/18943 | 既有平台服务 | 保留 |
 | 18953 | M1.3 最终平台候选 | 本轮发布；旧 18953 m1f 进程已停止并由最终源码替换 |
 
-旧记录中的“18947/18948 → 18944”和“18950/18951 为 native mock/测试平台”已过时；本轮没有占用这些号段，也不把旧临时端口记录当当前空闲依据。
+旧记录中的“18947/18948 → 18944”和“18950/18951 为 native mock/测试平台”已过时：18951 现在是最新前端预览端口（→18949），18950 是前端预览（→18944），两者都不得当作空闲测试端口。M1.4 的临时集成端口为 18954/18956，检查后确认空闲再使用，结束后已停止。
 
 ## 八、真实 M1 部署矩阵
 
-M1.3 只增加资源读取/保存链路，不改变 M1.2d 的 native 补丁决策。候选补丁仍是 `native-m1e.patch`，基线 `a5cef52d932ba41424b4bcc134539914031fda39`；旧 source pin `a01098040d953608004a34b3c76519d7884eaa4b2c95e36822bd4e7d283b911c` 只覆盖 a5 base，不能复用于 patch 候选。
+M1.3 只增加资源读取/保存链路，不改变 M1.2d 的 native 补丁决策。M1.4 之后，结束侧候选补丁推进为 `native-m1h.patch`（sha256 `d182801df7381bc45717ff40b0d61df28b5437e92f6ee5528127bdf6d231a99f`，10 文件，冻结 release `m1h-20261024T152235Z-native`，候选源码摘要 `c550a4e495680c8895ca28e92b6aac7de22727086aa351cbad8f42a1618549de`，见 [M1.4](backend-m1.4.md)）；其前身 `native-m1e.patch` 的基线仍是 `a5cef52d932ba41424b4bcc134539914031fda39`。旧 source pin `a01098040d953608004a34b3c76519d7884eaa4b2c95e36822bd4e7d283b911c` 只覆盖 a5 base，既不能复用于 patch 候选，也不因 M1.4 而更新——新 pin 必须在维护窗口对最终运行的 release 重新签发。
 
 | 方案 | 运行时口径 | 身份影响 | 可观察效果 | 主要风险/维护 | 回滚判据 |
 |---|---|---|---|---|---|
@@ -120,7 +121,9 @@ M1.3 只增加资源读取/保存链路，不改变 M1.2d 的 native 补丁决�
 | **独立 G4A2 recipe + `a5cef52+patch`** | 保留当前 8792 profile，另签 G4A2 recipe/采集口径 | aggregate 同上；必须把 a5 基线差异纳入新 recipe 证明 | 平台可按实际 G4A2 capabilities 验证 | 把尚未复核的 a5 UI/modelgen/驾驶安全变化带入生产；证据范围更大 | 新 G4A2 attestation/readiness 任一失败则不切换 |
 | **推荐：独立 G4A2 recipe + `drvfix+patch`** | 保留当前 G4A2 profile，另签独立 recipe；不伪装成 G1 | `dd24d1c80d68afa2c80665eb197b9184a267086bf4d5db76c2103475c414f7da` | 最大程度保留已部署行为，同时获得 M1.2d P1 修复 | 必须先定义 G4A2 配置/场景/package/runtime digest 和 Session 口径；仍不是导航能力 | 维护窗口失败即回 drvfix release；binding 内存态随重启消失，新 recording 独立目录，不迁移/删除旧数据 |
 
-矩阵只是待用户决策，不授权本轮部署。若以后进入维护窗口，步骤固定为：
+下表按 M1.2d 的 `native-m1e.patch` 口径写成；若采用 M1.4 的 STOP/结束能力，需把补丁口径替换为 `native-m1h.patch` 并重签该 release 的 source manifest/aggregate，其余 profile 与基线决策不变。
+
+矩阵只是待用户决策，不授权本轮部署。仍待决定：① G1 还是独立 G4A2 recipe；② 以 a5 还是已部署的 drvfix 为基线；③ 新生产 source pin（维护窗口内对最终 release 重算，M1.4 记录的是候选摘要而非生产 pin）。若以后进入维护窗口，步骤固定为：
 
 1. 冻结选择（G1 或独立 G4A2、a5+patch 或 drvfix+patch）并记录决策人/时间；为新 release 重签 source manifest/aggregate、patch hash、requirements lock、config/scene digest 和 recipe revision，禁止复用 `a010…911c` 旧 base pin。
 2. 在隔离端口安装并运行聚焦测试，核对 health/capabilities/attestation、binding prepare/readback、Start、begin；失败不触碰 8792。

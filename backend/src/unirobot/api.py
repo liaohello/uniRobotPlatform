@@ -39,8 +39,8 @@ from .mobilecar_read import CapabilitiesRead, MobileCarReadService, ReadServiceE
 from .mobilecar_geometry import CompiledGeometryReadService, CompiledSceneRead, GeometryBundle
 from .drafts import CreateDraft, CreateSession, DraftConflict, DraftNotFound, DraftStore, SaveDraft, ValidateDraft
 from .prepare import (
-    BeginRecording, ConfigurationSnapshot, PreparationError, PreparationService, PreparationStore, PreparedSession,
-    SessionEnvelope, SessionList, Validator,
+    BeginRecording, ConfigurationSnapshot, EndRecording, PreparationError, PreparationService, PreparationStore,
+    PreparedSession, SessionEnvelope, SessionList, StopSession, Validator,
 )
 from .recipe import Recipe, load_recipe
 from .maps import MapError, MapList, MapStore, MapVersionView
@@ -243,6 +243,36 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     @application.post("/api/v1/sessions/{session_id}/recording/begin", response_model=SessionEnvelope)
     def begin_recording(session_id: str, spec: BeginRecording, request: Request, response: Response):
         session, replayed = request.app.state.preparation.begin_recording(session_id, spec.model_dump())
+        response.status_code = 200 if replayed else 201
+        return {"session": session, "replayed": replayed}
+
+    @application.post(
+        "/api/v1/sessions/{session_id}/stop",
+        response_model=SessionEnvelope,
+        summary="Latched robot STOP for this Session's runtime identity",
+        description=(
+            "Sends the native latched STOP inside the lifecycle critical section and returns dispatch, "
+            "parking and coverage evidence separately. It is not POST /api/v1/runs/{run_id}/stop, it never "
+            "RESETs, never clears the safety latch and never ends the recording."
+        ),
+    )
+    def stop_session(session_id: str, spec: StopSession, request: Request, response: Response):
+        session, replayed = request.app.state.preparation.stop_session(session_id, spec.model_dump())
+        response.status_code = 200 if replayed else 201
+        return {"session": session, "replayed": replayed}
+
+    @application.post(
+        "/api/v1/sessions/{session_id}/recording/end",
+        response_model=SessionEnvelope,
+        summary="Stop and reliably finalize the recording segment this Session began",
+        description=(
+            "Identity-bound end of the Session's own recording segment. The receipt separates STOP dispatch, "
+            "parking evidence, Recorder drain, finalize proof and episode integrity; a tail file alone is not "
+            "reported as a complete recording."
+        ),
+    )
+    def end_recording(session_id: str, spec: EndRecording, request: Request, response: Response):
+        session, replayed = request.app.state.preparation.end_recording(session_id, spec.model_dump())
         response.status_code = 200 if replayed else 201
         return {"session": session, "replayed": replayed}
 

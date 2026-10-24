@@ -91,3 +91,8 @@ S08/S09 原文件按字节归档；其中远程图片/仓库声明不构成本�
 ## V0.8 地图/路线切片来源
 
 [S18](sources/S18-navigation-map-route-slice.md)：本次用户要求版本化地图读取、带朝向 Waypoint 的 Draft/Version 保存链路、地图/姿态约定和执行隔离。S10 原文保留；S18 是新增需求来源，不重写 S10 的历史范围确认。
+
+
+## V0.8 STOP 与录制收尾切片来源
+
+[S19](sources/S19-session-stop-recording-end.md)：本次用户 Goal 要求交付受 Session/运行身份约束的机器人 STOP 与录制可靠结束候选，明确回执五层分离、身份在 lifecycle 临界区重检、安全 STOP 不受 motion/recording ready 门控、并发与幂等规则、隔离无物理集成范围以及"候选≠部署"。历史 S14/S15 关于停止/结束录制的表述保持原样，S19 只补充其未定义的结束侧原子性。来源字节哈希登记于 catalog.json 与 traceability.json。

@@ -1,0 +1,20 @@
+{
+  "clocks": [
+    "sim",
+    "backend_monotonic",
+    "device",
+    "wall_utc"
+  ],
+  "contract_version": "mobilecar-1.0",
+  "created_wall_utc": "2026-10-24T16:38:17.812656Z",
+  "map_mode": "unavailable",
+  "model_id": null,
+  "model_sha256": null,
+  "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+  "scene_id": null,
+  "software": {
+    "name": "mobilecar",
+    "version": "0.1.0"
+  },
+  "truth_access": "GT_DEBUG_SEPARATE_FROM_DEFAULT_OBSERVATION"
+}

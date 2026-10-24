@@ -1,0 +1,41 @@
+{
+  "audit_status": "COMPLETE",
+  "contract_version": "mobilecar-1.0",
+  "created_wall_utc": "2026-10-24T16:38:17.818046Z",
+  "ended_wall_utc": "2026-10-24T16:38:18.340131Z",
+  "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+  "map_mode": "unavailable",
+  "operator_id": "cross-http-human",
+  "operator_kind": "human_teleop",
+  "recording_status": "COMPLETE",
+  "require_recording": true,
+  "result": "unknown",
+  "run_id": "run_b3fe4dc247ae4d8992984c43f79ce34b",
+  "segments": [
+    {
+      "ended_wall_utc": "2026-10-24T16:38:18.116241Z",
+      "previous_recording_segment_id": null,
+      "reason": "OPERATOR_FINISHED",
+      "recording_segment_id": "seg_001_08d0a49360",
+      "started_backend_monotonic_s": 1032962.311438381,
+      "started_wall_utc": "2026-10-24T16:38:17.818169Z",
+      "status": "COMPLETE",
+      "termination_reason": "OPERATOR_FINISHED"
+    },
+    {
+      "ended_wall_utc": "2026-10-24T16:38:18.340117Z",
+      "previous_recording_segment_id": "seg_001_08d0a49360",
+      "reason": "OPERATOR_FINISHED",
+      "recording_segment_id": "seg_002_03d8751946",
+      "started_backend_monotonic_s": 1032962.790231614,
+      "started_wall_utc": "2026-10-24T16:38:18.295129Z",
+      "status": "COMPLETE",
+      "termination_reason": "OPERATOR_FINISHED"
+    }
+  ],
+  "task_assessed_wall_utc": "2026-10-24T16:38:19.096924Z",
+  "task_language": "Drive to the cube, grasp it, lift at least 50 mm and hold for 2 s.",
+  "task_result_source": "world_sim_isolated_oracle_v1",
+  "termination_reason": "OPERATOR_FINISHED",
+  "view_source": "third_person_3d"
+}

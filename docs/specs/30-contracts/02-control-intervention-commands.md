@@ -26,10 +26,24 @@ command_id、session_id、robot/control_scope、source、authority 引用、issu
 | Gripper | 机器人定义的开度/目标 | 语义与单位需能力描述 |
 | Takeover / Resume | 指定控制范围、请求 ID | 后端确认后移交 |
 | External Force | Body、作用点/Frame、力向量、有效期 | 干预权限；不改变关节目标 |
+| STOP（latch） | `request_id`（幂等键）、`reason`、可选 `parking_timeout_s`（0<v≤30）；身份由平台 Session 提供 | 只下发 latch 型停止：不 RESET、不清安全锁、不结束录制、不获取 owner、不恢复运动；不以 `motion_ready`/`recording_ready`/owner/lease 为前置条件 |
 
 客户端不能通过写一个 owner 字段自授控制权。旧动作过期与拒绝、重复请求、断连清理需要后端协议，具体机制尚未选择。
 
 响应建议含 command_id、Accepted/Rejected、原因、执行阶段与完成/失败信息。TCP 规划结果和最终执行结果分开；Replay 不调用在线命令入口。
+
+## STOP 回执分层（M1.4 候选）
+
+上表其余意图仍是概念草案；STOP 已有平台侧实现与 native 候选补丁（`m1-stop-1`，见 [Session 生命周期](../20-backend/01-session-scene/01-session-lifecycle.md#stop-与录制结束协议m1-stop-1--m1-end-1) 与 [M1.4 交付记录](../../backend-m1.4.md)）。其响应必须分层给出，供 UI 分别判断：
+
+| 层 | 字段 | UI 允许的说法 |
+|---|---|---|
+| 受理 | `accepted`、`code`、`replayed` | "停止请求已受理"，不得说"已停止" |
+| 下发 | `dispatch.dispatched`、`command_id`、`status` | "停止命令已下发/未下发" |
+| 停稳 | `parking.confirmed`、`scope_coverage`、`coverage_complete`、`coverage_note` | 只有 `coverage_complete=true` 才能说"整机停稳"；否则按作用域列 `confirmed/unconfirmed/not_observed` |
+| 安全态 | `safety_latched`、`owner_cleared_after_stop` | 说明 STOP 后是否仍处安全锁定、owner 是否被清；不推断恢复 |
+
+`POST /api/v1/runs/{run_id}/stop` 是运行记录/进程管理，不是机器人 STOP，UI 不得用它作为停止按钮的后端。真实停车确认尚未执行（未部署、未做物理验证）。
 
 ## 关联文档
 

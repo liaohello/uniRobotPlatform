@@ -16,6 +16,16 @@
 - M1.3 候选 `m1g-20261024T113913Z-platform` 在服务器 18953 完成真实 Room A/B 读取、Route v1/v2、409 与固定版本不可变验证；平台全量 108 passed / 3 failed，三项仍为既有外部工程/native docs 布局失败。OpenAPI、真实地图资产、route evidence 与 native before/after 见 [M1.3 交付记录](../../backend-m1.3.md)。
 - 机器目录新增 S18，现为 150 个文档节点、13 个补充来源；REQ 仍 89 项。本切片不是导航执行、部署或真实 M1 验收。
 
+### 2026-10-24 M1.4 身份绑定 STOP 与可靠录制结束候选
+
+- 按 S19 新增 `m1-stop-1`（`POST /api/v1/session/stop`）与 `m1-end-1`（`POST /api/v1/recording/end`）候选协议与平台侧 `sessions/{id}/stop`、`sessions/{id}/recording/end`；能力必须显式声明，`m1-recording-1` 不解释为含 end。
+- 回执分层为受理/STOP 下发/停车证据与覆盖/Recorder 排空/落盘终态与完整性；`parking.coverage_complete` 与 `integrity` 共同决定"整机停稳且录制完整"，`accepted`、`base.stopped`、`complete_tail` 或尾文件存在都不再是单独判据。
+- 明确拒绝规则：身份不符在副作用前拒绝；已 finalize 的 segment 走磁盘重放 `end_already_finalized`，不产生第二个 `episode_terminal`，不结束更新的 segment；同一 `request_id` 重放返回同一回执；结果未知只记 attempt。安全 STOP 不以 `motion_ready`/`recording_ready`/owner/lease 为前置条件。
+- legacy `episodes/stop` 只有 reason，平台"先 GET 校验再 POST"不再被描述为原子身份保护；`POST /api/v1/runs/{run_id}/stop` 明确为进程/记录管理，不是机器人停止。
+- native 候选补丁 `native-m1h.patch`（10 文件，sha256 `d182801d…a99f`）与冻结 release `m1h-20261024T152235Z-native` 记录候选源码摘要 `c550a4e4…49de`（生产 recipe 白名单中该 release 内存在的 152 路径），生产 pin `a0109804…911c` 未修改也未复用；native 保持未提交、未部署。
+- 服务器验证：平台聚焦 66 passed，全量 123 passed / 3 failed（历史布局失败不变，未跳过、不称全绿）；native 聚焦 31 passed，适用全量 122 testcases（120 passed / 2 项历史失败）；隔离 cross-HTTP 集成 39/39 断言通过并核对 Recorder 落盘文件与摘要。
+- 机器目录新增 S19，现为 150 个文档节点、14 个补充来源；REQ 仍 89 项。本轮不是部署、不是真机停车验证，也不改变正式 M1 验收状态。
+
 ## V0.7｜2026-10-23
 
 ### 2026-10-24 M1.2d 准备链路 P1 与状态 freshness

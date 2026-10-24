@@ -1,0 +1,14 @@
+{
+  "bilateral_contact_fraction": null,
+  "contract_version": "mobilecar-1.0",
+  "episode_id": "episode_9cddf123f9fd48dd9d25e22e3bf1a03e",
+  "evidence": {
+    "reason": "no finite cube world-state samples"
+  },
+  "hold_duration_s": null,
+  "human_notes": null,
+  "human_rating": null,
+  "lift_height_m": null,
+  "oracle_source": "world_sim_isolated_oracle_v1",
+  "task_result": "unknown"
+}
