@@ -21,6 +21,8 @@
 
 ## 一、依赖锁：来源、覆盖范围和三层核验
 
+配方文件名保留 `mobilecar-g1-recipe-v2.json`（避免路径迁移），内容 `schema_version=2`、`recipe_revision=3`；fingerprint 覆盖锁、协议与摘要期望。
+
 M1.2b 的交付描述写了“加载时逐个核对文件摘要”，实际只读取了 preset pin 与 kinematics 两个文件；`requirements.lock` 只被声明。本轮修正如下。
 
 | 层级 | 内容 | 本轮状态 |
@@ -106,6 +108,8 @@ native 对自身实际返回的 `/api/v1/scene` 规范 JSON 求 SHA-256；平台
 - `StartReceipt` 增加 owner/lease/录制/可运动字段；`recording_begin_receipt` 与 `recording_begin_attempts` 保留真实回执和失败尝试。
 - 快照 readiness 新增：同口径配置摘要、场景声明/实际/期望三方比较、Python 范围、8 个包精确版本；缺省即 `unsupported`。
 - 客户端只允许 `/api/v1/session/prepare|start|release`、`/api/v1/session/prepared/{id}` 与 `/api/v1/recording/begin`；没有猜测端点。
+
+**状态新鲜度**：`PreparedSession.execution` 在 prepare/start/recording begin 时更新；`GET /sessions` 返回最近一次平台动作的已存视图，不主动轮询 native。native 侧后续变化需要再次调用对应动作或重新验证，不能把旧视图当作持续实时状态。
 
 **迁移说明**：本轮 `unirobot-prepared-session-1` 文档新增 `execution`、`recording_begin_*` 字段。M1.2b 没有真实创建过 Session（live 为空），新候选使用新的 SQLite 文件；若复用旧 DB，旧文档在读取时会因缺字段校验失败，需重新创建而不是补造状态。
 

@@ -44,6 +44,10 @@ All execution below happened on the server (`cec-sim`), never locally.
 
 `native/native-m1binding.patch` applies cleanly to native commit `a5cef52d932ba41424b4bcc134539914031fda39`; applying it in a detached worktree reproduced the candidate hashes exactly. It does not modify `src/mobilecar/backends/mujoco/backend.py`, the only file that differs between the deployed `drvfix` release and `a5cef52`. The patch was not committed or pushed in the native repository.
 
+## Test layout
+
+The platform tests were run from the release root. `catalog.yaml` resolves `../mobileCar` to `releases/mobileCar`; a symlink to the native test release was created for this layout. It is a test fixture, not a product deployment. The live candidate uses `report/catalog.live.yaml` with the absolute server deployment root instead.
+
 ## Full suite failures
 
 `platform/report/full.junit.xml` has 3 failures, unchanged in nature from the historical baseline:
