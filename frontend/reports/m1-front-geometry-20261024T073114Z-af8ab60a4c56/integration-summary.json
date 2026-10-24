@@ -1,0 +1,270 @@
+{
+  "release_id": "m1-front-geometry-20261024T073114Z-af8ab60a4c56",
+  "aggregate_sha256": "af8ab60a4c5672556b0c20a4f76a82480915b0a4b23f618e3d4940596a82d67a",
+  "input_files": 69,
+  "preview": {
+    "pid": 3659380,
+    "port": 18946,
+    "upstream": "http://127.0.0.1:18943",
+    "release_id": "m1-front-geometry-20261024T073114Z-af8ab60a4c56",
+    "directory": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-front-geometry-20261024T073114Z-af8ab60a4c56/frontend/dist",
+    "started_at_utc": "2026-10-24T07:31:34.118156+00:00"
+  },
+  "upstream": "http://127.0.0.1:18943",
+  "backend": {
+    "candidate_release": "m12b-20261024T034103Z-4be0d6c86d7b",
+    "commit": "4be0d6c",
+    "live_cwd": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m12b-20261024T034103Z-4be0d6c86d7b",
+    "documented_source_aggregate": "0905b667de09f3a3d8afe22afb6f8efabb27fd3efe9698aa24037cad0c68f4e3",
+    "wire": [
+      "unirobot-mobilecar-geometry-2",
+      "unirobot-mobilecar-read-1",
+      "unirobot-mobilecar-kinematics-1",
+      "unirobot-execution-recipe-1"
+    ]
+  },
+  "real": {
+    "sessions_before": [],
+    "created": {
+      "draft_id": "draft-68597f12a82545c8aeadc8cb8d7c4b56",
+      "draft_revision": 1,
+      "execution_revision": 1,
+      "fingerprint": "58419468e11fc9837b4d72050d06572c4b1d5430549ac9b6b4daeb16ff50f8a9",
+      "recipe_fingerprint": "78ec4bf1494a933ea29606e5ab0e298a70826918f0becac801b60f90de342b26",
+      "name": "前端 M1.2b 保存检查 2026-10-24 15:35:42"
+    },
+    "saved": {
+      "draft_id": "draft-68597f12a82545c8aeadc8cb8d7c4b56",
+      "draft_revision": 2,
+      "execution_revision": 1,
+      "name": "前端 M1.2b 保存检查 2026-10-24 15:35:42 · saved",
+      "description": "保存后重新加载仍应可见"
+    },
+    "validation": {
+      "snapshot_id": "cs-00c41826ad4a3e2155bc32081ff46ba01001b6c7",
+      "snapshot_sha256": "6df8af76cfeb7c9728a71396d771233d09e61fa76d9074b48f8edc7dff327752",
+      "status": "failed",
+      "execution_eligible": false,
+      "validated_snapshot_id": null,
+      "recipe_fingerprint": "78ec4bf1494a933ea29606e5ab0e298a70826918f0becac801b60f90de342b26",
+      "checks": 17,
+      "blocking_reasons": [
+        {
+          "key": "interface_profile",
+          "scope": "configuration",
+          "message": "native /api/v1/health self-report: observed g4a1-1.0; recipe expects g2a-1.0; this value is derived from config flags, not attested"
+        },
+        {
+          "key": "deployed_config_attestation",
+          "scope": "readiness",
+          "message": "native declared config manifest digest: Native HTTP does not attest the deployed source/config manifest; a healthy service cannot supply it"
+        },
+        {
+          "key": "scene_manifest_attestation",
+          "scope": "readiness",
+          "message": "native declared compiled scene manifest digest: Observed scene manifest digest 5969e260b5ca87849387e8827b3e83c332f845281d0d69c0f7b141a8c3f1bf2d is not pinned or attested; the pin only covers the scene XML file"
+        },
+        {
+          "key": "session_binding_protocol",
+          "scope": "readiness",
+          "message": "native declared session binding protocol: Native declares no motion-free Session binding; required m1-binding-1. episodes/start performs RESET and recording"
+        },
+        {
+          "key": "recording_begin_protocol",
+          "scope": "readiness",
+          "message": "native declared recording begin protocol: Native has no recording begin without RESET; required m1-recording-1"
+        }
+      ]
+    },
+    "snapshot": {
+      "snapshot_id": "cs-00c41826ad4a3e2155bc32081ff46ba01001b6c7",
+      "snapshot_sha256": "6df8af76cfeb7c9728a71396d771233d09e61fa76d9074b48f8edc7dff327752",
+      "validation_scope": "motion_free_configuration_and_declared_protocol_only",
+      "check_count": 17
+    },
+    "sessions_after": [],
+    "request_count": 95,
+    "write_requests": [
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18946/api/v1/experiment-drafts"
+      },
+      {
+        "method": "PUT",
+        "url": "http://127.0.0.1:18946/api/v1/experiment-drafts/draft-68597f12a82545c8aeadc8cb8d7c4b56"
+      },
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18946/api/v1/experiment-drafts/draft-68597f12a82545c8aeadc8cb8d7c4b56/validate"
+      },
+      {
+        "method": "PUT",
+        "url": "http://127.0.0.1:18946/api/v1/experiment-drafts/draft-68597f12a82545c8aeadc8cb8d7c4b56"
+      },
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18946/api/v1/experiment-drafts/draft-68597f12a82545c8aeadc8cb8d7c4b56/validate"
+      }
+    ]
+  },
+  "fixtures": [
+    {
+      "name": "delayed validate",
+      "synthetic": true,
+      "result": "switched draft preserved"
+    },
+    {
+      "name": "draft list disconnect",
+      "synthetic": true,
+      "result": "visible error then explicit recovery"
+    }
+  ],
+  "verification": {
+    "unit": "35 passed",
+    "readonly": {
+      "status": "passed",
+      "checks": 32,
+      "exception": null
+    },
+    "frozen_workbench": {
+      "status": "passed",
+      "checks": 29,
+      "exception": null
+    },
+    "geometry": {
+      "status": "passed",
+      "checks": 23,
+      "exception": null
+    },
+    "usability": {
+      "status": "passed",
+      "checks": 100,
+      "exception": null
+    },
+    "config": {
+      "status": "passed",
+      "checks": 38,
+      "exception": null
+    }
+  },
+  "native": {
+    "before": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "recording_status": "IDLE"
+    },
+    "after": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "recording_status": "IDLE"
+    },
+    "native_mutations_sent": false,
+    "new_physics_process_started": false
+  },
+  "network": {
+    "events": 506,
+    "methods": {
+      "GET": 500,
+      "POST": 3,
+      "PUT": 3
+    },
+    "write_requests": [
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18946/api/v1/experiment-drafts"
+      },
+      {
+        "method": "PUT",
+        "url": "http://127.0.0.1:18946/api/v1/experiment-drafts/draft-68597f12a82545c8aeadc8cb8d7c4b56"
+      },
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18946/api/v1/experiment-drafts/draft-68597f12a82545c8aeadc8cb8d7c4b56/validate"
+      },
+      {
+        "method": "PUT",
+        "url": "http://127.0.0.1:18946/api/v1/experiment-drafts/draft-68597f12a82545c8aeadc8cb8d7c4b56"
+      },
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18946/api/v1/experiment-drafts/draft-68597f12a82545c8aeadc8cb8d7c4b56/validate"
+      }
+    ],
+    "paths": {
+      "GET /api/v1/config-snapshots": 3,
+      "GET /api/v1/config-snapshots/cs-00c41826ad4a3e2155bc32081ff46ba01001b6c7": 3,
+      "GET /api/v1/config-snapshots/cs-3b4b3dbdcc712152cf3d5ef24e7ac5381450e618": 1,
+      "GET /api/v1/config-snapshots/cs-546f9247d6e1896d8625ed65dc9941abde884901": 3,
+      "GET /api/v1/experiment-drafts": 5,
+      "GET /api/v1/experiment-drafts/draft-60424ba558a7494a9b4d8e6a0ad40633": 3,
+      "GET /api/v1/experiment-drafts/draft-68597f12a82545c8aeadc8cb8d7c4b56": 5,
+      "GET /api/v1/mobilecar/capabilities": 8,
+      "GET /api/v1/mobilecar/execution-recipe": 17,
+      "GET /api/v1/mobilecar/kinematics": 14,
+      "GET /api/v1/mobilecar/scene": 9,
+      "GET /api/v1/mobilecar/scene/assets/back_shell_black_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/back_shell_middle_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/base_link": 12,
+      "GET /api/v1/mobilecar/scene/assets/camera_connect_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/depth_cam_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/gripper_base_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/gripper_left_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/gripper_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/gripper_right_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/guide_rod_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/imu_link": 1,
+      "GET /api/v1/mobilecar/scene/assets/left_jaw_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/lidar_frame": 13,
+      "GET /api/v1/mobilecar/scene/assets/link1": 13,
+      "GET /api/v1/mobilecar/scene/assets/link2": 13,
+      "GET /api/v1/mobilecar/scene/assets/link3": 13,
+      "GET /api/v1/mobilecar/scene/assets/link4": 13,
+      "GET /api/v1/mobilecar/scene/assets/link5": 13,
+      "GET /api/v1/mobilecar/scene/assets/right_jaw_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/wheel_left_back_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/wheel_left_front_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/wheel_right_back_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/wheel_right_front_link": 13,
+      "GET /api/v1/mobilecar/snapshot": 136,
+      "GET /api/v1/sessions": 7,
+      "POST /api/v1/experiment-drafts": 1,
+      "POST /api/v1/experiment-drafts/draft-68597f12a82545c8aeadc8cb8d7c4b56/validate": 2,
+      "PUT /api/v1/experiment-drafts/draft-68597f12a82545c8aeadc8cb8d7c4b56": 3
+    }
+  },
+  "screenshots": [
+    "config/config-validated.png",
+    "config/config-conflict.png",
+    "usability/usability-session.png",
+    "usability/usability-1366.png",
+    "usability/usability-focus3d.png",
+    "usability/usability-125.png",
+    "browser/real-readonly.png",
+    "geometry/oblique-viewport.png"
+  ],
+  "environment": {
+    "node": "v20.20.2",
+    "npm": "10.8.2",
+    "browser_python": "/home/liaozhengyan/Desktop/mobileCar/envs/g2a-py310-mujoco316/bin/python",
+    "hostname": "cec-sim",
+    "lock_sha256": "1bb055b6e003c960e116b8561b174dad8100dec2ab282c29370b0b10aa7a04bd"
+  },
+  "limitations": [
+    "Real native has no motion-free Session binding; GET /sessions is empty and Session create/start are not proxied in this round.",
+    "Real validation fails on interface_profile and readiness attestations; execution_eligible=false and no ValidatedSnapshot.",
+    "Kinematics is platform reference metadata, not calibration; TCP orientation is not specified in source.",
+    "Recording, reset, replay, media and native commands remain disabled/not integrated.",
+    "Runtime-identity drift and delayed/disconnected config requests are synthetic browser fixtures; no real RESET was performed."
+  ],
+  "supplemental_conflict_capture": {
+    "same_preview": true,
+    "ui_status": 409,
+    "ui_code": "conflict",
+    "local_input_preserved": true,
+    "screenshot": "config/config-conflict-actual.png",
+    "script": "config/conflict-capture.py",
+    "note": "Captured after the frozen suite; frozen source/tests unchanged."
+  }
+}

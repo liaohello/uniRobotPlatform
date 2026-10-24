@@ -61,6 +61,7 @@ async def main():
    check('takeover, execution, recording remain disabled',await page.get_by_role('button',name='申请接管',exact=True).is_disabled() and await page.get_by_role('button',name='录制',exact=True).is_disabled())
    # Snapshot fixtures use wire data copies and explicitly synthetic identities/time.
    fixture={'offline':False,'runtime':0,'resource':0,'mismatch_init':False,'asset_bad':False,'asset_http_error':False,'delay':0,'seq':0,'inflight':0,'max_inflight':0,'starts':[],'ends':[],'entered':asyncio.Event()}
+   def fixture_scene_id():return 'mobile_pick' if fixture['resource']==0 else 'fixture-scene-'+str(fixture['resource'])
    async def intercept(route):
     path=urlsplit(route.request.url).path
     if '/scene/assets/' in path:
@@ -70,9 +71,20 @@ async def main():
       await route.fulfill(status=502,json={'detail':{'code':'asset_integrity_failed','message':'synthetic upstream integrity error'}});return
      await route.continue_();return
     endpoint=path.rsplit('/',1)[-1]
-    d=copy.deepcopy(wires[endpoint]);d['runtime_identity']['run_id']='fixture-run-'+str(fixture['runtime']);d['resource_identity']['scene_id']='fixture-scene-'+str(fixture['resource'])
-    if endpoint in ('scene','capabilities'):d['data']['scene_id']=d['resource_identity']['scene_id']
-    if endpoint=='scene' and fixture['mismatch_init']:d['runtime_identity']['episode_id']='fixture-inconsistent-scene'
+    if endpoint in ('kinematics','execution-recipe'):
+     await route.continue_();return
+    d=copy.deepcopy(wires[endpoint]);new_runtime={'run_id':'fixture-run-'+str(fixture['runtime']),'backend_generation':1,'episode_id':'fixture-episode-'+str(fixture['runtime'])}
+    d['runtime_identity']=copy.deepcopy(new_runtime)
+    if endpoint in ('scene','capabilities'):
+     d['resource_identity']['scene_id']=fixture_scene_id();d['data']['scene_id']=d['resource_identity']['scene_id']
+    if endpoint=='snapshot':d['resource_identity']['scene_id']=fixture_scene_id()
+    if endpoint=='scene':
+     d['geometry_binding']['observed_runtime_identity']=copy.deepcopy(new_runtime)
+     d['geometry_binding']['runtime_identity_matches']=False
+     d['geometry_binding']['association']='content_reverified_after_runtime_identity_change'
+     if fixture['resource']>0:d['geometry_binding']['content_identity_sha256']=('d' if fixture['resource']==1 else 'e')*64
+     if fixture['mismatch_init']:
+      d['resource_identity']['scene_id']='fixture-inconsistent-scene';d['data']['scene_id']='fixture-inconsistent-scene'
     if endpoint=='snapshot':
      fixture['seq']+=1;fixture['inflight']+=1;fixture['max_inflight']=max(fixture['max_inflight'],fixture['inflight']);fixture['starts'].append(time.monotonic());fixture['entered'].set()
      try:
@@ -106,11 +118,23 @@ async def main():
    check('disconnect marks retained Actual stale without sample fallback',stale['source']['kind']=='live' and stale['actual']['control_tick_id'].startswith('fixture-') and '陈旧' in await page.locator('.monitor-chip').inner_text())
    fixture['offline']=False;await page.wait_for_function('window.__workbenchInspect().monitor.state==="current"')
    check('read polling recovers explicitly on successful same-identity response',(await state(page))['source']['kind']=='live')
-   # Runtime and resource changes both force scene/capability reload and invalidate preview.
+   # geometry-2: runtime-only changes keep content; resource changes replace it.
    for field in ('runtime','resource'):
-    await edit(page);fixture[field]+=1
-    await page.wait_for_function('(r)=>window.__workbenchInspect && window.__workbenchInspect().live.resource.scene_id===r.scene && window.__workbenchInspect().actual.run_id===r.run && window.__workbenchInspect().target===null',arg={'scene':'fixture-scene-'+str(fixture['resource']),'run':'fixture-run-'+str(fixture['runtime'])},timeout=15000)
-    await loaded(page);check(field+' identity change invalidates old Target and reloads scene',(await state(page))['target'] is None)
+    await edit(page)
+    # Let the post-reload auto-fit timer settle before comparing camera state.
+    await page.wait_for_timeout(700)
+    before_identity=await state(page)
+    fixture[field]+=1
+    await page.wait_for_function('(r)=>window.__workbenchInspect && window.__workbenchInspect().live.resource.scene_id===r.scene && window.__workbenchInspect().actual.run_id===r.run && window.__workbenchInspect().target===null',arg={'scene':fixture_scene_id(),'run':'fixture-run-'+str(fixture['runtime'])},timeout=15000)
+    await loaded(page);after_identity=await state(page)
+    report.setdefault('identity_transitions',[]).append({'field':field,
+     'before':{'instanceId':before_identity['scene']['instanceId'],'contentKey':before_identity['live']['contentKey'],'runtimeKey':before_identity['live']['runtimeKey'],'camera':before_identity['scene']['camera'],'cameraTarget':before_identity['scene']['cameraTarget'],'target':before_identity['target'] is not None},
+     'after':{'instanceId':after_identity['scene']['instanceId'],'contentKey':after_identity['live']['contentKey'],'runtimeKey':after_identity['live']['runtimeKey'],'camera':after_identity['scene']['camera'],'cameraTarget':after_identity['scene']['cameraTarget'],'target':after_identity['target'] is not None,'sourceIdentity':after_identity['source']['identity']}})
+    check(field+' identity change clears the old local Target',after_identity['target'] is None)
+    if field=='runtime':
+     check('runtime-only change keeps verified content, renderer, camera and layout',after_identity['scene']['instanceId']==before_identity['scene']['instanceId'] and after_identity['live']['contentKey']==before_identity['live']['contentKey'] and after_identity['scene']['camera']==before_identity['scene']['camera'])
+    else:
+     check('content change replaces the scene instead of reusing old meshes',after_identity['scene']['instanceId']!=before_identity['scene']['instanceId'] or after_identity['live']['contentKey']!=before_identity['live']['contentKey'])
    # Explicit initialization mismatch is rejected rather than mixed across requests.
    fixture['mismatch_init']=True;await page.get_by_role('button',name='重新加载来源',exact=True).click();await page.get_by_role('heading',name='数据源不可用').wait_for()
    check('cross-request initialization mismatch displays no mixed renderer',await page.locator('canvas').count()==0)
@@ -129,7 +153,7 @@ async def main():
    await reload_source(page)
    await page.wait_for_function('window.__workbenchInspect().monitor.snapshots>=2');await page.screenshot(path=str(a.output/'final-real-readonly.png'),full_page=True)
    check('real source restores with one renderer after fault fixtures',(await state(page))['scene']['lifecycle']['active']==1 and (await state(page))['assetError']=='')
-   allowed={'/api/v1/mobilecar/scene','/api/v1/mobilecar/capabilities','/api/v1/mobilecar/snapshot'}
+   allowed={'/api/v1/mobilecar/scene','/api/v1/mobilecar/capabilities','/api/v1/mobilecar/snapshot','/api/v1/mobilecar/kinematics','/api/v1/mobilecar/execution-recipe'}
    check('browser network contains only GET and allowlisted read endpoints',all(r['method']=='GET' and (not urlsplit(r['url']).path.startswith('/api/') or urlsplit(r['url']).path in allowed or urlsplit(r['url']).path.startswith('/api/v1/mobilecar/scene/assets/')) for r in report['requests']))
    check('no uncaught browser errors',not report['errors']);report['status']='passed'
   except Exception as exc:

@@ -1,3 +1,102 @@
+# M1.2b 配置接线交付（2026-10-24）
+
+本轮把已完成的 3D 工作台接到 M1.2b 候选 18943：真实 Draft 创建/列表/读取/保存、`validate`、不可变配置快照、configuration/readiness 逐项检查、`blocking_reasons`、recipe fingerprint 和空/失败 Session 读取。仅写 `frontend/`；未修改 backend、公共契约、native 或根配置，未推送。
+
+## 冻结版本与入口
+
+| 项 | 值 |
+|---|---|
+| 前端 release | `m1-front-geometry-20261024T073114Z-af8ab60a4c56` |
+| 输入 / 聚合 SHA-256 | 69 个输入；`af8ab60a4c5672556b0c20a4f76a82480915b0a4b23f618e3d4940596a82d67a` |
+| 后端候选 / 上游 | `m12b-20261024T034103Z-4be0d6c86d7b`（提交 `4be0d6c`），服务器 18943；实测进程 cwd 与该 release 一致 |
+| 后端 wire | `unirobot-mobilecar-geometry-2`、`read-1`、`unirobot-mobilecar-kinematics-1`、`unirobot-execution-recipe-1` |
+| 预览 | 服务器回环 18946，代理 18943；PID 3659380（同一冻结 release） |
+| 保留服务 | 18935、18933、18932、18931、18941、18942、18943、native 8792 均保留；只停止本方失败/上一轮临时预览 |
+| 环境 | cec-sim，Node 20.20.2 / npm 10.8.2，Chromium ANGLE SwiftShader，原锁文件 |
+
+## 本轮行为
+
+- **Draft**：列出、读取、创建（默认 preset）、保存。可编辑字段仅为后端声明的 `name` / `description`；保存使用 `base_revision`，`execution_revision` 由后端维护。没有任意初态、场景编辑或机器人配置写入。
+- **校验 / 快照**：`POST /experiment-drafts/{id}/validate` 使用当前 `execution_revision` + `fingerprint`；响应更新 Draft，并自动 `GET /config-snapshots/{id}`。抽屉逐项显示 configuration/readiness 的 `key/status/phase/scope/detail`、`blocking_reasons`、`execution_eligible`、`validated_snapshot_id`、`reused`、`snapshot_id/sha256`、`validation_scope`、recipe fingerprint 与来源摘要。
+- **摘要不等于资格**：界面只把“通过 X/Y”作摘要，单独显示 `execution_eligible`；只有后端 Session 状态才表示 Session 资格。
+- **Session 准备**：读取 `GET /sessions`，空数组、failed、unsupported 均作为正常可解释结果；Start/运动/RESET/录制/回放继续禁用。本轮不代理 `POST /sessions` 或 start。
+- **geometry-2**：运行身份变化只取消旧手势与本地目标，保留已验证网格、相机、布局；内容身份变化或 binding 不一致明确失效并重载。`contentKey` / `runtimeKey` 分开，snapshot 轮询不会因正常 RESET 重建 renderer。
+- **运动学**：live 模式消费 `GET /mobilecar/kinematics` 的 `landerpi.kinematics.v1`，并用 `execution-recipe` 的模型/场景 pin 与 profile digest 交叉核对；检查关节顺序、单位声明、TCP 父节点/site、相机父节点、5 项实时一致性。`orientation_xyzw=null` 显示“未声明”，不生成姿态。元数据缺失/不匹配禁用本地 Joint/TCP 并显示原因，不自动回退冻结 profile。
+- **冻结来源**：保留独立 `sample/arm-spec.json` 参考 profile，明确标为非 live；不参与平台资格。
+- **代理**：按方法+路径白名单放行既有读取、kinematics、execution-recipe、Draft POST/PUT/validate、配置快照与 Session 读取；保留真实 HTTP 状态、错误体、查询参数和 Content-Type。Session 创建/start、运动、RESET、录制、媒体、native 命令未放行。
+
+## 真实环境结果（非夹具）
+
+最终 release 的真实配置测试创建并使用 Draft `draft-68597f12a82545c8aeadc8cb8d7c4b56`：
+
+| 操作 | 真实结果 |
+|---|---|
+| POST create | 201，`draft_revision=1`，`execution_revision=1`，`validation.status=unvalidated` |
+| PUT save | 200，`draft_revision=2`，`execution_revision=1`；名称/描述持久化 |
+| 浏览器重载 + GET draft | 读取到同一 revision 2 与保存后的名称 |
+| POST validate | 200，`validation.status=failed`，`execution_eligible=false`，`validated_snapshot_id=null` |
+| 快照 | `cs-00c41826ad4a3e2155bc32081ff46ba01001b6c7`；sha256 `6df8af76cfeb7c9728a71396d771233d09e61fa76d9074b48f8edc7dff327752`；17 项检查（12 passed / 1 failed / 4 unsupported） |
+| 快照独立读取 | GET `/config-snapshots/{id}` 的 sha256、checks、eligibility、blocking_reasons 与 validate 一致 |
+| 阻塞原因 | 5 条：`interface_profile`（configuration）；`deployed_config_attestation`、`scene_manifest_attestation`、`session_binding_protocol`、`recording_begin_protocol`（readiness） |
+| GET sessions | 空数组；Start 仍禁用 |
+| 409 冲突 | 外部宿主 PUT 推进 revision 后，UI 用旧 `base_revision` 保存得到真实 409 `conflict`；服务端保留外部值，UI 保留本地文本，显式“读取服务器版本”后才采用 |
+| 请求 | 同 release 代理记录 500 GET / 3 POST / 3 PUT；3 个写请求为 Draft create、validate、save/冲突重试链，没有 Session/start、commands、episodes、RESET、recording 或 native 命令 |
+| native 影响 | run/generation/episode、recording=IDLE 前后一致；无 native mutation、无新物理实例 |
+
+真实运行身份：`run_9c88e3e...` / generation 1 / `episode_43c22f...`；内容身份 `cb789964...18a7cc`；当前 `runtime_identity_matches=true`。
+
+## 夹具验证（与真实结果分开）
+
+以下由自动浏览器合成响应验证，**不是真实 RESET 或真实故障**：
+
+- geometry-2 仅运行身份变化：renderer 实例、`contentKey`、相机与布局保持；旧 Target 清空；Actual/Target/身份更新。截图与 trace 见 `browser/browser.json` 的 `identity_transitions`。
+- 内容身份变化：明确失效并重建场景，未沿用旧网格。
+- 延迟 validate 后切换 Draft：迟到结果未覆盖当前 Draft。
+- Draft 列表断连：显示错误，解除后显式刷新恢复。
+- 慢 snapshot / 断连 / 坏资产 / 身份跳变沿用既有只读测试。
+
+## 同一冻结版本的验证
+
+全部在服务器 cec-sim、同一解包产物执行。
+
+| 套件 | 结果 |
+|---|---|
+| 类型检查 + 生产构建 | `tsc --noEmit && vite build` 通过；保留既有大 chunk 提示 |
+| 单元 | 35 passed：身份拆分、geometry-2 binding、kinematics 模型 pin/一致性/orientation=null、配置 wire/409/422、冻结回归 |
+| 真实只读 | 32 passed：三接口 + 23 资产、Actual 持续、慢响应不重叠、断连/身份/坏字节夹具、运行身份保持内容、资源变化重建 |
+| 冻结工作台回归 | 29 passed：Joint/TCP、Actual/Target/Ghost、取消、焦点、Orbit、布局重建/恢复、切源 |
+| 几何/装配 | 23 passed：23 网格、TCP 对齐、前/侧/顶视图、跨 Actual 持续拖动 |
+| 可用性 | 100 passed：滚轮/按钮缩放、适配/全景/聚焦、分隔条、最大化、全屏、布局预设/保存恢复、持续拖动、1366×768 / 1920×1080 / 125% |
+| 真实配置流程 | 38 passed：创建/保存/重载/validate/快照/session 空、真实 409、迟到 validate、断连、写方法边界 |
+| 只读边界 | 所有浏览器 API 读取为允许的 GET；写请求仅为 Draft create/save/validate |
+
+报告：[集成摘要](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/integration-summary.json)、[源码清单](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/source-manifest.json)、[构建](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/build.log)、[35 单元](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/unit.json)、[32 只读](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/browser/browser.json)、[29 冻结](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/frozen-browser/browser.json)、[23 几何](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/geometry/geometry.json)、[100 可用性](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/usability/usability.json)、[38 配置](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/config/browser.json)、[native 前后](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/native-read-only.json)、[环境](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/environment.json)。
+
+截图：[真实配置校验](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/config/config-validated.png)、[409 冲突错误态](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/config/config-conflict-actual.png)、[Session 抽屉](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/usability/usability-session.png)、[1366×768](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/usability/usability-1366.png)、[3D 专注](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/usability/usability-focus3d.png)、[125%](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/usability/usability-125.png)、[真实只读](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/browser/real-readonly.png)、[几何斜视](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/geometry/oblique-viewport.png)。冲突错误态截图在冻结套件后用同一预览补拍，源码/测试未改；见 [conflict-capture.json](../reports/m1-front-geometry-20261024T073114Z-af8ab60a4c56/config/conflict-capture.json)。
+
+## 验证中修掉的真实问题
+
+1. 首轮类型检查发现 recipe 可能为 null 的收窄错误与 Vitest Mock 调用签名错误；修正后通过。
+2. 只读夹具把 `scene_id` 改为 `fixture-scene-0`，与 execution-recipe 的真实 pin 不符，模型 pin 检查正确禁用了本地预览；夹具改为仅在资源变化时改内容，运行身份变化保留真实 scene_id。
+3. 配置测试误把 async Playwright `expect_response().value` 当同步属性；修正为 `await`。
+4. 可用性测试缺少 `urlsplit` 导入；修正。
+5. 运行身份变化检查与 reload 后的自动取景 timer 竞争；测试在捕获前等待取景稳定，并在报告中记录前后 instanceId/contentKey/camera。
+6. 实际发现控制条会在慢首帧（如 1132 ms）时因监控文字变长而换行，1366×768 固定条带从 150px 涨到 180px；收紧控制条间距并把 monitor chip 限制到 200px，重跑同一冻结流程通过。
+
+## 边界与限制
+
+**真实可用**：3D 只读监控、geometry-2、版本化运动学元数据与 recipe pin 核对、Draft 创建/列表/读取/保存、validate、快照读取、逐项检查/阻塞原因/Session 空列表读取、真实 409 处理。
+
+**仅夹具通过**：运行身份漂移时保留网格/相机/布局、内容身份变化失效、延迟 validate、Draft 列表断连恢复。真实 native 未 RESET，也没有制造真实断连。
+
+**仍被 native 阻塞**：prepared Session 创建/Start（无 `m1-binding-1` 无运动绑定）、真实 Passed/ValidatedSnapshot（interface_profile 与 readiness 证明缺失）、运动学标定与 TCP 姿态、Owner/lease/命令回执、录制 begin/finalize、RESET 实际应用、媒体、只读 Episode 回放。本轮不显示 Ready，不开放这些端点。
+
+## Git
+
+本轮只写 `frontend/`；源码、测试与证据保存在 `codex/m12a-workbench`，未推送。历史保存点 `eed1537`、`596c0d7` 等保留。冻结 release 的 69 个输入在交付前逐一核对与工作树一致；本页按既有约定不参与源码聚合。
+
+---
+
 # M1.3 3D 视口与布局可用性交付
 
 2026-10-23。保存点 `596c0d7`（真实只读联调 + 车体修正，含 63 个未提交证据文件）之后开始本轮；只写 `frontend/`，未改 backend、公共契约、native 或公共锁文件，未推送。本轮目标是把 3D 工作台做成真正可操作，并在同一外壳准备 Session 界面。下方原车体渲染记录按历史保留。

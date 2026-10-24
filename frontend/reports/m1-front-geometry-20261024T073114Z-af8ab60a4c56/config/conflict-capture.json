@@ -1,0 +1,12 @@
+{
+  "scope": "supplemental same-release evidence; real backend 409 conflict",
+  "draft_id": "draft-68597f12a82545c8aeadc8cb8d7c4b56",
+  "revision_before": 3,
+  "external_status": 200,
+  "external_revision": 4,
+  "ui_status": 409,
+  "ui_code": "conflict",
+  "local_input_preserved": true,
+  "screenshot": "config-conflict-actual.png",
+  "note": "Captured after the frozen suite; same preview 18946 and backend 18943. The frozen source/tests were not modified."
+}

@@ -1,6 +1,8 @@
-# uniRobot 3D Workbench · M1 只读联调
+# uniRobot 3D Workbench · M1.2b 配置接入
 
 恢复前端实现的用户指令已解除本切片的暂停。此应用位于独立 worktree；主写者只写 `frontend/`，backend、公共契约、参考工程和根配置保持只读。现有诊断和草案实现保留。
+
+本轮面向 M1.2b 候选 18943：3D 工作台消费 geometry-2 与版本化运动学；Session 抽屉可创建、列出、读取、保存真实 Draft，运行后端 validate，并读取不可变配置快照、逐项检查、阻塞原因和空/失败 Session 状态。
 
 ## 现在可以操作
 
@@ -11,7 +13,9 @@
 - TCP 模式：world_sim（m、Z-up）轴/平面拖动及数值联动。Ghost 是本地位置 IK 或 FK 候选，Actual 来自所选后端只读流或冻结样本；预览和取消不写 Actual。
 - 布局：标准工作台 / 3D 专注预设；导航可收起；层级、Inspector、传感器、时间轴可折叠与恢复；分隔条可拖动；保存/恢复/重置布局不改变渲染器、相机、目标或运行状态。
 - 3D 视口可应用内最大化（Dockview 最大化）或进入浏览器全屏（覆盖视口、来源/状态、目标操作与弹层）。全屏被环境拒绝时显示真实原因，应用内最大化仍可用。
-- Session 准备抽屉显示 Draft / 校验 / prepared Session 三个阶段的真实字段与阻塞原因；后端未就绪时不显示 Ready。
+- Session 准备抽屉请求真实平台 API：Draft 创建/列表/读取/保存（仅 `name`/`description`）、`validate`、不可变配置快照读取、configuration/readiness 逐项结果、证据来源、`blocking_reasons`、recipe fingerprint，以及 Session 列表中的空/失败/unsupported 状态。
+- geometry-2 区分内容身份与 run/generation/episode：运行身份变化时取消旧手势和本地目标，保留网格、相机与布局；内容身份变化时明确失效，不沿用旧资产。
+- live 运动学来自 `GET /api/v1/mobilecar/kinematics`，并与 execution-recipe 的模型 pin、关节顺序、单位、TCP 父节点/site、相机父节点和一致性结果交叉核对；`orientation=null` 显示“未声明”，不伪造标定姿态。冻结样本保留独立参考 profile，不自动回退。
 - 观察用相机、传感器区域与时间/事件区域统一装配。传感器媒体及连续 Episode 不在本单帧样本中，明确显示缺失，不放假视频或轨迹。
 
 空白左键拖动 Orbit，右键平移，滚轮缩放；手柄拖动期间不 Orbit。视口内 F 聚焦、Esc 取消本地目标（全屏中 Esc 交给浏览器，不清目标），文本输入优先。失焦、指针取消或布局尺寸真实变化会结束当前手势并保留最后本地草案；没有在线速度/力输入服务。
@@ -22,7 +26,7 @@
 
 TCP 本地 DLS 仅尝试位置约束；没有姿态规划、碰撞检查、动力学验证、服务端 plan_id 或执行许可。不可达目标保留标记并隐藏 Ghost。虚线只作目标辅助线，不是已规划轨迹。Ghost 只显示机械臂，避免把重复底盘误认为实际运动。
 
-默认来源为真实只读监控；可用 `?source=frozen` 显式打开冻结来源。Session、接管、执行与录制按钮保持禁用；后端已有 Target 和 Owner 仅供观察，不代表本方提交或授权。断连保留最后 Actual 并标陈旧，连续3次失败后暂停自动重试；运行/资源身份变化清掉旧目标并重载。只有用户显式选择才切到冻结样本。所有数据读取集中于 `src/adapters/`，端点变更不散落到面板。[后端最小缺口与样例](docs/backend-gaps.md) 是交接建议，公共 wire 契约继续由后端对话维护。
+默认来源为真实只读监控；可用 `?source=frozen` 显式打开冻结来源。平台写入仅限 Draft 创建/保存/validate；Start、接管、执行、RESET、录制与回放按钮保持禁用，后端已有 Target 和 Owner 仅供观察，不代表本方提交或授权。断连保留最后 Actual 并标陈旧，连续3次失败后暂停自动重试；geometry-2 运行身份变化取消旧手势与本地目标但保留网格/相机/布局，内容身份变化明确失效并重载。只有用户显式选择才切到冻结样本。所有数据读取集中于 `src/adapters/`，端点变更不散落到面板。[后端最小缺口与样例](docs/backend-gaps.md) 是交接建议，公共 wire 契约继续由后端对话维护。
 
 ## 代码边界
 
@@ -39,20 +43,21 @@ npm ci --ignore-scripts --no-audit --no-fund
 npm run build
 npm test -- --maxWorkers=2
 python3 tests/browser-usability.py http://127.0.0.1:18934 /tmp/usability --release <release_id>
-python3 tools/serve-readonly.py --directory dist --port 18933 --upstream http://127.0.0.1:18942
+python3 tests/browser-config.py http://127.0.0.1:18934 /tmp/config
+python3 tools/serve-readonly.py --directory dist --port 18933 --upstream http://127.0.0.1:18943
 ```
 
 本地可运行 `python3 frontend/tools/release-source.py` 制作文件白名单、哈希和归档；上传后使用服务器 `tools/check-release.py` 核对输入、构建、测试并运行生产构建的 Chromium 检查。禁止用本机测试替代服务器执行。报告绑定同一 release，旧失败迭代不拼成最终通过。具体交付结果另见本方 [开发记录](docs/development.md)。
 
-## 真实只读源
+## 真实来源与平台配置
 
-`PlatformService` 只读 scene / capabilities / snapshot 的 envelope/data，资产使用 scene 提供的 URI 与 sha256 查询参数，经同源代理读取。默认请求完成后等待1秒，可选择2/5秒；不叠加请求，10秒超时，切源取消迟到结果。普通快照只更新 Actual，不重建renderer、覆盖本地 Target 或重置相机。世界物体只显示编译初态，没有实时物体真值。媒体和连续 Episode 回放仍未接入。
+`PlatformService` 只读 scene / capabilities / snapshot / kinematics / execution-recipe，资产使用 scene 提供的 URI 与 sha256 查询参数，经同源代理读取。默认请求完成后等待1秒，可选择2/5秒；不叠加请求，10秒超时，切源取消迟到结果。普通快照只更新 Actual，不重建renderer、覆盖本地 Target 或重置相机。世界物体只显示编译初态，没有实时物体真值。媒体和连续 Episode 回放仍未接入。`PlatformConfigApi` 仅使用同源代理的白名单路径：Draft 创建/列表/读取/保存/validate、配置快照读取、Session 读取。
 
-本地 Joint/TCP 候选目前使用按模型根 XML 摘要固定的参考运动学 profile（非后端实时字段、非完整部署核验），仅用于本地预览；不支持的模型禁用本地候选。见 [来源](docs/provenance.md) 和 [最小后端差距](docs/backend-gaps.md)。
+live Joint/TCP 候选使用 `GET /api/v1/mobilecar/kinematics` 的版本化元数据，并要求 execution-recipe 的模型 pin 与 profile digest 匹配；同时检查关节顺序、单位、TCP 父节点/site、相机父节点和 5 项实时一致性。元数据缺失或不匹配时禁用本地候选并显示具体原因，不自动回退。`orientation_xyzw=null` 只表示源未声明姿态。冻结样本使用自身独立参考 profile，并明确标注不是 live 元数据。见 [来源](docs/provenance.md) 和 [最小后端差距](docs/backend-gaps.md)。
 
 ## 车体渲染坐标约定
 
-修正版本的实时源要求 scene 为 `unirobot-mobilecar-geometry-1`（capabilities/snapshot 仍为 read-1），资产声明 `coordinate_space=mujoco_compiled_mesh`、`units=m`、`mesh_preprocessing_applied=true`，并保留原STL摘要/mesh名称及几何 provenance。顶点使用MuJoCo编译网格，前端只应用既有 geom/body/joint 变换，不再应用 mesh_scale/mesh_pos/mesh_quat；网格SHA对应本次编译STL字节。未声明完整约定的 live scene 明确拒绝，不以原STL猜补偿。
+修正版本的实时源接受 `unirobot-mobilecar-geometry-1` 和 `unirobot-mobilecar-geometry-2`（capabilities/snapshot 仍为 read-1），资产声明 `coordinate_space=mujoco_compiled_mesh`、`units=m`、`mesh_preprocessing_applied=true`，并保留原STL摘要/mesh名称及几何 provenance。geometry-2 还必须提供 `content_matches=true`、观测/导出的内容与运行身份一致。顶点使用MuJoCo编译网格，前端只应用既有 geom/body/joint 变换，不再应用 mesh_scale/mesh_pos/mesh_quat；网格SHA对应本次编译STL字节。未声明完整约定的 live scene 明确拒绝，不以原STL猜补偿。
 
 alpha=0 的几何不构造渲染对象；半透明 Actual 启用透明混合且不写不透明深度。判断显隐不使用 collision/group，也不按零件名过滤。基础可见几何保留，未增加碰撞调试层、点云或可达性点层。TCP/Joint手柄、模型/用户角、Actual/Target/Ghost与只读轮询保持原有路径。
 

@@ -18,7 +18,7 @@ async def main():
   page.on('request',lambda r:report['requests'].append({'method':r.method,'url':r.url}));page.on('pageerror',lambda e:report['errors'].append(str(e)))
   try:
    response=await page.request.get(a.url+'/api/v1/mobilecar/scene');wire=await response.json();report['geometry_provenance']=wire.get('geometry_provenance')
-   check('scene explicitly declares verified compiled geometry',response.status==200 and wire['schema_version']=='unirobot-mobilecar-geometry-1' and all(x['coordinate_space']=='mujoco_compiled_mesh' and x['mesh_preprocessing_applied'] and x['units']=='m' for x in wire['data']['mesh_assets']))
+   check('scene explicitly declares verified compiled geometry',response.status==200 and wire['schema_version'] in ('unirobot-mobilecar-geometry-1','unirobot-mobilecar-geometry-2') and all(x['coordinate_space']=='mujoco_compiled_mesh' and x['mesh_preprocessing_applied'] and x['units']=='m' for x in wire['data']['mesh_assets']))
    await page.goto(a.url+'/?inspect=1',wait_until='domcontentloaded')
    await page.wait_for_function('window.__workbenchInspect && window.__workbenchInspect().scene.pendingLoads===0 && window.__workbenchInspect().monitor.snapshots>=2',timeout=60000);await page.wait_for_timeout(400)
    check('preview title identifies this exact release',await page.locator('.build-label').get_attribute('title')==a.release)
@@ -65,7 +65,7 @@ async def main():
    await page.get_by_role('button',name='取消目标',exact=False).click();s=await state(page)
    check('cancel only clears local Target and Ghost',s['target'] is None and not s['scene']['ghost'] and s['source']['identity']==initial['source']['identity'])
    check('Actual TCP and model chain remain aligned after all interactions',s['scene']['tcp']['errorM']<1e-5)
-   allowed={'/api/v1/mobilecar/scene','/api/v1/mobilecar/capabilities','/api/v1/mobilecar/snapshot'}
+   allowed={'/api/v1/mobilecar/scene','/api/v1/mobilecar/capabilities','/api/v1/mobilecar/snapshot','/api/v1/mobilecar/kinematics','/api/v1/mobilecar/execution-recipe'}
    check('all browser requests are GET and no robot mutation endpoint is used',all(r['method']=='GET' and (not urlsplit(r['url']).path.startswith('/api/') or urlsplit(r['url']).path in allowed or urlsplit(r['url']).path.startswith('/api/v1/mobilecar/scene/assets/')) for r in report['requests']))
    check('no uncaught browser errors',not report['errors']);report['status']='passed';report['final_tcp']=s['scene']['tcp'];report['renderer']=s['scene']['renderer']
   except Exception as exc:

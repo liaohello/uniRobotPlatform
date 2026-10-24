@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FrozenSampleService, PlatformService } from '../adapters/services';
-import { IdentityChanged } from '../adapters/mobilecar-read';
+import { IdentityChanged, runtimeIdentityKey } from '../adapters/mobilecar-read';
 import type { LocalTarget, MonitorStatus, TimelineEvent, Vec3, ViewSample } from '../adapters/types';
 import type { Tool, WorkbenchScene } from '../viewport/workbench-scene';
 import { WorkbenchContext, type FullscreenState, type LayoutPreset, type Workspace } from './context';
 import { uiSnapshot } from './ui-state';
 import { jointTarget,tcpTarget } from './state';
 import { WorkbenchLayout } from '../workbench/Layout';
-import { SessionPanel } from '../workbench/panels';
+import { SessionPanel } from '../workbench/session-panel';
 import { Icon } from '../workbench/Icon';
 export function App(){
  const [sourceMode,setSourceMode]=useState<'frozen'|'platform'>(new URLSearchParams(location.search).get('source')==='frozen'?'frozen':'platform');const [sample,setSample]=useState<ViewSample|null>(null);const [error,setError]=useState('');
@@ -30,8 +30,17 @@ export function App(){
      const started=performance.now();
      try{
        const signal=AbortSignal.any([abort.signal,AbortSignal.timeout(10000)]);
+       const previousRuntime=current?.live?.runtimeKey;
        const next=current&&service instanceof PlatformService?await service.refresh(current,signal):await service.load(signal);
        if(abort.signal.aborted)return;
+       if(previousRuntime&&next.live&&runtimeIdentityKey(next.source.identity)!==previousRuntime){
+         // geometry-2 keeps verified content across RESET/run identity changes.
+         // Only the old run's gesture and pending local target are discarded.
+         view.current?.cancelGesture('runtime');
+         targetRef.current=null;setTarget(null);
+         setNotice('后端 run / generation / episode 已变化；旧本地目标已取消，网格、相机与布局保留。');
+         log('运行身份变化 · 旧本地目标作废');
+       }
        current=next;count++;failures=0;setSample(next);setError('');
        setMonitor({state:next.live?'current':'frozen',message:next.live?'真实只读监控':'冻结原生样本 · 非实时',receivedAt:Date.now(),requestMs:performance.now()-started,snapshots:count,intervalMs:intervalRef.current});
      }catch(e){
@@ -108,7 +117,7 @@ export function App(){
      <span className={`monitor-chip ${monitor.state==='stale'||assetError?'stale':''}`} role="status" title={monitor.message}>{assetError?`资产不可用 · ${assetError}`:monitor.message}{monitor.state!=='frozen'&&<small>{monitor.requestMs?.toFixed(0)??'—'} ms · {monitor.snapshots} 次</small>}</span>{sourceMode==='platform'&&<button onClick={()=>setRetry(n=>n+1)} title="重新读取 scene / capabilities / snapshot">重新加载来源</button>}</div>
    <div className="control-group authority-group"><span className="chip strong">Human · 本地预览</span><span className="chip masked">Base <i>{sample?.live?.authority.base_owner_session_id??'无 Owner'}</i></span><span className="chip masked">Arm <i>{sample?.live?.authority.arm_owner_session_id??'无 Owner'}</i></span><button disabled title="需要后端控制权确认">申请接管</button><button aria-expanded={details} aria-label="只读与连接详情" title="只读与连接详情" onClick={()=>setDetails(!details)}><Icon name="info" size={14}/>详情</button><button className={drawer==='session'?'active':''} aria-pressed={drawer==='session'} onClick={()=>setDrawer(drawer==='session'?'none':'session')}>Session 准备</button></div>
  </div>
- {details&&<div className="control-details"><span>执行来源 <b>Human · 本地预览</b></span><span>Gripper <b>继承 Arm / 未接入</b></span><span>只读 Owner <b>≠ 本方授权</b></span><span>运动学 <b>{sample?.live?.kinematicProfile??'冻结样本固定参考 profile'}</b></span><span>本地 Target <b>未提交 · 无运动/停止/RESET 请求</b></span><span>快照 <b>{monitor.snapshots}</b> · 请求 <b>{monitor.requestMs?.toFixed(0)??'—'} ms</b></span></div>}
+ {details&&<div className="control-details"><span>执行来源 <b>Human · 本地预览</b></span><span>Gripper <b>继承 Arm / 未接入</b></span><span>只读 Owner <b>≠ 本方授权</b></span><span>运动学 <b title={sample?.live?.kinematics.reason||sample?.live?.kinematics.digest} className={sample?.live&&sample.live.kinematics.status!=='verified'?'kin-warn':''}>{sample?.live?`${sample.live.kinematics.profileId||'不可用'} · ${sample.live.kinematics.status}`:'冻结样本独立参考 profile'}</b></span><span>本地 Target <b>未提交 · 无运动/停止/RESET 请求</b></span><span>快照 <b>{monitor.snapshots}</b> · 请求 <b>{monitor.requestMs?.toFixed(0)??'—'} ms</b></span>{sample?.live?.runtimeMismatchAtInit&&<span className="kin-warn">加载时 scene 与 snapshot 运行身份不同；内容身份一致，采用 snapshot Actual</span>}</div>}
  {workspace?<WorkbenchContext.Provider value={workspace}><WorkbenchLayout/>{drawer==='session'&&<SessionPanel/>}</WorkbenchContext.Provider>:<div className="loading-view">{error?<><Icon name="info" size={30}/><h2>数据源不可用</h2><p role="alert">{error}</p><button className="primary" onClick={()=>setSourceMode('frozen')}>使用冻结原生样本</button></>:<><div className="loading-orbit"/><p>加载场景、模型与只读状态…</p></>}</div>}
  <footer className="status-bar"><span><span className={`status-dot ${monitor.state==='stale'?'amber':'green'}`}/>{notice||(sample?.live?'后端 Actual / 已有 Target 只读；本地 Target 未提交。Session / 运动 / 录制禁用。':'冻结来源：离线观察与目标预览。')}</span><span>{fullscreen.active?'全屏中 · Esc 由浏览器处理':'world_sim · m / rad · 前端渲染，无物理步进'}</span></footer></main></div></div>;
 }

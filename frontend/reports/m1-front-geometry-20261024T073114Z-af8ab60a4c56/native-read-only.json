@@ -1,0 +1,16 @@
+{
+  "before": {
+    "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+    "backend_generation": 1,
+    "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+    "recording_status": "IDLE"
+  },
+  "after": {
+    "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+    "backend_generation": 1,
+    "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+    "recording_status": "IDLE"
+  },
+  "native_mutations_sent": false,
+  "new_physics_process_started": false
+}

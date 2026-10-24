@@ -28,7 +28,7 @@ export class PreviewKinematics {
   }
   // Position-only offline DLS: this candidate has NO collision, timing, dynamics or backend approval.
   solve(position: Vec3, seed: Record<string, number>) {
-    const q = { ...seed }; const names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5'];
+    const q = { ...seed }; const names = Object.keys(this.spec.limits);
     const target = new Vector3(...position); let residual = Infinity;
     for (let it = 0; it < 100; it++) {
       const current = new Vector3(...this.forward(q)); const error = target.clone().sub(current); residual = error.length();

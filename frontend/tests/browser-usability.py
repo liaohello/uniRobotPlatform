@@ -7,6 +7,7 @@ control, Session readiness, recording or M1 integration.
 """
 import argparse, json, time
 from pathlib import Path
+from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
 
 p = argparse.ArgumentParser()
@@ -148,12 +149,15 @@ with sync_playwright() as pw:
         page.wait_for_timeout(300)
         drawer = page.locator('.session-drawer')
         check('Session 准备 opens a draft/validation/prepared surface', drawer.is_visible())
+        page.wait_for_function("()=>document.querySelector('.session-drawer [data-session-count]')!==null", timeout=15000)
         drawer_text = drawer.inner_text()
-        report['session_drawer'] = drawer_text[:900]
-        check('Session drawer separates draft, validation and prepared steps',
-              all(token in drawer_text for token in ('草案 Draft', '校验 Validation', 'prepared Session')))
-        check('Session drawer reports the real blocked reason instead of Ready',
-              '未就绪' in drawer_text and 'session_ready=false' in drawer_text)
+        report['session_drawer'] = drawer_text[:1400]
+        check('Session drawer separates draft, validation, snapshot and prepared steps',
+              all(token in drawer_text for token in ('草案 Draft', '校验 Validation', '不可变配置快照', 'prepared Session')))
+        check('Session drawer reports the real empty/blocked state instead of Ready',
+              '空 Session 列表' in drawer_text and 'execution_eligible' in drawer_text and '不是 Ready' in drawer_text)
+        check('Session drawer reads a real Draft or states that the list is empty',
+              page.locator('.session-drawer [data-draft-id]').count() == 1 or '后端草案列表为空' in drawer_text)
         check('Session drawer keeps Start disabled',
               page.get_by_role('button', name='Start', exact=True).is_disabled())
         page.screenshot(path=str(a.output / 'usability-session.png'), full_page=True)
@@ -550,8 +554,11 @@ with sync_playwright() as pw:
         # ---- network and error boundary ----
         bad = [r for r in requests if r['method'] != 'GET']
         check('browser issued GET requests only', not bad, bad[:3])
-        external = [r for r in requests if '/api/v1/' in r['url'] and not r['url'].split('?')[0].endswith(
-            ('/mobilecar/scene', '/mobilecar/capabilities', '/mobilecar/snapshot')) and '/scene/assets/' not in r['url']]
+        allowed_prefixes = ('/api/v1/mobilecar/scene', '/api/v1/mobilecar/capabilities', '/api/v1/mobilecar/snapshot',
+                            '/api/v1/mobilecar/kinematics', '/api/v1/mobilecar/execution-recipe',
+                            '/api/v1/experiment-drafts', '/api/v1/config-snapshots', '/api/v1/sessions')
+        external = [r for r in requests if '/api/v1/' in r['url']
+                    and not any(urlsplit(r['url']).path.startswith(prefix) for prefix in allowed_prefixes)]
         check('no motion/RESET/recording endpoints were called', not external, external[:3])
         check('no uncaught browser errors', not errors, errors[:3])
 
