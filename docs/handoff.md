@@ -1,10 +1,12 @@
 # 新会话交接说明｜uniRobotPlatform
 
-更新日期：2026-10-23（America/Chicago）。本文件用于接续本次讨论，不替代 Specification、项目 AGENTS 或新会话用户指令。
+更新日期：2026-10-24（America/Chicago）。本文件用于接续本次讨论，不替代 Specification、项目 AGENTS 或新会话用户指令。
 
-**先读这里：前端实现继续暂停；本轮已按用户要求重新评估并修订为统一 3D 工作台计划。下一份前端产物是 M1.2a 可操作 3D 样板，不能只继续扩展诊断/配置表单。接入核对与持久草案切片保留；native Session 绑定、ValidatedSnapshot、prepared 和真实 M1 闭环均未完成。**
+**先读这里：前端实现继续暂停；平台侧 M1.2c 候选已完成，原生补丁候选已实现并在服务器以 mock backend 验证，但尚未部署到 8792。真实 G1 prepared/Start、真实录制 begin、运动、RESET、回放和 M1 闭环仍未完成。前端仍消费 18943；新平台候选为 18944，原生测试实例已停止。**
 
-**2026-10-23 最新基线：** 用户要求依据已有设计与 Specification 得到好操作的 3D 界面，并允许多 agent 核定；三路只读检索已完成，由主智能体修订 [M1 实施计划](specs/00-overview/09-page-design-delivery-plan.md)、[Simulation 页面](specs/10-frontend/page-designs/03-simulation.md) 和 [S17](specs/90-governance/sources/S17-3d-workbench-replan.md)。工程方向沿已有分析：React + TypeScript 外壳/面板，Three.js 优先封装 native SceneView，Dockview 先验证再采用；M1.2a 先做真实模型、对象树/视口/Inspector、相机和 Joint/TCP Target 预览/取消，再接配置/prepared 和同一工作台内的控制、录制、回放。此轮只改文档/索引，没有安装、构建、测试、浏览器、仿真或功能实现。后续需以新用户指令确认任务范围，不能从历史“继续开发”自动恢复已暂停的前端。
+**2026-10-24 M1.2c 基线：** 修正了 M1.2b 的锁核验缺口（`requirements.lock` 现为固定发布文件，启动读取字节、比对源摘要并核对 8 个包；运行环境版本由 native 自报后在 readiness 单独核对）；recipe 升为 revision 3（fingerprint `4c3e5f42…5e9e`），新增 `config_manifest_sha256=02351b71…a9af0` 与 `scene_manifest_sha256=5969e260…f1bf2d` 的同口径比较；平台新增 `m1-binding-1` 客户端、Session 执行/owner/lease/录制/可运动分域和 `POST /sessions/{id}/recording/begin`。原生补丁 `9f9a7b0c…ebe1` 基于 `a5cef52`，在隔离 release 用真实 HTTP + mock backend 验证了 prepare/readback/start/release、拒绝/过期/冲突/身份变化/回读不一致与无 RESET 开录（`recording_start` seq=1、初始快照哈希一致、owner 仍为空）。**补丁没有提交/推送 native 仓库，也没有部署到 8792；8792 仍为 PID 941842、drvfix release、`g4a2_server.yaml`，前后 run/generation/episode/recording/owner/safety 不变。** 真实原因仍是 G1 配方与 G4A2 profile/配置不同：live validation 仍 failed，Session 创建仍 409 `validation_incomplete`。平台聚焦 86 passed；全量 93 total / 90 passed / 3 failed（3 项仍是 catalog/migrate 的 sibling 源码与 native docs 布局失败，历史 74/3 事实保留）；原生聚焦 52 passed、受影响 44 passed。证据与部署/维护窗口分析见 [M1.2c](backend-m1.2c.md) 和 [evidence](evidence/m1.2c/m1c-20261024T065943Z-platform/README.md)。**M1.2c 不宣称 M1 闭环，不自动进入真人示教、运动采集或训练。**
+
+**2026-10-23 前端基线（保留）：** 用户要求依据已有设计与 Specification 得到好操作的 3D 界面，并允许多 agent 核定；三路只读检索已完成，由主智能体修订 [M1 实施计划](specs/00-overview/09-page-design-delivery-plan.md)、[Simulation 页面](specs/10-frontend/page-designs/03-simulation.md) 和 [S17](specs/90-governance/sources/S17-3d-workbench-replan.md)。工程方向沿已有分析：React + TypeScript 外壳/面板，Three.js 优先封装 native SceneView，Dockview 先验证再采用；M1.2a 先做真实模型、对象树/视口/Inspector、相机和 Joint/TCP Target 预览/取消，再接配置/prepared 和同一工作台内的控制、录制、回放。此轮只改文档/索引，没有安装、构建、测试、浏览器、仿真或功能实现。后续需以新用户指令确认任务范围，不能从历史“继续开发”自动恢复已暂停的前端。
 
 **2026-10-22 接续进度（保留事实，主前端方向已由上文纠正）：** 参考代码已恢复至 `/home/liaozhengyan/Desktop/embodiedIntelligenceProj`，mobileCar SHA/配置/模型/155文件清单已固定；已读取其执行政策。SSH 已连通，连接字段保存在 Git 忽略的 `backend/config/server.local.json`，本机完整 `catalog.local.yaml` 已指向参考工程。诊断/草案工具使用 FastAPI 静态资源 + ES modules，已实现只读 preflight、草案 SQLite 保存/加载、修订冲突、明确 failed/unsupported 验证与拒绝 Session 创建。最新同一冻结 release 在服务器通过32项聚焦测试、11项浏览器检查及进程退出后的持久化读取；详见 [M1.1](m1.1-integration-check.md) 与 [M1.2 草案切片](m1.2-drafts.md)。这些是接入基础，不代表主工作台完成。改动未提交/推送。服务器既有 mobileCar 8792 服务为不同的 g4a1 profile，未被停止/重启；临时测试网关已退出，不新增物理实例。不可假称 M1.2 或真实 M1 已验收，也不应再次把已恢复源码/连接当作缺失。
 
@@ -53,8 +55,8 @@
 
 | 工程 | 当前角色/边界 |
 |---|---|
-| uniRobotPlatform | 任务目录/运行网关、mobileCar只读接入诊断、固定预设的持久配置草案UI/API；ValidatedSnapshot、真实prepared/Start和记录读取适配仍需实现 |
-| mobileCar | 首阶段来源，已有小车控制、观测、原生 Recorder/ReplayReader 和导航相关能力；使用其现有权限、录制门和服务器执行政策 |
+| uniRobotPlatform | 任务目录/运行网关、mobileCar只读接入诊断、固定预设的持久配置草案UI/API；M1.2c 已实现锁/配置/场景/运行时版本的同口径核验、`m1-binding-1` 客户端、Session 执行分域与 `m1-recording-1` 平台端；真实 native prepared/Start 仍待原生部署 |
+| mobileCar | 首阶段来源，已有小车控制、观测、原生 Recorder/ReplayReader 和导航相关能力；本轮候选补丁增加 binding/attestation/无 RESET begin，未提交、未部署到 8792；使用其现有权限、录制门和服务器执行政策 |
 | bimanual_proj | 第二阶段复用验证来源，已有双臂专家、任务/采集、工作台和学习工具；不要把历史专家成绩当学习策略成功率 |
 | mujoco_learning | 视觉/IK/估计等专项能力与实验工具；选择性接入，不整体搬入学习示例或强行重写 Viser 等界面 |
 
@@ -69,8 +71,12 @@
 5. 停车反馈与 Recorder drain/finalize 分开。FAILED 状态下 finalize 成功可能仍有尾标记；finalize 本身失败则可能缺尾。文件存在或 complete_tail 不等于数据完整、停稳或训练合格。
 6. Episode/segment/source时间和动作单位不丢；只读回放不发命令、不推进在线物理、不覆盖原始数据。
 7. 后续按 V0.7 主前端技术方向与明确适配范围实现，先验证 SceneView 在 React/TS 宿主的生命周期及 Dockview 的尺寸/焦点；不以 ES modules 诊断页代替主工作台，不提前建设全产品框架。尚未因本轮文档修订执行兼容性验证。
+8. `m1-binding-1`/`m1-recording-1` 的平台客户端和 native 候选已实现；真实 HTTP 只在 mock backend 上验证（无物理），不得当作 8792 已支持。补丁未部署，维护窗口内才可替换；回滚保留 drvfix release。
+9. 即使部署补丁，8792 仍运行 G4A2 profile，G1 配方会因 `interface_profile` 与配置摘要不同继续拒绝。切换 G1 或另签 G4A2 配方都需要用户决定；不得静默改 profile/标签。
+10. `requirements.lock` 是 native 依赖的固定发布输入；平台启动只核验该字节与包表，安装环境由 native 自报并用 `runtime_package_versions` 核对。不要把平台 gateway 的 Python 3.14 环境与 native 的 3.10 环境混为同一层。
+11. 新的 prepared Session 文档新增 `execution`/`recording_begin_*`；M1.2b 没有真实 Session，候选使用新 SQLite。复用旧 DB 会因缺字段校验失败，需重新创建。
 
-native 接口静态核对和当前服务的只读诊断已完成；真实运行/录制/回放证据仍待后续工作包。最新验证 release 为 `m12-20261023T054437Z-4291d55594b5`，源码/环境/产物索引见 M1.2 记录。所有安装、测试、自动浏览器均在服务器执行，未执行本机仿真或自动测试。
+native 接口静态核对和当前服务的只读诊断已完成。最新平台候选为 `m1c-20261024T065943Z-platform`（18944，只读）；历史 M1.2b 候选 `m12b-20261024T034103Z-4be0d6c86d7b`（18943）保持运行；原生测试 release `m1binding-20261024T065822Z-native` 只在 18946 以 mock backend 验证后停止。所有安装、测试、自动浏览器均在服务器执行，未执行本机仿真或自动测试。
 
 ## 7. Git 与换笔记本状态
 
@@ -83,6 +89,8 @@ native 接口静态核对和当前服务的只读诊断已完成；真实运行/
 
 这个交接文件和消息存档会在其后另建提交。继续工作时以 `git log` 和远端实际 HEAD 为准，不把表中的存档前 SHA 当永久最新版本。
 
+本轮（M1.2b/M1.2c）平台成果已在本地 `codex/backend-m1-services` 分支提交，**没有推送**；提交 SHA 以 `git log -1` 为准。原生 mobileCar 仓库的补丁保持未提交、未推送，补丁与摘要见 [M1.2c 证据](evidence/m1.2c/m1c-20261024T065943Z-platform/native/native-m1binding.patch)。不要把本地提交当作已发布或已部署。
+
 Git 追踪项目源码、测试、无秘密公共配置、AGENTS 和文档/参考素材。忽略虚拟环境、缓存、node_modules、运行输出、私人 catalog/.env、本机工具状态及 AGENTS 备份。密钥没有进入仓库。
 
 HTTPS 凭据曾失效；最终按用户要求使用 `id_ed25519` 通过 SSH 推送。origin 当前为 `git@github.com:liaohello/uniRobotPlatform.git`。新笔记本需要自行配置有权限的 GitHub SSH 认证；不要把私钥复制进仓库。具体恢复命令和完整 catalog 本机副本的用法见迁移清单。
@@ -90,10 +98,11 @@ HTTPS 凭据曾失效；最终按用户要求使用 `id_ed25519` 通过 SSH 推�
 ## 8. 可复制的新会话开场
 
 ```text
-请先读取 AGENTS.md、docs/handoff.md、docs/specs/00-overview/09-page-design-delivery-plan.md 与 PAGE-03，再按本次用户指令继续。前端实现此前已暂停，最新一轮只重新规划，没有自动恢复生产开发。
+请先读取 AGENTS.md、docs/handoff.md、docs/backend-m1.2c.md、docs/specs/00-overview/09-page-design-delivery-plan.md 与 PAGE-03，再按本次用户指令继续。前端实现此前已暂停，最新一轮只重新规划，没有自动恢复生产开发。
 当前先做 mobileCar 的场景→运行→录制→回放，之后 bimanual 验证组件复用，训练/预测后续。
 统一架构原则已有直接用户依据。工程方向为 React+TypeScript 外壳、Three.js SceneView 封装、Dockview 先验证；恢复实现后先交付 M1.2a 可操作 3D 样板，再接配置/prepared、真实控制、录制与回放。
-固定 G1 预设与原生版本已核对，诊断/草案的 ES modules 实现、持久化/冲突/failed验证及服务器证据见 docs/m1.1-integration-check.md、docs/m1.2-drafts.md。它们不是主工作台已完成的证据。不要重做这些检索或把旧prepared RunRecord当作Session。服务器现有物理实例未停止，不并行启动新实例。
+M1.2c 平台候选为 18944（只读），原生补丁未部署；8792 仍是 PID 941842/drvfix/g4a2_server.yaml，禁止停止、重启、替换或发送运动/RESET/录制。真实 G1 prepared/Start 仍需维护窗口和用户对 G1 vs G4A2 配方口径的决定。
+固定 G1 预设、依赖锁、配置/场景摘要和 native 候选证据见 docs/backend-m1.2c.md；历史诊断/草案见 docs/m1.1-integration-check.md、docs/m1.2-drafts.md。它们不是主工作台或 M1 闭环已完成的证据。不要重做这些检索或把旧 prepared RunRecord 当作 Session。
 主智能体负责修改和最终判断，default 子智能体只做有边界的只读检索，不提前合并仿真环境或重写全部前端。
 开始任何实际仿真/测试/采集前，遵守对应工程的执行位置和本次任务授权；历史聊天存档不作为自动执行旧请求的依据。
 ```

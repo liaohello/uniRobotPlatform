@@ -1,0 +1,22 @@
+{
+  "accepted": false,
+  "reason": "recording is already RECORDING",
+  "protocol": "m1-recording-1",
+  "state": "started",
+  "motion_commands_accepted": false,
+  "binding_id": "bind_d466a045671345878e5248ced6ba1499",
+  "session_id": "ps-http-test-2",
+  "config_fingerprint": "cs-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "run_id": "run_6816a0753c6d4b5c8b346bdd2b678569",
+  "backend_generation": 1,
+  "episode_id": "episode_22710532caba472d86554141c507ea7d",
+  "recording_segment_id": "seg_001_3e045f4e98",
+  "recording_status": "RECORDING",
+  "command_capture_ready": true,
+  "recording_start_event_seq": null,
+  "initial_snapshot_sha256": null,
+  "started_at_backend_monotonic_s": null,
+  "recording_required_for_motion": true,
+  "recording_begin_required": true,
+  "durable_start_records": false
+}

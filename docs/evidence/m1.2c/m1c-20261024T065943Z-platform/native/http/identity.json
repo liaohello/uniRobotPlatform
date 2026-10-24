@@ -1,0 +1,10 @@
+{
+  "session_id": "ps-http-test-2",
+  "binding_id": "bind_d466a045671345878e5248ced6ba1499",
+  "identity": {
+    "run_id": "run_6816a0753c6d4b5c8b346bdd2b678569",
+    "backend_generation": 1,
+    "episode_id": "episode_22710532caba472d86554141c507ea7d"
+  },
+  "episode_id_after": "episode_22710532caba472d86554141c507ea7d"
+}

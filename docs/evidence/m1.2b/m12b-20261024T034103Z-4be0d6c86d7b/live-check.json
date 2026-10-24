@@ -1,0 +1,106 @@
+{
+  "blocking_keys": [
+    "interface_profile",
+    "deployed_config_attestation",
+    "scene_manifest_attestation",
+    "session_binding_protocol",
+    "recording_begin_protocol"
+  ],
+  "execution_eligible": false,
+  "failed_checks": [
+    "interface_profile"
+  ],
+  "http": {
+    "capabilities": 200,
+    "draft_create": 201,
+    "kinematics": 200,
+    "recipe": 200,
+    "scene": 200,
+    "session_create": 409,
+    "snapshot": 200,
+    "snapshot_get": 200,
+    "start_missing": 404,
+    "validate": 200,
+    "validate_repeat": 200
+  },
+  "kinematics_consistency": {
+    "camera_mount_consistent": true,
+    "gripper_limits_consistent": true,
+    "joint_order_consistent": true,
+    "max_user_limit_error_rad": 0.0,
+    "tcp_mount_consistent": true,
+    "user_limits_consistent": true
+  },
+  "native_after": {
+    "health": {
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "interface_profile": "g4a1-1.0",
+      "recording_required_for_motion": true,
+      "recording_status": "IDLE",
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f"
+    },
+    "owners": {
+      "active_operator_kind": null,
+      "active_session_id": null,
+      "arm_owner_session_id": null,
+      "base_owner_session_id": null
+    },
+    "recording": {
+      "command_capture_ready": false,
+      "dropped_events": 0,
+      "episode_id": null,
+      "error": null,
+      "queued_events": 0,
+      "recording_segment_id": null,
+      "status": "IDLE"
+    },
+    "safety_latched": true
+  },
+  "native_before": {
+    "health": {
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "interface_profile": "g4a1-1.0",
+      "recording_required_for_motion": true,
+      "recording_status": "IDLE",
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f"
+    },
+    "owners": {
+      "active_operator_kind": null,
+      "active_session_id": null,
+      "arm_owner_session_id": null,
+      "base_owner_session_id": null
+    },
+    "recording": {
+      "command_capture_ready": false,
+      "dropped_events": 0,
+      "episode_id": null,
+      "error": null,
+      "queued_events": 0,
+      "recording_segment_id": null,
+      "status": "IDLE"
+    },
+    "safety_latched": true
+  },
+  "native_unchanged": true,
+  "repeat_reused": true,
+  "repeat_snapshot_id": "cs-6f48f98fff1b427eb10a5fae647a8ffee49392b4",
+  "repeat_snapshot_sha256": "5833f65cd929dcc1447ece59ea1fe2c57c0fb14a6b603c568fe7e8517d9cac97",
+  "scene_binding": {
+    "association": "content_matches_export_identity",
+    "runtime_identity_matches": true
+  },
+  "scene_schema": "unirobot-mobilecar-geometry-2",
+  "session_error_code": "validation_incomplete",
+  "snapshot_id": "cs-6f48f98fff1b427eb10a5fae647a8ffee49392b4",
+  "snapshot_sha256": "5833f65cd929dcc1447ece59ea1fe2c57c0fb14a6b603c568fe7e8517d9cac97",
+  "unsupported_checks": [
+    "deployed_config_attestation",
+    "scene_manifest_attestation",
+    "session_binding_protocol",
+    "recording_begin_protocol"
+  ],
+  "validated_snapshot_id": null,
+  "validation_status": "failed"
+}

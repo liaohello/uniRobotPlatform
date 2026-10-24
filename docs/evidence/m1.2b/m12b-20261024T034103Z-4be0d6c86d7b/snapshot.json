@@ -1,0 +1,398 @@
+{
+  "adapter_id": "mobilecar",
+  "data": {
+    "actual": {
+      "arm": {
+        "coordinates_status": "user_defined_photo_pose_not_hardware_500",
+        "joint_margin_rad": [
+          2.089999999997815,
+          2.0899999999999666,
+          2.0899999999999777,
+          0.5192036732050986,
+          2.0899999999989842
+        ],
+        "joint_torques_nm": [
+          0.0014711721051443587,
+          0.16853927342276567,
+          0.1654286359816261,
+          0.16056687327878194,
+          -1.619480637389872e-05
+        ],
+        "joint_velocities_rad_s": [
+          2.9156767050010626e-14,
+          -1.1679077228937798e-14,
+          -1.1871017075534594e-14,
+          6.0390906774534315e-15,
+          -4.694944265789907e-16
+        ],
+        "model_joint_positions_rad": [
+          -2.1847944429106653e-12,
+          3.323069541502411e-14,
+          2.2414759713230015e-14,
+          -1.5707963267949012,
+          -1.0156202832318474e-12
+        ],
+        "model_limits_rad": [
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ]
+        ],
+        "user_joint_positions_rad": [
+          -2.1847944429106653e-12,
+          3.323069541502411e-14,
+          2.2414759713230015e-14,
+          -4.6629367034256575e-15,
+          -1.0156202832318474e-12
+        ]
+      },
+      "base": {
+        "frame_id": "base_link",
+        "orientation_world_sim_xyzw": [
+          -1.1200977678495443e-06,
+          5.463690980373149e-05,
+          1.1716393712055551e-06,
+          0.9999999985060893
+        ],
+        "position_world_sim_m": [
+          0.1386513174901792,
+          -1.929293295287011e-05,
+          0.05321414659290786
+        ],
+        "stop_latched": true,
+        "stopped": true,
+        "vx_m_s": 2.3312713685917824e-16,
+        "vy_m_s": -5.142545996750914e-16,
+        "wz_rad_s": 5.931370887683054e-15
+      },
+      "gripper": {
+        "model_drive_position_rad": -1.0776330776100003,
+        "width_m": 0.0249999902314796
+      },
+      "model_joint_positions_rad": {
+        "front_left_joint": -0.26178483185447815,
+        "front_left_roller_0_joint": 1.6949261206436039e-07,
+        "front_left_roller_10_joint": 2.7152603494447145e-07,
+        "front_left_roller_11_joint": 2.232402387741872e-07,
+        "front_left_roller_1_joint": 1.24774440749749e-07,
+        "front_left_roller_2_joint": 1.0099313752057452e-07,
+        "front_left_roller_3_joint": 1.0465268797205915e-07,
+        "front_left_roller_4_joint": 1.346349900311315e-07,
+        "front_left_roller_5_joint": 1.8313345605712802e-07,
+        "front_left_roller_6_joint": 0.006693181122940801,
+        "front_left_roller_7_joint": -0.08367698680462557,
+        "front_left_roller_8_joint": 3.05100500195049e-07,
+        "front_left_roller_9_joint": 3.0141248433859915e-07,
+        "front_right_joint": -0.2617795276679364,
+        "front_right_roller_0_joint": -3.101468633350402e-07,
+        "front_right_roller_10_joint": -2.3331287641044153e-07,
+        "front_right_roller_11_joint": -2.8238850549324725e-07,
+        "front_right_roller_1_joint": -3.0922011659345183e-07,
+        "front_right_roller_2_joint": -2.798782201530529e-07,
+        "front_right_roller_3_joint": -2.2985263383775048e-07,
+        "front_right_roller_4_joint": -1.7283495180591684e-07,
+        "front_right_roller_5_joint": -1.2349415146323292e-07,
+        "front_right_roller_6_joint": -0.019342550911826652,
+        "front_right_roller_7_joint": -0.042562330365015034,
+        "front_right_roller_8_joint": -1.2618048425675786e-07,
+        "front_right_roller_9_joint": -1.7620066955217394e-07,
+        "gripper_base_joint": -1.0776330776100003,
+        "gripper_left_join": 1.6164555010235442,
+        "gripper_right_joint": 1.6164437321936282,
+        "joint1": -2.1847944429106653e-12,
+        "joint2": 3.323069541502411e-14,
+        "joint3": 2.2414759713230015e-14,
+        "joint4": -1.5707963267949012,
+        "joint5": -1.0156202832318474e-12,
+        "left_jaw_joint": 0.012484051952558431,
+        "rear_left_joint": -0.2619676035177577,
+        "rear_left_roller_0_joint": -3.01575820883573e-07,
+        "rear_left_roller_10_joint": -2.0804866336697245e-07,
+        "rear_left_roller_11_joint": -2.628449409568901e-07,
+        "rear_left_roller_1_joint": -3.140234695106979e-07,
+        "rear_left_roller_2_joint": -2.9690355979359116e-07,
+        "rear_left_roller_3_joint": -2.547385226375167e-07,
+        "rear_left_roller_4_joint": -1.9893808288114996e-07,
+        "rear_left_roller_5_joint": -1.4473351590633417e-07,
+        "rear_left_roller_6_joint": 0.012002664684949907,
+        "rear_left_roller_7_joint": 0.06869814531825716,
+        "rear_left_roller_8_joint": -1.1008923603746086e-07,
+        "rear_left_roller_9_joint": -1.5187447053347817e-07,
+        "rear_right_joint": -0.26197294911062624,
+        "rear_right_roller_0_joint": 1.6782392685025104e-07,
+        "rear_right_roller_10_joint": 3.036485867158636e-07,
+        "rear_right_roller_11_joint": 2.4080152477093313e-07,
+        "rear_right_roller_1_joint": 1.0469897836787296e-07,
+        "rear_right_roller_2_joint": 6.782751734556796e-08,
+        "rear_right_roller_3_joint": 6.752989158060056e-08,
+        "rear_right_roller_4_joint": 1.0383351541138249e-07,
+        "rear_right_roller_5_joint": 1.6652534225350758e-07,
+        "rear_right_roller_6_joint": -0.004805689609506051,
+        "rear_right_roller_7_joint": 0.004489520281211975,
+        "rear_right_roller_8_joint": 3.3947919012698934e-07,
+        "rear_right_roller_9_joint": 3.3988625806251255e-07,
+        "right_jaw_joint": -0.01251595781616188
+      },
+      "tcp": {
+        "frame_id": "world_sim",
+        "held": false,
+        "orientation_error_rad": null,
+        "orientation_xyzw": [
+          -0.0029808810520421,
+          0.709726216022652,
+          -0.0031127639699834136,
+          0.7044644230468896
+        ],
+        "position_error_m": null,
+        "position_m": [
+          0.31675496511988604,
+          0.0024434952471972782,
+          0.3009214429907374
+        ]
+      }
+    },
+    "arm_joint_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5"
+    ],
+    "authority": {
+      "active_operator_kind": null,
+      "active_session_id": null,
+      "arm_owner_session_id": null,
+      "authorizes_caller": false,
+      "base_owner_session_id": null,
+      "lease_status": "not_exposed"
+    },
+    "preview": null,
+    "recording": {
+      "command_capture_ready": false,
+      "dropped_events": 0,
+      "episode_id": null,
+      "error": null,
+      "queued_events": 0,
+      "recording_segment_id": null,
+      "status": "IDLE"
+    },
+    "safety_latched": true,
+    "sensor_media_status": "not_exposed",
+    "sensors": [
+      {
+        "arrival_time_s": 986656.368909458,
+        "available": true,
+        "capture_backend_monotonic_s": 986656.31043317,
+        "capture_control_tick_id": "tick_042825702",
+        "capture_sim_time_s": 428257.0169625396,
+        "clock_id": "backend_monotonic",
+        "feedback_sample_id": "joint_feedback_042825702",
+        "frame_id": null,
+        "fresh": true,
+        "kind": "rgb",
+        "measurement_time_s": 986656.31043317,
+        "native_asset_uri": null,
+        "observation_age_s": 0.05847628810442984,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "quality": "simulated_nominal_preview",
+        "sample_id": "rgbd_332a4aa748364d9790acde5963f17784",
+        "stream_id": "rgbd",
+        "valid_fraction": 0.35639322916666666
+      },
+      {
+        "arrival_time_s": 986656.126480578,
+        "available": true,
+        "capture_backend_monotonic_s": 986656.107435379,
+        "capture_control_tick_id": "tick_042825688",
+        "capture_sim_time_s": 428256.8769625411,
+        "clock_id": "backend_monotonic",
+        "feedback_sample_id": "joint_feedback_042825688",
+        "frame_id": null,
+        "fresh": true,
+        "kind": "depth",
+        "measurement_time_s": 986656.107435379,
+        "native_asset_uri": null,
+        "observation_age_s": 0.01904519903473556,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "quality": "simulated_nominal_preview",
+        "sample_id": "rgbd_1316967d0041402295b4901adab1987f",
+        "stream_id": "rgbd",
+        "valid_fraction": 0.35639322916666666
+      },
+      {
+        "arrival_time_s": 986656.285444375,
+        "available": true,
+        "capture_backend_monotonic_s": 986656.285444375,
+        "capture_control_tick_id": "tick_042825700",
+        "capture_sim_time_s": 428256.9969625398,
+        "clock_id": "backend_monotonic",
+        "feedback_sample_id": null,
+        "frame_id": null,
+        "fresh": true,
+        "kind": "lidar",
+        "measurement_time_s": 986656.285444375,
+        "native_asset_uri": null,
+        "observation_age_s": 0.0,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "quality": "simulated_raycast",
+        "sample_id": "laser_042825700",
+        "stream_id": "lidar",
+        "valid_fraction": null
+      },
+      {
+        "arrival_time_s": 986656.369291535,
+        "available": true,
+        "capture_backend_monotonic_s": 986656.369291535,
+        "capture_control_tick_id": "tick_042825709",
+        "capture_sim_time_s": 428257.08696253883,
+        "clock_id": "backend_monotonic",
+        "feedback_sample_id": null,
+        "frame_id": null,
+        "fresh": true,
+        "kind": "imu",
+        "measurement_time_s": 986656.369291535,
+        "native_asset_uri": null,
+        "observation_age_s": 0.0,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "quality": "simulated_nominal",
+        "sample_id": "imu_042825709",
+        "stream_id": "imu",
+        "valid_fraction": null
+      },
+      {
+        "arrival_time_s": 986656.369291535,
+        "available": true,
+        "capture_backend_monotonic_s": 986656.369291535,
+        "capture_control_tick_id": "tick_042825709",
+        "capture_sim_time_s": 428257.08696253883,
+        "clock_id": "backend_monotonic",
+        "feedback_sample_id": null,
+        "frame_id": null,
+        "fresh": true,
+        "kind": "encoders",
+        "measurement_time_s": 986656.369291535,
+        "native_asset_uri": null,
+        "observation_age_s": 0.0,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "quality": "simulated_nominal",
+        "sample_id": "encoders_042825709",
+        "stream_id": "encoders",
+        "valid_fraction": null
+      },
+      {
+        "arrival_time_s": 986656.369291535,
+        "available": true,
+        "capture_backend_monotonic_s": 986656.369291535,
+        "capture_control_tick_id": "tick_042825709",
+        "capture_sim_time_s": 428257.08696253883,
+        "clock_id": "backend_monotonic",
+        "feedback_sample_id": null,
+        "frame_id": null,
+        "fresh": true,
+        "kind": "joint_feedback",
+        "measurement_time_s": 986656.369291535,
+        "native_asset_uri": null,
+        "observation_age_s": 0.0,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "quality": "simulated_nominal",
+        "sample_id": "joint_feedback_042825709",
+        "stream_id": "joint_feedback",
+        "valid_fraction": null
+      },
+      {
+        "arrival_time_s": 986656.126480578,
+        "available": true,
+        "capture_backend_monotonic_s": 986656.107435379,
+        "capture_control_tick_id": "tick_042825688",
+        "capture_sim_time_s": 428256.8769625411,
+        "clock_id": "backend_monotonic",
+        "feedback_sample_id": "joint_feedback_042825688",
+        "frame_id": null,
+        "fresh": true,
+        "kind": "image_transforms",
+        "measurement_time_s": 986656.107435379,
+        "native_asset_uri": null,
+        "observation_age_s": 0.01904519903473556,
+        "profile_id": "g4a1-link4-rgbd-proprio-v1",
+        "quality": "simulated_nominal_preview",
+        "sample_id": "rgbd_1316967d0041402295b4901adab1987f",
+        "stream_id": "rgbd",
+        "valid_fraction": 0.35639322916666666
+      }
+    ],
+    "target": {
+      "base_velocity": {
+        "frame_id": "base_link",
+        "vx_m_s": 0.0,
+        "vy_m_s": 0.0,
+        "wz_rad_s": 0.0
+      },
+      "command_id": null,
+      "gripper_model_drive_position_rad": -1.0776330048507736,
+      "gripper_width_m": 0.024999991920466903,
+      "model_joint_positions_rad": [
+        -2.1849604256104818e-12,
+        3.344156860706527e-14,
+        2.2578702971480356e-14,
+        -1.5707963267949012,
+        -1.0156417584983402e-12
+      ],
+      "tcp": null,
+      "user_joint_positions_rad": [
+        -2.1849604256104818e-12,
+        3.344156860706527e-14,
+        2.2578702971480356e-14,
+        -4.6629367034256575e-15,
+        -1.0156417584983402e-12
+      ]
+    },
+    "task_phase": "OBSERVE",
+    "time": {
+      "backend_monotonic_s": 986656.370759651,
+      "clock_id": "backend_monotonic",
+      "control_tick_id": "tick_042825709",
+      "episode_started_backend_monotonic_s": 558366.667448889,
+      "feedback_time_s": 986656.36928927,
+      "sim_time_s": 428257.08696253883,
+      "wall_utc": "2026-10-24T03:46:31.856624Z"
+    }
+  },
+  "data_source": "live_native_http",
+  "deployed_content_verified": false,
+  "interface_profile": "g4a1-1.0",
+  "platform_session_id": null,
+  "read_only": true,
+  "recording_required_for_motion": true,
+  "resource_identity": {
+    "contract_version": "mobilecar-1.0",
+    "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+    "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "scene_id": "mobile_pick"
+  },
+  "resource_matches_pin": true,
+  "retrieved_at": "2026-10-24T03:46:31+00:00",
+  "robot_id": "landerpi",
+  "runtime_identity": {
+    "backend_generation": 1,
+    "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+    "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f"
+  },
+  "schema_version": "unirobot-mobilecar-read-1",
+  "session_ready": false
+}

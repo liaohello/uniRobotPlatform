@@ -1,0 +1,104 @@
+{
+  "adapter_id": "mobilecar",
+  "data": {
+    "arm_joint_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5"
+    ],
+    "arm_user_limits_rad": [
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -0.5192036732051033,
+        3.6607963267948964
+      ],
+      [
+        -2.09,
+        2.09
+      ]
+    ],
+    "arm_velocity_limits_rad_s": [
+      0.6,
+      0.6,
+      0.6,
+      0.6,
+      0.6
+    ],
+    "backend_kind": "mujoco",
+    "base_linear_limit_m_s": 0.05,
+    "base_yaw_limit_rad_s": 0.3,
+    "camera_parent_body": "link4",
+    "contract_version": "mobilecar-1.0",
+    "gripper_max_width_m": 0.05,
+    "gripper_min_width_m": 0.012000038000000005,
+    "ground_truth_policy_visible": false,
+    "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+    "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "scene_id": "mobile_pick",
+    "sensor_streams": [
+      "rgb",
+      "depth",
+      "lidar",
+      "imu",
+      "encoders",
+      "joint_feedback",
+      "image_transforms"
+    ],
+    "supported_commands": [
+      "set_base_twist",
+      "zero_base",
+      "set_arm_joint_goal",
+      "set_gripper_width_goal",
+      "preview_tcp_target",
+      "execute_tcp_target",
+      "cancel",
+      "stop",
+      "reset",
+      "heartbeat",
+      "set_task_phase",
+      "start_recording",
+      "stop_recording"
+    ],
+    "tcp_orientation_is_soft": true,
+    "tcp_parent_body": "guide_rod_link",
+    "tcp_position_tolerance_m": 0.005
+  },
+  "data_source": "live_native_http",
+  "deployed_content_verified": false,
+  "interface_profile": "g4a1-1.0",
+  "platform_commands_available": false,
+  "platform_recording_available": false,
+  "platform_replay_available": false,
+  "platform_session_id": null,
+  "read_only": true,
+  "recording_required_for_motion": true,
+  "resource_identity": {
+    "contract_version": "mobilecar-1.0",
+    "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+    "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "scene_id": "mobile_pick"
+  },
+  "resource_matches_pin": true,
+  "retrieved_at": "2026-10-24T03:46:31+00:00",
+  "robot_id": "landerpi",
+  "runtime_identity": {
+    "backend_generation": 1,
+    "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+    "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f"
+  },
+  "schema_version": "unirobot-mobilecar-read-1",
+  "session_ready": false
+}

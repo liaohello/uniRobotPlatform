@@ -22,3 +22,7 @@ A MuJoCo-based embodied AI simulation and 3D interaction data collection platfor
 ### V0.7 统一 3D 工作台计划复评
 
 [最新前端实施计划](docs/specs/00-overview/09-page-design-delivery-plan.md)：先统一 React/TS 外壳、Three.js SceneView 复用边界，再逐项接通 mobileCar；下一份前端产物为对象树/视口/Inspector、相机与 Joint/TCP Target 可操作样板，继而接控制、录制和只读回放。诊断/元数据草案只代表接入基础。M1/M2 范围不变，前端实现继续暂停，本轮仅修订设计和计划。
+
+### M1.2c 后端候选（2026-10-24）
+
+[M1.2c 交付记录](docs/backend-m1.2c.md)：修正依赖锁核验，固定原生配置/编译场景摘要与运行时版本核对；平台候选 18944 增加 `m1-binding-1` 客户端、Session 执行分域和 `m1-recording-1` begin。原生候选补丁已在服务器以 mock backend 验证，但未部署到 8792；真实 G1 prepared/Start、在线录制、回放和 M1 闭环仍未完成。

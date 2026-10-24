@@ -62,6 +62,18 @@ M1 在停止/Reset 发生时必须给当前 segment 的终态和身份切换结�
 
 mobileCar 的 native start 会写 recording_start、feedback_initial、initial_snapshot 并 sync；正常 stop 排空后写 terminal/checksums/episode_complete。FAILED 状态下若 finalize 成功，可能写出尾标记但仍为 FAILED/INCOMPLETE；若 drain/finalize 本身失败，尾标记可能缺失。complete_tail 是尾部存在性信息，不等于录制完整性结论。队列溢出/写盘故障沿用原生失败和停车机制；平台不静默掉流来保持绿色。
 
+## M1.2c 无 RESET 开录候选（m1-recording-1）
+
+M1.2c 在原生候选中增加独立的 `POST /api/v1/recording/begin`，复用既有 Recorder，不经过 `episodes/start` 的 RESET：
+
+- 请求必须绑定已 start 的 `m1-binding-1` binding、平台 `session_id`、`config_fingerprint` 与当前 run/generation/episode；任一不符拒绝。
+- 读取当前 actual snapshot 作为起始状态；写入 `recording_start`（segment 内 event_seq 从 1 开始）、`feedback_initial` 与原子 `initial_snapshot.json`，`writer.sync()` 后才返回 `RECORDING` 与 `command_capture_ready=true`；响应给出 segment、起始事件序号与 initial snapshot SHA-256。
+- 不 RESET、不发运动命令、不获取 owner/lease、不停止录制；录制为 STARTING/RECORDING/DRAINING 时拒绝，FAILED 时要求先按既有路径处置。
+- 本轮不定义 stop/finalize、停车确认、回放或跨 RESET 连续采集；这些仍走既有 `episodes/stop` 与后续工作包。`require_recording`、租约与安全停止门控不变。
+- 平台侧仅在 native 声明 `recording_begin_protocol=m1-recording-1` 时调用；未声明即 `unsupported`。真实 8792 未部署候选，平台 live 仍不会调用该端点。
+
+该能力与 [Session 生命周期](../20-backend/01-session-scene/01-session-lifecycle.md#原生绑定协议m1-binding-1) 的 start 分开：Start 只建立 active Session 与授权范围，begin 才建立录制 ready；三者（active、owner/lease、recording ready、可运动）必须分别表达。
+
 ## 原始存储与读取适配
 
 索引记录 sourceProject/adapter/native IDs、原始位置、format/schema/reader 版本、媒体/事件引用、完整性与可用流。原始文件继续由各工程保存，平台只维护映射/sidecar，不为统一前端强制搬目录或重写格式。使用原始 source time 和记录的变换，不能按浏览器收包顺序对齐。

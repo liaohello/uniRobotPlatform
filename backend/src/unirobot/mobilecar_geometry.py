@@ -9,6 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, StrictInt, StrictStr
 
+from .contracts import utc_now
 from .mobilecar import Health, NativeReadError, RuntimeIdentity, SceneIdentity
 from .mobilecar_read import (
     Asset, Digest, Geom, Link, MobileCarReadService, ReadEnvelope,
@@ -56,13 +57,39 @@ class GeometryProvenance(BaseModel):
     verification_scope: Literal["static_compilation_matches_live_manifest_not_live_memory_or_contacts"]
 
 
+class GeometryBinding(BaseModel):
+    """Content identity is what the meshes depend on; run/episode identity is an observation."""
+
+    bundle_sha256: Digest
+    content_identity_sha256: Digest
+    exported_runtime_identity: RuntimeIdentity
+    observed_runtime_identity: RuntimeIdentity
+    content_matches: Literal[True] = True
+    runtime_identity_matches: bool
+    association: Literal["content_matches_export_identity", "content_reverified_after_runtime_identity_change"]
+    revalidated_at: str
+
+
 class CompiledSceneRead(ReadEnvelope):
-    schema_version: Literal["unirobot-mobilecar-geometry-1"] = "unirobot-mobilecar-geometry-1"
+    schema_version: Literal["unirobot-mobilecar-geometry-2"] = "unirobot-mobilecar-geometry-2"
     data_source: Literal["live_native_http_with_verified_compiled_geometry"] = "live_native_http_with_verified_compiled_geometry"
     data: CompiledSceneData
     objects: list[ObjectIdentity]
     geometry_provenance: GeometryProvenance
+    geometry_binding: GeometryBinding
     world_pose_semantics: Literal["compiled_initial_layout_not_live_object_state"] = "compiled_initial_layout_not_live_object_state"
+
+
+def content_identity(provenance: GeometryProvenance) -> str:
+    return content_digest({
+        "contract_version": provenance.resource_identity.contract_version,
+        "model_id": provenance.resource_identity.model_id,
+        "model_sha256": provenance.resource_identity.model_sha256,
+        "scene_id": provenance.resource_identity.scene_id,
+        "native_scene_sha256": provenance.native_scene_sha256,
+        "model_inputs_sha256": provenance.model_inputs_sha256,
+        "compiled_scene_sha256": provenance.compiled_scene_sha256,
+    })
 
 
 class GeometryBundle:
@@ -92,6 +119,7 @@ class GeometryBundle:
                     raise ValueError("Compiled mesh must have identity scale")
                 if geom.collision != bool(geom.contype or geom.conaffinity):
                     raise ValueError("Collision filter metadata mismatch")
+        self.content_identity_sha256 = content_identity(self.provenance)
 
 
 class CompiledGeometryReadService(MobileCarReadService):
@@ -106,13 +134,28 @@ class CompiledGeometryReadService(MobileCarReadService):
         except NativeReadError as exc:
             raise ReadServiceError(f"native_{exc.status}", str(exc), 503 if exc.status in {"offline", "not_configured"} else 502) from exc
         provenance = self.bundle.provenance
-        if RuntimeIdentity.model_validate(before.model_dump()) != provenance.runtime_identity or content_digest(raw) != provenance.native_scene_sha256:
-            raise ReadServiceError("geometry_source_changed", "Native runtime or scene differs from the verified geometry export; rebuild the candidate bundle", 409)
+        identity_ok = all(raw.get(key) == getattr(provenance.resource_identity, key)
+                          for key in ("contract_version", "model_id", "model_sha256", "scene_id"))
+        if not identity_ok or content_digest(raw) != provenance.native_scene_sha256:
+            raise ReadServiceError("geometry_source_changed",
+                                   "Live model or scene content differs from the verified geometry export; rebuild the bundle", 409)
         data = self.bundle.scene.model_copy(deep=True)
         for asset in data.mesh_assets:
             asset.uri = f"/api/v1/mobilecar/scene/assets/{asset.asset_id}?sha256={asset.sha256}"
-        return CompiledSceneRead(**self._finish(before, provenance.resource_identity), data=data,
-                                 objects=scene_objects(data), geometry_provenance=provenance)
+        finished = self._finish(before, provenance.resource_identity)
+        observed = RuntimeIdentity.model_validate(finished["runtime_identity"].model_dump())
+        matches = observed == provenance.runtime_identity
+        binding = GeometryBinding(
+            bundle_sha256=provenance.bundle_sha256,
+            content_identity_sha256=self.bundle.content_identity_sha256,
+            exported_runtime_identity=provenance.runtime_identity,
+            observed_runtime_identity=observed,
+            runtime_identity_matches=matches,
+            association="content_matches_export_identity" if matches else "content_reverified_after_runtime_identity_change",
+            revalidated_at=utc_now(),
+        )
+        return CompiledSceneRead(**finished, data=data, objects=scene_objects(data),
+                                 geometry_provenance=provenance, geometry_binding=binding)
 
     def asset(self, asset_id: str, expected_sha256: str) -> bytes:
         if not re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", asset_id) or asset_id not in self.bundle.assets:

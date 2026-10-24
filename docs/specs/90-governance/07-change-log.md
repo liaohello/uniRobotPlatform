@@ -10,6 +10,13 @@
 
 ## V0.7｜2026-10-23
 
+### 2026-10-24 M1.2c 实现澄清（不改变 V0.7 范围）
+
+- 修正 M1.2b “逐文件核验”的不准确描述：`requirements.lock` 现为 native `a5cef52` 的固定发布输入，启动读取字节、比对源摘要并核对 8 个精确版本；配方声明、发布文件核验、native 自报运行环境版本分开表述。
+- 固定 `config_manifest_sha256`（extends 链/有效配置/profile/arm_spec）与 `scene_manifest_sha256`（编译场景规范 JSON）的覆盖范围；平台要求声明、实际响应和固定期望同口径一致，不以根 XML 摘要或 155 文件源清单替代；缺省即 unsupported。
+- 补全 `m1-binding-1` 的 readback 状态、start 的 owner/lease/recording-ready/motion-ready 字段、RESET 失效和无 owner 获取；新增 `m1-recording-1` 无 RESET begin 的最小语义、持久化确认和 out-of-scope（stop/finalize/停车/回放）。
+- 原生候选补丁与平台候选已在服务器隔离验证；8792 未部署、未重启，真实 G1 prepared/Start 和在线录制 begin 仍未发生。产品验收状态不因本轮实现或测试上升为通过。
+
 - 按 S17 复评前端计划，恢复 S11/DEC-036 的统一架构原则与 PAGE-03 的可操作 3D 工作台交付形态；不改变 M1 mobileCar / M2 bimanual 和训练后续次序。
 - 纠正把诊断页/元数据草案的 FastAPI 静态 ES modules 选择当作主前端架构的偏差。工程方向沿既有分析采用 React + TypeScript、Three.js SceneView 封装，Dockview 先验证再采用；不重写整套 native renderer 或迁移仿真后端。
 - M1.2 内先交付对象树/视口/Inspector、相机与 Joint/TCP Target 预览/取消样板，再完成配置验证/prepared；M1.3～1.5 在同一骨架接控制/录制/历史。补焦点、Actual/Ghost/轨迹、权限/命令回执及来源/时间验收边界，复用现有 TEST 编号。

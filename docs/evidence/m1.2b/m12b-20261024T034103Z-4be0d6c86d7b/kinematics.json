@@ -1,0 +1,144 @@
+{
+  "authority": "platform_reference_not_native_attested",
+  "consistency": {
+    "camera_mount_consistent": true,
+    "gripper_limits_consistent": true,
+    "joint_order_consistent": true,
+    "max_user_limit_error_rad": 0.0,
+    "tcp_mount_consistent": true,
+    "user_limits_consistent": true
+  },
+  "digest": "7238f521667257e0cc2a688389416b9cc4d3024ba4662ead4165d98d2d281bc0",
+  "limitations": [
+    "Zero pose is a user-defined photo pose, not a hardware 500-count calibration; calibration session is uncalibrated",
+    "TCP orientation is absent from the source; only a translation is fixed for grasp_tcp on guide_rod_link",
+    "The source has no separate sign field: user_direction only, so axis sign is not independently attested",
+    "Native HTTP exposes neither these constants nor their digests; the platform can only cross-check limits and names"
+  ],
+  "profile": {
+    "arm": {
+      "calibration_session": "uncalibrated",
+      "joint_names": [
+        "joint1",
+        "joint2",
+        "joint3",
+        "joint4",
+        "joint5"
+      ],
+      "model_from_user": "q_model = zero_model_rad + user_direction * q_user",
+      "user_direction": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "user_from_model": "q_user = (q_model - zero_model_rad) / user_direction",
+      "zero_model_rad": [
+        0.0,
+        0.0,
+        0.0,
+        -1.5707963267948966,
+        0.0
+      ],
+      "zero_status": "user_defined_photo_pose_not_hardware_500"
+    },
+    "authority": "platform_reference_not_native_attested",
+    "camera_mount": {
+      "parent_body": "link4",
+      "status": "source_topology_not_rigid_to_tcp"
+    },
+    "gripper": {
+      "jaw_origin_correction_m": 0.00052438637918234,
+      "max_width_m": 0.05,
+      "mimic": {
+        "gripper_left_join": {
+          "joint": "gripper_base_joint",
+          "multiplier": -1.5,
+          "offset": 0.0
+        },
+        "gripper_right_joint": {
+          "joint": "gripper_base_joint",
+          "multiplier": -1.5,
+          "offset": 0.0
+        },
+        "left_jaw_joint": {
+          "joint": "gripper_base_joint",
+          "multiplier": -0.0115995,
+          "offset": 0.0
+        },
+        "right_jaw_joint": {
+          "joint": "gripper_base_joint",
+          "multiplier": 0.0115995,
+          "offset": 0.0
+        }
+      },
+      "min_width_m": 0.012000038000000005,
+      "source_gap_m": 0.04895122724163532,
+      "width_per_drive_rad_m": 0.023199,
+      "zero_model_rad": -1.077632656580025,
+      "zero_width_m": 0.025
+    },
+    "limitations": [
+      "Zero pose is a user-defined photo pose, not a hardware 500-count calibration; calibration session is uncalibrated",
+      "TCP orientation is absent from the source; only a translation is fixed for grasp_tcp on guide_rod_link",
+      "The source has no separate sign field: user_direction only, so axis sign is not independently attested",
+      "Native HTTP exposes neither these constants nor their digests; the platform can only cross-check limits and names"
+    ],
+    "profile_id": "landerpi.kinematics.v1",
+    "robot_id": "landerpi",
+    "schema_version": 1,
+    "sources": [
+      {
+        "path": "assets/landerpi/model/parameters.yaml",
+        "role": "calibration_block",
+        "sha256": "9d75842ac24e30dd152898e68ae1bdf13caa21900cff91f2a3763b62f6bde593"
+      },
+      {
+        "path": "assets/landerpi/model/arm_spec.json",
+        "role": "user_coordinates_tcp_gripper",
+        "sha256": "8d1dc917c7c76c58dcd96ab07525e247479d6295f427dd75c8ba3a13c0ecdfa9"
+      },
+      {
+        "path": "configs/robots/landerpi_nominal.yaml",
+        "role": "robot_profile_calibration",
+        "sha256": "2a290f7ebd278941901bcf2a6f3ae88a74a60be7bdc5719da47fd49ff9c487a8"
+      }
+    ],
+    "tcp": {
+      "orientation_status": "not_specified_in_source",
+      "orientation_xyzw": null,
+      "parent_body": "guide_rod_link",
+      "position_m": [
+        -0.0030427614580541846,
+        -0.0007270026737451543,
+        0.01995871637761593
+      ],
+      "site": "grasp_tcp"
+    }
+  },
+  "profile_id": "landerpi.kinematics.v1",
+  "runtime_identity": {
+    "backend_generation": 1,
+    "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+    "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f"
+  },
+  "schema_version": "unirobot-mobilecar-kinematics-1",
+  "sources": [
+    {
+      "path": "assets/landerpi/model/parameters.yaml",
+      "role": "calibration_block",
+      "sha256": "9d75842ac24e30dd152898e68ae1bdf13caa21900cff91f2a3763b62f6bde593"
+    },
+    {
+      "path": "assets/landerpi/model/arm_spec.json",
+      "role": "user_coordinates_tcp_gripper",
+      "sha256": "8d1dc917c7c76c58dcd96ab07525e247479d6295f427dd75c8ba3a13c0ecdfa9"
+    },
+    {
+      "path": "configs/robots/landerpi_nominal.yaml",
+      "role": "robot_profile_calibration",
+      "sha256": "2a290f7ebd278941901bcf2a6f3ae88a74a60be7bdc5719da47fd49ff9c487a8"
+    }
+  ]
+}

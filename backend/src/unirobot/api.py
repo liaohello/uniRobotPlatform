@@ -37,6 +37,11 @@ from .mobilecar import MobileCarIntegration
 from .mobilecar_read import CapabilitiesRead, MobileCarReadService, ReadServiceError, SceneRead, SnapshotRead
 from .mobilecar_geometry import CompiledGeometryReadService, CompiledSceneRead, GeometryBundle
 from .drafts import CreateDraft, CreateSession, DraftConflict, DraftNotFound, DraftStore, SaveDraft, ValidateDraft
+from .prepare import (
+    BeginRecording, ConfigurationSnapshot, PreparationError, PreparationService, PreparationStore, PreparedSession,
+    SessionEnvelope, Validator,
+)
+from .recipe import Recipe, load_recipe
 from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -50,7 +55,10 @@ def _catalog(request: Request) -> Catalog:
     return request.app.state.catalog
 
 
-def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | None = None, compiled_geometry_path: Path | None = None) -> FastAPI:
+def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | None = None,
+               compiled_geometry_path: Path | None = None,
+               mobilecar_integration: MobileCarIntegration | None = None,
+               recipe: Recipe | None = None) -> FastAPI:
     path = Path(catalog_path) if catalog_path else CONFIG_PATH
 
     catalog = load_catalog(path)
@@ -75,14 +83,20 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     application.state.catalog = catalog
     application.state.adapters = adapters
     application.state.manager = manager
-    application.state.mobilecar_integration = MobileCarIntegration(catalog.adapters.get("mobilecar"))
+    application.state.mobilecar_integration = mobilecar_integration or MobileCarIntegration(catalog.adapters.get("mobilecar"))
     geometry_path = compiled_geometry_path or os.environ.get("UNIROBOT_GEOMETRY_BUNDLE")
     geometry = GeometryBundle(Path(geometry_path)) if geometry_path else None
 
     def scene_service(request: Request):
         integration = request.app.state.mobilecar_integration
         return CompiledGeometryReadService(integration, geometry) if geometry else MobileCarReadService(integration)
-    application.state.drafts = DraftStore(draft_db_path or DRAFT_DB_PATH, application.state.mobilecar_integration)
+    recipe = recipe or load_recipe()
+    preparation_store = PreparationStore(draft_db_path or DRAFT_DB_PATH)
+    preparation = PreparationService(preparation_store, Validator(recipe, application.state.mobilecar_integration), recipe)
+    application.state.recipe = recipe
+    application.state.preparation = preparation
+    application.state.drafts = DraftStore(draft_db_path or DRAFT_DB_PATH, application.state.mobilecar_integration,
+                                          recipe=recipe, preparation=preparation)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -147,6 +161,11 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=409, content={"detail": {"code": "conflict", "message": str(exc)}})
 
+    @application.exception_handler(PreparationError)
+    async def preparation_failure(request: Request, exc: PreparationError):
+        return JSONResponse(status_code=exc.status_code,
+                            content={"detail": {"code": exc.code, "message": str(exc), **exc.detail}})
+
     @application.get("/api/v1/experiment-drafts")
     def list_drafts(request: Request) -> list[dict]:
         return request.app.state.drafts.list()
@@ -167,9 +186,58 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     def validate_draft(draft_id: str, spec: ValidateDraft, request: Request) -> dict:
         return request.app.state.drafts.validate(draft_id, spec)
 
-    @application.post("/api/v1/sessions")
-    def create_session(spec: CreateSession) -> dict:
-        raise HTTPException(status_code=409, detail={"code": "unsupported", "message": "Native Session binding and explicit Start are not implemented; no validated snapshot or Session was created"})
+    @application.post("/api/v1/sessions", response_model=SessionEnvelope, status_code=201)
+    def create_session(spec: CreateSession, request: Request, response: Response):
+        session, replayed = request.app.state.preparation.create_session(spec.model_dump())
+        response.status_code = 200 if replayed else 201
+        return {"session": session, "replayed": replayed}
+
+    @application.get("/api/v1/sessions", response_model=list[PreparedSession])
+    def list_sessions(request: Request) -> list[dict]:
+        return request.app.state.preparation.store.list_sessions()
+
+    @application.get("/api/v1/sessions/{session_id}", response_model=PreparedSession)
+    def get_session(session_id: str, request: Request) -> dict:
+        return request.app.state.preparation.store.get_session(session_id)
+
+    @application.post("/api/v1/sessions/{session_id}/start", response_model=PreparedSession)
+    def start_session(session_id: str, request: Request) -> dict:
+        return request.app.state.preparation.start(session_id)
+
+    @application.post("/api/v1/sessions/{session_id}/recording/begin", response_model=SessionEnvelope)
+    def begin_recording(session_id: str, spec: BeginRecording, request: Request, response: Response):
+        session, replayed = request.app.state.preparation.begin_recording(session_id, spec.model_dump())
+        response.status_code = 200 if replayed else 201
+        return {"session": session, "replayed": replayed}
+
+    @application.get("/api/v1/config-snapshots", response_model=list[ConfigurationSnapshot])
+    def list_snapshots(request: Request) -> list[dict]:
+        return request.app.state.preparation.store.list_snapshots()
+
+    @application.get("/api/v1/config-snapshots/{snapshot_id}", response_model=ConfigurationSnapshot)
+    def get_snapshot(snapshot_id: str, request: Request) -> dict:
+        return request.app.state.preparation.store.get_snapshot(snapshot_id)
+
+    @application.get("/api/v1/mobilecar/execution-recipe")
+    def execution_recipe(request: Request) -> dict:
+        return request.app.state.recipe.document()
+
+    @application.get("/api/v1/mobilecar/kinematics")
+    def mobilecar_kinematics(request: Request) -> dict:
+        preparation: PreparationService = request.app.state.preparation
+        observation = preparation.validator.observe()
+        evidence, _ = preparation.validator.kinematics(observation)
+        return {
+            "schema_version": "unirobot-mobilecar-kinematics-1",
+            "profile_id": preparation.recipe.kinematics["profile_id"],
+            "digest": preparation.recipe.kinematics_digest,
+            "authority": preparation.recipe.kinematics["authority"],
+            "profile": preparation.recipe.kinematics,
+            "sources": preparation.recipe.kinematics["sources"],
+            "runtime_identity": observation.runtime_identity.model_dump(),
+            "consistency": evidence.model_dump(exclude={"profile_id", "digest", "authority", "limitations"}),
+            "limitations": preparation.recipe.kinematics["limitations"],
+        }
 
     @application.get("/api/v1/platform", response_model=PlatformSummary)
     def platform(request: Request) -> PlatformSummary:

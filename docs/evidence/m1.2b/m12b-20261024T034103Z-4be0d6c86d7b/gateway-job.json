@@ -1,0 +1,7 @@
+{
+  "pid": 3488730,
+  "cmdline": "/home/liaozhengyan/Desktop/uniRobotPlatform/envs/gateway-py314/bin/python -m uvicorn unirobot.api:app --host 127.0.0.1 --port 18943",
+  "cwd": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m12b-20261024T034103Z-4be0d6c86d7b",
+  "listen": "127.0.0.1:18943",
+  "release": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m12b-20261024T034103Z-4be0d6c86d7b"
+}

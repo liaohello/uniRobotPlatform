@@ -1,0 +1,116 @@
+{
+  "attestation": {
+    "declared_by": "platform_local_pin",
+    "limitations": [
+      "Preset, dependency and model identity are local expectations; native HTTP does not attest deployed source or config content",
+      "The pinned scene digest covers the scene XML file only, not the compiled scene manifest served by the running process",
+      "Kinematics constants come from source files, not from a native capability endpoint"
+    ],
+    "native_attested": false
+  },
+  "dependencies": {
+    "python": ">=3.10,<3.13",
+    "requirements_lock": {
+      "packages": {
+        "PyYAML": "6.0.3",
+        "fastapi": "0.136.3",
+        "httpx": "0.28.1",
+        "mujoco": "3.1.6",
+        "numpy": "2.2.4",
+        "pillow": "11.3.0",
+        "pydantic": "2.13.5",
+        "uvicorn": "0.37.0"
+      },
+      "path": "requirements.lock",
+      "sha256": "c1cad889649bcf3cdc56560c86019af1081c166b030021ad8ebf1679f1fc8439"
+    }
+  },
+  "expected": {
+    "backend_kind": "mujoco",
+    "commands": [
+      "set_base_twist",
+      "zero_base",
+      "set_arm_joint_goal",
+      "set_gripper_width_goal",
+      "stop",
+      "reset",
+      "heartbeat"
+    ],
+    "contract_version": "mobilecar-1.0",
+    "interface_profile": "g2a-1.0",
+    "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+    "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "scene_file_digest_scope": "scene XML file digest from the native file manifest; not observable through native HTTP",
+    "scene_file_sha256": "f94c2c1971b73df9bcaf771306a951e4f6b061c7a1af006bf7826658ccbb204a",
+    "scene_id": "mobile_pick",
+    "sensor_streams": [
+      "rgb",
+      "depth",
+      "imu",
+      "encoders",
+      "joint_feedback",
+      "lidar",
+      "image_transforms"
+    ]
+  },
+  "kinematics": {
+    "digest": "7238f521667257e0cc2a688389416b9cc4d3024ba4662ead4165d98d2d281bc0",
+    "profile_id": "landerpi.kinematics.v1"
+  },
+  "native": {
+    "commit": "a5cef52d932ba41424b4bcc134539914031fda39",
+    "manifest_digest_format": "sha256 of UTF-8 json.dumps(files, sort_keys=True, separators=(comma, colon)), without newline",
+    "manifest_sha256": "a01098040d953608004a34b3c76519d7884eaa4b2c95e36822bd4e7d283b911c",
+    "worktree_status": ""
+  },
+  "preset": {
+    "action_profile": "configs/profiles/g2a_action_teleop_v1.yaml",
+    "argv": [
+      ".venv/bin/mobilecar",
+      "--config",
+      "configs/default.yaml",
+      "--backend",
+      "mujoco",
+      "--require-recording"
+    ],
+    "config_path": "configs/default.yaml",
+    "editable_initial_state_fields": [],
+    "effective_overrides": {
+      "backend.kind": "mujoco",
+      "recording.required_for_motion": true
+    },
+    "env": {
+      "MUJOCO_GL": "egl"
+    },
+    "execution_location": "server_only",
+    "execution_sources": [
+      "human_teleop"
+    ],
+    "recording_profile": "configs/profiles/g2a_rgbd_5hz.yaml"
+  },
+  "recipe_fingerprint": "78ec4bf1494a933ea29606e5ab0e298a70826918f0becac801b60f90de342b26",
+  "recipe_id": "mobilecar.g1.teleop",
+  "recipe_revision": 2,
+  "required_protocols": {
+    "recording_begin": "m1-recording-1",
+    "session_binding": "m1-binding-1"
+  },
+  "schema_version": "unirobot-execution-recipe-1",
+  "sources": [
+    {
+      "path": "config/mobilecar-g1-source.json",
+      "role": "preset_pin",
+      "sha256": "146d331f7b1e72316432835a648238eadce57fec78d89b48b4fe062f283d9768"
+    },
+    {
+      "path": "config/mobilecar-landerpi-kinematics-v1.json",
+      "role": "kinematics",
+      "sha256": "6e2d3d08f6b30a8e7424d808bcff1212b44b996d54d44369e067827f419f3fd5"
+    },
+    {
+      "path": "requirements.lock",
+      "role": "dependencies",
+      "sha256": "c1cad889649bcf3cdc56560c86019af1081c166b030021ad8ebf1679f1fc8439"
+    }
+  ]
+}

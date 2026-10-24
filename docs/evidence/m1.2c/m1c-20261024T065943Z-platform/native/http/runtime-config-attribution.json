@@ -1,0 +1,17 @@
+{
+  "runtime_style_config_manifest_sha256": "02351b71962a5bc95640ed5b2eda5543cb393438d5b541d27bc5de2f533a9af0",
+  "recipe_pinned": "02351b71962a5bc95640ed5b2eda5543cb393438d5b541d27bc5de2f533a9af0",
+  "match": true,
+  "config_files": [
+    {
+      "role": "config",
+      "path": "configs/default.yaml",
+      "sha256": "2304ef9f231c06133a2318e19f2ef1ef8bb2fc1dc9e1cf9b520ede61759191c8",
+      "size_bytes": 2013
+    }
+  ],
+  "launch_overrides": {
+    "backend_kind": "mujoco",
+    "require_recording": true
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "created_at": "2026-10-24T03:46:31+00:00",
+  "description": "motion-free preparation chain",
+  "draft_id": "draft-05246e5806c04b428f6cd69f52422aec",
+  "draft_revision": 1,
+  "execution_revision": 1,
+  "fingerprint": "58419468e11fc9837b4d72050d06572c4b1d5430549ac9b6b4daeb16ff50f8a9",
+  "name": "M1.2b live check",
+  "preset": {
+    "expected": {
+      "backend_kind": "mujoco",
+      "commands": [
+        "set_base_twist",
+        "zero_base",
+        "set_arm_joint_goal",
+        "set_gripper_width_goal",
+        "stop",
+        "reset",
+        "heartbeat"
+      ],
+      "contract_version": "mobilecar-1.0",
+      "interface_profile": "g2a-1.0",
+      "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+      "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+      "scene_content_sha256": "f94c2c1971b73df9bcaf771306a951e4f6b061c7a1af006bf7826658ccbb204a",
+      "scene_id": "mobile_pick",
+      "sensor_streams": [
+        "rgb",
+        "depth",
+        "imu",
+        "encoders",
+        "joint_feedback",
+        "lidar",
+        "image_transforms"
+      ]
+    },
+    "manifest_sha256": "a01098040d953608004a34b3c76519d7884eaa4b2c95e36822bd4e7d283b911c",
+    "native_commit": "a5cef52d932ba41424b4bcc134539914031fda39",
+    "preset_id": "mobilecar.g1.teleop",
+    "recipe": {
+      "action_profile": "configs/profiles/g2a_action_teleop_v1.yaml",
+      "argv": [
+        ".venv/bin/mobilecar",
+        "--config",
+        "configs/default.yaml",
+        "--backend",
+        "mujoco",
+        "--require-recording"
+      ],
+      "config_path": "configs/default.yaml",
+      "editable_initial_state_fields": [],
+      "effective_overrides": {
+        "backend.kind": "mujoco",
+        "recording.required_for_motion": true
+      },
+      "env": {
+        "MUJOCO_GL": "egl"
+      },
+      "execution_location": "server_only",
+      "execution_sources": [
+        "human_teleop"
+      ],
+      "policy_observation": null,
+      "recording_profile": "configs/profiles/g2a_rgbd_5hz.yaml"
+    }
+  },
+  "recipe_fingerprint": "78ec4bf1494a933ea29606e5ab0e298a70826918f0becac801b60f90de342b26",
+  "updated_at": "2026-10-24T03:46:31+00:00",
+  "validation": {
+    "result": null,
+    "status": "unvalidated"
+  }
+}

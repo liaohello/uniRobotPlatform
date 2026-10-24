@@ -44,3 +44,50 @@
 Session 身份/状态域以 [SYS-STATE](../../00-overview/04-runtime-state-domains.md) 为准：prepared→显式 Start 成功后 active，active 内物理可 Running/Paused，显式结束并有录制终态后 closed，故障终止 failed；不把原生 RunRecord 或进程状态直接当相同枚举。适配器保留 platformSessionId 与 native run/generation/episode/segment 的映射，Reset 边界见 [CT-EPISODE](../../30-contracts/03-episode-events-annotations.md)。
 
 Scene Setup 的创建请求只能消费 [ValidatedSnapshot](../../30-contracts/07-task-scene-experiment-config.md)，成功后处于 `prepared`，不因创建、导航或验证推进物理/启动任务/录制。显式 Start 时重查实时适配器、必需流与控制权，并返回真实状态。底层运行时若只能“创建即启动”，统一适配器在提供等价未开始状态前不得声称符合此创建契约。首版可顺序单实例运行；存在活动实例时明确冲突，不隐式停止旧 Session。HostApp 可有多个入口，物理推进和执行器授权按运行实体跨宿主统一裁决。mobileCar 原生 episodes/start 含 RESET/录制，禁止用来模拟 prepared；M1 对此能力的接入差距须明示，不能用只读 scene/snapshot 声称任意配置已应用。
+
+## 原生绑定协议（m1-binding-1）
+
+状态：**平台侧已实现；原生侧候选补丁已实现并在服务器以 mock backend 验证，未部署到运行实例**（2026-10-24）。本节固定“原生要提供什么，平台才敢承认一个真实 prepared Session”，实现与真实支持范围见 [M1.2c 交付记录](../../../backend-m1.2c.md)。
+
+### 能力声明
+
+`GET /api/v1/capabilities` 增加以下可选字段；缺省即“未声明”，平台按 `unsupported` 处理，不推断：
+
+- `session_binding_protocol: "m1-binding-1"`
+- `recording_begin_protocol: "m1-recording-1"`
+- `config_manifest_sha256`：原生对实际读取的配置/extends 链/profile/arm_spec 字节与覆盖后有效配置的规范摘要
+- `scene_manifest_sha256`：原生对自身 `/api/v1/scene` 编译场景 manifest 的规范摘要
+- `runtime_python_version` / `runtime_package_versions`：原生运行环境自报，用于与依赖锁逐项核对
+
+`config_manifest_sha256` 不覆盖源码 Git 提交与安装包；`scene_manifest_sha256` 不覆盖根 XML 文件摘要。三者与源码 pin、scene XML 摘要分别表述。
+
+### 端点
+
+| 方法 / 路径 | 请求 | 成功响应 |
+|---|---|---|
+| POST `/api/v1/session/prepare` | `contract_version, session_id, config_fingerprint, run_id, backend_generation, episode_id` | `accepted, binding_id, session_id, config_fingerprint, run_id, backend_generation, episode_id, state="prepared", motion_commands_accepted=false, expires_at_backend_monotonic_s, owner_state, recording_ready, motion_ready, motion_blockers` |
+| GET `/api/v1/session/prepared/{binding_id}` | — | 与 prepare 相同字段的回读；`state ∈ prepared/started/expired/invalidated/released` |
+| POST `/api/v1/session/start` | `binding_id, session_id, config_fingerprint` | `started, binding_id, session_id, run_id, backend_generation, episode_id, config_fingerprint, started_at_backend_monotonic_s, control_scope_granted, owner_state, owner_session_id, lease_expires_at_backend_monotonic_s, recording_required_for_motion, recording_begin_required, recording_ready, motion_ready, motion_blockers` |
+| POST `/api/v1/session/release` | `binding_id` | `released` |
+| POST `/api/v1/recording/begin` | `contract_version, binding_id, session_id, config_fingerprint, operator_id, operator_kind, view_source` | `accepted, binding_id, session_id, config_fingerprint, run_id, backend_generation, episode_id, recording_segment_id, recording_status="RECORDING", command_capture_ready=true, recording_start_event_seq>=1, initial_snapshot_sha256, durable_start_records=true` |
+
+### 保证与拒绝
+
+- prepare/start/release **不产生运动、不 RESET、不开始或结束录制、不改初态**；录制开始是独立操作，受 `recording.begin` 协议约束。
+- `recording.begin` 复用既有 Recorder，读取当前 actual snapshot；只有 `recording_start`、`feedback_initial`、`initial_snapshot.json` 已持久化并 sync 后才返回 RECORDING。录制非 IDLE/COMPLETE 时拒绝，FAILED 时明确要求先处理；本轮不定义 stop/finalize。
+- 任一身份字段与原生当前 runtime 不一致时拒绝（`accepted=false`/`started=false` + `reason`），不得静默改写。RESET 后所有 prepared/started binding 失效。
+- `session_id` 由平台生成，原生必须原样回显；同一 run/generation/episode 同时最多一个有效 binding，重复 prepare 返回冲突而不是覆盖。
+- binding 有服务端单调时钟的过期时间；过期后 `start` 拒绝，回读返回 `expired`。
+- 显式 Start 只建立 active Session 与执行器授权范围，**不获取 owner/lease**、不等于开始录制、也不等于已到位。`owner_state`/`lease_expires_at_backend_monotonic_s` 必须来自真实 owner 状态；没有 deadline 时返回 `null`，不得伪造。
+- `recording_ready` 必须来自 Recorder 的真实 `RECORDING` + `command_capture_ready`；`motion_ready` 只表示平台可运动条件（授权范围、录制要求、safety、冲突 owner），不是命令已获准执行。
+- 重复 start 返回同一 binding；重复 begin 在已 RECORDING 时拒绝，平台对已 ready 的重复请求不再次调用 native。
+
+### 平台核验规则
+
+prepare 与回读必须使 `session_id`、`config_fingerprint`、`run_id`、`backend_generation`、`episode_id` 全部相等，且 `state=prepared`、`motion_commands_accepted=false`；start 还必须回显同一 `binding_id`、`state=started`、`started=true`，并给出 owner/录制/可运动字段。start 前置回读允许 `started`（用于丢失响应后的幂等恢复），但不得接受 `expired/invalidated/released`。`recording.begin` 还必须回显同一 binding/session/config 与 RECORDING、capture ready、durable start record、初始快照摘要；任一不符即 `native_recording_begin_failed`，不更新 recording-ready。
+
+平台只允许访问上述五个路径，不猜测其他端点。
+
+### 当前差距
+
+运行中的固定 native（8792，PID 941842，`drvfix` release，`configs/g4a2_server.yaml`）没有这些端点，且其 interface_profile/配置与 G1 配方不同。原生候选补丁已基于 `a5cef52` 完成并在隔离 release 以 mock backend 验证，但未部署、未重启 8792；真实 G1 prepared/Start 仍需维护窗口与 G1 vs G4A2 配方口径决定。

@@ -1,0 +1,56 @@
+{
+  "schema_version": 2,
+  "recipe_id": "mobilecar.g1.teleop",
+  "recipe_revision": 3,
+  "preset_source": {
+    "path": "config/mobilecar-g1-source.json",
+    "sha256": "146d331f7b1e72316432835a648238eadce57fec78d89b48b4fe062f283d9768"
+  },
+  "kinematics_source": {
+    "path": "config/mobilecar-landerpi-kinematics-v1.json",
+    "sha256": "6e2d3d08f6b30a8e7424d808bcff1212b44b996d54d44369e067827f419f3fd5"
+  },
+  "dependencies": {
+    "python": ">=3.10,<3.13",
+    "requirements_lock": {
+      "source": {
+        "project": "mobileCar",
+        "commit": "a5cef52d932ba41424b4bcc134539914031fda39",
+        "path": "requirements.lock",
+        "sha256": "c1cad889649bcf3cdc56560c86019af1081c166b030021ad8ebf1679f1fc8439"
+      },
+      "release_file": {
+        "path": "config/pins/mobilecar-a5cef52/requirements.lock"
+      },
+      "packages": {
+        "fastapi": "0.136.3",
+        "httpx": "0.28.1",
+        "mujoco": "3.1.6",
+        "numpy": "2.2.4",
+        "pillow": "11.3.0",
+        "pydantic": "2.13.5",
+        "PyYAML": "6.0.3",
+        "uvicorn": "0.37.0"
+      }
+    }
+  },
+  "native_attestation": {
+    "config_manifest_sha256": "02351b71962a5bc95640ed5b2eda5543cb393438d5b541d27bc5de2f533a9af0",
+    "scene_manifest_sha256": "5969e260b5ca87849387e8827b3e83c332f845281d0d69c0f7b141a8c3f1bf2d",
+    "config_manifest_scope": "sha256 of canonical JSON covering the YAML extends-chain bytes, the effective post-override config, and the profile/arm_spec bytes actually read; source code and installed packages are outside this digest and are reported separately",
+    "scene_manifest_scope": "sha256 of canonical JSON of the served /api/v1/scene compiled manifest (links, geoms, mesh hashes, cameras, tcp_site); the source XML digest is a separate declaration and not a substitute",
+    "generated_by": "backend/tools/native_recipe_identity.py on the pinned native source",
+    "generated_from": {
+      "native_commit": "a5cef52d932ba41424b4bcc134539914031fda39",
+      "config_path": "configs/default.yaml",
+      "launch_overrides": {
+        "backend_kind": "mujoco",
+        "require_recording": true
+      }
+    }
+  },
+  "required_protocols": {
+    "session_binding": "m1-binding-1",
+    "recording_begin": "m1-recording-1"
+  }
+}

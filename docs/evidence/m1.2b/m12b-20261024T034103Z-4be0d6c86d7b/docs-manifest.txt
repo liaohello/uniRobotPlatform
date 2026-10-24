@@ -1,0 +1,5 @@
+18ab9c0d9843875e16c7d22d6b329bb80d94e6ebab97e67788b773fc8f46b980  docs/backend-m1.2b.md
+97099727e0392f20f3794c50733882282a9bf0c59ae73bef95c9d834bb285ace  docs/README.md
+1c408e00f785c97b2ab5e444ea05a2ac7b2abcd5d4220656b0cbf16192c27479  docs/specs/30-contracts/README.md
+36157cc08acada2e1ab1e2e69e1a6044c42650818dde9c028f7023ed6d936311  docs/specs/30-contracts/07-task-scene-experiment-config.md
+8602cce106aeb01ad148836180f1d13c3e7587b1a459b8e2c9d5645f3076a8ca  docs/specs/20-backend/01-session-scene/01-session-lifecycle.md

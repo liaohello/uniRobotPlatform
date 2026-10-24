@@ -1,0 +1,29 @@
+{
+  "accepted": true,
+  "reason": "",
+  "protocol": "m1-binding-1",
+  "binding_id": "bind_d466a045671345878e5248ced6ba1499",
+  "session_id": "ps-http-test-2",
+  "config_fingerprint": "cs-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "run_id": "run_6816a0753c6d4b5c8b346bdd2b678569",
+  "backend_generation": 1,
+  "episode_id": "episode_22710532caba472d86554141c507ea7d",
+  "state": "started",
+  "motion_commands_accepted": false,
+  "created_at_backend_monotonic_s": 998505.148659597,
+  "expires_at_backend_monotonic_s": 998535.148659597,
+  "started_at_backend_monotonic_s": 998505.157990122,
+  "control_scope_granted": [
+    "base",
+    "arm",
+    "gripper"
+  ],
+  "owner_state": "not_acquired",
+  "owner_session_id": null,
+  "lease_expires_at_backend_monotonic_s": null,
+  "recording_required_for_motion": true,
+  "recording_begin_required": true,
+  "recording_ready": true,
+  "motion_ready": true,
+  "motion_blockers": []
+}

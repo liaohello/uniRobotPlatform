@@ -5,30 +5,15 @@ import copy
 import pytest
 from fastapi.testclient import TestClient
 
-from unirobot.api import create_app
+from native_fixtures import create_draft, fixture_app, session_request, validate
 from unirobot.drafts import DraftStore, SaveDraft
 
 
 @pytest.fixture()
 def draft_app(tmp_path):
-    app = create_app(draft_db_path=tmp_path / "drafts.sqlite3")
-    calls = []
-
-    def check():
-        calls.append("read_only_preflight")
-        return {"checked_at": "2026-10-23T00:00:00Z", "checks": [
-            {"key": "prepared_session_and_start", "status": "unsupported", "detail": "synthetic native binding gap"}
-        ]}
-
-    app.state.mobilecar_integration.check = check
+    app, fake, payloads, integration = fixture_app(tmp_path)
     with TestClient(app) as http:
-        yield app, http, calls
-
-
-def create(http):
-    response = http.post("/api/v1/experiment-drafts", json={"name": "Fixture", "description": "synthetic"})
-    assert response.status_code == 201
-    return response.json()
+        yield app, http, fake
 
 
 def validation_request(draft):
@@ -36,20 +21,21 @@ def validation_request(draft):
 
 
 def test_create_read_and_reload_persistent_store_without_native_calls(draft_app):
-    app, http, calls = draft_app
-    draft = create(http)
-    store = DraftStore(app.state.drafts.path, app.state.mobilecar_integration)
+    app, http, fake = draft_app
+    draft = create_draft(http)
+    store = DraftStore(app.state.drafts.path, app.state.mobilecar_integration, recipe=app.state.recipe)
     assert store.get(draft["draft_id"]) == draft
     assert http.get(f"/api/v1/experiment-drafts/{draft['draft_id']}").json() == draft
     assert http.get("/api/v1/experiment-drafts").json() == [draft]
     assert draft["validation"]["status"] == "unvalidated"
     assert draft["preset"]["recipe"]["editable_initial_state_fields"] == []
-    assert calls == []
+    assert draft["recipe_fingerprint"] == app.state.recipe.fingerprint
+    assert fake.calls == []
 
 
 def test_metadata_save_changes_only_draft_revision_and_keeps_validation(draft_app):
-    _, http, calls = draft_app
-    draft = create(http)
+    _, http, fake = draft_app
+    draft = create_draft(http)
     path = f"/api/v1/experiment-drafts/{draft['draft_id']}"
     validated = http.post(path + "/validate", json=validation_request(draft)).json()
     saved = http.put(path, json={"base_revision": 1, "name": "Renamed", "description": "new metadata"}).json()
@@ -57,53 +43,61 @@ def test_metadata_save_changes_only_draft_revision_and_keeps_validation(draft_ap
     assert saved["execution_revision"] == 1
     assert saved["fingerprint"] == draft["fingerprint"]
     assert saved["validation"] == validated["validation"]
-    assert calls == ["read_only_preflight"]
     repeated = http.put(path, json={"base_revision": 2, "name": "Renamed", "description": "new metadata"}).json()
     assert repeated["draft_revision"] == 2
+    assert all(method == "GET" for method, _ in fake.calls)
 
 
 def test_stale_host_save_is_rejected_without_overwriting(draft_app):
-    app, http, calls = draft_app
-    draft = create(http)
+    app, http, _ = draft_app
+    draft = create_draft(http)
     path = f"/api/v1/experiment-drafts/{draft['draft_id']}"
-    other_host = DraftStore(app.state.drafts.path, app.state.mobilecar_integration)
+    other_host = DraftStore(app.state.drafts.path, app.state.mobilecar_integration, recipe=app.state.recipe)
     other_host.save(draft["draft_id"], SaveDraft(base_revision=1, name="Other host", description="accepted"))
     rejected = http.put(path, json={"base_revision": 1, "name": "Old host", "description": "outdated"})
     assert rejected.status_code == 409
     assert http.get(path).json()["name"] == "Other host"
-    assert calls == []
 
 
 @pytest.mark.parametrize("extra", [{"initial_state": {"joint1": 0}}, {"seed": 12}, {"preset_id": "arbitrary"}])
 def test_unknown_or_unsupported_execution_edits_are_rejected(draft_app, extra):
-    _, http, calls = draft_app
+    _, http, _ = draft_app
     assert http.post("/api/v1/experiment-drafts", json={"name": "fixture", **extra}).status_code == 422
-    draft = create(http)
+    draft = create_draft(http)
     path = f"/api/v1/experiment-drafts/{draft['draft_id']}"
     assert http.put(path, json={"base_revision": 1, "name": "fixture", **extra}).status_code == 422
     assert http.get(path).json()["draft_revision"] == 1
-    assert calls == []
 
 
-def test_validation_cannot_issue_snapshot_or_create_session(draft_app):
-    _, http, calls = draft_app
-    draft = create(http)
-    response = http.post(f"/api/v1/experiment-drafts/{draft['draft_id']}/validate", json=validation_request(draft))
-    assert response.status_code == 200
-    result = response.json()["validation"]
-    assert result["status"] == "failed"
-    assert result["result"]["validated_snapshot_id"] is None
-    assert result["result"]["checks"][0]["status"] == "unsupported"
-    rejected = http.post("/api/v1/sessions", json={**validation_request(draft),
-        "validated_snapshot_id": "forged-snapshot", "idempotency_key": "synthetic-key"})
+def test_configuration_can_pass_while_execution_stays_ineligible(draft_app):
+    _, http, _ = draft_app
+    draft = create_draft(http)
+    result = validate(http, draft)
+    assert result["status"] == "passed"
+    assert result["execution_eligible"] is False
+    assert result["validated_snapshot_id"] is None
+    reasons = {reason["key"] for reason in result["blocking_reasons"]}
+    assert {"session_binding_protocol", "recording_begin_protocol"} <= reasons
+    rejected = http.post("/api/v1/sessions", json=session_request(draft, result["snapshot_id"]))
     assert rejected.status_code == 409
-    assert rejected.json()["detail"]["code"] == "unsupported"
-    assert calls == ["read_only_preflight"]
+    assert rejected.json()["detail"]["code"] == "validation_incomplete"
+    assert {item["key"] for item in rejected.json()["detail"]["blocking_reasons"]} >= {"session_binding_protocol"}
+
+
+def test_profile_mismatch_fails_configuration_validation(tmp_path):
+    app, _, _, _ = fixture_app(tmp_path, interface_profile="g4a1-1.0")
+    with TestClient(app) as http:
+        draft = create_draft(http)
+        result = validate(http, draft)
+        assert result["status"] == "failed"
+        assert result["execution_eligible"] is False
+        failed = {check["key"] for check in result["checks"] if check["status"] == "failed"}
+        assert "interface_profile" in failed
 
 
 def test_dependency_change_and_revert_does_not_revive_validation(draft_app):
-    app, http, calls = draft_app
-    draft = create(http)
+    app, http, _ = draft_app
+    draft = create_draft(http)
     path = f"/api/v1/experiment-drafts/{draft['draft_id']}"
     http.post(path + "/validate", json=validation_request(draft))
     old_digest = app.state.mobilecar_integration.pin["manifest_sha256"]
@@ -114,19 +108,28 @@ def test_dependency_change_and_revert_does_not_revive_validation(draft_app):
     app.state.mobilecar_integration.pin["manifest_sha256"] = old_digest
     assert http.get(path).json()["validation"]["status"] == "stale"
     assert http.post(path + "/validate", json=validation_request(draft)).status_code == 409
-    assert calls == ["read_only_preflight"]
+
+
+def test_recipe_change_marks_unvalidated_draft_stale(draft_app):
+    app, http, _ = draft_app
+    draft = create_draft(http)
+    original = app.state.recipe.fingerprint
+    app.state.recipe.fingerprint = "f" * 64
+    stale = http.get(f"/api/v1/experiment-drafts/{draft['draft_id']}").json()
+    assert stale["validation"]["status"] == "stale"
+    app.state.recipe.fingerprint = original
 
 
 def test_metadata_saved_during_validation_is_not_overwritten(draft_app):
     app, http, _ = draft_app
-    draft = create(http)
-    original_check = app.state.mobilecar_integration.check
+    draft = create_draft(http)
+    original_observe = app.state.preparation.validator.observe
 
-    def delayed_check():
+    def delayed_observe():
         app.state.drafts.save(draft["draft_id"], SaveDraft(base_revision=1, name="Saved during check", description="kept"))
-        return original_check()
+        return original_observe()
 
-    app.state.mobilecar_integration.check = delayed_check
+    app.state.preparation.validator.observe = delayed_observe
     response = http.post(f"/api/v1/experiment-drafts/{draft['draft_id']}/validate", json=validation_request(draft))
     assert response.status_code == 200
     assert response.json()["name"] == "Saved during check"
@@ -135,24 +138,24 @@ def test_metadata_saved_during_validation_is_not_overwritten(draft_app):
 
 def test_dependencies_changed_during_check_cannot_accept_late_result(draft_app):
     app, http, _ = draft_app
-    draft = create(http)
-    original_check = app.state.mobilecar_integration.check
+    draft = create_draft(http)
+    original_observe = app.state.preparation.validator.observe
 
-    def changed_check():
+    def changed_observe():
         app.state.mobilecar_integration.pin["manifest_sha256"] = "1" * 64
-        return original_check()
+        return original_observe()
 
-    app.state.mobilecar_integration.check = changed_check
+    app.state.preparation.validator.observe = changed_observe
     path = f"/api/v1/experiment-drafts/{draft['draft_id']}"
     assert http.post(path + "/validate", json=validation_request(draft)).status_code == 409
     assert http.get(path).json()["validation"]["result"] is None
 
 
 def test_missing_draft_and_invalid_execution_revision_are_diagnostic(draft_app):
-    _, http, calls = draft_app
+    _, http, fake = draft_app
     assert http.get("/api/v1/experiment-drafts/missing").status_code == 404
-    draft = create(http)
+    draft = create_draft(http)
     spec = copy.deepcopy(validation_request(draft))
     spec["execution_revision"] = 2
     assert http.post(f"/api/v1/experiment-drafts/{draft['draft_id']}/validate", json=spec).status_code == 409
-    assert calls == []
+    assert fake.calls == []
