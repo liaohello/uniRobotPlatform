@@ -11,7 +11,7 @@
 | 地图/路线上游 | 18953 = `m1g-20261024T113913Z-platform`（真实 map/route，`read_contract_compatible=false`） |
 | 3D/Session 上游 | 18949 = `m1e-20261024T090448Z-platform`（geometry-2 只读 envelope） |
 | 本轮预览 | 18958 → 18953（PID 3122409，地图/路线实况）与 18957 → 18949（PID 2812567，3D/Session 回归），同一冻结 dist |
-| 保留服务 | 18951 → 18949、18950 → 18944、18946 → 18943 与 18943/18944/18949/18953 后端全部未停止、未重启 |
+| 保留服务 | 18951 → 18949、18950 → 18944、18946 → 18943 与 18943/18944/18949/18953 后端全部未停止、未重启；端口按 `ss -ltnp` 实测选取，18954 是 mobileCar native 实例、18956 是 gateway uvicorn 夹具，均未触碰；上一轮中断候选的 18955 预览（本会话启动）已按 PID 身份核对后停止 |
 | 真实 native | 8792 仍 `drvfix`/G4A2/PID 941842；两轮 pass 前后 `run_9c88e3e…` / generation 1 / `episode_43c22f…` / recording=IDLE 一致，`native_mutations_sent=false` |
 | 环境 | cec-sim，Node 20.20.2 / npm 10.8.2，锁摘要 `1bb055b6e003c960…`，Chromium ANGLE SwiftShader |
 | 证据 | `reports/m1-front-geometry-20261024T160252Z-298deb4a4650/`（18949 回归）与 `…-298deb4a4650-18953/`（真实地图/路线），含 build/unit/environment/preview/native-read-only/listeners 与各套件目录、截图 |
@@ -58,6 +58,8 @@ Pass A 实况：`GET /sessions` 仍为 `{source:"stored", live:false, sessions:[
 ## 仍未执行
 
 18953 未部署 geometry-2 读取与 native binding 补丁，因此该候选上没有可用 3D 场景、真实 prepared/Start、运动、录制或回放；地图为 G3B 历史离线包，不是 live SLAM，`assets_verified` 只表示 manifest 声明资产的逐字节摘要核验（历史包 `manifest.sha256` 自校验遗留不一致仍由后端如实标注）；配置采用、导航执行、目标下发、热重规划与速度发布全部未实现；本轮新增的测试路线只是资源写入证据，不代表任何到点或朝向验收。
+
+文档时点说明：`docs/development.md` 不进入冻结清单，`docs/backend-gaps.md` 进入；两者都在官方 pass 之后定稿，因此服务器 release 目录里的 `backend-gaps.md` 是运行时的较早版本。它们不参与 `vite build`，`dist` 与所有被测代码仍与冻结摘要逐字节一致。
 
 # M1.2e 18949 current 迁移与带朝向 Waypoint 路线切片（2026-10-24）
 
