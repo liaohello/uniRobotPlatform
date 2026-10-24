@@ -8,39 +8,39 @@
     "expected_scene": "dba426da1eb70d3e72d75a65818d31e2c54e80a91381fc77f36c8251ebb33856"
   },
   "validation": {
-    "snapshot_id": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
-    "snapshot_sha256": "f086636aafd42effac6f8a6f0e5e4e4a42f4d4eef7776f346d6ca814bad0470a",
+    "snapshot_id": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
+    "snapshot_sha256": "7ff176cef9e853dc3c6684a64e52453507bea9619744a56273807cbb30e9ee86",
     "status": "passed",
     "execution_eligible": true,
     "checks": 19,
     "blocking_reasons": []
   },
   "session_created": {
-    "session_id": "ps-72cb20308b04482084c3ebb24278a994",
+    "session_id": "ps-fa47a1a71f1c4481839a387035756f6a",
     "state": "prepared",
-    "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
-    "config_fingerprint": "cs-0a9a6af51ffe74b0371c057fa933281952d82681"
+    "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
+    "config_fingerprint": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94"
   },
   "current_prepared": {
     "source": "live_native_read_only",
-    "observed_at": "2026-10-24T09:06:28+00:00",
+    "observed_at": "2026-10-24T09:14:30+00:00",
     "valid": true,
     "status": "prepared",
     "error": null,
     "runtime_identity": {
-      "run_id": "run_4f086e21c42a4e8e82184004de7733ac",
+      "run_id": "run_3c586d82d5e34c6889cf5f928a5ca490",
       "backend_generation": 1,
-      "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7"
+      "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb"
     },
     "runtime_identity_matches": true,
     "binding": {
-      "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
+      "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
       "state": "prepared",
       "matches": true,
-      "readback_sha256": "723ef955b09a14c0484c4a203ad599c441ef74d3413f3b0ef43bda533e38e9e5",
+      "readback_sha256": "76243b5ad24a6ced18dfc3c67ba8975c57860038460bfd9d9a9e0e77a78188bc",
       "error": null
     },
-    "snapshot_id": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
+    "snapshot_id": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
     "snapshot_eligible": true,
     "recipe_fingerprint_matches": true,
     "control_scope_granted": [],
@@ -74,13 +74,13 @@
   "start": {
     "state": "active",
     "receipt": {
-      "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
-      "native_session_id": "ps-72cb20308b04482084c3ebb24278a994",
-      "run_id": "run_4f086e21c42a4e8e82184004de7733ac",
+      "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
+      "native_session_id": "ps-fa47a1a71f1c4481839a387035756f6a",
+      "run_id": "run_3c586d82d5e34c6889cf5f928a5ca490",
       "backend_generation": 1,
-      "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7",
-      "config_fingerprint": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
-      "started_at_backend_monotonic_s": 1005852.928614666,
+      "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb",
+      "config_fingerprint": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
+      "started_at_backend_monotonic_s": 1006334.883536985,
       "control_scope_granted": [
         "base",
         "arm",
@@ -100,24 +100,24 @@
   },
   "current_started": {
     "source": "live_native_read_only",
-    "observed_at": "2026-10-24T09:06:28+00:00",
+    "observed_at": "2026-10-24T09:14:30+00:00",
     "valid": true,
     "status": "started",
     "error": null,
     "runtime_identity": {
-      "run_id": "run_4f086e21c42a4e8e82184004de7733ac",
+      "run_id": "run_3c586d82d5e34c6889cf5f928a5ca490",
       "backend_generation": 1,
-      "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7"
+      "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb"
     },
     "runtime_identity_matches": true,
     "binding": {
-      "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
+      "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
       "state": "started",
       "matches": true,
-      "readback_sha256": "324585a71227a6983f8652fc9ddff82eabab342effd30dc0c62a83f72be7668d",
+      "readback_sha256": "dddb0fb367785f5a586a5ee474a0fedced8470252cbcf11cb0cc47b8439261d7",
       "error": null
     },
-    "snapshot_id": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
+    "snapshot_id": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
     "snapshot_eligible": true,
     "recipe_fingerprint_matches": true,
     "control_scope_granted": [
@@ -154,18 +154,18 @@
     "accepted": true,
     "reason": "",
     "protocol": "m1-binding-1",
-    "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
-    "session_id": "ps-72cb20308b04482084c3ebb24278a994",
-    "config_fingerprint": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
-    "run_id": "run_4f086e21c42a4e8e82184004de7733ac",
+    "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
+    "session_id": "ps-fa47a1a71f1c4481839a387035756f6a",
+    "config_fingerprint": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
+    "run_id": "run_3c586d82d5e34c6889cf5f928a5ca490",
     "backend_generation": 1,
-    "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7",
+    "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb",
     "state": "started",
     "motion_commands_accepted": false,
-    "created_at_backend_monotonic_s": 1005852.761342556,
-    "expires_at_backend_monotonic_s": 1005882.761342556,
+    "created_at_backend_monotonic_s": 1006334.718064855,
+    "expires_at_backend_monotonic_s": 1006364.718064855,
     "expires_scope": "prepared",
-    "started_at_backend_monotonic_s": 1005852.928614666,
+    "started_at_backend_monotonic_s": 1006334.883536985,
     "control_scope_granted": [
       "base",
       "arm",
@@ -186,18 +186,18 @@
     "accepted": true,
     "reason": "",
     "protocol": "m1-binding-1",
-    "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
-    "session_id": "ps-72cb20308b04482084c3ebb24278a994",
-    "config_fingerprint": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
-    "run_id": "run_4f086e21c42a4e8e82184004de7733ac",
+    "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
+    "session_id": "ps-fa47a1a71f1c4481839a387035756f6a",
+    "config_fingerprint": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
+    "run_id": "run_3c586d82d5e34c6889cf5f928a5ca490",
     "backend_generation": 1,
-    "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7",
+    "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb",
     "state": "started",
     "motion_commands_accepted": false,
-    "created_at_backend_monotonic_s": 1005852.761342556,
-    "expires_at_backend_monotonic_s": 1005882.761342556,
+    "created_at_backend_monotonic_s": 1006334.718064855,
+    "expires_at_backend_monotonic_s": 1006364.718064855,
     "expires_scope": "prepared",
-    "started_at_backend_monotonic_s": 1005852.928614666,
+    "started_at_backend_monotonic_s": 1006334.883536985,
     "control_scope_granted": [
       "base",
       "arm",
@@ -217,7 +217,7 @@
   },
   "native_duplicate_prepare_refused": {
     "code": "binding_refused",
-    "message": "native refused the binding: runtime already has binding bind_74a106d70d6f42a985cc6021db108f08 in state started",
+    "message": "native refused the binding: runtime already has binding bind_7d5082d3333942488ad11eb97bd9375d in state started",
     "http_status": null
   },
   "native_wrong_identity_refused": {
@@ -229,28 +229,28 @@
   "begin": {
     "session": {
       "schema_version": "unirobot-prepared-session-1",
-      "session_id": "ps-72cb20308b04482084c3ebb24278a994",
+      "session_id": "ps-fa47a1a71f1c4481839a387035756f6a",
       "state": "active",
-      "created_at": "2026-10-24T09:06:28+00:00",
-      "updated_at": "2026-10-24T09:06:28+00:00",
-      "snapshot_id": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
-      "recipe_fingerprint": "578b8ef247faaf3d38fd0457c9464cee0bb33c7e18299089e05022173d7c1d63",
+      "created_at": "2026-10-24T09:14:30+00:00",
+      "updated_at": "2026-10-24T09:14:30+00:00",
+      "snapshot_id": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
+      "recipe_fingerprint": "ece5b1bddbc36515078fd65bc378ba53c803c4e1ed8698f29f3f07b65e012956",
       "execution_revision": 1,
       "fingerprint": "58419468e11fc9837b4d72050d06572c4b1d5430549ac9b6b4daeb16ff50f8a9",
       "native_identity": {
-        "run_id": "run_4f086e21c42a4e8e82184004de7733ac",
+        "run_id": "run_3c586d82d5e34c6889cf5f928a5ca490",
         "backend_generation": 1,
-        "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7"
+        "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb"
       },
       "native_binding": {
         "status": "verified",
         "protocol": "m1-binding-1",
-        "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
-        "native_session_id": "ps-72cb20308b04482084c3ebb24278a994",
-        "config_fingerprint": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
-        "expires_at_backend_monotonic_s": 1005882.761342556,
-        "verified_at": "2026-10-24T09:06:28+00:00",
-        "readback_sha256": "723ef955b09a14c0484c4a203ad599c441ef74d3413f3b0ef43bda533e38e9e5",
+        "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
+        "native_session_id": "ps-fa47a1a71f1c4481839a387035756f6a",
+        "config_fingerprint": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
+        "expires_at_backend_monotonic_s": 1006364.718064855,
+        "verified_at": "2026-10-24T09:14:30+00:00",
+        "readback_sha256": "76243b5ad24a6ced18dfc3c67ba8975c57860038460bfd9d9a9e0e77a78188bc",
         "reason": null
       },
       "execution_eligible": true,
@@ -271,27 +271,27 @@
         "recording_ready": true,
         "motion_ready": true,
         "motion_blockers": [],
-        "observed_at": "2026-10-24T09:06:28+00:00",
+        "observed_at": "2026-10-24T09:14:30+00:00",
         "source": "native_recording_begin"
       },
       "blocking_reasons": [],
       "start_attempts": [
         {
-          "at": "2026-10-24T09:06:28+00:00",
+          "at": "2026-10-24T09:14:30+00:00",
           "result": "started",
           "blocking": [],
           "detail": "Native start acknowledged the prepared binding"
         }
       ],
-      "started_at": "2026-10-24T09:06:28+00:00",
+      "started_at": "2026-10-24T09:14:30+00:00",
       "start_receipt": {
-        "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
-        "native_session_id": "ps-72cb20308b04482084c3ebb24278a994",
-        "run_id": "run_4f086e21c42a4e8e82184004de7733ac",
+        "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
+        "native_session_id": "ps-fa47a1a71f1c4481839a387035756f6a",
+        "run_id": "run_3c586d82d5e34c6889cf5f928a5ca490",
         "backend_generation": 1,
-        "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7",
-        "config_fingerprint": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
-        "started_at_backend_monotonic_s": 1005852.928614666,
+        "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb",
+        "config_fingerprint": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
+        "started_at_backend_monotonic_s": 1006334.883536985,
         "control_scope_granted": [
           "base",
           "arm",
@@ -310,25 +310,25 @@
       },
       "recording_begin_attempts": [
         {
-          "at": "2026-10-24T09:06:28+00:00",
+          "at": "2026-10-24T09:14:30+00:00",
           "result": "begun",
           "reason": ""
         }
       ],
       "recording_begin_receipt": {
-        "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
-        "native_session_id": "ps-72cb20308b04482084c3ebb24278a994",
-        "run_id": "run_4f086e21c42a4e8e82184004de7733ac",
+        "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
+        "native_session_id": "ps-fa47a1a71f1c4481839a387035756f6a",
+        "run_id": "run_3c586d82d5e34c6889cf5f928a5ca490",
         "backend_generation": 1,
-        "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7",
-        "config_fingerprint": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
-        "recording_segment_id": "seg_001_7da6ac0d3a",
+        "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb",
+        "config_fingerprint": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
+        "recording_segment_id": "seg_001_986034da3e",
         "recording_status": "RECORDING",
         "command_capture_ready": true,
         "recording_start_event_seq": 1,
-        "initial_snapshot_sha256": "79870dea54f3a33c62ed014f3332eeb98578e027d034dce89bb85a91359bb0eb",
+        "initial_snapshot_sha256": "8c67e333743673241565703fe203bcd932c813ebb035e1070cb9fcf1b387a661",
         "durable_start_records": true,
-        "started_at_backend_monotonic_s": 1005853.188255964
+        "started_at_backend_monotonic_s": 1006335.139054457
       },
       "current": null
     },
@@ -336,24 +336,24 @@
   },
   "current_recording": {
     "source": "live_native_read_only",
-    "observed_at": "2026-10-24T09:06:28+00:00",
+    "observed_at": "2026-10-24T09:14:30+00:00",
     "valid": true,
     "status": "started",
     "error": null,
     "runtime_identity": {
-      "run_id": "run_4f086e21c42a4e8e82184004de7733ac",
+      "run_id": "run_3c586d82d5e34c6889cf5f928a5ca490",
       "backend_generation": 1,
-      "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7"
+      "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb"
     },
     "runtime_identity_matches": true,
     "binding": {
-      "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
+      "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
       "state": "started",
       "matches": true,
-      "readback_sha256": "63e7bebfa50e2909be94d6160bf6b9901085f96d3cfb008d8784225a99ad4b81",
+      "readback_sha256": "ffcaf09e0fa61125fe338767ad444ad7dde083726b81b2cc0f8d2682268b2ddf",
       "error": null
     },
-    "snapshot_id": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
+    "snapshot_id": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
     "snapshot_eligible": true,
     "recipe_fingerprint_matches": true,
     "control_scope_granted": [
@@ -365,8 +365,8 @@
     "recording_begin_required": true,
     "recording": {
       "status": "RECORDING",
-      "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7",
-      "segment_id": "seg_001_7da6ac0d3a",
+      "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb",
+      "segment_id": "seg_001_986034da3e",
       "command_capture_ready": true,
       "error": null,
       "ready": true
@@ -385,9 +385,9 @@
     "blockers": []
   },
   "native_start_records": {
-    "initial_snapshot_path": "/home/liaozhengyan/Desktop/mobileCar/releases/m1e-20261024T090412Z-native/runs/run_4f086e21c42a4e8e82184004de7733ac/episodes/episode_46cd0ada1d2043c3bb64bf7e7f91c1a7/initial_snapshot.json",
-    "initial_snapshot_sha256": "79870dea54f3a33c62ed014f3332eeb98578e027d034dce89bb85a91359bb0eb",
-    "receipt_sha256": "79870dea54f3a33c62ed014f3332eeb98578e027d034dce89bb85a91359bb0eb",
+    "initial_snapshot_path": "/home/liaozhengyan/Desktop/mobileCar/releases/m1e-20261024T090412Z-native/runs/run_3c586d82d5e34c6889cf5f928a5ca490/episodes/episode_ea140197285a473f9f358a6cbfe3f2cb/initial_snapshot.json",
+    "initial_snapshot_sha256": "8c67e333743673241565703fe203bcd932c813ebb035e1070cb9fcf1b387a661",
+    "receipt_sha256": "8c67e333743673241565703fe203bcd932c813ebb035e1070cb9fcf1b387a661",
     "initial_snapshot_matches": true,
     "first_events": [
       [
@@ -403,7 +403,7 @@
   },
   "duplicate_begin": {
     "replayed": true,
-    "segment_id": "seg_001_7da6ac0d3a",
+    "segment_id": "seg_001_986034da3e",
     "event_count_after": 2
   },
   "release": {
@@ -412,18 +412,18 @@
       "accepted": false,
       "reason": "released by the platform",
       "protocol": "m1-binding-1",
-      "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
-      "session_id": "ps-72cb20308b04482084c3ebb24278a994",
-      "config_fingerprint": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
-      "run_id": "run_4f086e21c42a4e8e82184004de7733ac",
+      "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
+      "session_id": "ps-fa47a1a71f1c4481839a387035756f6a",
+      "config_fingerprint": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
+      "run_id": "run_3c586d82d5e34c6889cf5f928a5ca490",
       "backend_generation": 1,
-      "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7",
+      "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb",
       "state": "released",
       "motion_commands_accepted": false,
-      "created_at_backend_monotonic_s": 1005852.761342556,
-      "expires_at_backend_monotonic_s": 1005882.761342556,
+      "created_at_backend_monotonic_s": 1006334.718064855,
+      "expires_at_backend_monotonic_s": 1006364.718064855,
       "expires_scope": "prepared",
-      "started_at_backend_monotonic_s": 1005852.928614666,
+      "started_at_backend_monotonic_s": 1006334.883536985,
       "control_scope_granted": [
         "base",
         "arm",
@@ -440,24 +440,24 @@
     },
     "current": {
       "source": "live_native_read_only",
-      "observed_at": "2026-10-24T09:06:28+00:00",
+      "observed_at": "2026-10-24T09:14:30+00:00",
       "valid": false,
       "status": "released",
       "error": null,
       "runtime_identity": {
-        "run_id": "run_4f086e21c42a4e8e82184004de7733ac",
+        "run_id": "run_3c586d82d5e34c6889cf5f928a5ca490",
         "backend_generation": 1,
-        "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7"
+        "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb"
       },
       "runtime_identity_matches": true,
       "binding": {
-        "binding_id": "bind_74a106d70d6f42a985cc6021db108f08",
+        "binding_id": "bind_7d5082d3333942488ad11eb97bd9375d",
         "state": "released",
         "matches": true,
-        "readback_sha256": "f954aec71b88e8e08b364b97eea7d301d9f1d93993a60017953db96f9bab93a7",
+        "readback_sha256": "4f6dcc451201b462ebc6ef96cee621b0270f280cf991f37dd356bfd76268f484",
         "error": null
       },
-      "snapshot_id": "cs-0a9a6af51ffe74b0371c057fa933281952d82681",
+      "snapshot_id": "cs-1597d80b0373f7563a5d55c3043e8660a2fcfa94",
       "snapshot_eligible": true,
       "recipe_fingerprint_matches": true,
       "control_scope_granted": [
@@ -469,8 +469,8 @@
       "recording_begin_required": true,
       "recording": {
         "status": "RECORDING",
-        "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7",
-        "segment_id": "seg_001_7da6ac0d3a",
+        "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb",
+        "segment_id": "seg_001_986034da3e",
         "command_capture_ready": true,
         "error": null,
         "ready": false
@@ -498,8 +498,8 @@
     "response": {
       "accepted": true,
       "reason": "",
-      "episode_id": "episode_46cd0ada1d2043c3bb64bf7e7f91c1a7",
-      "recording_segment_id": "seg_001_7da6ac0d3a",
+      "episode_id": "episode_ea140197285a473f9f358a6cbfe3f2cb",
+      "recording_segment_id": "seg_001_986034da3e",
       "recording_status": "COMPLETE",
       "recording_start_event_seq": null,
       "initial_snapshot_sha256": null,

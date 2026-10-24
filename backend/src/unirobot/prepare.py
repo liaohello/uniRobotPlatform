@@ -1295,7 +1295,11 @@ class PreparationService:
             add("native_recording_failed")
         elif observation.recording_status in {"STARTING", "DRAINING"}:
             add("native_recording_transitioning")
-        if execution.recording_required_for_motion and not recording_ready:
+        requires_recording = bool(
+            execution.recording_required_for_motion
+            or observation.recording_required_for_motion
+        )
+        if requires_recording and not recording_ready:
             add("recording_not_ready")
 
         owners = [
@@ -1333,7 +1337,7 @@ class PreparationService:
         )
         motion_ready = bool(
             valid and session["state"] == "active" and binding_state == "started"
-            and (not execution.recording_required_for_motion or recording_ready)
+            and (not requires_recording or recording_ready)
             and not observation.safety_latched and not owners
             and bool(execution.control_scope_granted)
         )

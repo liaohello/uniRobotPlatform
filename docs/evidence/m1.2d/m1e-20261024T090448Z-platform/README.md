@@ -7,8 +7,8 @@ All execution was on server `cec-sim`; no MuJoCo physics instance was created.
 
 | Class | Artifact | Proves | Does not prove |
 |---|---|---|---|
-| Platform unit/fixture | `platform/focused-m1e.junit.xml` (93 passed) | P1 lifecycle/TTL, live-current contract and refusals with synthetic native | Real native HTTP |
-| Platform full suite | `platform/full-m1e.junit.xml` (97 passed, 3 failed) | Same three historical layout failures, no new regressions | A green full suite in this checkout layout |
+| Platform unit/fixture | `platform/focused-m1e.junit.xml` (94 passed) | P1 lifecycle/TTL, live-current contract and refusals with synthetic native | Real native HTTP |
+| Platform full suite | `platform/full-m1e.junit.xml` (98 passed, 3 failed) | Same three historical layout failures, no new regressions | A green full suite in this checkout layout |
 | Native unit/integration | `native/reports/native-m1e.junit.xml` (57 passed) | lifecycle serialization barriers, prepared-only TTL, started survival, real app/recorder with mock backend | MuJoCo physics or deployment |
 | Pre-fix contrast | `native/prefix-race/*` (2 failed) | The race tests fail on the pre-fix native code | A passing current candidate |
 | Cross-HTTP | `native/http/cross-http.json` | Real platform app + real `NativeBindingClient` + real native mock HTTP: validation passed, prepare/readback/start/begin/release, duplicate start/begin, identity/config refusals, recorder files | Production G1 or physical motion |
@@ -25,20 +25,20 @@ All execution was on server `cec-sim`; no MuJoCo physics instance was created.
 ## Cross-HTTP (test-only mock recipe)
 
 - `native/http/cross-http.json`: test recipe `mobilecar.g1.teleop.mock-testonly`, validation passed/eligible, Session created and started, begin returned RECORDING, initial snapshot hash matched, duplicate begin replayed with no new events, release invalidated, current never ready after release.
-- The test platform was stopped; it ran on port 18948 against native mock port 18947. Both were isolated and had no physics.
+- The test platform was stopped; it ran on port 18951 against native mock port 18950. Both were isolated and had no physics.
 - This is **protocol integration**, not production G1 validation. The production recipe was not changed and was not used to make the mock pass.
 
 ## Live production failure (real)
 
 - Port 18949, production recipe revision 3, native 8792 PID 941842.
-- Validation: snapshot `cs-8f5f2d9076327e145b47f7f69900185f49dacf7a`, `failed`, `execution_eligible=false`.
+- Validation: snapshot `cs-15113e6f9b76458ec57b847a53f74d91a395ba88`, `failed`, `execution_eligible=false`.
 - Blocking: `interface_profile` (configuration); `deployed_config_attestation`, `scene_manifest_attestation`, `runtime_python_version`, `runtime_package_versions`, `session_binding_protocol`, `recording_begin_protocol` (readiness, all unsupported).
 - Session create: 409 `validation_incomplete`; list: `{"source":"stored","live":false,"sessions":[]}`; missing session/begin: 404.
 - Native after: run `run_9c88e3e36e7648a3852c9f590e43ed5f`, generation 1, episode `episode_43c22f95536f4517be04e4b195d6d354`, `recording=IDLE`, no owners, `safety_latched=true`.
 
 ## Source and dependency identity
 
-- Platform backend: 46 non-cache files; listing SHA-256 `4c4bca55…b2`; Python 3.14.6, fastapi 0.161.1, pydantic 2.14.1, uvicorn 0.54.0, PyYAML 6.0.3, pytest 9.1.1.
+- Platform backend: 46 non-cache files; listing SHA-256 `c1ce0339…2946`; Python 3.14.6, fastapi 0.161.1, pydantic 2.14.1, uvicorn 0.54.0, PyYAML 6.0.3, pytest 9.1.1.
 - Native final test release: source listing SHA-256 `ff27bb5e…b1cb`; native Python 3.10.12 and lock versions exact. Config digest `02351b71…a9af0`; scene digest `5969e260…f1bf2d`; `physics_state_calls=0`.
 - Native patch: `native/native-m1e.patch`, SHA-256 `df7e6e96…d7e6`, applies cleanly to `a5cef52`.
 - Old source pin `a0109804…911c` matches **a5cef52 base only**. Patched candidate identities are:
@@ -49,4 +49,14 @@ All execution was on server `cec-sim`; no MuJoCo physics instance was created.
 ## Ports / processes
 
 - 18949 new platform candidate (production recipe, read-only); 18944 prior M1.2c candidate; 18943 backend consumed by frontend; 18946 latest frontend preview proxy; 18933 older preview; 18941/18942 unchanged; 8792 untouched.
-- 18947 native mock and 18948 test platform were used and stopped. 18946 was not used.
+- 18950 native mock and 18951 test platform were used and stopped. 18947/18948/18946 are frontend previews and were not used.
+
+## Full suite failures
+
+`platform/full-m1e.junit.xml` has exactly three failures, unchanged in nature from the historical 90/3 baseline:
+
+1. `test_catalog.py::test_catalog_loads_real_tasks` — `../bimanual_proj` and `../mujoco_learning` are absent from the server release layout.
+2. `test_catalog.py::test_every_task_has_existing_evidence` — the native release copy lacks `docs/acceptance_report.md` for the mobileCar adapter.
+3. `test_migrate.py::test_manifest_sources_exist` — the same absent sibling source projects (7 module sources).
+
+They were not skipped, relabelled, or counted as green.

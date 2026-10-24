@@ -584,3 +584,20 @@ def test_session_list_is_explicitly_stored_and_does_not_touch_native(prepared_cl
     assert listing["sessions"][0]["session_id"] == session["session_id"]
     assert listing["sessions"][0]["current"] is None
     assert fake.calls == []
+
+
+def test_current_motion_readiness_is_conservative_when_recording_policy_differs(prepared_client):
+    http, _, _, _ = prepared_client
+    draft, snapshot = eligible_snapshot(http)
+    session = http.post("/api/v1/sessions", json=session_request(draft, snapshot["validated_snapshot_id"])).json()["session"]
+    http.post(f"/api/v1/sessions/{session['session_id']}/start")
+    store = http.app.state.preparation.store
+    stored = store.get_session(session["session_id"])
+    stored["execution"]["recording_required_for_motion"] = False
+    store.update_session(stored)
+    current = _current(http, session["session_id"])["current"]
+    assert current["recording_required_for_motion"] is True
+    assert current["recording_ready"] is False
+    assert current["motion_ready"] is False
+    assert "native_recording_policy_changed" in current["blockers"]
+    assert "recording_not_ready" in current["blockers"]

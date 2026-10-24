@@ -65,7 +65,7 @@
 
 新平台候选 `18949` 使用生产 recipe revision 3，对真实 8792 只读运行：
 
-- Validation snapshot `cs-8f5f2d9076327e145b47f7f69900185f49dacf7a`，`failed`、`execution_eligible=false`；
+- Validation snapshot `cs-15113e6f9b76458ec57b847a53f74d91a395ba88`，`failed`、`execution_eligible=false`；
 - `interface_profile`（configuration）和 `deployed_config_attestation`、`scene_manifest_attestation`、`runtime_python_version`、`runtime_package_versions`、`session_binding_protocol`、`recording_begin_protocol`（readiness，均 `unsupported`）阻塞；
 - Session 创建 409 `validation_incomplete`；`GET /sessions` 为 `source=stored` 空列表；缺失 Session/begin 404；
 - 8792 前后 run/generation/episode、`recording=IDLE`、owner、`safety_latched=true` 全部不变；PID 941842 未停止或重启。
@@ -77,16 +77,16 @@
 | 8792 | 既有 native，PID 941842，drvfix release，`g4a2_server.yaml` |
 | 18941/18942/18943 | 既有服务，未改 |
 | 18944 | 上一轮 M1.2c 平台候选 |
-| 18946 | **最新前端预览代理 → 18943**；本轮未占用、未停止 |
+| 18946 | 前端预览代理 → 18943；本轮未占用 |
 | 18933 | 较早前端预览代理 |
-| 18947/18948 | 本轮 native mock / 测试平台；验证后停止 |
+| 18947/18948 | 前端预览代理 → 18944（最新 release，未改动） |
 | 18949 | 本轮 M1.2d 生产配方平台候选，只读运行中 |
 
 ## 四、冻结身份与部署决策
 
 平台：
 
-- release `m1e-20261024T090448Z-platform`；`backend` 46 个非缓存文件；源码清单 SHA-256 `4c4bca55…b2`；与工作树一致。
+- release `m1e-20261024T090448Z-platform`；`backend` 46 个非缓存文件；源码清单 SHA-256 `c1ce0339…2946`；与工作树一致。
 - Python 3.14.6；fastapi 0.161.1、pydantic 2.14.1、uvicorn 0.54.0、PyYAML 6.0.3、pytest 9.1.1。详见 `platform/dependency-versions.json`。
 
 Native：
@@ -112,8 +112,8 @@ Native：
 
 | 检查 | 结果 |
 |---|---|
-| 平台聚焦（gateway-py314） | **93 passed**：prepare/drafts/geometry/read/mobilecar/api |
-| 平台全量 | **97 passed / 3 failed**；3 项仍是 catalog/migrate 的 sibling 源码与 native docs 布局失败，历史 **90 passed / 3 failed** 事实保留，未跳过或改绿 |
+| 平台聚焦（gateway-py314） | **94 passed**：prepare/drafts/geometry/read/mobilecar/api |
+| 平台全量 | **98 passed / 3 failed**；3 项仍是 catalog/migrate 的 sibling 源码与 native docs 布局失败，历史 **90 passed / 3 failed** 事实保留，未跳过或改绿 |
 | Native 聚焦 | **57 passed**：生命周期竞态 + TTL + app_mock + recorder + contracts |
 | 修复前对照 | 新竞态测试在旧 release **2 failed** |
 | 跨 HTTP | 测试 recipe validation passed、prepared/active/RECORDING、重复幂等、release 失效、文件哈希一致 |
@@ -123,5 +123,5 @@ Native：
 
 - OpenAPI：[openapi.json](evidence/m1.2d/m1e-20261024T090448Z-platform/platform/live-m1e/openapi.json)；`GET /sessions` 改为存档 envelope，`GET /sessions/{id}` 增加 `current`，新端点 `POST /sessions/{id}/recording/begin` 不变。
 - 当前状态/新鲜度约定与错误样例见上面第三节和 [evidence README](evidence/m1.2d/m1e-20261024T090448Z-platform/README.md)；成功样例明确标注 native mock 无物理。
-- 最新前端预览是 18946 → 18943（进程核实）；18943 仍是后端服务，18949 是本轮只读平台候选。前端文件未修改。
+- 前端预览当前为 18947/18948 → 18944（最新 release）以及 18946/18933 → 18943；均未改动。18949 是本轮生产配方平台候选。前端文件未修改。
 - 未完成：8792 部署、真实 G1 prepared/Start、真实物理运动、线上录制 begin、停车/finalize、回放、owner/lease 获取、并发压力、M1 闭环；不自动进入真人示教、采集或训练。
