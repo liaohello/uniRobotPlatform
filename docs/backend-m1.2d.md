@@ -121,7 +121,7 @@ Native：
 
 ## 六、前端交付与未完成
 
-- OpenAPI：[openapi.json](evidence/m1.2d/m1e-20261024T090448Z-platform/platform/live-m1e/openapi.json)；`GET /sessions` 改为存档 envelope，`GET /sessions/{id}` 增加 `current`，新端点 `POST /sessions/{id}/recording/begin` 不变。
+- OpenAPI：[openapi.json](evidence/m1.2d/m1e-20261024T090448Z-platform/platform/live-m1e/openapi.json)。前端迁移：`GET /sessions` 从数组改为 `{source:"stored",live:false,sessions:[...]}`，必须读取 `sessions` 且不要把列表当实时状态；`GET /sessions/{id}` 的历史回执字段不变，新增 `current`，实时显示/按钮可用性应使用 `current.valid`、`current.status`、`current.blockers`、`current.recording_ready`、`current.motion_ready` 和各 available 字段。`POST /sessions/{id}/start` 与 `POST /sessions/{id}/recording/begin` 路径不变。
 - 当前状态/新鲜度约定与错误样例见上面第三节和 [evidence README](evidence/m1.2d/m1e-20261024T090448Z-platform/README.md)；成功样例明确标注 native mock 无物理。
 - 前端预览当前为 18947/18948 → 18944（最新 release）以及 18946/18933 → 18943；均未改动。18949 是本轮生产配方平台候选。前端文件未修改。
 - 未完成：8792 部署、真实 G1 prepared/Start、真实物理运动、线上录制 begin、停车/finalize、回放、owner/lease 获取、并发压力、M1 闭环；不自动进入真人示教、采集或训练。
