@@ -60,8 +60,15 @@ def test_prepared_session_requires_a_verified_native_binding(prepared_client):
     assert session["native_binding"]["status"] == "verified"
     assert session["native_binding"]["config_fingerprint"] == snapshot["snapshot_id"]
     assert session["native_identity"] == {"run_id": "fixture-run", "backend_generation": 1, "episode_id": "fixture-episode"}
-    assert http.get(f"/api/v1/sessions/{session['session_id']}").json() == session
-    assert http.get("/api/v1/sessions").json()[0]["session_id"] == session["session_id"]
+    detail = http.get(f"/api/v1/sessions/{session['session_id']}").json()
+    assert detail["session_id"] == session["session_id"]
+    assert detail["current"]["source"] == "live_native_read_only"
+    assert detail["current"]["status"] == "prepared"
+    assert detail["current"]["start_available"] is True
+    listing = http.get("/api/v1/sessions").json()
+    assert listing["source"] == "stored" and listing["live"] is False
+    assert listing["sessions"][0]["session_id"] == session["session_id"]
+    assert listing["sessions"][0]["current"] is None
     assert http.get("/api/v1/sessions/missing").status_code == 404
 
     replay = http.post("/api/v1/sessions", json=session_request(draft, snapshot["validated_snapshot_id"]))
@@ -469,3 +476,111 @@ def test_missing_runtime_environment_attestation_is_unsupported(tmp_path):
         assert {
             "runtime_python_version", "runtime_package_versions"
         } <= {reason["key"] for reason in result["blocking_reasons"]}
+
+
+def _current(http, session_id: str) -> dict:
+    detail = http.get(f"/api/v1/sessions/{session_id}").json()
+    assert detail["current"]["source"] == "live_native_read_only"
+    return detail
+
+
+def test_single_session_get_reads_current_state_without_writes(prepared_client):
+    http, fake, _, _ = prepared_client
+    draft, snapshot = eligible_snapshot(http)
+    session = http.post("/api/v1/sessions", json=session_request(draft, snapshot["validated_snapshot_id"])).json()["session"]
+    stored_before = http.get(f"/api/v1/sessions/{session['session_id']}").json()
+    assert stored_before["current"]["status"] == "prepared"
+    assert stored_before["current"]["start_available"] is True
+    assert http.post(f"/api/v1/sessions/{session['session_id']}/start").status_code == 200
+    stored_doc = http.app.state.preparation.store.get_session(session["session_id"])
+    fake.calls.clear()
+    detail = _current(http, session["session_id"])
+    current = detail["current"]
+    assert current["valid"] is True and current["status"] == "started"
+    assert current["runtime_identity_matches"] is True
+    assert current["binding"]["state"] == "started"
+    assert current["recording"]["status"] == "IDLE"
+    assert current["recording_ready"] is False and current["motion_ready"] is False
+    assert current["recording_begin_available"] is True
+    assert "recording_not_ready" in current["blockers"]
+    assert all(method == "GET" for method, _ in fake.calls)
+    assert not [path for _, path in fake.calls if path in {
+        "/api/v1/session/start", "/api/v1/recording/begin",
+        "/api/v1/session/prepare", "/api/v1/session/release",
+        "/api/v1/lease/renew", "/api/v1/commands",
+    } or path.startswith("/api/v1/episodes")]
+    assert http.app.state.preparation.store.get_session(session["session_id"]) == stored_doc
+
+    begun = http.post(
+        f"/api/v1/sessions/{session['session_id']}/recording/begin",
+        json={"operator_id": "fixture-human"},
+    )
+    assert begun.status_code == 201, begun.text
+    after = _current(http, session["session_id"])["current"]
+    assert after["valid"] is True
+    assert after["recording_ready"] is True and after["motion_ready"] is True
+    assert after["recording"]["status"] == "RECORDING"
+    assert after["recording"]["segment_id"] == begun.json()["session"]["recording_begin_receipt"]["recording_segment_id"]
+    assert after["recording_begin_available"] is False
+    assert "recording_not_ready" not in after["blockers"]
+
+
+def test_single_session_get_is_offline_safe_and_keeps_history(prepared_client):
+    http, fake, _, _ = prepared_client
+    draft, snapshot = eligible_snapshot(http)
+    session = http.post("/api/v1/sessions", json=session_request(draft, snapshot["validated_snapshot_id"])).json()["session"]
+    http.post(f"/api/v1/sessions/{session['session_id']}/start")
+    fake.fail_path = "/api/v1/health"
+    detail = _current(http, session["session_id"])
+    current = detail["current"]
+    assert current["valid"] is False and current["status"] == "offline"
+    assert current["recording_ready"] is False and current["motion_ready"] is False
+    assert current["start_available"] is False and current["recording_begin_available"] is False
+    assert current["runtime_identity"] is None
+    assert "native_offline" in current["blockers"]
+    assert detail["start_receipt"] is not None
+    assert detail["state"] == "active"
+
+
+def test_single_session_get_reports_identity_change(prepared_client):
+    http, _, payloads, _ = prepared_client
+    draft, snapshot = eligible_snapshot(http)
+    session = http.post("/api/v1/sessions", json=session_request(draft, snapshot["validated_snapshot_id"])).json()["session"]
+    http.post(f"/api/v1/sessions/{session['session_id']}/start")
+    payloads["/api/v1/health"]["episode_id"] = "after-reset"
+    payloads["/api/v1/snapshot"]["episode_id"] = "after-reset"
+    current = _current(http, session["session_id"])["current"]
+    assert current["valid"] is False and current["status"] == "identity_changed"
+    assert current["runtime_identity_matches"] is False
+    assert current["recording_ready"] is False and current["motion_ready"] is False
+    assert current["start_available"] is False and current["recording_begin_available"] is False
+    assert "runtime_identity_changed" in current["blockers"]
+
+
+@pytest.mark.parametrize("binding_state", ["expired", "invalidated", "released"])
+def test_single_session_get_never_reports_ready_for_terminal_bindings(prepared_client, binding_state):
+    http, fake, _, _ = prepared_client
+    draft, snapshot = eligible_snapshot(http)
+    session = http.post("/api/v1/sessions", json=session_request(draft, snapshot["validated_snapshot_id"])).json()["session"]
+    http.post(f"/api/v1/sessions/{session['session_id']}/start")
+    fake.bindings[session["native_binding"]["binding_id"]]["state"] = binding_state
+    current = _current(http, session["session_id"])["current"]
+    assert current["valid"] is False
+    assert current["status"] == binding_state
+    assert current["binding"]["state"] == binding_state
+    assert current["recording_ready"] is False and current["motion_ready"] is False
+    assert current["start_available"] is False and current["recording_begin_available"] is False
+    assert f"native_binding_{binding_state}" in current["blockers"]
+
+
+def test_session_list_is_explicitly_stored_and_does_not_touch_native(prepared_client):
+    http, fake, _, _ = prepared_client
+    draft, snapshot = eligible_snapshot(http)
+    session = http.post("/api/v1/sessions", json=session_request(draft, snapshot["validated_snapshot_id"])).json()["session"]
+    fake.calls.clear()
+    listing = http.get("/api/v1/sessions").json()
+    assert listing["source"] == "stored" and listing["live"] is False
+    assert listing["retrieved_at"]
+    assert listing["sessions"][0]["session_id"] == session["session_id"]
+    assert listing["sessions"][0]["current"] is None
+    assert fake.calls == []

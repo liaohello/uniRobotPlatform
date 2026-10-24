@@ -74,6 +74,10 @@ M1.2c 在原生候选中增加独立的 `POST /api/v1/recording/begin`，复用�
 
 该能力与 [Session 生命周期](../20-backend/01-session-scene/01-session-lifecycle.md#原生绑定协议m1-binding-1) 的 start 分开：Start 只建立 active Session 与授权范围，begin 才建立录制 ready；三者（active、owner/lease、recording ready、可运动）必须分别表达。
 
+### 并发边界（M1.2d）
+
+commands RESET、legacy `episodes/start`（含其 RESET）、`recording/begin`、stop 与 recorder 失败停止必须共享同一 lifecycle 同步边界，锁顺序为 lifecycle → backend → recorder。录制状态检查与 RESET/开录在同一临界区重检，活动录制期间不得凭锁外旧状态提交 RESET；binding 失效也在 RESET 应用的同一临界区完成。该约束不改变 `require_recording`、STOP、停车等待、lease 或 Recorder 的既有安全语义，也不把 stop/finalize 纳入 m1-recording-1。
+
 ## 原始存储与读取适配
 
 索引记录 sourceProject/adapter/native IDs、原始位置、format/schema/reader 版本、媒体/事件引用、完整性与可用流。原始文件继续由各工程保存，平台只维护映射/sidecar，不为统一前端强制搬目录或重写格式。使用原始 source time 和记录的变换，不能按浏览器收包顺序对齐。

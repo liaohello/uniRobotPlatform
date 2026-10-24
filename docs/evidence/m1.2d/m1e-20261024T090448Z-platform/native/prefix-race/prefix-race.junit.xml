@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="3.916" timestamp="2026-10-24T17:06:39.834146+08:00" hostname="cec-sim"><testcase classname="tests.integration.test_lifecycle_race" name="test_reset_and_legacy_start_cannot_pierce_an_active_begin" time="1.835"><failure message="assert [1, 1] == [1]&#10;  &#10;  Left contains one more item: 1&#10;  Use -v to get more diff">app = (&lt;fastapi.applications.FastAPI object at 0x73e33bb64790&gt;, &lt;starlette.testclient.TestClient object at 0x73e33bba6b90&gt;, ...obileCar/releases/m1e-prefix-race-check/var/test-tmp/pytest-of-liaozhengyan/pytest-5/test_reset_and_legacy_start_ca0'))
+
+    def test_reset_and_legacy_start_cannot_pierce_an_active_begin(app):
+        application, http, _ = app
+        runtime = application.state.mobilecar
+        prepared = _prepared(http, session_id="ps-race-begin")
+        _start(http, prepared)
+        submitted: list[tuple[str, str]] = []
+        original_submit = runtime.backend.submit
+    
+        def spy_submit(request):
+            submitted.append((str(request.command_type), runtime.recorder.status().status))
+            return original_submit(request)
+    
+        runtime.backend.submit = spy_submit
+        entered, release, start_calls = _barrier_start(runtime)
+    
+        begin_result: dict = {}
+        reset_result: dict = {}
+        legacy_result: dict = {}
+    
+        def run_begin() -&gt; None:
+            begin_result["value"] = runtime.begin_recording(_begin_request(prepared))
+    
+        def run_reset() -&gt; None:
+            reset_result["value"] = runtime.submit(_reset_request(runtime))
+    
+        def run_legacy() -&gt; None:
+            legacy_result["value"] = runtime.start_episode(
+                EpisodeStartRequest(
+                    operator_id="legacy-race",
+                    operator_kind=OperatorKind.SCRIPTED,
+                    view_source="race_fixture",
+                    require_recording=True,
+                )
+            )
+    
+        threads = [
+            threading.Thread(target=run_begin, name="race-begin"),
+            threading.Thread(target=run_reset, name="race-reset"),
+            threading.Thread(target=run_legacy, name="race-legacy-start"),
+        ]
+        threads[0].start()
+        assert entered.wait(5.0), "begin did not reach the recorder barrier"
+        threads[1].start()
+        threads[2].start()
+        time.sleep(0.25)
+        assert threads[1].is_alive() and threads[2].is_alive()
+        assert submitted == []
+        release.set()
+        for thread in threads:
+            thread.join(timeout=10.0)
+            assert not thread.is_alive()
+    
+        assert begin_result["value"].accepted is True
+        assert begin_result["value"].recording_status == "RECORDING"
+        assert reset_result["value"].status == "REJECTED"
+        assert "stop the active recording" in reset_result["value"].reason
+        assert legacy_result["value"].accepted is False
+        assert "already RECORDING" in legacy_result["value"].reason
+&gt;       assert start_calls == [1]
+E       assert [1, 1] == [1]
+E         
+E         Left contains one more item: 1
+E         Use -v to get more diff
+
+tests/integration/test_lifecycle_race.py:190: AssertionError</failure></testcase><testcase classname="tests.integration.test_lifecycle_race" name="test_begin_cannot_interleave_with_a_legacy_episode_start" time="1.508"><failure message="assert False&#10; +  where False = is_alive()&#10; +    where is_alive = &lt;Thread(race-begin, stopped 127416850703936)&gt;.is_alive">app = (&lt;fastapi.applications.FastAPI object at 0x73e33bbc47f0&gt;, &lt;starlette.testclient.TestClient object at 0x73e272f2c670&gt;, ...obileCar/releases/m1e-prefix-race-check/var/test-tmp/pytest-of-liaozhengyan/pytest-5/test_begin_cannot_interleave_w0'))
+
+    def test_begin_cannot_interleave_with_a_legacy_episode_start(app):
+        application, http, _ = app
+        runtime = application.state.mobilecar
+        prepared = _prepared(http, session_id="ps-race-legacy")
+        _start(http, prepared)
+        entered, release, start_calls = _barrier_start(runtime)
+        legacy_result: dict = {}
+        begin_result: dict = {}
+    
+        def run_legacy() -&gt; None:
+            legacy_result["value"] = runtime.start_episode(
+                EpisodeStartRequest(
+                    operator_id="legacy-race",
+                    operator_kind=OperatorKind.SCRIPTED,
+                    view_source="race_fixture",
+                    require_recording=True,
+                )
+            )
+    
+        def run_begin() -&gt; None:
+            begin_result["value"] = runtime.begin_recording(_begin_request(prepared))
+    
+        legacy = threading.Thread(target=run_legacy, name="race-legacy-start")
+        begin = threading.Thread(target=run_begin, name="race-begin")
+        legacy.start()
+        assert entered.wait(5.0), "legacy start did not reach the recorder barrier"
+        begin.start()
+        time.sleep(0.25)
+&gt;       assert begin.is_alive()
+E       assert False
+E        +  where False = is_alive()
+E        +    where is_alive = &lt;Thread(race-begin, stopped 127416850703936)&gt;.is_alive
+
+tests/integration/test_lifecycle_race.py:225: AssertionError</failure></testcase></testsuite></testsuites>

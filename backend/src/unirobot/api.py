@@ -25,6 +25,7 @@ from .contracts import (
     RunSpec,
     TaskView,
     TemplateId,
+    utc_now,
 )
 from .runtime import (
     InvalidMode,
@@ -39,7 +40,7 @@ from .mobilecar_geometry import CompiledGeometryReadService, CompiledSceneRead, 
 from .drafts import CreateDraft, CreateSession, DraftConflict, DraftNotFound, DraftStore, SaveDraft, ValidateDraft
 from .prepare import (
     BeginRecording, ConfigurationSnapshot, PreparationError, PreparationService, PreparationStore, PreparedSession,
-    SessionEnvelope, Validator,
+    SessionEnvelope, SessionList, Validator,
 )
 from .recipe import Recipe, load_recipe
 from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH
@@ -147,7 +148,7 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     @application.middleware("http")
     async def no_stale_workbench_reads(request: Request, call_next):
         response = await call_next(request)
-        if request.url.path.startswith("/api/v1/mobilecar/"):
+        if request.url.path.startswith("/api/v1/mobilecar/") or request.url.path.startswith("/api/v1/sessions"):
             response.headers["Cache-Control"] = "no-store"
         return response
 
@@ -192,13 +193,21 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
         response.status_code = 200 if replayed else 201
         return {"session": session, "replayed": replayed}
 
-    @application.get("/api/v1/sessions", response_model=list[PreparedSession])
-    def list_sessions(request: Request) -> list[dict]:
-        return request.app.state.preparation.store.list_sessions()
+    @application.get("/api/v1/sessions", response_model=SessionList)
+    def list_sessions(request: Request) -> dict:
+        return {
+            "source": "stored",
+            "live": False,
+            "retrieved_at": utc_now(),
+            "sessions": request.app.state.preparation.store.list_sessions(),
+        }
 
     @application.get("/api/v1/sessions/{session_id}", response_model=PreparedSession)
     def get_session(session_id: str, request: Request) -> dict:
-        return request.app.state.preparation.store.get_session(session_id)
+        preparation: PreparationService = request.app.state.preparation
+        session = preparation.store.get_session(session_id)
+        current = preparation.current_observation(session)
+        return {**session, "current": current.model_dump()}
 
     @application.post("/api/v1/sessions/{session_id}/start", response_model=PreparedSession)
     def start_session(session_id: str, request: Request) -> dict:

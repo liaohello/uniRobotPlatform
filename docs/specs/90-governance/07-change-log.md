@@ -10,6 +10,15 @@
 
 ## V0.7｜2026-10-23
 
+### 2026-10-24 M1.2d 准备链路 P1 与状态 freshness
+
+- 修复 native 录制生命周期竞态：commands RESET、legacy `episodes/start`、`recording/begin`、stop 与失败停止共享 lifecycle 锁，锁序 lifecycle → backend → recorder；状态检查与 RESET/开录在同一临界区重检，活动录制不能穿透。增加屏障回归，修复前对照 2 failed。
+- binding 准备 TTL 只约束 prepared；started 由 RESET、release、身份变化或未来明确定义的结束事件失效。回读显式 `expires_scope=prepared`，不以短租约替代持续 Session。
+- 单 Session GET 增加只读 `current`（source/observed_at/valid/status/blockers、runtime/binding/recording/owner/safety、ready/available）；`GET /sessions` 明确为 `source=stored`，刷新不续租/重绑/Start/清锁/启停录制，失联/身份变化/terminal binding 不报告 ready。
+- 平台实际 `NativeBindingClient` 与隔离 native mock 完成真实 HTTP prepare/readback/start/begin/release、幂等和拒绝；测试 recipe 明示 mock，不改生产 G1 recipe/pin。生产 8792 未部署，真实 G1 与物理验证未执行。
+- 平台聚焦 93 passed；全量 97 passed / 3 failed（历史 90/3 的同三项布局失败）；native 聚焦 57 passed。候选冻结身份与维护窗口决策见 M1.2d 交付记录。
+
+
 ### 2026-10-24 M1.2c 实现澄清（不改变 V0.7 范围）
 
 - 修正 M1.2b “逐文件核验”的不准确描述：`requirements.lock` 现为 native `a5cef52` 的固定发布输入，启动读取字节、比对源摘要并核对 8 个精确版本；配方声明、发布文件核验、native 自报运行环境版本分开表述。

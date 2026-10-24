@@ -4,7 +4,7 @@
 
 换笔记本时使用 [Git 追踪与恢复清单](laptop-migration.md)，区分本仓库源码、三个外部工程和本机私有环境。
 
-当前优先阅读 [V0.7 统一 3D 工作台实施计划](specs/00-overview/09-page-design-delivery-plan.md)：先统一 React/TS 外壳与 Three.js 复用边界，下一份前端产物为可操作 3D 样板，再在同一工作台接配置、控制、录制与回放。前端实现继续暂停，本轮只重新规划。[M1.1](m1.1-integration-check.md) 与 [M1.2 草案切片](m1.2-drafts.md) 的诊断/草案证据保留，不代表主工作台或真实闭环完成。M1.2b 的[配置验证与 Session 准备链路](backend-m1.2b.md)（候选 18943）保留了历史契约与真实拒绝证据；M1.2c 的[原生绑定候选、配方证明与无 RESET 开录](backend-m1.2c.md)（平台候选 18944，原生补丁未部署）修正了锁核验，并给出可部署、可审查但尚未在 8792 生效的实现。真实运动、RESET、在线录制与回放仍未开放。
+当前优先阅读 [V0.7 统一 3D 工作台实施计划](specs/00-overview/09-page-design-delivery-plan.md)：先统一 React/TS 外壳与 Three.js 复用边界，下一份前端产物为可操作 3D 样板，再在同一工作台接配置、控制、录制与回放。前端实现继续暂停，本轮只重新规划。[M1.1](m1.1-integration-check.md) 与 [M1.2 草案切片](m1.2-drafts.md) 的诊断/草案证据保留，不代表主工作台或真实闭环完成。M1.2b 的[配置验证与 Session 准备链路](backend-m1.2b.md)（候选 18943）保留了历史契约与真实拒绝证据；M1.2c 的[原生绑定候选、配方证明与无 RESET 开录](backend-m1.2c.md)（平台候选 18944，原生补丁未部署）修正了锁核验；M1.2d 的[两项 P1 修复、当前状态刷新与真实 HTTP 集成](backend-m1.2d.md)（平台候选 18949，原生补丁未部署）进一步修复生命周期竞态/prepared-only TTL，并让平台实际客户端与 native mock 完成协议集成。真实运动、RESET、在线录制与回放仍未开放。
 
 另开会话时先读 [新会话交接说明](handoff.md)；本次讨论的可读用户/助手正文保存在 [2026-10-22 会话存档](conversations/2026-10-22-scene-setup-dialogue.md)，历史建议以当前规范取代关系为准。
 

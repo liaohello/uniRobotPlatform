@@ -47,7 +47,7 @@ Scene Setup 的创建请求只能消费 [ValidatedSnapshot](../../30-contracts/0
 
 ## 原生绑定协议（m1-binding-1）
 
-状态：**平台侧已实现；原生侧候选补丁已实现并在服务器以 mock backend 验证，未部署到运行实例**（2026-10-24）。本节固定“原生要提供什么，平台才敢承认一个真实 prepared Session”，实现与真实支持范围见 [M1.2c 交付记录](../../../backend-m1.2c.md)。
+状态：**平台侧已实现；原生侧候选补丁已实现并在服务器以 mock backend 验证，未部署到运行实例**（2026-10-24）。本轮 M1.2d 补齐生命周期互斥、prepared-only TTL 与单 Session 当前观测；实现与真实支持范围见 [M1.2d 交付记录](../../../backend-m1.2d.md)。
 
 ### 能力声明
 
@@ -77,10 +77,14 @@ Scene Setup 的创建请求只能消费 [ValidatedSnapshot](../../30-contracts/0
 - `recording.begin` 复用既有 Recorder，读取当前 actual snapshot；只有 `recording_start`、`feedback_initial`、`initial_snapshot.json` 已持久化并 sync 后才返回 RECORDING。录制非 IDLE/COMPLETE 时拒绝，FAILED 时明确要求先处理；本轮不定义 stop/finalize。
 - 任一身份字段与原生当前 runtime 不一致时拒绝（`accepted=false`/`started=false` + `reason`），不得静默改写。RESET 后所有 prepared/started binding 失效。
 - `session_id` 由平台生成，原生必须原样回显；同一 run/generation/episode 同时最多一个有效 binding，重复 prepare 返回冲突而不是覆盖。
-- binding 有服务端单调时钟的过期时间；过期后 `start` 拒绝，回读返回 `expired`。
+- `expires_at_backend_monotonic_s` 只约束 `prepared`；回读显式给出 `expires_scope="prepared"`。过期后 `start` 拒绝、回读返回 `expired`。`started` 不受准备 TTL 影响，只由 RESET、显式 release、身份变化或未来明确定义的 Session 结束事件失效；当前没有额外 Session close/end 事件，不以短租约替代持续 Session。
 - 显式 Start 只建立 active Session 与执行器授权范围，**不获取 owner/lease**、不等于开始录制、也不等于已到位。`owner_state`/`lease_expires_at_backend_monotonic_s` 必须来自真实 owner 状态；没有 deadline 时返回 `null`，不得伪造。
-- `recording_ready` 必须来自 Recorder 的真实 `RECORDING` + `command_capture_ready`；`motion_ready` 只表示平台可运动条件（授权范围、录制要求、safety、冲突 owner），不是命令已获准执行。
+- `recording_ready` 必须来自 Recorder 的真实 `RECORDING` + `command_capture_ready`，且绑定处于 started；`motion_ready` 只表示平台可运动条件（授权范围、录制要求、safety、冲突 owner），不是命令已获准执行。
 - 重复 start 返回同一 binding；重复 begin 在已 RECORDING 时拒绝，平台对已 ready 的重复请求不再次调用 native。
+
+### 并发边界
+
+状态检查、RESET、legacy `episodes/start`、`recording/begin`、stop 和 recorder 失败停止必须使用同一 lifecycle 同步边界；锁顺序固定为 lifecycle → backend → recorder。RESET 的状态检查和 binding 失效在同一临界区完成；活动录制期间 commands RESET 与 legacy start 必须被重新检查并拒绝，不能凭锁外旧状态穿透。不得从 recorder 回调或已持有 backend 锁的路径反向获取 lifecycle。
 
 ### 平台核验规则
 
@@ -88,6 +92,20 @@ prepare 与回读必须使 `session_id`、`config_fingerprint`、`run_id`、`bac
 
 平台只允许访问上述五个路径，不猜测其他端点。
 
+### 单 Session 当前观测（M1.2d）
+
+`GET /api/v1/sessions/{id}` 返回存储的历史 Session（start/begin 回执、attempts 等）+ `current` 只读实时观测。`current` 必须给出：
+
+- `source="live_native_read_only"`、`observed_at`、`valid`、`status`、`error`、`blockers`；
+- 当前 runtime 与身份匹配、binding 状态/字段匹配/回读摘要；
+- snapshot/recipe 有效性、authorization scope、录制要求；
+- 当前 recording 状态/segment/capture/error、owner/lease 暴露情况、safety；
+- `recording_ready`、`motion_ready`、`start_available`、`recording_begin_available`。
+
+刷新只允许 native GET 与本地存储读取；不得续租、重绑、Start、清安全锁或启停录制，不得写存储。失联时 HTTP 200 + `status=offline`、`valid=false`，所有 ready/available 为 false。身份变化、snapshot/recipe 失效、binding `expired/invalidated/released`/不一致、录制未 ready、safety latch、owner 冲突都必须阻止 ready/available，并给出具体 blocker。历史回执保持原样；重复 GET 不改变 start/begin 的幂等结果。
+
+`GET /api/v1/sessions` 是明确的存档视图：`{"source":"stored","live":false,"retrieved_at","sessions":[...]}`，不触发 native 读取，`current=null`。前端必须用单 Session GET 的 `current` 表示当前状态，不能把列表当实时状态。
+
 ### 当前差距
 
-运行中的固定 native（8792，PID 941842，`drvfix` release，`configs/g4a2_server.yaml`）没有这些端点，且其 interface_profile/配置与 G1 配方不同。原生候选补丁已基于 `a5cef52` 完成并在隔离 release 以 mock backend 验证，但未部署、未重启 8792；真实 G1 prepared/Start 仍需维护窗口与 G1 vs G4A2 配方口径决定。
+运行中的固定 native（8792，PID 941842，`drvfix` release，`configs/g4a2_server.yaml`）没有这些端点，且其 interface_profile/配置与 G1 配方不同。M1.2d 的候选补丁（含生命周期互斥与 prepared-only TTL）已在隔离 release 以 mock backend 完成真实 HTTP 集成，但未部署、未重启 8792；真实 G1 prepared/Start 仍需维护窗口与 G1 vs G4A2 配方口径决定。

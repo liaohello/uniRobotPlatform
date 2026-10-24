@@ -2,6 +2,8 @@
 
 日期：2026-10-24。本轮修正 M1.2b 的锁核验缺口，完成 `m1-binding-1` / `m1-recording-1` 的原生**候选**实现，并让平台以同一口径核对部署配置、编译场景和运行时版本。**没有在 8792 上部署原生补丁，没有真实运动、RESET、在线录制或回放；不是 M1 闭环，也不是真人示教验收。**
 
+> **M1.2d 后续（2026-10-24）**：本文记录 M1.2c 候选。M1.2d 已修复 native 生命周期竞态与 prepared-only TTL，单 Session GET 改为返回只读 `current`、`GET /sessions` 改为 `source=stored` 存档 envelope，并完成平台客户端与 native mock 的真实 HTTP 集成。当前状态以 [M1.2d](backend-m1.2d.md) 为准；本文的接口/测试数字保留为历史。
+
 证据索引：[docs/evidence/m1.2c](evidence/m1.2c/m1c-20261024T065943Z-platform/README.md)。历史 M1.2b 记录保留：[backend-m1.2b.md](backend-m1.2b.md)。
 
 ## 结论摘要

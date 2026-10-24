@@ -127,6 +127,15 @@ class FakeNative:
                                    "reason": f"recording is already {self.recording_status}"})
             self.recording_status = "RECORDING"
             self.recording_segment_id = "seg_fixture_001"
+            recording = self.payloads["/api/v1/snapshot"]["recording"]
+            recording.update(
+                status="RECORDING",
+                episode_id=record["episode_id"],
+                recording_segment_id=self.recording_segment_id,
+                command_capture_ready=True,
+                error=None,
+            )
+            self.payloads["/api/v1/health"]["recording_status"] = "RECORDING"
             return self._json({
                 "accepted": True, "reason": "", "protocol": "m1-recording-1",
                 "state": "started", "motion_commands_accepted": False,

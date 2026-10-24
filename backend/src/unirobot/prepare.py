@@ -87,6 +87,10 @@ class Observation(Contract):
     tcp_site: str
     camera_parent_body: str
     recording_status: str
+    recording_episode_id: str | None
+    recording_segment_id: str | None
+    recording_command_capture_ready: bool
+    recording_error: str | None
     base_owner_session_id: str | None
     arm_owner_session_id: str | None
     active_session_id: str | None
@@ -216,6 +220,58 @@ class BeginRecording(Contract):
     view_source: StrictStr = Field(default="third_person_3d", min_length=1)
 
 
+class CurrentBinding(Contract):
+    binding_id: str | None
+    state: Literal["prepared", "started", "expired", "invalidated", "released", "missing", "unverified"]
+    matches: bool
+    readback_sha256: str | None
+    error: str | None
+
+
+class CurrentRecording(Contract):
+    status: str
+    episode_id: str | None
+    segment_id: str | None
+    command_capture_ready: bool
+    error: str | None
+    ready: bool
+
+
+class CurrentOwner(Contract):
+    state: Literal["not_acquired", "held", "unknown"]
+    session_id: str | None
+    lease_expires_at_backend_monotonic_s: float | None
+    lease_exposed: bool = False
+
+
+class SessionCurrent(Contract):
+    source: Literal["live_native_read_only"] = "live_native_read_only"
+    observed_at: str
+    valid: bool
+    status: Literal[
+        "prepared", "started", "expired", "invalidated", "released",
+        "offline", "identity_changed", "snapshot_ineligible", "unverified",
+    ]
+    error: str | None
+    runtime_identity: RuntimeIdentity | None
+    runtime_identity_matches: bool
+    binding: CurrentBinding
+    snapshot_id: str
+    snapshot_eligible: bool
+    recipe_fingerprint_matches: bool
+    control_scope_granted: list[str]
+    recording_required_for_motion: bool
+    recording_begin_required: bool
+    recording: CurrentRecording
+    owner: CurrentOwner
+    safety_latched: bool | None
+    recording_ready: bool
+    motion_ready: bool
+    start_available: bool
+    recording_begin_available: bool
+    blockers: list[str]
+
+
 class PreparedSession(Contract):
     schema_version: Literal["unirobot-prepared-session-1"] = "unirobot-prepared-session-1"
     session_id: str
@@ -237,6 +293,14 @@ class PreparedSession(Contract):
     start_receipt: StartReceipt | None = None
     recording_begin_attempts: list[RecordingAttempt] = Field(default_factory=list)
     recording_begin_receipt: RecordingBeginReceipt | None = None
+    current: SessionCurrent | None = None
+
+
+class SessionList(Contract):
+    source: Literal["stored"] = "stored"
+    live: Literal[False] = False
+    retrieved_at: str
+    sessions: list[PreparedSession]
 
 
 class SessionEnvelope(Contract):
@@ -251,9 +315,10 @@ class PreparationError(RuntimeError):
 
 
 class BindingError(RuntimeError):
-    def __init__(self, code: str, message: str, *, transport: bool = False) -> None:
+    def __init__(self, code: str, message: str, *, transport: bool = False,
+                 http_status: int | None = None) -> None:
         super().__init__(message)
-        self.code, self.transport = code, transport
+        self.code, self.transport, self.http_status = code, transport, http_status
 
 
 def _rounded(value: float) -> float:
@@ -343,6 +408,10 @@ class Validator:
             tcp_site=scene.tcp_site,
             camera_parent_body=capabilities.camera_parent_body,
             recording_status=snapshot.recording.status,
+            recording_episode_id=snapshot.recording.episode_id,
+            recording_segment_id=snapshot.recording.recording_segment_id,
+            recording_command_capture_ready=snapshot.recording.command_capture_ready,
+            recording_error=snapshot.recording.error,
             base_owner_session_id=snapshot.base_owner_session_id,
             arm_owner_session_id=snapshot.arm_owner_session_id,
             active_session_id=snapshot.active_session_id,
@@ -539,7 +608,8 @@ class NativeBindingClient:
             with self.integration._opener.open(request, timeout=BINDING_TIMEOUT_S) as response:
                 payload = response.read(1024 * 1024 + 1)
         except urllib.error.HTTPError as exc:
-            raise BindingError("binding_http_error", f"{path}: HTTP {exc.code}") from exc
+            raise BindingError("binding_http_error", f"{path}: HTTP {exc.code}",
+                               http_status=exc.code) from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise BindingError("offline", f"{path}: service unreachable or timed out", transport=True) from exc
         if len(payload) > 1024 * 1024:
@@ -1088,6 +1158,231 @@ class PreparationService:
                        execution=execution.model_dump())
         self._record_recording_attempt(session, "begun", "")
         return session, False
+
+    def current_observation(self, session: dict) -> SessionCurrent:
+        """Read-only live view; never writes, starts, renews or rebinds."""
+        now = utc_now()
+        identity = RuntimeIdentity.model_validate(session["native_identity"])
+        binding = NativeBinding.model_validate(session["native_binding"])
+        try:
+            execution = SessionExecution.model_validate(session["execution"])
+        except (KeyError, ValidationError):
+            execution = SessionExecution(
+                control_scope_granted=[],
+                owner=OwnerLease(state="not_acquired", session_id=None,
+                                 lease_expires_at_backend_monotonic_s=None),
+                recording_required_for_motion=True,
+                recording_begin_required=True,
+                recording_ready=False,
+                motion_ready=False,
+                motion_blockers=["legacy_session_document"],
+                observed_at=utc_now(),
+                source="prepared",
+            )
+        blockers: list[str] = []
+
+        def add(key: str) -> None:
+            if key not in blockers:
+                blockers.append(key)
+
+        stored_snapshot = None
+        try:
+            stored_snapshot = self.store.get_snapshot(session["snapshot_id"])
+        except PreparationError:
+            pass
+        snapshot_ok = bool(
+            stored_snapshot is not None
+            and stored_snapshot["execution_eligible"]
+            and stored_snapshot["recipe_fingerprint"] == self.recipe.fingerprint
+        )
+        recipe_ok = session["recipe_fingerprint"] == self.recipe.fingerprint
+        if stored_snapshot is None:
+            add("snapshot_not_found")
+        elif not stored_snapshot["execution_eligible"]:
+            add("snapshot_not_eligible")
+        if not recipe_ok:
+            add("recipe_changed")
+
+        try:
+            observation = self.validator.observe()
+        except ReadServiceError as exc:
+            add(exc.code)
+            return SessionCurrent(
+                observed_at=now, valid=False, status="offline", error=str(exc),
+                runtime_identity=None, runtime_identity_matches=False,
+                binding=CurrentBinding(
+                    binding_id=binding.binding_id, state="unverified", matches=False,
+                    readback_sha256=None, error=str(exc),
+                ),
+                snapshot_id=session["snapshot_id"], snapshot_eligible=snapshot_ok,
+                recipe_fingerprint_matches=recipe_ok,
+                control_scope_granted=execution.control_scope_granted,
+                recording_required_for_motion=execution.recording_required_for_motion,
+                recording_begin_required=execution.recording_begin_required,
+                recording=CurrentRecording(
+                    status="UNKNOWN", episode_id=None, segment_id=None,
+                    command_capture_ready=False, error=None, ready=False,
+                ),
+                owner=CurrentOwner(
+                    state="unknown", session_id=None,
+                    lease_expires_at_backend_monotonic_s=None,
+                ),
+                safety_latched=None, recording_ready=False, motion_ready=False,
+                start_available=False, recording_begin_available=False,
+                blockers=blockers,
+            )
+
+        identity_matches = observation.runtime_identity == identity
+        if not identity_matches:
+            add("runtime_identity_changed")
+        if observation.session_binding_protocol != self.recipe.required_protocols["session_binding"]:
+            add("session_binding_unsupported")
+        required_begin = self.recipe.required_protocols["recording_begin"]
+        if observation.recording_begin_protocol != required_begin:
+            add("recording_begin_unsupported")
+        if observation.recording_required_for_motion != execution.recording_required_for_motion:
+            add("native_recording_policy_changed")
+
+        binding_state = "unverified"
+        binding_matches = False
+        readback_sha = None
+        binding_error = None
+        if binding.binding_id and binding.config_fingerprint:
+            try:
+                readback = self.binding.readback(binding.binding_id)
+                readback_sha = digest(readback)
+                reported = readback.get("state")
+                binding_state = reported if reported in {
+                    "prepared", "started", "expired", "invalidated", "released"
+                } else "unverified"
+                binding_matches = (
+                    readback.get("binding_id") == binding.binding_id
+                    and readback.get("session_id") == session["session_id"]
+                    and readback.get("config_fingerprint") == binding.config_fingerprint
+                    and readback.get("run_id") == identity.run_id
+                    and readback.get("backend_generation") == identity.backend_generation
+                    and readback.get("episode_id") == identity.episode_id
+                    and readback.get("motion_commands_accepted") is not True
+                )
+                if not binding_matches:
+                    add("native_binding_mismatch")
+                if binding_state == "expired":
+                    add("native_binding_expired")
+                elif binding_state == "invalidated":
+                    add("native_binding_invalidated")
+                elif binding_state == "released":
+                    add("native_binding_released")
+                elif binding_state not in {"prepared", "started"}:
+                    add("native_binding_unverified")
+            except BindingError as exc:
+                binding_error = str(exc)
+                binding_state = "missing" if exc.http_status == 404 else "unverified"
+                add("native_binding_missing" if binding_state == "missing" else "native_binding_unverified")
+        else:
+            binding_error = "Session has no verified binding identifier"
+            add("native_binding_unverified")
+        if session["state"] == "active" and binding_state != "started":
+            add("native_binding_not_started")
+
+        recording_ready = bool(
+            identity_matches and binding_state == "started"
+            and observation.recording_status == "RECORDING"
+            and observation.recording_command_capture_ready
+            and observation.recording_episode_id == identity.episode_id
+            and not observation.recording_error
+        )
+        if observation.recording_status == "FAILED":
+            add("native_recording_failed")
+        elif observation.recording_status in {"STARTING", "DRAINING"}:
+            add("native_recording_transitioning")
+        if execution.recording_required_for_motion and not recording_ready:
+            add("recording_not_ready")
+
+        owners = [
+            owner for owner in (
+                observation.base_owner_session_id, observation.arm_owner_session_id
+            ) if owner
+        ]
+        if owners:
+            add("control_owner_present")
+        if observation.safety_latched:
+            add("safety_latched")
+        if not execution.control_scope_granted:
+            add("control_scope_empty")
+        if session["state"] != "active":
+            add("session_not_active")
+
+        active_recording = observation.recording_status in {"STARTING", "RECORDING", "DRAINING"}
+        valid = bool(
+            identity_matches and snapshot_ok and recipe_ok and binding_matches
+            and binding_state in {"prepared", "started"}
+            and not (session["state"] == "active" and binding_state != "started")
+        )
+        start_available = bool(
+            session["state"] == "prepared" and valid
+            and binding_state in {"prepared", "started"}
+            and observation.session_binding_protocol == self.recipe.required_protocols["session_binding"]
+            and observation.recording_status == "IDLE"
+            and not observation.safety_latched and not owners
+        )
+        recording_begin_available = bool(
+            session["state"] == "active" and valid and identity_matches and snapshot_ok
+            and recipe_ok and binding_matches and binding_state == "started"
+            and observation.recording_begin_protocol == required_begin
+            and observation.recording_status not in {"STARTING", "RECORDING", "DRAINING", "FAILED"}
+        )
+        motion_ready = bool(
+            valid and session["state"] == "active" and binding_state == "started"
+            and (not execution.recording_required_for_motion or recording_ready)
+            and not observation.safety_latched and not owners
+            and bool(execution.control_scope_granted)
+        )
+        if not identity_matches:
+            status = "identity_changed"
+        elif binding_state in {"expired", "invalidated", "released"}:
+            status = binding_state
+        elif not snapshot_ok or not recipe_ok:
+            status = "snapshot_ineligible"
+        elif not binding_matches or binding_state not in {"prepared", "started"}:
+            status = "unverified"
+        elif session["state"] == "active" and binding_state != "started":
+            status = "unverified"
+        else:
+            status = binding_state
+        return SessionCurrent(
+            observed_at=now, valid=valid, status=status,
+            error=binding_error,
+            runtime_identity=observation.runtime_identity,
+            runtime_identity_matches=identity_matches,
+            binding=CurrentBinding(
+                binding_id=binding.binding_id, state=binding_state,
+                matches=binding_matches, readback_sha256=readback_sha,
+                error=binding_error,
+            ),
+            snapshot_id=session["snapshot_id"], snapshot_eligible=snapshot_ok,
+            recipe_fingerprint_matches=recipe_ok,
+            control_scope_granted=execution.control_scope_granted,
+            recording_required_for_motion=observation.recording_required_for_motion,
+            recording_begin_required=execution.recording_begin_required,
+            recording=CurrentRecording(
+                status=observation.recording_status,
+                episode_id=observation.recording_episode_id,
+                segment_id=observation.recording_segment_id,
+                command_capture_ready=observation.recording_command_capture_ready,
+                error=observation.recording_error,
+                ready=recording_ready,
+            ),
+            owner=CurrentOwner(
+                state="held" if owners else "not_acquired",
+                session_id=owners[0] if owners else None,
+                lease_expires_at_backend_monotonic_s=None,
+            ),
+            safety_latched=observation.safety_latched,
+            recording_ready=recording_ready, motion_ready=motion_ready,
+            start_available=start_available,
+            recording_begin_available=recording_begin_available,
+            blockers=blockers,
+        )
 
     def _record_recording_attempt(self, session: dict, result: str, reason: str) -> None:
         session["recording_begin_attempts"] = [

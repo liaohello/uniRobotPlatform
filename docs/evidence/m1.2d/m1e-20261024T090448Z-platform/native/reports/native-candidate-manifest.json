@@ -1,0 +1,56 @@
+{
+  "schema_version": "mobilecar-native-candidate-2",
+  "patch_base_native_commit": "a5cef52d932ba41424b4bcc134539914031fda39",
+  "patch_sha256": "df7e6e9689edaf97b6944aede7dabcf419f870b88ca0a3440fb6604d9e15d7e6",
+  "test_release": "m1e-20261024T090412Z-native",
+  "deployed_base_release": "drvfix-20261019T044549Z-0a80415b2577",
+  "source_listing_sha256": "ff27bb5e5cf8be7c15cdb321872d99687323f794a19e7636c1bd476dde1bb1cb",
+  "changed_files": [
+    {
+      "path": "src/mobilecar/app.py",
+      "candidate_sha256": "4c3a07a7f299d0b2edaf5cec7e1bf0da154236e60f1c44c1fe957fef6fbb5b70",
+      "drvfix_base_sha256": "bd29d0655558fc37bd2af11488372855ee25c5fca5209ecb0d96b1b196c80ae1"
+    },
+    {
+      "path": "src/mobilecar/cli.py",
+      "candidate_sha256": "f90d689ab8dbe1c72f5d0e22afcecf02cd6e854024f1192515ad9936c3cc1f60",
+      "drvfix_base_sha256": "eba88a3948df2c5e9013c1603f45f86d5dd1e11f285f7b6a3a0081efbecb6120"
+    },
+    {
+      "path": "src/mobilecar/config.py",
+      "candidate_sha256": "091d4d2c987a8194d57f59734bf2b2c2e945bf522b73a2bc0e710f7275a0ea76",
+      "drvfix_base_sha256": "38350ef7c46c235e550fec24af29751dc0958378fecb6aaa3c8db401f21df1ea"
+    },
+    {
+      "path": "src/mobilecar/contracts/models.py",
+      "candidate_sha256": "1e981d5b5796736b004918ac26e70f1f7436e06b8d43d160f48daccef4df6c4e",
+      "drvfix_base_sha256": "40279a8b2f9f026819785eb1c18756e691b812b9099971b924ec04e9642beac0"
+    },
+    {
+      "path": "src/mobilecar/data/recorder.py",
+      "candidate_sha256": "688b57e1725dc560ba22b0208519276baec7bf396da32afd339e5938d58588d0",
+      "drvfix_base_sha256": "3bffa65614a03edd5af970d3dd9748c6572fcade89c2810199ca25a0689a8bbf"
+    },
+    {
+      "path": "src/mobilecar/attestation.py",
+      "candidate_sha256": "389458148be673c50d0c915c7ad9da453502998108260c4b2728d649405e9c4e",
+      "drvfix_base_sha256": null
+    },
+    {
+      "path": "src/mobilecar/session_binding.py",
+      "candidate_sha256": "c9f059b8cf0e79f95689b19278786fc338e72ea6dcb813872bf279b6d99f7df7",
+      "drvfix_base_sha256": null
+    },
+    {
+      "path": "tests/integration/test_session_binding.py",
+      "candidate_sha256": "d39c99f855852dc7a402190b3e003b283bb00695d12905a3b1e3ee0a0bf60e63",
+      "drvfix_base_sha256": null
+    },
+    {
+      "path": "tests/integration/test_lifecycle_race.py",
+      "candidate_sha256": "0ecbf96abeaa70111232e9a6364f72539e308ac714a64bb8b8b55335613ec928",
+      "drvfix_base_sha256": null
+    }
+  ],
+  "note": "Test release assembled from drvfix content plus the patch. a5cef52 base differs from drvfix in the checked source/UI/docs/asset paths listed in native-deploy-identity.json. Neither candidate reuses the old a5 source pin."
+}

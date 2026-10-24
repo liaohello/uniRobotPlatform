@@ -26,3 +26,7 @@ A MuJoCo-based embodied AI simulation and 3D interaction data collection platfor
 ### M1.2c 后端候选（2026-10-24）
 
 [M1.2c 交付记录](docs/backend-m1.2c.md)：修正依赖锁核验，固定原生配置/编译场景摘要与运行时版本核对；平台候选 18944 增加 `m1-binding-1` 客户端、Session 执行分域和 `m1-recording-1` begin。原生候选补丁已在服务器以 mock backend 验证，但未部署到 8792；真实 G1 prepared/Start、在线录制、回放和 M1 闭环仍未完成。
+
+### M1.2d 后端候选（2026-10-24）
+
+[M1.2d 交付记录](docs/backend-m1.2d.md)：修复 native RESET/开录生命周期竞态与 started 被准备 TTL 误过期；单 Session GET 增加只读 `current`，列表明确为存档视图；平台实际 `NativeBindingClient` 已与隔离 native mock 完成真实 HTTP prepare/readback/start/begin/release 集成。候选完成，原生补丁仍未部署到 8792，真实物理验证未执行。

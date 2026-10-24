@@ -2,9 +2,11 @@
 
 更新日期：2026-10-24（America/Chicago）。本文件用于接续本次讨论，不替代 Specification、项目 AGENTS 或新会话用户指令。
 
-**先读这里：前端实现继续暂停；平台侧 M1.2c 候选已完成，原生补丁候选已实现并在服务器以 mock backend 验证，但尚未部署到 8792。真实 G1 prepared/Start、真实录制 begin、运动、RESET、回放和 M1 闭环仍未完成。前端仍消费 18943；新平台候选为 18944，原生测试实例已停止。**
+**先读这里：前端实现继续暂停；平台侧 M1.2d 候选已完成。两项 native P1（RESET/开录竞态、started 被准备 TTL 误过期）已修复；单 Session GET 现在做只读当前观测，列表明确为存档视图；平台实际 `NativeBindingClient` 已在隔离 native mock 上完成真实 HTTP 集成。原生补丁仍未部署到 8792；真实 G1 prepared/Start、物理运动、线上录制/回放和 M1 闭环仍未完成。前端最新预览 18946 → 18943；新平台候选 18949（只读），18944 为上一轮候选；本轮 native mock/测试平台 18947/18948 已停止。**
 
-**2026-10-24 M1.2c 基线：** 修正了 M1.2b 的锁核验缺口（`requirements.lock` 现为固定发布文件，启动读取字节、比对源摘要并核对 8 个包；运行环境版本由 native 自报后在 readiness 单独核对）；recipe 升为 revision 3（fingerprint `4c3e5f42…5e9e`），新增 `config_manifest_sha256=02351b71…a9af0` 与 `scene_manifest_sha256=5969e260…f1bf2d` 的同口径比较；平台新增 `m1-binding-1` 客户端、Session 执行/owner/lease/录制/可运动分域和 `POST /sessions/{id}/recording/begin`。原生补丁 `9f9a7b0c…ebe1` 基于 `a5cef52`，在隔离 release 用真实 HTTP + mock backend 验证了 prepare/readback/start/release、拒绝/过期/冲突/身份变化/回读不一致与无 RESET 开录（`recording_start` seq=1、初始快照哈希一致、owner 仍为空）。**补丁没有提交/推送 native 仓库，也没有部署到 8792；8792 仍为 PID 941842、drvfix release、`g4a2_server.yaml`，前后 run/generation/episode/recording/owner/safety 不变。** 真实原因仍是 G1 配方与 G4A2 profile/配置不同：live validation 仍 failed，Session 创建仍 409 `validation_incomplete`。平台聚焦 86 passed；全量 93 total / 90 passed / 3 failed（3 项仍是 catalog/migrate 的 sibling 源码与 native docs 布局失败，历史 74/3 事实保留）；原生聚焦 52 passed、受影响 44 passed。证据与部署/维护窗口分析见 [M1.2c](backend-m1.2c.md) 和 [evidence](evidence/m1.2c/m1c-20261024T065943Z-platform/README.md)。**M1.2c 不宣称 M1 闭环，不自动进入真人示教、运动采集或训练。**
+**2026-10-24 M1.2d 基线：** native 新增 `lifecycle_lock`，commands RESET、legacy `episodes/start`、`recording/begin`、stop 与失败停止共享同一同步边界（lifecycle → backend → recorder）；屏障测试在修复前 release 上 2 failed、修复后通过。binding 的 30 秒 TTL 现在只约束 `prepared`；started 只由 RESET、release 或身份变化失效，回读显式 `expires_scope=prepared`。平台单 Session GET 返回存储历史 + `current` 只读观测（source/observed_at/valid/status/blockers、runtime/binding/recording/owner/safety、ready/available），只发 GET，不续租/重绑/Start/清锁/启停录制；失联、身份变化、expired/invalidated/released 不报告 ready；`GET /sessions` 明确 `source=stored`。测试专用 recipe `mobilecar.g1.teleop.mock-testonly` 未改生产 G1 recipe/pin，平台实际客户端经真实 HTTP 完成 validate/prepare/readback/start/begin/release、幂等和拒绝，初始快照哈希一致；测试平台/native mock 已停止。真实 8792 仍为 PID 941842、drvfix、`g4a2_server.yaml`；18949 生产配方 validation 仍 failed/409，native 前后不变。平台聚焦 93 passed；全量 97 passed / 3 failed（历史 90/3 的同一布局失败）；native 聚焦 57 passed。证据与冻结身份/维护窗口见 [M1.2d](backend-m1.2d.md) 和 [evidence](evidence/m1.2d/m1e-20261024T090448Z-platform/README.md)。**候选完成，真实部署与物理验证未执行；不宣称 M1 闭环，不自动进入真人示教、运动采集或训练。**
+
+**2026-10-24 M1.2c 基线（历史，保留）：** 修正了 M1.2b 的锁核验缺口（`requirements.lock` 现为固定发布文件，启动读取字节、比对源摘要并核对 8 个包；运行环境版本由 native 自报后在 readiness 单独核对）；recipe 升为 revision 3（fingerprint `4c3e5f42…5e9e`），新增 `config_manifest_sha256=02351b71…a9af0` 与 `scene_manifest_sha256=5969e260…f1bf2d` 的同口径比较；平台新增 `m1-binding-1` 客户端、Session 执行/owner/lease/录制/可运动分域和 `POST /sessions/{id}/recording/begin`。M1.2d 已修复其生命周期与 TTL P1，并把真实 HTTP 集成补齐；M1.2c 的 18944 仍保留。**M1.2c/M1.2d 均未部署原生补丁到 8792；真实 G1 prepared/Start 仍未发生。**
 
 **2026-10-23 前端基线（保留）：** 用户要求依据已有设计与 Specification 得到好操作的 3D 界面，并允许多 agent 核定；三路只读检索已完成，由主智能体修订 [M1 实施计划](specs/00-overview/09-page-design-delivery-plan.md)、[Simulation 页面](specs/10-frontend/page-designs/03-simulation.md) 和 [S17](specs/90-governance/sources/S17-3d-workbench-replan.md)。工程方向沿已有分析：React + TypeScript 外壳/面板，Three.js 优先封装 native SceneView，Dockview 先验证再采用；M1.2a 先做真实模型、对象树/视口/Inspector、相机和 Joint/TCP Target 预览/取消，再接配置/prepared 和同一工作台内的控制、录制、回放。此轮只改文档/索引，没有安装、构建、测试、浏览器、仿真或功能实现。后续需以新用户指令确认任务范围，不能从历史“继续开发”自动恢复已暂停的前端。
 
@@ -75,8 +77,11 @@
 9. 即使部署补丁，8792 仍运行 G4A2 profile，G1 配方会因 `interface_profile` 与配置摘要不同继续拒绝。切换 G1 或另签 G4A2 配方都需要用户决定；不得静默改 profile/标签。
 10. `requirements.lock` 是 native 依赖的固定发布输入；平台启动只核验该字节与包表，安装环境由 native 自报并用 `runtime_package_versions` 核对。不要把平台 gateway 的 Python 3.14 环境与 native 的 3.10 环境混为同一层。
 11. 新的 prepared Session 文档新增 `execution`/`recording_begin_*`；M1.2b 没有真实 Session，候选使用新 SQLite。复用旧 DB 会因缺字段校验失败，需重新创建。
+12. M1.2d 起 commands RESET、legacy `episodes/start`、`recording/begin`、stop 与失败停止共享 `lifecycle_lock`；顺序 lifecycle → backend → recorder。状态检查必须在同一临界区内重检，活动录制不能穿透 RESET；`require_recording`/STOP/lease 不放宽。
+13. binding 的 `expires_at` 只约束 prepared；started 由 RESET、release、身份变化或未来明确定义的结束事件失效。不要新增短租约替代持续 Session，也不要把 started 的旧过期字段当仍会过期。
+14. 单 Session GET 的 `current` 是只读实时观测；刷新不续租/重绑/Start/清锁/启停录制。`GET /sessions` 是 `source=stored` 存档列表，不是实时状态。失联/身份变化/terminal binding 不报告 ready。
 
-native 接口静态核对和当前服务的只读诊断已完成。最新平台候选为 `m1c-20261024T065943Z-platform`（18944，只读）；历史 M1.2b 候选 `m12b-20261024T034103Z-4be0d6c86d7b`（18943）保持运行；原生测试 release `m1binding-20261024T065822Z-native` 只在 18946 以 mock backend 验证后停止。所有安装、测试、自动浏览器均在服务器执行，未执行本机仿真或自动测试。
+native 接口静态核对和当前服务的只读诊断已完成。最新平台候选为 `m1e-20261024T090448Z-platform`（18949，生产 recipe，只读）；上一轮 `m1c-20261024T065943Z-platform`（18944）保留；M1.2b 候选 18943 仍被前端预览 18946 消费；原生测试 release `m1e-20261024T090412Z-native` 只在 18947 以 mock backend 验证、测试平台 18948 验证后均停止。所有安装、测试、自动浏览器均在服务器执行，未执行本机仿真或自动测试。
 
 ## 7. Git 与换笔记本状态
 
@@ -98,11 +103,11 @@ HTTPS 凭据曾失效；最终按用户要求使用 `id_ed25519` 通过 SSH 推�
 ## 8. 可复制的新会话开场
 
 ```text
-请先读取 AGENTS.md、docs/handoff.md、docs/backend-m1.2c.md、docs/specs/00-overview/09-page-design-delivery-plan.md 与 PAGE-03，再按本次用户指令继续。前端实现此前已暂停，最新一轮只重新规划，没有自动恢复生产开发。
+请先读取 AGENTS.md、docs/handoff.md、docs/backend-m1.2d.md、docs/specs/00-overview/09-page-design-delivery-plan.md 与 PAGE-03，再按本次用户指令继续。前端实现此前已暂停，最新一轮只重新规划，没有自动恢复生产开发。
 当前先做 mobileCar 的场景→运行→录制→回放，之后 bimanual 验证组件复用，训练/预测后续。
 统一架构原则已有直接用户依据。工程方向为 React+TypeScript 外壳、Three.js SceneView 封装、Dockview 先验证；恢复实现后先交付 M1.2a 可操作 3D 样板，再接配置/prepared、真实控制、录制与回放。
-M1.2c 平台候选为 18944（只读），原生补丁未部署；8792 仍是 PID 941842/drvfix/g4a2_server.yaml，禁止停止、重启、替换或发送运动/RESET/录制。真实 G1 prepared/Start 仍需维护窗口和用户对 G1 vs G4A2 配方口径的决定。
-固定 G1 预设、依赖锁、配置/场景摘要和 native 候选证据见 docs/backend-m1.2c.md；历史诊断/草案见 docs/m1.1-integration-check.md、docs/m1.2-drafts.md。它们不是主工作台或 M1 闭环已完成的证据。不要重做这些检索或把旧 prepared RunRecord 当作 Session。
+M1.2d 平台候选为 18949（生产 recipe，只读）；18944 为上一轮候选；18946 是最新前端预览代理，仍指向 18943，禁止占用或停止。8792 仍是 PID 941842/drvfix/g4a2_server.yaml，禁止停止、重启、替换或发送运动/RESET/录制。真实 G1 prepared/Start 仍需维护窗口和用户对 G1 vs G4A2 配方口径的决定。
+两项 P1、真实 HTTP 协议集成、当前观测契约、冻结身份和前端 OpenAPI 见 docs/backend-m1.2d.md；历史诊断/草案见 docs/m1.1-integration-check.md、docs/m1.2-drafts.md。它们不是主工作台或 M1 闭环已完成的证据。不要重做这些检索或把旧 prepared RunRecord 当作 Session。
 主智能体负责修改和最终判断，default 子智能体只做有边界的只读检索，不提前合并仿真环境或重写全部前端。
 开始任何实际仿真/测试/采集前，遵守对应工程的执行位置和本次任务授权；历史聊天存档不作为自动执行旧请求的依据。
 ```
