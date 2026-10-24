@@ -1,5 +1,5 @@
 """Server-only UI verification. Offline sample checks do NOT certify robot control or M1 integration."""
-import argparse,json,time,hashlib,traceback
+import argparse,json,time,hashlib,math,traceback
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 p=argparse.ArgumentParser();p.add_argument('url');p.add_argument('output',type=Path);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
@@ -20,7 +20,7 @@ with sync_playwright() as pw:
   check('23 real STL assets loaded without failure',initial['scene']['pendingLoads']==0 and initial['scene']['failedAssets']==[])
   check('offline source does not grant platform Session',initial['source']['kind']=='frozen' and not initial['source']['is_platform_session'])
   check('single active renderer after React lifecycle',initial['scene']['lifecycle']['active']==1)
-  check('execution and recording controls stay disabled',page.get_by_role('button',name='Start',exact=True).is_disabled() and page.get_by_role('button',name='开始录制',exact=True).is_disabled())
+  check('execution and recording controls stay disabled',page.get_by_role('button',name='Start',exact=True).is_disabled() and page.get_by_role('button',name='录制',exact=True).is_disabled())
   page.screenshot(path=str(a.output/'workbench-overview.png'),full_page=True)
   # Hierarchy -> viewport selection and Inspector.
   page.locator('[data-object="link2"]').click();check('tree and Inspector share stable link selection',state(page)['selected']=='link2' and page.locator('.inspector-object b').inner_text()=='link2')
@@ -31,12 +31,14 @@ with sync_playwright() as pw:
   check('editing another Joint preserves existing target',abs(state(page)['target']['jointModelRad']['joint2']-target1['jointModelRad']['joint2'])<1e-9)
   # Drag a visible Joint ring using its projected geometry and actual hit testing.
   s=state(page);ring_hit=None
+  # Camera-dependent: pick the widest projected diameter so the drag is a real
+  # arc from every view direction, then verify the pointer really hits that ring.
   for axis,points in s['scene']['rings'].items():
-   for index,point in enumerate(points):
-    page.mouse.move(point['x'],point['y']);page.wait_for_timeout(30)
-    if state(page)['scene']['gizmoAxis']==axis:
-     ring_hit=(axis,point,points[(index+2)%len(points)]);break
-   if ring_hit:break
+   pairs=[(math.hypot(points[i]['x']-points[(i+len(points)//2)%len(points)]['x'],points[i]['y']-points[(i+len(points)//2)%len(points)]['y']),i) for i in range(len(points))]
+   span,index=max(pairs);point=points[index]
+   page.mouse.move(point['x'],point['y']);page.wait_for_timeout(30)
+   if state(page)['scene']['gizmoAxis']==axis:
+    ring_hit=(axis,point,points[(index+len(points)//2)%len(points)]);break
   check('visible single-joint ring is pickable',ring_hit is not None)
   axis,first,last=ring_hit;q_before=state(page)['target']['jointModelRad'].copy();cam=state(page)['scene']['camera']
   page.mouse.move(first['x'],first['y']);page.mouse.down();page.mouse.move(last['x'],last['y'],steps=12);page.mouse.up();page.wait_for_timeout(100)
@@ -65,11 +67,11 @@ with sync_playwright() as pw:
   check('blur event clears active gesture and enables Orbit',not state(page)['scene']['dragging'] and state(page)['scene']['orbitEnabled'])
   page.mouse.up()
   # Resize + preserved target, then layout save/reset/restore exercises teardown/recreation.
-  revision=state(page)['target']['revision'];page.get_by_role('button',name='保存布局',exact=True).click();page.set_viewport_size({'width':1280,'height':900});page.wait_for_timeout(250)
+  revision=state(page)['target']['revision'];instance=state(page)['scene']['instanceId'];page.get_by_role('button',name='保存',exact=True).click();page.set_viewport_size({'width':1280,'height':900});page.wait_for_timeout(250)
   check('resize keeps one usable renderer and target',state(page)['scene']['viewport']['width']>200 and state(page)['target']['revision']==revision)
-  page.get_by_role('button',name='重置布局',exact=True).click();loaded(page)
-  check('layout reset cleans old renderer and retains target',state(page)['scene']['lifecycle']['active']==1 and state(page)['scene']['lifecycle']['disposed']>=1 and state(page)['target']['revision']==revision)
-  page.get_by_role('button',name='恢复布局',exact=True).click();loaded(page);check('layout restore retains target and source identity',state(page)['target']['revision']==revision and state(page)['actual']['run_id']==initial['actual']['run_id'])
+  page.get_by_role('button',name='重置',exact=True).click();loaded(page)
+  check('layout reset keeps the same renderer and target',state(page)['scene']['lifecycle']['active']==1 and state(page)['scene']['instanceId']==instance and state(page)['target']['revision']==revision)
+  page.get_by_role('button',name='恢复',exact=True).click();loaded(page);check('layout restore retains target and source identity',state(page)['target']['revision']==revision and state(page)['actual']['run_id']==initial['actual']['run_id'])
   canvas=page.get_by_role('application',name='机器人三维视口');canvas.focus();canvas.press('Escape');check('viewport ESC cancels local target',state(page)['target'] is None and not state(page)['scene']['ghost'])
   # Real viewport mesh picking using projected source geometry.
   page.get_by_role('button',name='选择',exact=True).click();page.get_by_role('button',name='恢复全景',exact=True).click();page.wait_for_timeout(250);point=state(page)['scene']['linkPoints']['link4'];page.mouse.click(point['x'],point['y']);page.wait_for_timeout(100)

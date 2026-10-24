@@ -2,7 +2,7 @@ import {describe,it,expect} from 'vitest';
 import sceneData from '../public/sample/scene.json';
 import native from '../public/sample/snapshot.json';
 import capsData from '../public/sample/capabilities.json';
-import {initializeSample,mapSnapshot,IdentityChanged,type SceneRead,type CapabilitiesRead,type SnapshotRead} from '../src/adapters/mobilecar-read';
+import {initializeSample,mapSnapshot,readEnvelope,IdentityChanged,type SceneRead,type CapabilitiesRead,type SnapshotRead} from '../src/adapters/mobilecar-read';
 import {jointTarget} from '../src/app/state';
 // Synthetic wire fixtures. Frozen captures below provide geometry only; not live evidence.
 const resource={contract_version:sceneData.contract_version,model_id:sceneData.model_id,model_sha256:sceneData.model_sha256,scene_id:sceneData.scene_id};
@@ -40,6 +40,19 @@ describe('read wire boundary',()=>{
  it('rejects asset URLs that omit or change the requested digest',()=>{
   const {scene,caps,snapshot}=fixtures();scene.data.mesh_assets[0].uri='/api/v1/mobilecar/scene/assets/base_link';
   expect(()=>initializeSample(scene,caps,snapshot)).toThrow('摘要');
+ });
+ it('projects envelope capability flags without promoting them to readiness',()=>{
+  const {scene,caps,snapshot}=fixtures();caps.resource_matches_pin=true;caps.deployed_content_verified=true;caps.recording_required_for_motion=true;
+  const v=initializeSample(scene,caps,snapshot);
+  expect(v.live!.session).toEqual({ready:false,platformSessionId:null,commandsAvailable:false,recordingAvailable:false,replayAvailable:false,
+   resourceMatchesPin:true,deployedContentVerified:true,recordingRequiredForMotion:true,contractVersion:resource.contract_version});
+ });
+ it('rejects an envelope that claims a platform session it cannot own',async()=>{
+  // The readiness guard lives at the wire boundary (readEnvelope), not in the
+  // projection helper, so exercise the actual reader with a lying envelope.
+  const {caps}=fixtures();
+  Object.assign(globalThis,{fetch:async()=>({ok:true,json:async()=>({...caps,session_ready:true})})});
+  await expect(readEnvelope('/api/v1/mobilecar/capabilities',new AbortController().signal)).rejects.toThrow('envelope');
  });
 });
 

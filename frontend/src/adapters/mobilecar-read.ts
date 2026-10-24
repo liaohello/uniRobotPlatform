@@ -6,6 +6,7 @@ export interface Envelope<T> {
  schema_version: string; data_source: string; adapter_id: string; robot_id: string;
  read_only: boolean; session_ready: boolean; platform_session_id: null;
  retrieved_at: string; runtime_identity: RuntimeIdentity; resource_identity: ResourceIdentity; interface_profile: string;
+ recording_required_for_motion?: boolean; resource_matches_pin?: boolean; deployed_content_verified?: boolean;
  data: T;
 }
 export interface SceneRead extends Envelope<SceneManifest> { objects: LiveMetadata['objects']; world_pose_semantics: string; geometry_provenance:Record<string,unknown> }
@@ -63,6 +64,10 @@ export function initializeSample(scene:SceneRead,caps:CapabilitiesRead,snapshot:
  const sample={scene:{...scene.data,mesh_assets:assets},capabilities:caps.data,armSpec,
    source:{kind:'live' as const,label:'真实只读监控',captured_at_utc:'',identity:scene.runtime_identity,interface_profile:scene.interface_profile,is_platform_session:false,is_episode_replay:false},
    live:{identityKey:identityKey(scene),resource:scene.resource_identity,objects:scene.objects,worldPoseSemantics:scene.world_pose_semantics,
-    geometryProvenance:scene.geometry_provenance,kinematicProfile:armSpec?profileId:'unsupported',retrievedAt:'',feedbackTimeS:0,target:snapshot.data.target,authority:snapshot.data.authority,recording:snapshot.data.recording,sensors:[]},actual:null as unknown as NativeSnapshot};
+    geometryProvenance:scene.geometry_provenance,kinematicProfile:armSpec?profileId:'unsupported',retrievedAt:'',feedbackTimeS:0,target:snapshot.data.target,authority:snapshot.data.authority,recording:snapshot.data.recording,sensors:[],
+    session:{ready:scene.session_ready,platformSessionId:scene.platform_session_id,commandsAvailable:caps.platform_commands_available,
+     recordingAvailable:caps.platform_recording_available,replayAvailable:caps.platform_replay_available,
+     resourceMatchesPin:caps.resource_matches_pin===true,deployedContentVerified:caps.deployed_content_verified===true,
+     recordingRequiredForMotion:caps.recording_required_for_motion===true,contractVersion:scene.resource_identity.contract_version}},actual:null as unknown as NativeSnapshot};
  return mapSnapshot(sample,snapshot);
 }

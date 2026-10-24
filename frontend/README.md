@@ -4,14 +4,17 @@
 
 ## 现在可以操作
 
-- 实时只读或显式冻结来源的 mobile_pick 场景与 LanderPi 网格，旋转/平移/缩放、前/侧/顶视角和聚焦。
+- 实时只读或显式冻结来源的 mobile_pick 场景与 LanderPi 网格，旋转/平移/缩放；相机工具栏提供放大、缩小、适配模型（仅机器人）、恢复全景（机器人 + 可见场景对象，并恢复默认 3/4 俯视方向）、聚焦选中对象。
+- 标准视角按车体轴命名：车头 = world_sim +X，车侧 = world_sim −Y，顶视 = world_sim +Z。只移动相机，不旋转模型根节点。
 - 对象树、mesh 点击/悬停、Inspector 共用稳定 link ID；双击机械臂部件选整臂。选中不授予控制权。
 - 显式 Joint 模式：单关节环或用户角数值/滑条编辑，其他已有目标保留；°/rad 仅改变显示。native 模型 joint4 零位偏移继续保留。
 - TCP 模式：world_sim（m、Z-up）轴/平面拖动及数值联动。Ghost 是本地位置 IK 或 FK 候选，Actual 来自所选后端只读流或冻结样本；预览和取消不写 Actual。
+- 布局：标准工作台 / 3D 专注预设；导航可收起；层级、Inspector、传感器、时间轴可折叠与恢复；分隔条可拖动；保存/恢复/重置布局不改变渲染器、相机、目标或运行状态。
+- 3D 视口可应用内最大化（Dockview 最大化）或进入浏览器全屏（覆盖视口、来源/状态、目标操作与弹层）。全屏被环境拒绝时显示真实原因，应用内最大化仍可用。
+- Session 准备抽屉显示 Draft / 校验 / prepared Session 三个阶段的真实字段与阻塞原因；后端未就绪时不显示 Ready。
 - 观察用相机、传感器区域与时间/事件区域统一装配。传感器媒体及连续 Episode 不在本单帧样本中，明确显示缺失，不放假视频或轨迹。
-- Dockview 调整布局、关闭/重建面板、保存/恢复/重置布局；布局不改变目标、权限或运行状态。
 
-空白左键拖动 Orbit，右键平移，滚轮缩放；手柄拖动期间不 Orbit。视口内 F 聚焦、Esc 取消本地目标，文本输入优先。失焦结束当前手势，保留最后本地草案；没有在线速度/力输入服务。
+空白左键拖动 Orbit，右键平移，滚轮缩放；手柄拖动期间不 Orbit。视口内 F 聚焦、Esc 取消本地目标（全屏中 Esc 交给浏览器，不清目标），文本输入优先。失焦、指针取消或布局尺寸真实变化会结束当前手势并保留最后本地草案；没有在线速度/力输入服务。
 
 ## 来源与限制
 
@@ -35,6 +38,7 @@ React/TypeScript 负责外壳、状态及面板；Three.js SceneView 采用参�
 npm ci --ignore-scripts --no-audit --no-fund
 npm run build
 npm test -- --maxWorkers=2
+python3 tests/browser-usability.py http://127.0.0.1:18934 /tmp/usability --release <release_id>
 python3 tools/serve-readonly.py --directory dist --port 18933 --upstream http://127.0.0.1:18942
 ```
 

@@ -1,0 +1,7 @@
+{
+  "node": "v20.20.2",
+  "npm": "10.8.2",
+  "browser_python": "/home/liaozhengyan/Desktop/mobileCar/envs/g2a-py310-mujoco316/bin/python",
+  "hostname": "cec-sim",
+  "lock_sha256": "1bb055b6e003c960e116b8561b174dad8100dec2ab282c29370b0b10aa7a04bd"
+}

@@ -17,7 +17,9 @@ export interface NativeSnapshot {
   gripper: { width_m: number; model_drive_position_rad: number };
   diagnostics: Record<string, unknown>;
 }
-export interface Capabilities { arm_joint_names: string[]; arm_user_limits_rad: [number, number][]; sensor_streams: string[]; tcp_orientation_is_soft: boolean; camera_parent_body: string; tcp_parent_body: string }
+export interface Capabilities { arm_joint_names: string[]; arm_user_limits_rad: [number, number][]; sensor_streams: string[]; tcp_orientation_is_soft: boolean; camera_parent_body: string; tcp_parent_body: string;
+ backend_kind?: string; arm_velocity_limits_rad_s?: number[]; gripper_min_width_m?: number; gripper_max_width_m?: number;
+ base_linear_limit_m_s?: number; base_yaw_limit_rad_s?: number; tcp_position_tolerance_m?: number; supported_commands?: string[] }
 export interface ArmSpec { user_coordinates: { zero_model_rad: number[]; direction: number[] }; tcp: { body: string; position: Vec3 }; mimic: Record<string, { joint: string; multiplier: number; offset: number }>; limits: Record<string, [number, number]> }
 export type SourceKind = 'frozen' | 'mock' | 'history' | 'live';
 export interface SourceIdentity { kind: SourceKind; label: string; captured_at_utc: string; identity: { run_id: string; backend_generation: number; episode_id: string }; interface_profile: string; is_platform_session: boolean; is_episode_replay: boolean }
@@ -34,6 +36,10 @@ export interface LiveMetadata {
  objects: { object_id: string; kind: string; native_name: string; parent_object_id: string|null }[];
  authority: { base_owner_session_id: string|null; arm_owner_session_id: string|null; authorizes_caller: false; lease_status: string };
  recording: { status: string; command_capture_ready: boolean; recording_segment_id: string|null };
+ // Verbatim envelope capability flags. These gate the Session preparation UI;
+ // false values must never be rendered as ready.
+ session: { ready: boolean; platformSessionId: string|null; commandsAvailable: boolean; recordingAvailable: boolean; replayAvailable: boolean;
+  resourceMatchesPin: boolean; deployedContentVerified: boolean; recordingRequiredForMotion: boolean; contractVersion: string };
  sensors: { kind: string; fresh: boolean; quality: string; sample_id: string|null; frame_id: null }[];
  kinematicProfile: string; geometryProvenance?:Record<string,unknown>;
 }

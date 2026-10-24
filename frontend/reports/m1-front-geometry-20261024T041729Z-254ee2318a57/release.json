@@ -1,0 +1,34 @@
+{
+  "release_id": "m1-front-geometry-20261024T041729Z-254ee2318a57",
+  "aggregate_sha256": "254ee2318a574695643a02fc72e64bf94090da737789de116a6d8e03d588ad64",
+  "input_files": 65,
+  "base_commit": "596c0d7",
+  "validated_at_utc": "2026-10-24T04:21:53Z",
+  "scope": "3D viewport and layout usability; Session preparation surface; no motion/session/recording acceptance",
+  "preview": {
+    "host": "cec-sim",
+    "loopback_port": 18935,
+    "upstream": "http://127.0.0.1:18942",
+    "upstream_release": "m1-geometry-20261023T192202Z-cdfc7472e5de",
+    "pid": 1189011,
+    "local_tunnel": "http://127.0.0.1:18935/"
+  },
+  "checks": {
+    "unit": 23,
+    "readonly": 30,
+    "frozen": 29,
+    "geometry": 23,
+    "usability": 99
+  },
+  "preserved_preview": {
+    "18933": "m1-front-geometry-20261023T192903Z-58a156740be8",
+    "18931": "m12a-20261023T162150Z-bf82d5697880",
+    "18932": "m1-front-read-20261023T180841Z-25c387722858"
+  },
+  "environment": {
+    "node": "v20.20.2",
+    "npm": "10.8.2",
+    "chromium": "ANGLE SwiftShader",
+    "browser_python": "/home/liaozhengyan/Desktop/mobileCar/envs/g2a-py310-mujoco316/bin/python"
+  }
+}

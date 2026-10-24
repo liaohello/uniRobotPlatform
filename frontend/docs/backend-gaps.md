@@ -7,7 +7,7 @@
 | 仍需对齐的最小能力 | 输入/输出或语义建议 | 当前前端边界 |
 |---|---|---|
 | 版本化用户角映射 / TCP 几何 | 能力元数据中保留按 joint name 的 zero_model_rad、direction 和 TCP parent/local offset，并附配置/内容版本；例：joint4 `{zero_model_rad:-1.5707963267948966,direction:1}`，TCP `{body:"guide_rod_link",position_m:[-0.0030427614580541846,-0.0007270026737451543,0.01995871637761593]}`。具体路由与字段由后端维护，不要求新增聚合端点 | Actual 直接用 named model angles；本地预览暂用已固定参考 profile，只按已知模型匹配，不证明远端完整部署配置，未知模型禁用候选 |
-| prepared Session / Start | 已验证快照、无运动绑定、显式Start、应用身份/初态确认 | Session不就绪；不用health、原生session或recording ready替代 |
+| prepared Session / Start | 已验证快照、无运动绑定、显式Start、应用身份/初态确认 | Session不就绪；不用health、原生session或recording ready替代。前端 Session 准备抽屉直接读取 `session_ready`、`platform_session_id`、`platform_commands_available`、`platform_recording_available`、`platform_replay_available`、`resource_matches_pin`、`deployed_content_verified`、`recording_required_for_motion` 并按 true/false 显示通过或阻塞；全部为 false 时不出现 Ready |
 | Target/plan/命令闭环 | 目标版本、Frame/自由度、有效计划身份、命令关联与Accepted/Rejected/执行终态 | native已有Target不视为本方回执；`command_id=null/tcp=null/preview=null`保留，本地线段不是轨迹 |
 | Authority | 后端认可的owner/lease/scope和接管结果、过期/安全停止 | 原生owner仅观察，authorizes_caller=false；接管/执行禁用 |
 | 相机媒体与真实观测 | frame/标定、source/capture/arrival时间、media reader与失效语义 | 只显示SensorState引用/quality，不把观察相机当RGB，不加载native_asset_uri |

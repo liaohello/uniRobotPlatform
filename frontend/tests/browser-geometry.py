@@ -45,7 +45,7 @@ async def main():
    # Same zoom/target for front and side; oblique uses the existing fit camera.
    for name in ('front','side','oblique'):
     if name=='oblique':await page.get_by_role('button',name='恢复全景',exact=True).click()
-    else:await page.get_by_role('button',name={'front':'前','side':'侧'}[name],exact=True).click()
+    else:await page.get_by_role('button',name={'front':'车头','side':'车侧'}[name],exact=True).click()
     await page.wait_for_timeout(350);s=await state(page)
     check(name+' view has Ghost off and no asset errors',not s['scene']['ghost'] and not s['scene']['failedAssets'])
     report['views'][name]={'camera':s['scene']['camera'],'camera_target':s['scene']['cameraTarget'],'source':s['source'],'tick':s['actual']['control_tick_id'],'ghost':s['scene']['ghost'],'world_objects':False}

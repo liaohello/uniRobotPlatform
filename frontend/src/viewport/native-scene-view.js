@@ -68,6 +68,8 @@ export class SceneView {
     this.planObject = null;
     this.disposables = [];
     this.renderCount = 0;
+    this.lastWidth = null;
+    this.lastHeight = null;
     this.lastRenderAt = 0;
     this.lastFrameCostMs = null;
     this.frameRequest = null;
@@ -242,8 +244,10 @@ export class SceneView {
 
   _setPointer(event) {
     const rect = this.renderer.domElement.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return false;
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    return true;
   }
 
   _clearGroup(root, map) {
@@ -592,12 +596,23 @@ export class SceneView {
   }
 
   resize() {
-    const width = Math.max(1, this.container.clientWidth);
-    const height = Math.max(1, this.container.clientHeight);
+    const width = this.container.clientWidth;
+    const height = this.container.clientHeight;
+    // Maximized/hidden groups report a zero box. Keep the last valid aspect and
+    // drawing buffer instead of collapsing to 1x1, which would corrupt picking
+    // and leave a blurred upscale until the next layout change.
+    if (width < 2 || height < 2) return false;
+    // Report whether the host box really changed: Dockview emits layout events
+    // that are not resizes, and those must not interrupt an active gesture.
+    const changed = this.lastWidth !== width || this.lastHeight !== height;
+    this.lastWidth = width;
+    this.lastHeight = height;
+    if (!changed && Math.abs(this.camera.aspect - width / height) < 1e-6) return false;
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this._requestRender(true);
+    return true;
   }
 
   configureRendering(options = {}) {

@@ -1,0 +1,407 @@
+{
+  "scope": "3D workbench viewport/layout usability; no motion/session/recording acceptance",
+  "release": "m1-front-geometry-20261024T041729Z-254ee2318a57",
+  "checks": [
+    "1366x768 fixed chrome stays under 150px",
+    "1366x768 canvas is usable (>=300px tall)",
+    "1366x768 document does not scroll",
+    "only one renderer instance",
+    "viewport toolbar exposes 放大",
+    "viewport toolbar exposes 缩小",
+    "viewport toolbar exposes 适配模型",
+    "viewport toolbar exposes 恢复全景",
+    "viewport toolbar exposes 聚焦选中对象",
+    "viewport toolbar exposes 车头",
+    "viewport toolbar exposes 车侧",
+    "viewport toolbar exposes 顶视",
+    "viewport toolbar exposes 图层选项",
+    "layout bar exposes 最大化视口",
+    "layout bar exposes 浏览器全屏",
+    "layout bar exposes 保存",
+    "layout bar exposes 恢复",
+    "layout bar exposes 重置",
+    "layout bar exposes 标准工作台",
+    "layout bar exposes 3D 专注",
+    "navigation rail can be collapsed and restored",
+    "Inspector diagnostics expand on demand",
+    "Inspector target actions stay reachable next to scrolling diagnostics",
+    "Inspector keeps a local scroll region",
+    "Session 准备 opens a draft/validation/prepared surface",
+    "Session drawer separates draft, validation and prepared steps",
+    "Session drawer reports the real blocked reason instead of Ready",
+    "Session drawer keeps Start disabled",
+    "mouse wheel zooms the camera in",
+    "mouse wheel zooms the camera back out",
+    "wheel over the legend overlay still zooms",
+    "zoom-in button dollies closer",
+    "zoom-out button dollies further",
+    "适配模型 frames the robot, not a floor-sized box",
+    "适配模型 keeps every robot link on screen",
+    "layer menu lists scene object toggle",
+    "恢复全景 keeps the robot on screen",
+    "恢复全景 includes scene objects",
+    "聚焦选中对象 moves the orbit pivot",
+    "聚焦选中对象 keeps the same renderer and selection",
+    "车头 looks along world_sim +X",
+    "车侧 looks along world_sim -Y",
+    "顶视 looks down world_sim +Z",
+    "vertical sash is present for the left column",
+    "sash drag widens the left column",
+    "sash drag resizes the viewport without a new renderer",
+    "camera aspect follows the sash-dragged viewport",
+    "horizontal sash is present above the sensor strip",
+    "horizontal sash changes the sensor strip height",
+    "horizontal sash keeps the renderer and aspect",
+    "应用内最大化 grows the 3D viewport",
+    "应用内最大化 keeps the same renderer and camera",
+    "应用内最大化 keeps selection and target state",
+    "应用内最大化 updates the camera aspect",
+    "应用内最大化 is reflected by the button state",
+    "应用内最大化 keeps the Actual subscription alive",
+    "应用内最大化 keeps TCP handles projected",
+    "应用内最大化 keeps handle picking aligned",
+    "还原视口 returns to the docked size and same renderer",
+    "全屏 keeps the same renderer and local target",
+    "全屏 grows the viewport and updates aspect",
+    "全屏 keeps source, status and target entry points visible",
+    "全屏 keeps popovers inside the fullscreen viewport",
+    "Esc while fullscreen does not clear the local target",
+    "Esc leaves Orbit usable",
+    "exit fullscreen restores the docked viewport",
+    "exit fullscreen keeps the local target",
+    "3D 专注 closes media and timeline panels",
+    "3D 专注 maximizes the 3D viewport",
+    "3D 专注 collapses the navigation rail",
+    "3D 专注 keeps one renderer and the local target",
+    "标准工作台 restores every panel",
+    "标准工作台 leaves maximize mode",
+    "layout preset switches keep the renderer and target",
+    "传感器面板 can be collapsed",
+    "collapsing a panel grows the viewport without a new renderer",
+    "传感器面板 can be restored",
+    "Inspector can be collapsed before restore",
+    "布局恢复 reopens the saved panels",
+    "布局恢复 keeps renderer, camera and target",
+    "TCP drag stays active across live Actual refreshes",
+    "TCP drag moves the local target only",
+    "TCP drag during polling does not orbit the camera",
+    "TCP drag does not reflow the panel layout",
+    "1920x1080 canvas is large (>=500px tall)",
+    "1920x1080 keeps aspect and renderer",
+    "1920x1080 wheel zoom works",
+    "1920x1080 in-app maximize works",
+    "125% zoom keeps the page inside the viewport",
+    "125% zoom keeps a usable 3D canvas",
+    "125% zoom keeps 放大 reachable",
+    "125% zoom keeps 最大化视口 reachable",
+    "125% zoom keeps 浏览器全屏 reachable",
+    "125% zoom keeps 标准工作台 reachable",
+    "125% zoom keeps 3D 专注 reachable",
+    "125% zoom in-app maximize works and updates aspect",
+    "browser issued GET requests only",
+    "no motion/RESET/recording endpoints were called",
+    "no uncaught browser errors"
+  ],
+  "errors": [],
+  "sizes": {
+    "1366x768": {
+      "header": 50,
+      "control": 42,
+      "layout": 34,
+      "status": 24,
+      "nav": 150,
+      "viewport": {
+        "x": 373,
+        "y": 155,
+        "w": 678,
+        "h": 360
+      },
+      "canvas": {
+        "x": 373,
+        "y": 196,
+        "w": 678,
+        "h": 319
+      },
+      "scrollH": 768,
+      "innerH": 768,
+      "dpr": 1
+    },
+    "1920x1080": {
+      "w": 1048,
+      "h": 518,
+      "scrollH": 1080,
+      "innerH": 1080
+    },
+    "125_percent": {
+      "w": 472,
+      "h": 170.5,
+      "statusBottom": 614,
+      "innerH": 614,
+      "scrollH": 614,
+      "dpr": 1.25,
+      "preset": "application   "
+    }
+  },
+  "nav": {
+    "collapsed": 52,
+    "expanded": 150
+  },
+  "session_drawer": "Session 准备\n草案 · 校验 · prepared Session\n1\n草案 Draft\n项目\nLanderPi · mobile_pick\n数据源\n真实只读监控\n接口 profile\ng4a1-1.0\n契约\nmobilecar-1.0\n运行\nrun_9c88e3e36e7648a3852c9f590e43ed5f\nEpisode\nepisode_43c22f95536f4517be04e4b195d6d354\n模型\nlanderpi_mecanum_dynamic_5dof_3ca3d6d0a92a\n最近快照\n21:20:15\n2\n校验 Validation\n3/7 通过\n只读 envelope（read_only=true）\n后端以只读模式提供 scene / capabilities / snapshot\n通过\n跨请求身份一致\nadapter / robot / run / resource / profile 逐次比较\n通过\n资源匹配 pin\n后端声明匹配\n通过\n部署内容完整核验\n后端 deployed_content_verified=false\n阻塞\n平台命令通道\nplatform_commands_available=false\n阻塞\n录制通道\nplatform_recording_available=false\n阻塞\nprepared Session\nsession_ready=false / platform_session_id=null\n阻塞\n3\nprepared Session\n未就绪\n\n后端只提供只读读取端点，没有 prepared Session / Start / 控制权接口；接口未返回 session_ready=true 与 platform_session_id。因此 Start、运动、RESET、录制保持禁用，不以 health、原生 session 或 recording ready 代替。\n\n运动学元数据仍来自本地固定参考 profile（按模型摘要匹配），后端提供版本化字段前不替换。本轮不发送运动 / RESET / ",
+  "wheel": {
+    "before": 0.7409683608676647,
+    "in": 0.5973636697998144,
+    "out": 0.7409683608676647
+  },
+  "fit_model": {
+    "distance": 0.7409683608676643,
+    "viewport": {
+      "width": 678,
+      "height": 300
+    },
+    "links": [
+      {
+        "x": 712,
+        "y": 376.203125
+      },
+      {
+        "x": 742.3456813869325,
+        "y": 422.0127003973925
+      },
+      {
+        "x": 705.6863303064201,
+        "y": 397.9756382897678
+      },
+      {
+        "x": 695.9469483177835,
+        "y": 448.1864394802189
+      },
+      {
+        "x": 660.7338454800268,
+        "y": 419.16013281708206
+      },
+      {
+        "x": 713.2570822932084,
+        "y": 363.16387757503963
+      },
+      {
+        "x": 713.2976397648791,
+        "y": 360.2228494088493
+      },
+      {
+        "x": 735.5735980710424,
+        "y": 358.48105388828617
+      },
+      {
+        "x": 737.7918260744705,
+        "y": 353.8414811285348
+      },
+      {
+        "x": 738.7499657498736,
+        "y": 335.52740720477755
+      },
+      {
+        "x": 739.401209030518,
+        "y": 322.71969219738276
+      },
+      {
+        "x": 751.9156793429275,
+        "y": 334.682067531412
+      },
+      {
+        "x": 752.102010255091,
+        "y": 334.75965786760383
+      },
+      {
+        "x": 750.6355387678344,
+        "y": 332.138880511096
+      },
+      {
+        "x": 759.7009353889887,
+        "y": 324.755425219313
+      },
+      {
+        "x": 744.7823877626637,
+        "y": 341.0169794571226
+      },
+      {
+        "x": 762.2975295916997,
+        "y": 337.03092733974074
+      },
+      {
+        "x": 769.8851060554218,
+        "y": 334.15766363561863
+      },
+      {
+        "x": 754.4380511814516,
+        "y": 340.0067435921679
+      },
+      {
+        "x": 737.7277029807711,
+        "y": 308.5166194873277
+      },
+      {
+        "x": 738.1429419317237,
+        "y": 304.6368244840693
+      },
+      {
+        "x": 722.6622351958371,
+        "y": 415.42836850956223
+      }
+    ]
+  },
+  "camera_axes": {
+    "front": [
+      1.0,
+      0.016,
+      0.0
+    ],
+    "side": [
+      0.0,
+      0.016,
+      1.0
+    ],
+    "top": [
+      0.0,
+      1.0,
+      0.0
+    ]
+  },
+  "sash": {
+    "hierarchy_before": 216,
+    "hierarchy_after": 276,
+    "viewport_before": {
+      "width": 678,
+      "height": 300
+    },
+    "viewport_after": {
+      "width": 618,
+      "height": 300
+    }
+  },
+  "sash_horizontal": {
+    "before": 96,
+    "after": 126
+  },
+  "maximize": {
+    "before": {
+      "width": 618,
+      "height": 270
+    },
+    "after": {
+      "width": 1202,
+      "height": 511
+    },
+    "aspect": 2.352250489236791,
+    "distance": 0.9694688947934809
+  },
+  "fullscreen": {
+    "doc": {
+      "active": true,
+      "enabled": true,
+      "tag": "MAIN"
+    },
+    "viewport": {
+      "width": 695,
+      "height": 317
+    },
+    "aspect": 2.192429022082019,
+    "esc_exit": {
+      "fullscreen": true,
+      "target": {
+        "mode": "tcp",
+        "revision": 1,
+        "tcpWorldM": [
+          0.33675,
+          0.002443495247227821,
+          0.30092144299073775
+        ]
+      },
+      "orbit": true
+    }
+  },
+  "preset_focus": {
+    "panels": {
+      "viewport": {
+        "open": true,
+        "width": 1204,
+        "height": 554
+      },
+      "hierarchy": {
+        "open": true,
+        "width": 0,
+        "height": 554
+      },
+      "inspector": {
+        "open": true,
+        "width": 0,
+        "height": 554
+      },
+      "sensors": {
+        "open": false,
+        "width": null,
+        "height": null
+      },
+      "timeline": {
+        "open": false,
+        "width": null,
+        "height": null
+      }
+    },
+    "viewport": {
+      "width": 1218,
+      "height": 541
+    },
+    "nav": 52
+  },
+  "layout_restore": {
+    "target": {
+      "mode": "tcp",
+      "revision": 1,
+      "tcpWorldM": [
+        0.33675,
+        0.002443495247227821,
+        0.30092144299073775
+      ]
+    },
+    "camera": [
+      0.8807974739713518,
+      0.656014860555866,
+      0.5474922685152938
+    ],
+    "instance": 1,
+    "standard_camera": [
+      0.8807974739713518,
+      0.656014860555866,
+      0.5474922685152938
+    ],
+    "standard_target": {
+      "mode": "tcp",
+      "revision": 1,
+      "tcpWorldM": [
+        0.33675,
+        0.002443495247227821,
+        0.30092144299073775
+      ]
+    }
+  },
+  "tcp_continuous_drag": {
+    "snapshots_before": 43,
+    "snapshots_after": 55,
+    "dragging_throughout": true,
+    "target_x": [
+      0.34667640837430996,
+      0.3564316539809837,
+      0.3660201260613804,
+      0.37544606505380834,
+      0.3847135688463892,
+      0.39382659871723763,
+      0.40278898498007815,
+      0.4116044323521612
+    ],
+    "camera_stable": true,
+    "actual_delta_m": 6.461844948013606e-17
+  },
+  "status": "passed",
+  "request_count": 108,
+  "base_instance": 1
+}

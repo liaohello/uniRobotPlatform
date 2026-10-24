@@ -1,0 +1,4607 @@
+{
+  "scope": "real read-only GET integration + explicitly synthetic fault fixtures; NOT M1 control acceptance",
+  "checks": [
+    "proxy scene HTTP 200",
+    "proxy capabilities HTTP 200",
+    "proxy snapshot HTTP 200",
+    "23 meshes traverse frontend proxy and match all SHA256 digests",
+    "proxy preserves asset digest query and backend 409",
+    "real source is read-only and does not create platform Session",
+    "real scene meshes are rendered without failures",
+    "real snapshot excludes GT diagnostics",
+    "user and named model angles retain joint4 zero difference",
+    "backend target is separate and has no command acknowledgement",
+    "real Actual tick/time keep updating",
+    "polling preserves one renderer, selection and camera",
+    "polling preserves local target and saved layout",
+    "live source supports explicit local TCP candidate only",
+    "poll interval is configurable without replacing the renderer",
+    "takeover, execution, recording remain disabled",
+    "synthetic continuous Actual update preserves local target",
+    "slow snapshot requests never overlap",
+    "synthetic diagnostics are not merged into live Actual",
+    "disconnect marks retained Actual stale without sample fallback",
+    "read polling recovers explicitly on successful same-identity response",
+    "runtime identity change invalidates old Target and reloads scene",
+    "resource identity change invalidates old Target and reloads scene",
+    "cross-request initialization mismatch displays no mixed renderer",
+    "source switch cancels delayed live result and clears local Target",
+    "wrong mesh bytes are rejected before STL parsing",
+    "backend integrity error remains visible without frozen asset fallback",
+    "real source restores with one renderer after fault fixtures",
+    "browser network contains only GET and allowlisted read endpoints",
+    "no uncaught browser errors"
+  ],
+  "errors": [],
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/?inspect=1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/assets/index-RCiv-YWU.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/assets/index-r17gPpaV.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/scene.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/snapshot.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/capabilities.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/arm-spec.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/provenance.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/base_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/wheel_left_front_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/wheel_left_back_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/wheel_right_front_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/wheel_right_back_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/back_shell_middle_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/back_shell_black_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/link1.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/link2.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/link3.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/link4.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/link5.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/gripper_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/gripper_base_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/gripper_left_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/gripper_right_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/guide_rod_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/left_jaw_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/right_jaw_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/camera_connect_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/depth_cam_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/sample/meshes/lidar_frame.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18935/api/v1/mobilecar/snapshot"
+    }
+  ],
+  "assets": [
+    {
+      "id": "base_link",
+      "status": 200,
+      "bytes": 525884,
+      "sha256": "a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae",
+      "matches": true,
+      "etag": "\"a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae\""
+    },
+    {
+      "id": "back_shell_middle_link",
+      "status": 200,
+      "bytes": 293384,
+      "sha256": "69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+      "matches": true,
+      "etag": "\"69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874\""
+    },
+    {
+      "id": "back_shell_black_link",
+      "status": 200,
+      "bytes": 371284,
+      "sha256": "aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+      "matches": true,
+      "etag": "\"aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda\""
+    },
+    {
+      "id": "lidar_frame",
+      "status": 200,
+      "bytes": 191734,
+      "sha256": "ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+      "matches": true,
+      "etag": "\"ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b\""
+    },
+    {
+      "id": "wheel_left_front_link",
+      "status": 200,
+      "bytes": 3299084,
+      "sha256": "d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+      "matches": true,
+      "etag": "\"d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5\""
+    },
+    {
+      "id": "wheel_left_back_link",
+      "status": 200,
+      "bytes": 3278784,
+      "sha256": "d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+      "matches": true,
+      "etag": "\"d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16\""
+    },
+    {
+      "id": "wheel_right_front_link",
+      "status": 200,
+      "bytes": 3276484,
+      "sha256": "a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+      "matches": true,
+      "etag": "\"a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222\""
+    },
+    {
+      "id": "wheel_right_back_link",
+      "status": 200,
+      "bytes": 4184384,
+      "sha256": "9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+      "matches": true,
+      "etag": "\"9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc\""
+    },
+    {
+      "id": "imu_link",
+      "status": 200,
+      "bytes": 293384,
+      "sha256": "03e01c87ba3eb6bdbb8f62fcd4d8187bcca1b284a088af0a653a5de7ee7df924",
+      "matches": true,
+      "etag": "\"03e01c87ba3eb6bdbb8f62fcd4d8187bcca1b284a088af0a653a5de7ee7df924\""
+    },
+    {
+      "id": "link1",
+      "status": 200,
+      "bytes": 1020984,
+      "sha256": "28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+      "matches": true,
+      "etag": "\"28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7\""
+    },
+    {
+      "id": "link2",
+      "status": 200,
+      "bytes": 1215334,
+      "sha256": "c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+      "matches": true,
+      "etag": "\"c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842\""
+    },
+    {
+      "id": "link3",
+      "status": 200,
+      "bytes": 1215634,
+      "sha256": "87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+      "matches": true,
+      "etag": "\"87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e\""
+    },
+    {
+      "id": "link4",
+      "status": 200,
+      "bytes": 1174984,
+      "sha256": "e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+      "matches": true,
+      "etag": "\"e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8\""
+    },
+    {
+      "id": "link5",
+      "status": 200,
+      "bytes": 94084,
+      "sha256": "021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+      "matches": true,
+      "etag": "\"021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977\""
+    },
+    {
+      "id": "gripper_link",
+      "status": 200,
+      "bytes": 1041384,
+      "sha256": "debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+      "matches": true,
+      "etag": "\"debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8\""
+    },
+    {
+      "id": "camera_connect_link",
+      "status": 200,
+      "bytes": 41084,
+      "sha256": "2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+      "matches": true,
+      "etag": "\"2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504\""
+    },
+    {
+      "id": "depth_cam_link",
+      "status": 200,
+      "bytes": 1169884,
+      "sha256": "763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+      "matches": true,
+      "etag": "\"763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6\""
+    },
+    {
+      "id": "gripper_base_link",
+      "status": 200,
+      "bytes": 105284,
+      "sha256": "d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+      "matches": true,
+      "etag": "\"d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1\""
+    },
+    {
+      "id": "gripper_left_link",
+      "status": 200,
+      "bytes": 19284,
+      "sha256": "5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+      "matches": true,
+      "etag": "\"5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3\""
+    },
+    {
+      "id": "gripper_right_link",
+      "status": 200,
+      "bytes": 19284,
+      "sha256": "c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+      "matches": true,
+      "etag": "\"c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e\""
+    },
+    {
+      "id": "guide_rod_link",
+      "status": 200,
+      "bytes": 12084,
+      "sha256": "48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+      "matches": true,
+      "etag": "\"48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12\""
+    },
+    {
+      "id": "left_jaw_link",
+      "status": 200,
+      "bytes": 46684,
+      "sha256": "abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+      "matches": true,
+      "etag": "\"abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829\""
+    },
+    {
+      "id": "right_jaw_link",
+      "status": 200,
+      "bytes": 49584,
+      "sha256": "c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+      "matches": true,
+      "etag": "\"c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570\""
+    }
+  ],
+  "snapshot_timings": {
+    "fixture": "1.5 s synthetic responses",
+    "starts": [
+      988555.78775023,
+      988558.454390176,
+      988561.176706071
+    ],
+    "ends": [
+      988557.295125425,
+      988559.960823701,
+      988562.68251923
+    ],
+    "max_inflight": 1
+  },
+  "initial_http": [
+    {
+      "endpoint": "scene",
+      "elapsed_ms": 95.59
+    },
+    {
+      "endpoint": "capabilities",
+      "elapsed_ms": 22.57
+    },
+    {
+      "endpoint": "snapshot",
+      "elapsed_ms": 37.26
+    }
+  ],
+  "real_identity": {
+    "kind": "live",
+    "label": "真实只读监控",
+    "captured_at_utc": "2026-10-24T04:18:00.339853Z",
+    "identity": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+    },
+    "interface_profile": "g4a1-1.0",
+    "is_platform_session": false,
+    "is_episode_replay": false
+  },
+  "real_resource": {
+    "contract_version": "mobilecar-1.0",
+    "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+    "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "scene_id": "mobile_pick"
+  },
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "real_final": {
+    "scene": {
+      "instanceId": 1,
+      "disposed": false,
+      "gizmoAxis": null,
+      "gizmoEnabled": true,
+      "trace": [
+        "cancel:tool",
+        "cancel:tool",
+        "cancel:tool",
+        "cancel:tool"
+      ],
+      "pendingLoads": 0,
+      "failedAssets": [],
+      "renderCount": 26,
+      "lastFrameCostMs": 6.5,
+      "selected": "link2",
+      "tool": "tcp",
+      "ghost": true,
+      "dragging": false,
+      "orbitEnabled": true,
+      "linkPoints": {
+        "base_link": {
+          "x": 829,
+          "y": 430.50000000000006
+        },
+        "front_left_wheel": {
+          "x": 848.363165018607,
+          "y": 523.7198824858494
+        },
+        "rear_left_wheel": {
+          "x": 756.9352323161877,
+          "y": 523.7043734961751
+        },
+        "front_right_wheel": {
+          "x": 852.366812177857,
+          "y": 544.7841612749271
+        },
+        "rear_right_wheel": {
+          "x": 742.0627580354194,
+          "y": 544.7681169768331
+        },
+        "back_shell_middle_link": {
+          "x": 831.9371521655851,
+          "y": 406.245107596597
+        },
+        "back_shell_black_link": {
+          "x": 832.0185969440836,
+          "y": 401.16062839963604
+        },
+        "link1": {
+          "x": 877.5900729088542,
+          "y": 381.11555757386077
+        },
+        "link2": {
+          "x": 881.589862973789,
+          "y": 372.3434681160352
+        },
+        "link3": {
+          "x": 882.0298760774506,
+          "y": 344.6974050359098
+        },
+        "link4": {
+          "x": 882.2884806444902,
+          "y": 326.27713494260405
+        },
+        "link5": {
+          "x": 905.7190395108424,
+          "y": 335.6964454043977
+        },
+        "gripper_link": {
+          "x": 906.0493228021452,
+          "y": 335.6964454043977
+        },
+        "gripper_base_link": {
+          "x": 903.2105829772423,
+          "y": 332.97582528302297
+        },
+        "gripper_left_link": {
+          "x": 904.4479094044668,
+          "y": 327.55538346574247
+        },
+        "gripper_right_link": {
+          "x": 907.9549297844814,
+          "y": 338.65721525284823
+        },
+        "guide_rod_link": {
+          "x": 923.3843147239857,
+          "y": 333.10186615473265
+        },
+        "left_jaw_link": {
+          "x": 921.0067660296864,
+          "y": 335.4588303500965
+        },
+        "right_jaw_link": {
+          "x": 925.8861655591794,
+          "y": 330.62162228578137
+        },
+        "camera_connect_link": {
+          "x": 878.1098649722832,
+          "y": 307.87423764420726
+        },
+        "depth_cam_link": {
+          "x": 878.6056235276346,
+          "y": 302.50858820599325
+        },
+        "lidar_frame": {
+          "x": 854.5252755533222,
+          "y": 491.9943619826899
+        }
+      },
+      "worldPoints": {
+        "world_static": {
+          "x": 697.0698916777674,
+          "y": 519.9777989903936
+        },
+        "target_cube": {
+          "x": 697.2092200865873,
+          "y": 557.0223780967953
+        }
+      },
+      "handles": {
+        "x": {
+          "x": 964.6932716167137,
+          "y": 314.86399407249195
+        },
+        "y": {
+          "x": 908.2233750333004,
+          "y": 323.6402217096276
+        },
+        "z": {
+          "x": 915.42635793452,
+          "y": 265.2497641516485
+        }
+      },
+      "rings": {},
+      "geoms": {
+        "base_link/base_link_visual": {
+          "link": "base_link",
+          "name": "base_link_visual",
+          "asset": "base_link",
+          "localBounds": {
+            "min": [
+              -0.022499877959489822,
+              -0.050000615417957306,
+              -0.10758550465106964
+            ],
+            "max": [
+              0.01528632640838623,
+              0.05000048503279686,
+              0.10461403429508209
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.035169476429372876,
+              -0.05002016472476465,
+              0.016795981023094073
+            ],
+            "max": [
+              0.24767546162518755,
+              0.04998158107496772,
+              0.056341129563193953
+            ]
+          },
+          "matrixWorldSim": [
+            0.00829520623320045,
+            -7.810637724839951e-08,
+            0.9999655941848914,
+            0,
+            -3.027874047278905e-06,
+            -0.9999999999954151,
+            -5.299136078866704e-08,
+            0,
+            0.9999655941803104,
+            -3.027330296537943e-06,
+            -0.008295206233399289,
+            0,
+            0.14293807203603506,
+            -1.9361797001994796e-05,
+            0.04016288249492221,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 31548
+        },
+        "front_left_wheel/wheel_left_front_link_visual": {
+          "link": "front_left_wheel",
+          "name": "wheel_left_front_link_visual",
+          "asset": "wheel_left_front_link",
+          "localBounds": {
+            "min": [
+              -0.01912439614534378,
+              -0.03235161677002907,
+              -0.032406363636255264
+            ],
+            "max": [
+              0.015144631266593933,
+              0.03232980892062187,
+              0.03224945440888405
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.16119656167570712,
+              0.052444126831437995,
+              -0.012613377329073867
+            ],
+            "max": [
+              0.25059113007873096,
+              0.08677071151314064,
+              0.07677510166163935
+            ]
+          },
+          "matrixWorldSim": [
+            0.0005210121075376508,
+            0.9999997032781905,
+            0.0005674415518507822,
+            0,
+            -0.8410395532173407,
+            0.0001312209211708958,
+            0.5409736155350331,
+            0,
+            0.5409733805561598,
+            -0.0007590945927977965,
+            0.8410393720302513,
+            0,
+            0.20592815385568722,
+            0.07159724289757274,
+            0.03215387346285959,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 197940
+        },
+        "rear_left_wheel/wheel_left_back_link_visual": {
+          "link": "rear_left_wheel",
+          "name": "wheel_left_back_link_visual",
+          "asset": "wheel_left_back_link",
+          "localBounds": {
+            "min": [
+              -0.019124751910567284,
+              -0.03235146775841713,
+              -0.03225211054086685
+            ],
+            "max": [
+              0.015144036151468754,
+              0.03233003616333008,
+              0.0324067659676075
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.027827454693954153,
+              0.05244367748483303,
+              -0.011450310101955873
+            ],
+            "max": [
+              0.11494371197404625,
+              0.08677038761356046,
+              0.07565793783777507
+            ]
+          },
+          "matrixWorldSim": [
+            -0.0007341059523966139,
+            0.9999997074399949,
+            0.00021496133533951752,
+            0,
+            0.4576285270030961,
+            0.0001448164004000049,
+            0.8891434700323604,
+            0,
+            0.8891431787746154,
+            0.0007510979531392433,
+            -0.4576284994298735,
+            0,
+            0.07132027064620547,
+            0.07159733331758289,
+            0.03214915696474321,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 196722
+        },
+        "front_right_wheel/wheel_right_front_link_visual": {
+          "link": "front_right_wheel",
+          "name": "wheel_right_front_link_visual",
+          "asset": "wheel_right_front_link",
+          "localBounds": {
+            "min": [
+              -0.015144068747758865,
+              -0.0323515310883522,
+              -0.03240746259689331
+            ],
+            "max": [
+              0.019124710932374,
+              0.032329950481653214,
+              0.0322524793446064
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.1611855455456527,
+              -0.08680906796078801,
+              -0.012624390184140868
+            ],
+            "max": [
+              0.2506039410780021,
+              -0.05248235719273522,
+              0.0767885323686773
+            ]
+          },
+          "matrixWorldSim": [
+            -0.0005281373300238011,
+            0.9999997059934889,
+            -0.0005559531424625093,
+            0,
+            -0.8404431304020737,
+            -0.0001425985715446203,
+            0.5418997363217761,
+            0,
+            0.5418994977216013,
+            0.0007534444792896187,
+            0.8404429586179498,
+            0,
+            0.20592871851165473,
+            -0.07163597623694576,
+            0.03215415217161804,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 196584
+        },
+        "rear_right_wheel/wheel_right_back_link_visual": {
+          "link": "rear_right_wheel",
+          "name": "wheel_right_back_link_visual",
+          "asset": "wheel_right_back_link",
+          "localBounds": {
+            "min": [
+              -0.015147739090025425,
+              -0.032351695001125336,
+              -0.03224959596991539
+            ],
+            "max": [
+              0.019121229648590088,
+              0.0323297344148159,
+              0.03240666165947914
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.02785972007669056,
+              -0.08680924871214155,
+              -0.011451840266755026
+            ],
+            "max": [
+              0.11497325310452991,
+              -0.05248290469776935,
+              0.07565539857965939
+            ]
+          },
+          "matrixWorldSim": [
+            0.0007334138638948455,
+            0.999999704072092,
+            -0.00023229255878041155,
+            0,
+            0.45761776255670455,
+            -0.00012908055033242756,
+            0.8891490126693091,
+            0,
+            0.8891487195608505,
+            -0.0007584154139677992,
+            -0.4576177218043027,
+            0,
+            0.07135022688288278,
+            -0.0716327632531267,
+            0.032147941800929974,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 251058
+        },
+        "back_shell_middle_link/back_shell_middle_link_visual": {
+          "link": "back_shell_middle_link",
+          "name": "back_shell_middle_link_visual",
+          "asset": "back_shell_middle_link",
+          "localBounds": {
+            "min": [
+              -0.011767158284783363,
+              -0.047426559031009674,
+              -0.11652268469333649
+            ],
+            "max": [
+              0.006995499134063721,
+              0.04742639511823654,
+              0.08059510588645935
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.03570091614961758,
+              -0.04744608022290716,
+              0.052402384053294206
+            ],
+            "max": [
+              0.23310209518239167,
+              0.0474073712417805,
+              0.07442043322198995
+            ]
+          },
+          "matrixWorldSim": [
+            0.016526878837409577,
+            2.2784906651047295e-06,
+            0.9998634218085498,
+            0,
+            2.34340111758078e-06,
+            -0.9999999999947453,
+            2.240067503123352e-06,
+            0,
+            0.9998634218083998,
+            2.3060597358825596e-06,
+            -0.01652687884266226,
+            0,
+            0.15240227192408293,
+            -1.93895852880371e-05,
+            0.06550002698987124,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 17598
+        },
+        "back_shell_black_link/back_shell_black_link_visual": {
+          "link": "back_shell_black_link",
+          "name": "back_shell_black_link_visual",
+          "asset": "back_shell_black_link",
+          "localBounds": {
+            "min": [
+              -0.03841134533286095,
+              -0.04346338286995888,
+              -0.07657240331172943
+            ],
+            "max": [
+              0.02583303302526474,
+              0.04346570000052452,
+              0.11898206174373627
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.03591806074854745,
+              -0.04348635884542303,
+              0.06602230996263181
+            ],
+            "max": [
+              0.23311288737844968,
+              0.04344564008081292,
+              0.135448485750087
+            ]
+          },
+          "matrixWorldSim": [
+            0.026602683694135213,
+            2.5846770472605668e-05,
+            0.9996460856484233,
+            0,
+            -5.7307335943346624e-06,
+            -0.9999999996453609,
+            2.6008428112555808e-05,
+            0,
+            0.9996460859661429,
+            -6.42059939193055e-06,
+            -0.026602683536580476,
+            0,
+            0.11348545797264217,
+            -1.8902114933503544e-05,
+            0.10758643351848349,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 22272
+        },
+        "link1/link1_visual": {
+          "link": "link1",
+          "name": "link1_visual",
+          "asset": "link1",
+          "localBounds": {
+            "min": [
+              -0.0239785797894001,
+              -0.023812590166926384,
+              -0.017769528552889824
+            ],
+            "max": [
+              0.023966729640960693,
+              0.02415349893271923,
+              0.02548505924642086
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.15841437128392274,
+              -0.02490515118498943,
+              0.12003740283338374
+            ],
+            "max": [
+              0.2079785616764935,
+              0.02467486169474672,
+              0.163643699806763
+            ]
+          },
+          "matrixWorldSim": [
+            0.9995164483212533,
+            -0.030883450526072862,
+            0.0036169073627889785,
+            0,
+            0.030869955648269998,
+            0.9995164522320368,
+            0.003729283544638919,
+            0,
+            -0.0037303315591553257,
+            -0.0036158264734471894,
+            0.9999865051216305,
+            0,
+            0.18321151751392903,
+            -0.00027175068184873635,
+            0.1379822237911013,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 61254
+        },
+        "link2/link2_visual": {
+          "link": "link2",
+          "name": "link2_visual",
+          "asset": "link2",
+          "localBounds": {
+            "min": [
+              -0.014008776284754276,
+              -0.020307188853621483,
+              -0.05589915066957474
+            ],
+            "max": [
+              0.014001692645251751,
+              0.019985783845186234,
+              0.03714379295706749
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.16912870038491287,
+              -0.020559215076289293,
+              0.14357657251924472
+            ],
+            "max": [
+              0.19870281874738066,
+              0.020677174104801757,
+              0.23728941499731837
+            ]
+          },
+          "matrixWorldSim": [
+            0.9998780226617742,
+            -0.008106089441483957,
+            -0.013350322540953393,
+            0,
+            0.008208281838022068,
+            0.9999372950055097,
+            0.007617753365126379,
+            0,
+            0.013287735218931139,
+            -0.007726407381892285,
+            0.9998818623826121,
+            0,
+            0.18404522815893304,
+            0.0001471874641765541,
+            0.1998107416655047,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 72915
+        },
+        "link3/link3_visual": {
+          "link": "link3",
+          "name": "link3_visual",
+          "asset": "link3",
+          "localBounds": {
+            "min": [
+              -0.014008572325110435,
+              -0.020307643339037895,
+              -0.055899448692798615
+            ],
+            "max": [
+              0.014001674950122833,
+              0.019985446706414223,
+              0.03714355081319809
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.17019921218113976,
+              -0.019940414855439913,
+              0.21768583638701167
+            ],
+            "max": [
+              0.19980236293897732,
+              0.02130386479928581,
+              0.3114126317095772
+            ]
+          },
+          "matrixWorldSim": [
+            0.9998739861550615,
+            -0.008010109792392063,
+            -0.013705836402850764,
+            0,
+            0.0081165568890984,
+            0.9999371928898226,
+            0.007728633765926977,
+            0,
+            0.013643068373863466,
+            -0.007838904051946425,
+            0.9998762014712674,
+            0,
+            0.18513348737521135,
+            0.0007692727038064712,
+            0.2739272198145539,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 72933
+        },
+        "link4/link4_visual": {
+          "link": "link4",
+          "name": "link4_visual",
+          "asset": "link4",
+          "localBounds": {
+            "min": [
+              -0.03173769265413284,
+              -0.020721277222037315,
+              -0.040139902383089066
+            ],
+            "max": [
+              0.022153066471219063,
+              0.020449751988053322,
+              0.024270718917250633
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.17081878407482737,
+              -0.019946773600969667,
+              0.26699953916891117
+            ],
+            "max": [
+              0.24947206881701675,
+              0.023943512661988513,
+              0.3394083381940437
+            ]
+          },
+          "matrixWorldSim": [
+            -0.31174145465336933,
+            -0.02203210116651179,
+            -0.949911496913681,
+            0,
+            0.01605981190072591,
+            0.9994661415741346,
+            -0.02845196458287763,
+            0,
+            0.9500312352193034,
+            -0.024125056789583106,
+            -0.3112211974505991,
+            0,
+            0.21619175409871505,
+            0.0018370524664730133,
+            0.2961783895255215,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 70494
+        },
+        "link5/link5_visual": {
+          "link": "link5",
+          "name": "link5_visual",
+          "asset": "link5",
+          "localBounds": {
+            "min": [
+              -0.003466034075245261,
+              -0.009500018320977688,
+              -0.009500187821686268
+            ],
+            "max": [
+              0.0020347682293504477,
+              0.009499981999397278,
+              0.009499984793365002
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.23374602695302277,
+              -0.0071232104527969645,
+              0.29187870520649956
+            ],
+            "max": [
+              0.2395526506531328,
+              0.012041371756134575,
+              0.3111273767868799
+            ]
+          },
+          "matrixWorldSim": [
+            0.9998723278982543,
+            -0.0002921233950181607,
+            -0.015976312692506028,
+            0,
+            -0.00015444408945095543,
+            -0.9999628500972415,
+            0.00861826968857272,
+            0,
+            -0.015978236772243793,
+            -0.008614701928901585,
+            -0.9998352278552336,
+            0,
+            0.23736487873484372,
+            0.002458852563919998,
+            0.30149150648042033,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 5640
+        },
+        "gripper_link/gripper_link_visual": {
+          "link": "gripper_link",
+          "name": "gripper_link_visual",
+          "asset": "gripper_link",
+          "localBounds": {
+            "min": [
+              -0.022359736263751984,
+              -0.025464965030550957,
+              -0.03950212895870209
+            ],
+            "max": [
+              0.022857479751110077,
+              0.035268817096948624,
+              0.039524875581264496
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.23463252741261842,
+              -0.03737312901804897,
+              0.26850875192210727
+            ],
+            "max": [
+              0.30376632211660587,
+              0.04219702102239116,
+              0.32657724087182516
+            ]
+          },
+          "matrixWorldSim": [
+            0.21737234591158475,
+            -0.008992390600436686,
+            -0.9760473349915896,
+            0,
+            0.9760887134782511,
+            0.002304148789969793,
+            0.21736033290075554,
+            0,
+            0.00029436927138956084,
+            -0.9999569129765755,
+            0.009278229200079249,
+            0,
+            0.2643606089065936,
+            0.0024142620084008316,
+            0.29672031720051906,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 62478
+        },
+        "gripper_base_link/gripper_base_link_visual": {
+          "link": "gripper_base_link",
+          "name": "gripper_base_link_visual",
+          "asset": "gripper_base_link",
+          "localBounds": {
+            "min": [
+              -0.005265161860734224,
+              -0.004535966087132692,
+              -0.016999078914523125
+            ],
+            "max": [
+              0.0027280261274427176,
+              0.004510901868343353,
+              0.016997218132019043
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.2713460676859729,
+              -0.009712074499776392,
+              0.28411150549452874
+            ],
+            "max": [
+              0.2796445108493321,
+              0.014612097138271302,
+              0.318350354720423
+            ]
+          },
+          "matrixWorldSim": [
+            0.9999318636667555,
+            0.005485865365472202,
+            -0.010304043144392403,
+            0,
+            0.009764854493424131,
+            -0.8767661016254658,
+            0.48081789760491,
+            0,
+            -0.006396533487119545,
+            -0.48088575391840765,
+            -0.8767599306752524,
+            0,
+            0.2767638871216813,
+            0.0024455353711730523,
+            0.3012230686621684,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 6312
+        },
+        "gripper_left_link/gripper_left_link_visual": {
+          "link": "gripper_left_link",
+          "name": "gripper_left_link_visual",
+          "asset": "gripper_left_link",
+          "localBounds": {
+            "min": [
+              -0.0015000152634456754,
+              -0.008200678043067455,
+              -0.01349484734237194
+            ],
+            "max": [
+              0.0015000191051512957,
+              0.009097084403038025,
+              0.013425895944237709
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.279431027493319,
+              0.0040734804566284165,
+              0.29657405150947036
+            ],
+            "max": [
+              0.2826481475352866,
+              0.03603566600218027,
+              0.3263052332853095
+            ]
+          },
+          "matrixWorldSim": [
+            0.9999733284215269,
+            1.4806310130036776e-05,
+            -0.007303576271046942,
+            0,
+            0.005939242505652805,
+            0.5803418719919965,
+            0.8143512982805915,
+            0,
+            0.004250628663252859,
+            -0.8143729559566664,
+            0.58032630541995,
+            0,
+            0.2810370701495181,
+            0.019766386079912518,
+            0.31109465472497094,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 1152
+        },
+        "gripper_right_link/gripper_right_link_visual": {
+          "link": "gripper_right_link",
+          "name": "gripper_right_link_visual",
+          "asset": "gripper_right_link",
+          "localBounds": {
+            "min": [
+              -0.0015000192215666175,
+              -0.00909723062068224,
+              -0.01342586800456047
+            ],
+            "max": [
+              0.0015000171260908246,
+              0.008200730197131634,
+              0.013494838960468769
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.2792665719673616,
+              -0.031135869528675503,
+              0.27607594679361414
+            ],
+            "max": [
+              0.28247674158520825,
+              0.0008315503219412778,
+              0.3058085304689987
+            ]
+          },
+          "matrixWorldSim": [
+            0.9999682903096063,
+            -0.0017385502862439096,
+            -0.007771474646825087,
+            0,
+            0.007337863313321209,
+            0.5803273332300813,
+            0.814350257609131,
+            0,
+            0.003094210283587839,
+            -0.8143814608332908,
+            0.5803216884743814,
+            0,
+            0.28087484031745324,
+            -0.014863943421255443,
+            0.2912872586278023,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 1152
+        },
+        "guide_rod_link/guide_rod_link_visual": {
+          "link": "guide_rod_link",
+          "name": "guide_rod_link_visual",
+          "asset": "guide_rod_link",
+          "localBounds": {
+            "min": [
+              -0.0053825718350708485,
+              -0.00999905914068222,
+              -0.037501685321331024
+            ],
+            "max": [
+              0.004621335305273533,
+              0.010002550669014454,
+              0.037501685321331024
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.28671730390286754,
+              -0.03513889442628155,
+              0.2907619774183088
+            ],
+            "max": [
+              0.2968767888566401,
+              0.04003620910723082,
+              0.3114808572206488
+            ]
+          },
+          "matrixWorldSim": [
+            0.9999739802985088,
+            -0.00021659045213485374,
+            -0.007210534968656126,
+            0,
+            0.007212133732911626,
+            0.008616931819260359,
+            0.9999368648134946,
+            0,
+            -0.00015444408945095543,
+            -0.9999628500972415,
+            0.00861826968857272,
+            0,
+            0.2921776421503942,
+            0.002448559859061753,
+            0.30111692720422306,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 720
+        },
+        "left_jaw_link/left_jaw_link_visual": {
+          "link": "left_jaw_link",
+          "name": "left_jaw_link_visual",
+          "asset": "left_jaw_link",
+          "localBounds": {
+            "min": [
+              -0.006936316844075918,
+              -0.013057291507720947,
+              -0.019012082368135452
+            ],
+            "max": [
+              0.006244167685508728,
+              0.013047188520431519,
+              0.026414472609758377
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.28116247724519744,
+              0.014686437401222408,
+              0.287522358023657
+            ],
+            "max": [
+              0.3269862359202374,
+              0.02857410657651827,
+              0.3141922721884315
+            ]
+          },
+          "matrixWorldSim": [
+            -0.010777484017905944,
+            0.9999064434580996,
+            -0.008423192341305038,
+            0,
+            0.009961649514413333,
+            0.008530627504502654,
+            0.9999139932680872,
+            0,
+            0.9998922998889413,
+            0.010692648191830736,
+            -0.010052656238525614,
+            0,
+            0.3003698805889935,
+            0.021936781705707523,
+            0.300896657954702,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 2796
+        },
+        "right_jaw_link/right_jaw_link_visual": {
+          "link": "right_jaw_link",
+          "name": "right_jaw_link_visual",
+          "asset": "right_jaw_link",
+          "localBounds": {
+            "min": [
+              -0.006244462449103594,
+              -0.013057161122560501,
+              -0.0190109983086586
+            ],
+            "max": [
+              0.006936450023204088,
+              0.013047028332948685,
+              0.026415305212140083
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.28115457296931645,
+              -0.023664293318610828,
+              0.28785490401345987
+            ],
+            "max": [
+              0.3269824899943936,
+              -0.00974811258161751,
+              0.31452102477048804
+            ]
+          },
+          "matrixWorldSim": [
+            0.011126873544804468,
+            0.9998992454055792,
+            -0.008814290809323503,
+            0,
+            0.009960738695366324,
+            0.008703564708869283,
+            0.9999125119959253,
+            0,
+            0.9998884819667448,
+            -0.01121369692438308,
+            -0.009862891641274319,
+            0,
+            0.300362991522905,
+            -0.017010602954230316,
+            0.30123259397172225,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 2970
+        },
+        "camera_connect_link/camera_connect_link_visual": {
+          "link": "camera_connect_link",
+          "name": "camera_connect_link_visual",
+          "asset": "camera_connect_link",
+          "localBounds": {
+            "min": [
+              -0.0010007453383877873,
+              -0.019490346312522888,
+              -0.02778046391904354
+            ],
+            "max": [
+              0.0010006717639043927,
+              0.014317234046757221,
+              0.027733009308576584
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.23153766841101903,
+              -0.025190695317361258,
+              0.31626274421642486
+            ],
+            "max": [
+              0.23359983427241152,
+              0.030633169346913704,
+              0.35058501118684693
+            ]
+          },
+          "matrixWorldSim": [
+            0.9999988035330017,
+            -0.00014292866873584837,
+            0.001540293465966399,
+            0,
+            -0.001538906625104846,
+            0.009242815941011211,
+            0.9999561000963393,
+            0,
+            -0.00015715904318212856,
+            -0.9999572740496847,
+            0.009242584928411703,
+            0,
+            0.23256480393158327,
+            0.0027214177803137874,
+            0.33601053964325056,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 2460
+        },
+        "depth_cam_link/depth_cam_link_visual": {
+          "link": "depth_cam_link",
+          "name": "depth_cam_link_visual",
+          "asset": "depth_cam_link",
+          "localBounds": {
+            "min": [
+              -0.010832301340997219,
+              -0.01050022803246975,
+              -0.03837212175130844
+            ],
+            "max": [
+              0.01113101840019226,
+              0.010778446681797504,
+              0.03818627446889877
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.23284724360941614,
+              -0.03577038359673816,
+              0.33060492985372814
+            ],
+            "max": [
+              0.25500640766533683,
+              0.0408249817937996,
+              0.35329686070422217
+            ]
+          },
+          "matrixWorldSim": [
+            -0.03462236102072012,
+            6.000476611747342e-06,
+            0.9994004663203563,
+            0,
+            -0.9993989596895495,
+            -0.0017366130770597858,
+            -0.034622298399554594,
+            0,
+            0.0017353641687397354,
+            -0.9999984920683703,
+            6.612251499060236e-05,
+            0,
+            0.2440711837530193,
+            0.002434616280298375,
+            0.34180644872374,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 70188
+        },
+        "lidar_frame/lidar_frame_visual": {
+          "link": "lidar_frame",
+          "name": "lidar_frame_visual",
+          "asset": "lidar_frame",
+          "localBounds": {
+            "min": [
+              -0.016634518280625343,
+              -0.02407730743288994,
+              -0.024919254705309868
+            ],
+            "max": [
+              0.018048681318759918,
+              0.024644268676638603,
+              0.02393507957458496
+            ]
+          },
+          "worldSimBounds": {
+            "min": [
+              0.17859634084035686,
+              -0.03322406562654565,
+              0.06873624277104257
+            ],
+            "max": [
+              0.2448746367819736,
+              0.03461021849761606,
+              0.10648734731749952
+            ]
+          },
+          "matrixWorldSim": [
+            0.0020402591962768875,
+            0.04748396709392101,
+            0.9988699165614285,
+            0,
+            -0.876879145831686,
+            0.4802502765779794,
+            -0.021038903304759174,
+            0,
+            -0.4807065642862646,
+            -0.8758452744154058,
+            0.04261753554932007,
+            0,
+            0.21174607470428905,
+            9.23671841701594e-05,
+            0.08693244826702078,
+            1
+          ],
+          "visible": true,
+          "alpha": 1,
+          "transparent": false,
+          "depthWrite": true,
+          "vertices": 11499
+        }
+      },
+      "tcp": {
+        "markerWorldSim": [
+          0.3167549651198864,
+          0.0024434952472257277,
+          0.30092144299073775
+        ],
+        "fkWorldSim": [
+          0.31675496511990237,
+          0.0024434952472255564,
+          0.300921442990742
+        ],
+        "errorM": 1.6549635046037022e-14
+      },
+      "viewport": {
+        "width": 912,
+        "height": 469
+      },
+      "camera": [
+        0.17740684530709583,
+        0.18197486042220873,
+        0.7408962180393173
+      ],
+      "cameraTarget": [
+        0.17740684530709583,
+        0.17033623526004069,
+        1.926859950083381e-05
+      ],
+      "cameraAspect": 1.9445628997867803,
+      "cameraDistance": 0.7409683608676647,
+      "pixelRatio": 1,
+      "drawingBuffer": [
+        912,
+        469
+      ],
+      "targetRevision": 2,
+      "fullscreen": false,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "lifecycle": {
+        "created": 1,
+        "disposed": 0,
+        "active": 1
+      }
+    },
+    "target": {
+      "mode": "tcp",
+      "revision": 2,
+      "jointModelRad": {
+        "front_left_joint": -0.261784831854479,
+        "front_left_roller_0_joint": 1.6949435159463822e-07,
+        "front_left_roller_1_joint": 1.2477566877534182e-07,
+        "front_left_roller_2_joint": 1.0099409221437812e-07,
+        "front_left_roller_3_joint": 1.0465061370854282e-07,
+        "front_left_roller_4_joint": 1.3463115546659635e-07,
+        "front_left_roller_5_joint": 1.8313144111531187e-07,
+        "front_left_roller_6_joint": 0.0066931811221403945,
+        "front_left_roller_7_joint": -0.08367698680530594,
+        "front_left_roller_8_joint": 3.051001491707951e-07,
+        "front_left_roller_9_joint": 3.0141181652160275e-07,
+        "front_left_roller_10_joint": 2.715255735653914e-07,
+        "front_left_roller_11_joint": 2.2324104520754098e-07,
+        "rear_left_joint": -0.26196760351775816,
+        "rear_left_roller_0_joint": -3.0157756418839557e-07,
+        "rear_left_roller_1_joint": -3.140250948963268e-07,
+        "rear_left_roller_2_joint": -2.969031542868086e-07,
+        "rear_left_roller_3_joint": -2.547398627216509e-07,
+        "rear_left_roller_4_joint": -1.9893983897853278e-07,
+        "rear_left_roller_5_joint": -1.4473604437015862e-07,
+        "rear_left_roller_6_joint": 0.012002664684324375,
+        "rear_left_roller_7_joint": 0.06869814531764397,
+        "rear_left_roller_8_joint": -1.1009239751354751e-07,
+        "rear_left_roller_9_joint": -1.5187584622587304e-07,
+        "rear_left_roller_10_joint": -2.080508600933665e-07,
+        "rear_left_roller_11_joint": -2.6284556957075274e-07,
+        "front_right_joint": -0.2617795276679353,
+        "front_right_roller_0_joint": -3.101466842537585e-07,
+        "front_right_roller_1_joint": -3.0922079621323794e-07,
+        "front_right_roller_2_joint": -2.7987741436662744e-07,
+        "front_right_roller_3_joint": -2.2984937368652622e-07,
+        "front_right_roller_4_joint": -1.728325578636196e-07,
+        "front_right_roller_5_joint": -1.2348862290378244e-07,
+        "front_right_roller_6_joint": -0.0193425509077738,
+        "front_right_roller_7_joint": -0.042562330360792516,
+        "front_right_roller_8_joint": -1.261793756626308e-07,
+        "front_right_roller_9_joint": -1.7620034783114366e-07,
+        "front_right_roller_10_joint": -2.3331329806988815e-07,
+        "front_right_roller_11_joint": -2.8238970101239236e-07,
+        "rear_right_joint": -0.26197294911062546,
+        "rear_right_roller_0_joint": 1.6782396684340242e-07,
+        "rear_right_roller_1_joint": 1.0469919162479378e-07,
+        "rear_right_roller_2_joint": 6.782497061624167e-08,
+        "rear_right_roller_3_joint": 6.753059562762967e-08,
+        "rear_right_roller_4_joint": 1.038353268568355e-07,
+        "rear_right_roller_5_joint": 1.6652617355812003e-07,
+        "rear_right_roller_6_joint": -0.004805689604601884,
+        "rear_right_roller_7_joint": 0.004489520286121947,
+        "rear_right_roller_8_joint": 3.3948349769454986e-07,
+        "rear_right_roller_9_joint": 3.3988889716300623e-07,
+        "rear_right_roller_10_joint": 3.0365100011427483e-07,
+        "rear_right_roller_11_joint": 2.4080514735463016e-07,
+        "joint1": -6.550493789989897e-05,
+        "joint2": 0.14718234630889962,
+        "joint3": -0.004937082726852599,
+        "joint4": -1.5187528548114628,
+        "joint5": -3.9484210557159723e-07,
+        "gripper_base_joint": -1.0776330776100003,
+        "gripper_left_join": 1.6164555010235442,
+        "gripper_right_joint": 1.6164437321936282,
+        "left_jaw_joint": 0.012484051952558441,
+        "right_jaw_joint": -0.012515957816161872
+      },
+      "tcpWorldM": [
+        0.2932,
+        0.002653455565885672,
+        0.3254591935799845
+      ],
+      "frame": "world_sim",
+      "preview": "local-position-ik",
+      "residualM": 0.0004663452921039028
+    },
+    "actual": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "sim_time_s": 430126.35694251856,
+      "backend_monotonic_s": 988551.804626529,
+      "wall_utc": "2026-10-24T04:18:07.290002Z",
+      "clock_id": "backend_monotonic",
+      "control_tick_id": "tick_043012636",
+      "base": {
+        "frame_id": "base_link",
+        "position_world_sim_m": [
+          0.1386513174901792,
+          -1.9292932921185346e-05,
+          0.05321414659290786
+        ],
+        "orientation_world_sim_xyzw": [
+          -1.120097767989136e-06,
+          5.463690980372115e-05,
+          1.171639361859991e-06,
+          0.9999999985060893
+        ],
+        "vx_m_s": -3.837290677900612e-16,
+        "vy_m_s": 3.291279384890643e-17,
+        "wz_rad_s": 4.315171988849853e-16,
+        "stopped": true,
+        "stop_latched": true
+      },
+      "arm": {
+        "user_joint_positions_rad": [
+          -2.1849656535262136e-12,
+          3.341948360262808e-14,
+          2.2556908448525e-14,
+          -4.6629367034256575e-15,
+          -1.0156413147471826e-12
+        ],
+        "model_joint_positions_rad": [
+          -2.1849656535262136e-12,
+          3.341948360262808e-14,
+          2.2556908448525e-14,
+          -1.5707963267949012,
+          -1.0156413147471826e-12
+        ],
+        "joint_velocities_rad_s": [
+          1.3291526704862992e-16,
+          2.5926986983851437e-15,
+          -3.520384717555945e-15,
+          2.2265963454840184e-14,
+          -1.0424529713110222e-16
+        ],
+        "joint_torques_nm": [
+          0.0014711721051491767,
+          0.16853927342276018,
+          0.16542863598162325,
+          0.1605668732787784,
+          -1.6194806373864326e-05
+        ],
+        "joint_margin_rad": [
+          2.089999999997815,
+          2.0899999999999666,
+          2.089999999999977,
+          0.5192036732050986,
+          2.0899999999989842
+        ],
+        "model_limits_rad": [
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ]
+        ],
+        "coordinates_status": "user_defined_photo_pose_not_hardware_500"
+      },
+      "tcp": {
+        "frame_id": "world_sim",
+        "position_m": [
+          0.3167549651198864,
+          0.0024434952472257277,
+          0.30092144299073775
+        ],
+        "orientation_xyzw": [
+          -0.0029808810520355,
+          0.7097262160226531,
+          -0.003112763969990155,
+          0.70446442304689
+        ],
+        "position_error_m": null,
+        "orientation_error_rad": null,
+        "held": false
+      },
+      "gripper": {
+        "width_m": 0.024999990231479703,
+        "model_drive_position_rad": -1.0776330776100003
+      },
+      "model_joint_positions_rad": {
+        "front_left_joint": -0.2617848318544784,
+        "front_left_roller_0_joint": 1.6949436293467625e-07,
+        "front_left_roller_1_joint": 1.2477570119910982e-07,
+        "front_left_roller_2_joint": 1.009940791544746e-07,
+        "front_left_roller_3_joint": 1.0465060161624611e-07,
+        "front_left_roller_4_joint": 1.3463115091762806e-07,
+        "front_left_roller_5_joint": 1.8313143495560175e-07,
+        "front_left_roller_6_joint": 0.006693181122137803,
+        "front_left_roller_7_joint": -0.08367698680531806,
+        "front_left_roller_8_joint": 3.0510014255930055e-07,
+        "front_left_roller_9_joint": 3.014118056952142e-07,
+        "front_left_roller_10_joint": 2.7152558317614745e-07,
+        "front_left_roller_11_joint": 2.2324104266322812e-07,
+        "rear_left_joint": -0.2619676035177579,
+        "rear_left_roller_0_joint": -3.015775542525965e-07,
+        "rear_left_roller_1_joint": -3.1402507064624376e-07,
+        "rear_left_roller_2_joint": -2.969031514314989e-07,
+        "rear_left_roller_3_joint": -2.547398588425487e-07,
+        "rear_left_roller_4_joint": -1.9893985185313192e-07,
+        "rear_left_roller_5_joint": -1.447360860571817e-07,
+        "rear_left_roller_6_joint": 0.012002664684336918,
+        "rear_left_roller_7_joint": 0.06869814531765464,
+        "rear_left_roller_8_joint": -1.1009240896927206e-07,
+        "rear_left_roller_9_joint": -1.5187584822699968e-07,
+        "rear_left_roller_10_joint": -2.0805087249414385e-07,
+        "rear_left_roller_11_joint": -2.628455540198763e-07,
+        "front_right_joint": -0.26177952766793544,
+        "front_right_roller_0_joint": -3.101466857557071e-07,
+        "front_right_roller_1_joint": -3.092207923370569e-07,
+        "front_right_roller_2_joint": -2.798774416266296e-07,
+        "front_right_roller_3_joint": -2.2984936406146342e-07,
+        "front_right_roller_4_joint": -1.728325458842542e-07,
+        "front_right_roller_5_joint": -1.2348861536430763e-07,
+        "front_right_roller_6_joint": -0.019342550907724486,
+        "front_right_roller_7_joint": -0.04256233036073688,
+        "front_right_roller_8_joint": -1.261793666719825e-07,
+        "front_right_roller_9_joint": -1.7620033851948174e-07,
+        "front_right_roller_10_joint": -2.3331329477708184e-07,
+        "front_right_roller_11_joint": -2.8238969773279916e-07,
+        "rear_right_joint": -0.2619729491106257,
+        "rear_right_roller_0_joint": 1.6782396836102662e-07,
+        "rear_right_roller_1_joint": 1.0469920156749645e-07,
+        "rear_right_roller_2_joint": 6.782497508731364e-08,
+        "rear_right_roller_3_joint": 6.753059607967443e-08,
+        "rear_right_roller_4_joint": 1.0383531916070556e-07,
+        "rear_right_roller_5_joint": 1.6652619397156474e-07,
+        "rear_right_roller_6_joint": -0.004805689604511192,
+        "rear_right_roller_7_joint": 0.004489520286211795,
+        "rear_right_roller_8_joint": 3.3948351751959274e-07,
+        "rear_right_roller_9_joint": 3.398888963032016e-07,
+        "rear_right_roller_10_joint": 3.036510092417116e-07,
+        "rear_right_roller_11_joint": 2.4080515193989315e-07,
+        "joint1": -2.1849656535262136e-12,
+        "joint2": 3.341948360262808e-14,
+        "joint3": 2.2556908448525e-14,
+        "joint4": -1.5707963267949012,
+        "joint5": -1.0156413147471826e-12,
+        "gripper_base_joint": -1.0776330776100003,
+        "gripper_left_join": 1.6164555010235442,
+        "gripper_right_joint": 1.6164437321936282,
+        "left_jaw_joint": 0.01248405195255844,
+        "right_jaw_joint": -0.012515957816161872
+      },
+      "diagnostics": {}
+    },
+    "selected": "link2",
+    "source": {
+      "kind": "live",
+      "label": "真实只读监控",
+      "captured_at_utc": "2026-10-24T04:18:07.290002Z",
+      "identity": {
+        "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+        "backend_generation": 1,
+        "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+      },
+      "interface_profile": "g4a1-1.0",
+      "is_platform_session": false,
+      "is_episode_replay": false
+    },
+    "live": {
+      "identityKey": "[\"mobilecar\",\"landerpi\",\"run_9c88e3e36e7648a3852c9f590e43ed5f\",1,\"episode_43c22f95536f4517be04e4b195d6d354\",\"mobilecar-1.0\",\"landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a\",\"3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280\",\"mobile_pick\",\"g4a1-1.0\"]",
+      "resource": {
+        "contract_version": "mobilecar-1.0",
+        "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+        "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+        "scene_id": "mobile_pick"
+      },
+      "objects": [
+        {
+          "object_id": "body:base_link",
+          "kind": "robot_link",
+          "native_name": "base_link",
+          "parent_object_id": null
+        },
+        {
+          "object_id": "joint:base_free",
+          "kind": "joint",
+          "native_name": "base_free",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "geom:base_link/chassis_collision",
+          "kind": "geom",
+          "native_name": "chassis_collision",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "geom:base_link/base_link_visual",
+          "kind": "geom",
+          "native_name": "base_link_visual",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "body:front_left_wheel",
+          "kind": "robot_link",
+          "native_name": "front_left_wheel",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "joint:front_left_joint",
+          "kind": "joint",
+          "native_name": "front_left_joint",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "geom:front_left_wheel/front_left_hub_contact",
+          "kind": "geom",
+          "native_name": "front_left_hub_contact",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "geom:front_left_wheel/wheel_left_front_link_visual",
+          "kind": "geom",
+          "native_name": "wheel_left_front_link_visual",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "body:front_left_roller_0",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_0",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_0_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_0_joint",
+          "parent_object_id": "body:front_left_roller_0"
+        },
+        {
+          "object_id": "geom:front_left_roller_0/front_left_roller_0_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_0_contact",
+          "parent_object_id": "body:front_left_roller_0"
+        },
+        {
+          "object_id": "body:front_left_roller_1",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_1",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_1_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_1_joint",
+          "parent_object_id": "body:front_left_roller_1"
+        },
+        {
+          "object_id": "geom:front_left_roller_1/front_left_roller_1_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_1_contact",
+          "parent_object_id": "body:front_left_roller_1"
+        },
+        {
+          "object_id": "body:front_left_roller_2",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_2",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_2_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_2_joint",
+          "parent_object_id": "body:front_left_roller_2"
+        },
+        {
+          "object_id": "geom:front_left_roller_2/front_left_roller_2_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_2_contact",
+          "parent_object_id": "body:front_left_roller_2"
+        },
+        {
+          "object_id": "body:front_left_roller_3",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_3",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_3_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_3_joint",
+          "parent_object_id": "body:front_left_roller_3"
+        },
+        {
+          "object_id": "geom:front_left_roller_3/front_left_roller_3_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_3_contact",
+          "parent_object_id": "body:front_left_roller_3"
+        },
+        {
+          "object_id": "body:front_left_roller_4",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_4",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_4_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_4_joint",
+          "parent_object_id": "body:front_left_roller_4"
+        },
+        {
+          "object_id": "geom:front_left_roller_4/front_left_roller_4_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_4_contact",
+          "parent_object_id": "body:front_left_roller_4"
+        },
+        {
+          "object_id": "body:front_left_roller_5",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_5",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_5_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_5_joint",
+          "parent_object_id": "body:front_left_roller_5"
+        },
+        {
+          "object_id": "geom:front_left_roller_5/front_left_roller_5_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_5_contact",
+          "parent_object_id": "body:front_left_roller_5"
+        },
+        {
+          "object_id": "body:front_left_roller_6",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_6",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_6_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_6_joint",
+          "parent_object_id": "body:front_left_roller_6"
+        },
+        {
+          "object_id": "geom:front_left_roller_6/front_left_roller_6_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_6_contact",
+          "parent_object_id": "body:front_left_roller_6"
+        },
+        {
+          "object_id": "body:front_left_roller_7",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_7",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_7_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_7_joint",
+          "parent_object_id": "body:front_left_roller_7"
+        },
+        {
+          "object_id": "geom:front_left_roller_7/front_left_roller_7_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_7_contact",
+          "parent_object_id": "body:front_left_roller_7"
+        },
+        {
+          "object_id": "body:front_left_roller_8",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_8",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_8_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_8_joint",
+          "parent_object_id": "body:front_left_roller_8"
+        },
+        {
+          "object_id": "geom:front_left_roller_8/front_left_roller_8_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_8_contact",
+          "parent_object_id": "body:front_left_roller_8"
+        },
+        {
+          "object_id": "body:front_left_roller_9",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_9",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_9_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_9_joint",
+          "parent_object_id": "body:front_left_roller_9"
+        },
+        {
+          "object_id": "geom:front_left_roller_9/front_left_roller_9_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_9_contact",
+          "parent_object_id": "body:front_left_roller_9"
+        },
+        {
+          "object_id": "body:front_left_roller_10",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_10",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_10_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_10_joint",
+          "parent_object_id": "body:front_left_roller_10"
+        },
+        {
+          "object_id": "geom:front_left_roller_10/front_left_roller_10_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_10_contact",
+          "parent_object_id": "body:front_left_roller_10"
+        },
+        {
+          "object_id": "body:front_left_roller_11",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_11",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_11_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_11_joint",
+          "parent_object_id": "body:front_left_roller_11"
+        },
+        {
+          "object_id": "geom:front_left_roller_11/front_left_roller_11_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_11_contact",
+          "parent_object_id": "body:front_left_roller_11"
+        },
+        {
+          "object_id": "body:rear_left_wheel",
+          "kind": "robot_link",
+          "native_name": "rear_left_wheel",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "joint:rear_left_joint",
+          "kind": "joint",
+          "native_name": "rear_left_joint",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "geom:rear_left_wheel/rear_left_hub_contact",
+          "kind": "geom",
+          "native_name": "rear_left_hub_contact",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "geom:rear_left_wheel/wheel_left_back_link_visual",
+          "kind": "geom",
+          "native_name": "wheel_left_back_link_visual",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "body:rear_left_roller_0",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_0",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_0_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_0_joint",
+          "parent_object_id": "body:rear_left_roller_0"
+        },
+        {
+          "object_id": "geom:rear_left_roller_0/rear_left_roller_0_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_0_contact",
+          "parent_object_id": "body:rear_left_roller_0"
+        },
+        {
+          "object_id": "body:rear_left_roller_1",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_1",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_1_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_1_joint",
+          "parent_object_id": "body:rear_left_roller_1"
+        },
+        {
+          "object_id": "geom:rear_left_roller_1/rear_left_roller_1_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_1_contact",
+          "parent_object_id": "body:rear_left_roller_1"
+        },
+        {
+          "object_id": "body:rear_left_roller_2",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_2",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_2_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_2_joint",
+          "parent_object_id": "body:rear_left_roller_2"
+        },
+        {
+          "object_id": "geom:rear_left_roller_2/rear_left_roller_2_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_2_contact",
+          "parent_object_id": "body:rear_left_roller_2"
+        },
+        {
+          "object_id": "body:rear_left_roller_3",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_3",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_3_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_3_joint",
+          "parent_object_id": "body:rear_left_roller_3"
+        },
+        {
+          "object_id": "geom:rear_left_roller_3/rear_left_roller_3_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_3_contact",
+          "parent_object_id": "body:rear_left_roller_3"
+        },
+        {
+          "object_id": "body:rear_left_roller_4",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_4",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_4_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_4_joint",
+          "parent_object_id": "body:rear_left_roller_4"
+        },
+        {
+          "object_id": "geom:rear_left_roller_4/rear_left_roller_4_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_4_contact",
+          "parent_object_id": "body:rear_left_roller_4"
+        },
+        {
+          "object_id": "body:rear_left_roller_5",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_5",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_5_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_5_joint",
+          "parent_object_id": "body:rear_left_roller_5"
+        },
+        {
+          "object_id": "geom:rear_left_roller_5/rear_left_roller_5_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_5_contact",
+          "parent_object_id": "body:rear_left_roller_5"
+        },
+        {
+          "object_id": "body:rear_left_roller_6",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_6",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_6_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_6_joint",
+          "parent_object_id": "body:rear_left_roller_6"
+        },
+        {
+          "object_id": "geom:rear_left_roller_6/rear_left_roller_6_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_6_contact",
+          "parent_object_id": "body:rear_left_roller_6"
+        },
+        {
+          "object_id": "body:rear_left_roller_7",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_7",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_7_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_7_joint",
+          "parent_object_id": "body:rear_left_roller_7"
+        },
+        {
+          "object_id": "geom:rear_left_roller_7/rear_left_roller_7_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_7_contact",
+          "parent_object_id": "body:rear_left_roller_7"
+        },
+        {
+          "object_id": "body:rear_left_roller_8",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_8",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_8_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_8_joint",
+          "parent_object_id": "body:rear_left_roller_8"
+        },
+        {
+          "object_id": "geom:rear_left_roller_8/rear_left_roller_8_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_8_contact",
+          "parent_object_id": "body:rear_left_roller_8"
+        },
+        {
+          "object_id": "body:rear_left_roller_9",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_9",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_9_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_9_joint",
+          "parent_object_id": "body:rear_left_roller_9"
+        },
+        {
+          "object_id": "geom:rear_left_roller_9/rear_left_roller_9_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_9_contact",
+          "parent_object_id": "body:rear_left_roller_9"
+        },
+        {
+          "object_id": "body:rear_left_roller_10",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_10",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_10_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_10_joint",
+          "parent_object_id": "body:rear_left_roller_10"
+        },
+        {
+          "object_id": "geom:rear_left_roller_10/rear_left_roller_10_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_10_contact",
+          "parent_object_id": "body:rear_left_roller_10"
+        },
+        {
+          "object_id": "body:rear_left_roller_11",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_11",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_11_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_11_joint",
+          "parent_object_id": "body:rear_left_roller_11"
+        },
+        {
+          "object_id": "geom:rear_left_roller_11/rear_left_roller_11_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_11_contact",
+          "parent_object_id": "body:rear_left_roller_11"
+        },
+        {
+          "object_id": "body:front_right_wheel",
+          "kind": "robot_link",
+          "native_name": "front_right_wheel",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "joint:front_right_joint",
+          "kind": "joint",
+          "native_name": "front_right_joint",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "geom:front_right_wheel/front_right_hub_contact",
+          "kind": "geom",
+          "native_name": "front_right_hub_contact",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "geom:front_right_wheel/wheel_right_front_link_visual",
+          "kind": "geom",
+          "native_name": "wheel_right_front_link_visual",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "body:front_right_roller_0",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_0",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_0_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_0_joint",
+          "parent_object_id": "body:front_right_roller_0"
+        },
+        {
+          "object_id": "geom:front_right_roller_0/front_right_roller_0_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_0_contact",
+          "parent_object_id": "body:front_right_roller_0"
+        },
+        {
+          "object_id": "body:front_right_roller_1",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_1",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_1_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_1_joint",
+          "parent_object_id": "body:front_right_roller_1"
+        },
+        {
+          "object_id": "geom:front_right_roller_1/front_right_roller_1_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_1_contact",
+          "parent_object_id": "body:front_right_roller_1"
+        },
+        {
+          "object_id": "body:front_right_roller_2",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_2",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_2_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_2_joint",
+          "parent_object_id": "body:front_right_roller_2"
+        },
+        {
+          "object_id": "geom:front_right_roller_2/front_right_roller_2_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_2_contact",
+          "parent_object_id": "body:front_right_roller_2"
+        },
+        {
+          "object_id": "body:front_right_roller_3",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_3",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_3_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_3_joint",
+          "parent_object_id": "body:front_right_roller_3"
+        },
+        {
+          "object_id": "geom:front_right_roller_3/front_right_roller_3_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_3_contact",
+          "parent_object_id": "body:front_right_roller_3"
+        },
+        {
+          "object_id": "body:front_right_roller_4",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_4",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_4_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_4_joint",
+          "parent_object_id": "body:front_right_roller_4"
+        },
+        {
+          "object_id": "geom:front_right_roller_4/front_right_roller_4_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_4_contact",
+          "parent_object_id": "body:front_right_roller_4"
+        },
+        {
+          "object_id": "body:front_right_roller_5",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_5",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_5_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_5_joint",
+          "parent_object_id": "body:front_right_roller_5"
+        },
+        {
+          "object_id": "geom:front_right_roller_5/front_right_roller_5_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_5_contact",
+          "parent_object_id": "body:front_right_roller_5"
+        },
+        {
+          "object_id": "body:front_right_roller_6",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_6",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_6_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_6_joint",
+          "parent_object_id": "body:front_right_roller_6"
+        },
+        {
+          "object_id": "geom:front_right_roller_6/front_right_roller_6_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_6_contact",
+          "parent_object_id": "body:front_right_roller_6"
+        },
+        {
+          "object_id": "body:front_right_roller_7",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_7",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_7_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_7_joint",
+          "parent_object_id": "body:front_right_roller_7"
+        },
+        {
+          "object_id": "geom:front_right_roller_7/front_right_roller_7_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_7_contact",
+          "parent_object_id": "body:front_right_roller_7"
+        },
+        {
+          "object_id": "body:front_right_roller_8",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_8",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_8_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_8_joint",
+          "parent_object_id": "body:front_right_roller_8"
+        },
+        {
+          "object_id": "geom:front_right_roller_8/front_right_roller_8_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_8_contact",
+          "parent_object_id": "body:front_right_roller_8"
+        },
+        {
+          "object_id": "body:front_right_roller_9",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_9",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_9_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_9_joint",
+          "parent_object_id": "body:front_right_roller_9"
+        },
+        {
+          "object_id": "geom:front_right_roller_9/front_right_roller_9_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_9_contact",
+          "parent_object_id": "body:front_right_roller_9"
+        },
+        {
+          "object_id": "body:front_right_roller_10",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_10",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_10_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_10_joint",
+          "parent_object_id": "body:front_right_roller_10"
+        },
+        {
+          "object_id": "geom:front_right_roller_10/front_right_roller_10_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_10_contact",
+          "parent_object_id": "body:front_right_roller_10"
+        },
+        {
+          "object_id": "body:front_right_roller_11",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_11",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_11_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_11_joint",
+          "parent_object_id": "body:front_right_roller_11"
+        },
+        {
+          "object_id": "geom:front_right_roller_11/front_right_roller_11_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_11_contact",
+          "parent_object_id": "body:front_right_roller_11"
+        },
+        {
+          "object_id": "body:rear_right_wheel",
+          "kind": "robot_link",
+          "native_name": "rear_right_wheel",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "joint:rear_right_joint",
+          "kind": "joint",
+          "native_name": "rear_right_joint",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "geom:rear_right_wheel/rear_right_hub_contact",
+          "kind": "geom",
+          "native_name": "rear_right_hub_contact",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "geom:rear_right_wheel/wheel_right_back_link_visual",
+          "kind": "geom",
+          "native_name": "wheel_right_back_link_visual",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "body:rear_right_roller_0",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_0",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_0_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_0_joint",
+          "parent_object_id": "body:rear_right_roller_0"
+        },
+        {
+          "object_id": "geom:rear_right_roller_0/rear_right_roller_0_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_0_contact",
+          "parent_object_id": "body:rear_right_roller_0"
+        },
+        {
+          "object_id": "body:rear_right_roller_1",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_1",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_1_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_1_joint",
+          "parent_object_id": "body:rear_right_roller_1"
+        },
+        {
+          "object_id": "geom:rear_right_roller_1/rear_right_roller_1_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_1_contact",
+          "parent_object_id": "body:rear_right_roller_1"
+        },
+        {
+          "object_id": "body:rear_right_roller_2",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_2",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_2_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_2_joint",
+          "parent_object_id": "body:rear_right_roller_2"
+        },
+        {
+          "object_id": "geom:rear_right_roller_2/rear_right_roller_2_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_2_contact",
+          "parent_object_id": "body:rear_right_roller_2"
+        },
+        {
+          "object_id": "body:rear_right_roller_3",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_3",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_3_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_3_joint",
+          "parent_object_id": "body:rear_right_roller_3"
+        },
+        {
+          "object_id": "geom:rear_right_roller_3/rear_right_roller_3_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_3_contact",
+          "parent_object_id": "body:rear_right_roller_3"
+        },
+        {
+          "object_id": "body:rear_right_roller_4",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_4",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_4_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_4_joint",
+          "parent_object_id": "body:rear_right_roller_4"
+        },
+        {
+          "object_id": "geom:rear_right_roller_4/rear_right_roller_4_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_4_contact",
+          "parent_object_id": "body:rear_right_roller_4"
+        },
+        {
+          "object_id": "body:rear_right_roller_5",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_5",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_5_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_5_joint",
+          "parent_object_id": "body:rear_right_roller_5"
+        },
+        {
+          "object_id": "geom:rear_right_roller_5/rear_right_roller_5_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_5_contact",
+          "parent_object_id": "body:rear_right_roller_5"
+        },
+        {
+          "object_id": "body:rear_right_roller_6",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_6",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_6_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_6_joint",
+          "parent_object_id": "body:rear_right_roller_6"
+        },
+        {
+          "object_id": "geom:rear_right_roller_6/rear_right_roller_6_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_6_contact",
+          "parent_object_id": "body:rear_right_roller_6"
+        },
+        {
+          "object_id": "body:rear_right_roller_7",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_7",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_7_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_7_joint",
+          "parent_object_id": "body:rear_right_roller_7"
+        },
+        {
+          "object_id": "geom:rear_right_roller_7/rear_right_roller_7_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_7_contact",
+          "parent_object_id": "body:rear_right_roller_7"
+        },
+        {
+          "object_id": "body:rear_right_roller_8",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_8",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_8_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_8_joint",
+          "parent_object_id": "body:rear_right_roller_8"
+        },
+        {
+          "object_id": "geom:rear_right_roller_8/rear_right_roller_8_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_8_contact",
+          "parent_object_id": "body:rear_right_roller_8"
+        },
+        {
+          "object_id": "body:rear_right_roller_9",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_9",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_9_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_9_joint",
+          "parent_object_id": "body:rear_right_roller_9"
+        },
+        {
+          "object_id": "geom:rear_right_roller_9/rear_right_roller_9_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_9_contact",
+          "parent_object_id": "body:rear_right_roller_9"
+        },
+        {
+          "object_id": "body:rear_right_roller_10",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_10",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_10_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_10_joint",
+          "parent_object_id": "body:rear_right_roller_10"
+        },
+        {
+          "object_id": "geom:rear_right_roller_10/rear_right_roller_10_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_10_contact",
+          "parent_object_id": "body:rear_right_roller_10"
+        },
+        {
+          "object_id": "body:rear_right_roller_11",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_11",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_11_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_11_joint",
+          "parent_object_id": "body:rear_right_roller_11"
+        },
+        {
+          "object_id": "geom:rear_right_roller_11/rear_right_roller_11_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_11_contact",
+          "parent_object_id": "body:rear_right_roller_11"
+        },
+        {
+          "object_id": "body:back_shell_middle_link",
+          "kind": "robot_link",
+          "native_name": "back_shell_middle_link",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "geom:back_shell_middle_link/back_shell_middle_link_visual",
+          "kind": "geom",
+          "native_name": "back_shell_middle_link_visual",
+          "parent_object_id": "body:back_shell_middle_link"
+        },
+        {
+          "object_id": "body:back_shell_black_link",
+          "kind": "robot_link",
+          "native_name": "back_shell_black_link",
+          "parent_object_id": "body:back_shell_middle_link"
+        },
+        {
+          "object_id": "geom:back_shell_black_link/back_shell_black_link_visual",
+          "kind": "geom",
+          "native_name": "back_shell_black_link_visual",
+          "parent_object_id": "body:back_shell_black_link"
+        },
+        {
+          "object_id": "body:link1",
+          "kind": "robot_link",
+          "native_name": "link1",
+          "parent_object_id": "body:back_shell_black_link"
+        },
+        {
+          "object_id": "joint:joint1",
+          "kind": "joint",
+          "native_name": "joint1",
+          "parent_object_id": "body:link1"
+        },
+        {
+          "object_id": "geom:link1/link1_collision",
+          "kind": "geom",
+          "native_name": "link1_collision",
+          "parent_object_id": "body:link1"
+        },
+        {
+          "object_id": "geom:link1/link1_visual",
+          "kind": "geom",
+          "native_name": "link1_visual",
+          "parent_object_id": "body:link1"
+        },
+        {
+          "object_id": "body:link2",
+          "kind": "robot_link",
+          "native_name": "link2",
+          "parent_object_id": "body:link1"
+        },
+        {
+          "object_id": "joint:joint2",
+          "kind": "joint",
+          "native_name": "joint2",
+          "parent_object_id": "body:link2"
+        },
+        {
+          "object_id": "geom:link2/link2_collision",
+          "kind": "geom",
+          "native_name": "link2_collision",
+          "parent_object_id": "body:link2"
+        },
+        {
+          "object_id": "geom:link2/link2_visual",
+          "kind": "geom",
+          "native_name": "link2_visual",
+          "parent_object_id": "body:link2"
+        },
+        {
+          "object_id": "body:link3",
+          "kind": "robot_link",
+          "native_name": "link3",
+          "parent_object_id": "body:link2"
+        },
+        {
+          "object_id": "joint:joint3",
+          "kind": "joint",
+          "native_name": "joint3",
+          "parent_object_id": "body:link3"
+        },
+        {
+          "object_id": "geom:link3/link3_collision",
+          "kind": "geom",
+          "native_name": "link3_collision",
+          "parent_object_id": "body:link3"
+        },
+        {
+          "object_id": "geom:link3/link3_visual",
+          "kind": "geom",
+          "native_name": "link3_visual",
+          "parent_object_id": "body:link3"
+        },
+        {
+          "object_id": "body:link4",
+          "kind": "robot_link",
+          "native_name": "link4",
+          "parent_object_id": "body:link3"
+        },
+        {
+          "object_id": "joint:joint4",
+          "kind": "joint",
+          "native_name": "joint4",
+          "parent_object_id": "body:link4"
+        },
+        {
+          "object_id": "geom:link4/link4_collision",
+          "kind": "geom",
+          "native_name": "link4_collision",
+          "parent_object_id": "body:link4"
+        },
+        {
+          "object_id": "geom:link4/link4_visual",
+          "kind": "geom",
+          "native_name": "link4_visual",
+          "parent_object_id": "body:link4"
+        },
+        {
+          "object_id": "body:link5",
+          "kind": "robot_link",
+          "native_name": "link5",
+          "parent_object_id": "body:link4"
+        },
+        {
+          "object_id": "joint:joint5",
+          "kind": "joint",
+          "native_name": "joint5",
+          "parent_object_id": "body:link5"
+        },
+        {
+          "object_id": "geom:link5/link5_collision",
+          "kind": "geom",
+          "native_name": "link5_collision",
+          "parent_object_id": "body:link5"
+        },
+        {
+          "object_id": "geom:link5/link5_visual",
+          "kind": "geom",
+          "native_name": "link5_visual",
+          "parent_object_id": "body:link5"
+        },
+        {
+          "object_id": "body:gripper_link",
+          "kind": "robot_link",
+          "native_name": "gripper_link",
+          "parent_object_id": "body:link5"
+        },
+        {
+          "object_id": "geom:gripper_link/gripper_link_collision",
+          "kind": "geom",
+          "native_name": "gripper_link_collision",
+          "parent_object_id": "body:gripper_link"
+        },
+        {
+          "object_id": "geom:gripper_link/gripper_link_visual",
+          "kind": "geom",
+          "native_name": "gripper_link_visual",
+          "parent_object_id": "body:gripper_link"
+        },
+        {
+          "object_id": "body:gripper_base_link",
+          "kind": "robot_link",
+          "native_name": "gripper_base_link",
+          "parent_object_id": "body:gripper_link"
+        },
+        {
+          "object_id": "joint:gripper_base_joint",
+          "kind": "joint",
+          "native_name": "gripper_base_joint",
+          "parent_object_id": "body:gripper_base_link"
+        },
+        {
+          "object_id": "geom:gripper_base_link/gripper_base_link_collision",
+          "kind": "geom",
+          "native_name": "gripper_base_link_collision",
+          "parent_object_id": "body:gripper_base_link"
+        },
+        {
+          "object_id": "geom:gripper_base_link/gripper_base_link_visual",
+          "kind": "geom",
+          "native_name": "gripper_base_link_visual",
+          "parent_object_id": "body:gripper_base_link"
+        },
+        {
+          "object_id": "body:gripper_left_link",
+          "kind": "robot_link",
+          "native_name": "gripper_left_link",
+          "parent_object_id": "body:gripper_base_link"
+        },
+        {
+          "object_id": "joint:gripper_left_join",
+          "kind": "joint",
+          "native_name": "gripper_left_join",
+          "parent_object_id": "body:gripper_left_link"
+        },
+        {
+          "object_id": "geom:gripper_left_link/gripper_left_link_collision",
+          "kind": "geom",
+          "native_name": "gripper_left_link_collision",
+          "parent_object_id": "body:gripper_left_link"
+        },
+        {
+          "object_id": "geom:gripper_left_link/gripper_left_link_visual",
+          "kind": "geom",
+          "native_name": "gripper_left_link_visual",
+          "parent_object_id": "body:gripper_left_link"
+        },
+        {
+          "object_id": "body:gripper_right_link",
+          "kind": "robot_link",
+          "native_name": "gripper_right_link",
+          "parent_object_id": "body:gripper_base_link"
+        },
+        {
+          "object_id": "joint:gripper_right_joint",
+          "kind": "joint",
+          "native_name": "gripper_right_joint",
+          "parent_object_id": "body:gripper_right_link"
+        },
+        {
+          "object_id": "geom:gripper_right_link/gripper_right_link_collision",
+          "kind": "geom",
+          "native_name": "gripper_right_link_collision",
+          "parent_object_id": "body:gripper_right_link"
+        },
+        {
+          "object_id": "geom:gripper_right_link/gripper_right_link_visual",
+          "kind": "geom",
+          "native_name": "gripper_right_link_visual",
+          "parent_object_id": "body:gripper_right_link"
+        },
+        {
+          "object_id": "body:guide_rod_link",
+          "kind": "robot_link",
+          "native_name": "guide_rod_link",
+          "parent_object_id": "body:gripper_link"
+        },
+        {
+          "object_id": "geom:guide_rod_link/guide_rod_link_collision",
+          "kind": "geom",
+          "native_name": "guide_rod_link_collision",
+          "parent_object_id": "body:guide_rod_link"
+        },
+        {
+          "object_id": "geom:guide_rod_link/guide_rod_link_visual",
+          "kind": "geom",
+          "native_name": "guide_rod_link_visual",
+          "parent_object_id": "body:guide_rod_link"
+        },
+        {
+          "object_id": "body:left_jaw_link",
+          "kind": "robot_link",
+          "native_name": "left_jaw_link",
+          "parent_object_id": "body:guide_rod_link"
+        },
+        {
+          "object_id": "joint:left_jaw_joint",
+          "kind": "joint",
+          "native_name": "left_jaw_joint",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_pad",
+          "kind": "geom",
+          "native_name": "left_jaw_link_pad",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_shell_0",
+          "kind": "geom",
+          "native_name": "left_jaw_link_shell_0",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_shell_1",
+          "kind": "geom",
+          "native_name": "left_jaw_link_shell_1",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_shell_2",
+          "kind": "geom",
+          "native_name": "left_jaw_link_shell_2",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_shell_3",
+          "kind": "geom",
+          "native_name": "left_jaw_link_shell_3",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_visual",
+          "kind": "geom",
+          "native_name": "left_jaw_link_visual",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "body:right_jaw_link",
+          "kind": "robot_link",
+          "native_name": "right_jaw_link",
+          "parent_object_id": "body:guide_rod_link"
+        },
+        {
+          "object_id": "joint:right_jaw_joint",
+          "kind": "joint",
+          "native_name": "right_jaw_joint",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_pad",
+          "kind": "geom",
+          "native_name": "right_jaw_link_pad",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_shell_0",
+          "kind": "geom",
+          "native_name": "right_jaw_link_shell_0",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_shell_1",
+          "kind": "geom",
+          "native_name": "right_jaw_link_shell_1",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_shell_2",
+          "kind": "geom",
+          "native_name": "right_jaw_link_shell_2",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_shell_3",
+          "kind": "geom",
+          "native_name": "right_jaw_link_shell_3",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_visual",
+          "kind": "geom",
+          "native_name": "right_jaw_link_visual",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "body:end_effector_link",
+          "kind": "robot_link",
+          "native_name": "end_effector_link",
+          "parent_object_id": "body:link5"
+        },
+        {
+          "object_id": "body:camera_connect_link",
+          "kind": "robot_link",
+          "native_name": "camera_connect_link",
+          "parent_object_id": "body:link4"
+        },
+        {
+          "object_id": "geom:camera_connect_link/camera_connect_link_collision",
+          "kind": "geom",
+          "native_name": "camera_connect_link_collision",
+          "parent_object_id": "body:camera_connect_link"
+        },
+        {
+          "object_id": "geom:camera_connect_link/camera_connect_link_visual",
+          "kind": "geom",
+          "native_name": "camera_connect_link_visual",
+          "parent_object_id": "body:camera_connect_link"
+        },
+        {
+          "object_id": "body:depth_cam_link",
+          "kind": "robot_link",
+          "native_name": "depth_cam_link",
+          "parent_object_id": "body:camera_connect_link"
+        },
+        {
+          "object_id": "geom:depth_cam_link/depth_cam_link_collision",
+          "kind": "geom",
+          "native_name": "depth_cam_link_collision",
+          "parent_object_id": "body:depth_cam_link"
+        },
+        {
+          "object_id": "geom:depth_cam_link/depth_cam_link_visual",
+          "kind": "geom",
+          "native_name": "depth_cam_link_visual",
+          "parent_object_id": "body:depth_cam_link"
+        },
+        {
+          "object_id": "body:lidar_frame",
+          "kind": "robot_link",
+          "native_name": "lidar_frame",
+          "parent_object_id": "body:back_shell_middle_link"
+        },
+        {
+          "object_id": "geom:lidar_frame/lidar_frame_visual",
+          "kind": "geom",
+          "native_name": "lidar_frame_visual",
+          "parent_object_id": "body:lidar_frame"
+        },
+        {
+          "object_id": "body:world_static",
+          "kind": "world_link",
+          "native_name": "world_static",
+          "parent_object_id": null
+        },
+        {
+          "object_id": "geom:world_static/floor",
+          "kind": "geom",
+          "native_name": "floor",
+          "parent_object_id": "body:world_static"
+        },
+        {
+          "object_id": "geom:world_static/pick_platform",
+          "kind": "geom",
+          "native_name": "pick_platform",
+          "parent_object_id": "body:world_static"
+        },
+        {
+          "object_id": "body:target_cube",
+          "kind": "world_link",
+          "native_name": "target_cube",
+          "parent_object_id": null
+        },
+        {
+          "object_id": "joint:target_cube_free",
+          "kind": "joint",
+          "native_name": "target_cube_free",
+          "parent_object_id": "body:target_cube"
+        },
+        {
+          "object_id": "geom:target_cube/target_cube_contact",
+          "kind": "geom",
+          "native_name": "target_cube_contact",
+          "parent_object_id": "body:target_cube"
+        }
+      ],
+      "worldPoseSemantics": "compiled_initial_layout_not_live_object_state",
+      "geometryProvenance": {
+        "compiler": "MuJoCo",
+        "compiler_version": "3.1.6",
+        "runtime_identity": {
+          "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+          "backend_generation": 1,
+          "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+        },
+        "resource_identity": {
+          "contract_version": "mobilecar-1.0",
+          "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+          "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+          "scene_id": "mobile_pick"
+        },
+        "native_scene_sha256": "5969e260b5ca87849387e8827b3e83c332f845281d0d69c0f7b141a8c3f1bf2d",
+        "model_inputs_sha256": "9e1b60c04b8d8e2e8b2b60b80464178cc7729d10342dc1133aa95c08e64e360a",
+        "compiled_scene_sha256": "a7b8b2c2d12d871306ec443989ec962ca1c4fe93641c3104a1dbcdb81a6ea109",
+        "native_scene_builder_sha256": "efb2ccbed695d30d357a78e6d12335d4b294edbcd30449cbaf211a3c65ef02ef",
+        "bundle_sha256": "275389464eee2f3de0c2ddf96ae85acbedfd382c496a589ec41a3662ee31d171",
+        "verification_scope": "static_compilation_matches_live_manifest_not_live_memory_or_contacts"
+      },
+      "kinematicProfile": "landerpi-3ca3d6d0-local-kinematics-v1",
+      "retrievedAt": "2026-10-24T04:18:07+00:00",
+      "feedbackTimeS": 988551.803854819,
+      "target": {
+        "base_velocity": {
+          "frame_id": "base_link",
+          "vx_m_s": 0,
+          "vy_m_s": 0,
+          "wz_rad_s": 0
+        },
+        "user_joint_positions_rad": [
+          -2.1849604256104818e-12,
+          3.344156860706527e-14,
+          2.2578702971480356e-14,
+          -4.6629367034256575e-15,
+          -1.0156417584983402e-12
+        ],
+        "model_joint_positions_rad": [
+          -2.1849604256104818e-12,
+          3.344156860706527e-14,
+          2.2578702971480356e-14,
+          -1.5707963267949012,
+          -1.0156417584983402e-12
+        ],
+        "gripper_width_m": 0.024999991920466903,
+        "gripper_model_drive_position_rad": -1.0776330048507736,
+        "command_id": null,
+        "tcp": null
+      },
+      "authority": {
+        "base_owner_session_id": null,
+        "arm_owner_session_id": null,
+        "active_session_id": null,
+        "active_operator_kind": null,
+        "authorizes_caller": false,
+        "lease_status": "not_exposed"
+      },
+      "recording": {
+        "status": "IDLE",
+        "command_capture_ready": false,
+        "recording_segment_id": null,
+        "episode_id": null,
+        "queued_events": 0,
+        "dropped_events": 0,
+        "error": null
+      },
+      "sensors": [
+        {
+          "kind": "rgb",
+          "available": true,
+          "fresh": true,
+          "sample_id": "rgbd_741b7d561b9e484d8de0823d35a13418",
+          "stream_id": "rgbd",
+          "measurement_time_s": 988551.697065923,
+          "arrival_time_s": 988551.741618485,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": 0.35639322916666666,
+          "quality": "simulated_nominal_preview",
+          "capture_sim_time_s": 430126.24694251973,
+          "capture_backend_monotonic_s": 988551.697065923,
+          "capture_control_tick_id": "tick_043012625",
+          "feedback_sample_id": "joint_feedback_043012625",
+          "observation_age_s": 0.04455256194341928,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "depth",
+          "available": true,
+          "fresh": true,
+          "sample_id": "rgbd_741b7d561b9e484d8de0823d35a13418",
+          "stream_id": "rgbd",
+          "measurement_time_s": 988551.697065923,
+          "arrival_time_s": 988551.741618485,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": 0.35639322916666666,
+          "quality": "simulated_nominal_preview",
+          "capture_sim_time_s": 430126.24694251973,
+          "capture_backend_monotonic_s": 988551.697065923,
+          "capture_control_tick_id": "tick_043012625",
+          "feedback_sample_id": "joint_feedback_043012625",
+          "observation_age_s": 0.04455256194341928,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "lidar",
+          "available": true,
+          "fresh": true,
+          "sample_id": "laser_043012630",
+          "stream_id": "lidar",
+          "measurement_time_s": 988551.738230329,
+          "arrival_time_s": 988551.738230329,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": null,
+          "quality": "simulated_raycast",
+          "capture_sim_time_s": 430126.2969425192,
+          "capture_backend_monotonic_s": 988551.738230329,
+          "capture_control_tick_id": "tick_043012630",
+          "feedback_sample_id": null,
+          "observation_age_s": 0,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "imu",
+          "available": true,
+          "fresh": true,
+          "sample_id": "imu_043012636",
+          "stream_id": "imu",
+          "measurement_time_s": 988551.803857245,
+          "arrival_time_s": 988551.803857245,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": null,
+          "quality": "simulated_nominal",
+          "capture_sim_time_s": 430126.35694251856,
+          "capture_backend_monotonic_s": 988551.803857245,
+          "capture_control_tick_id": "tick_043012636",
+          "feedback_sample_id": null,
+          "observation_age_s": 0,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "encoders",
+          "available": true,
+          "fresh": true,
+          "sample_id": "encoders_043012636",
+          "stream_id": "encoders",
+          "measurement_time_s": 988551.803857245,
+          "arrival_time_s": 988551.803857245,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": null,
+          "quality": "simulated_nominal",
+          "capture_sim_time_s": 430126.35694251856,
+          "capture_backend_monotonic_s": 988551.803857245,
+          "capture_control_tick_id": "tick_043012636",
+          "feedback_sample_id": null,
+          "observation_age_s": 0,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "joint_feedback",
+          "available": true,
+          "fresh": true,
+          "sample_id": "joint_feedback_043012636",
+          "stream_id": "joint_feedback",
+          "measurement_time_s": 988551.803857245,
+          "arrival_time_s": 988551.803857245,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": null,
+          "quality": "simulated_nominal",
+          "capture_sim_time_s": 430126.35694251856,
+          "capture_backend_monotonic_s": 988551.803857245,
+          "capture_control_tick_id": "tick_043012636",
+          "feedback_sample_id": null,
+          "observation_age_s": 0,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "image_transforms",
+          "available": true,
+          "fresh": true,
+          "sample_id": "rgbd_741b7d561b9e484d8de0823d35a13418",
+          "stream_id": "rgbd",
+          "measurement_time_s": 988551.697065923,
+          "arrival_time_s": 988551.741618485,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": 0.35639322916666666,
+          "quality": "simulated_nominal_preview",
+          "capture_sim_time_s": 430126.24694251973,
+          "capture_backend_monotonic_s": 988551.697065923,
+          "capture_control_tick_id": "tick_043012625",
+          "feedback_sample_id": "joint_feedback_043012625",
+          "observation_age_s": 0.04455256194341928,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        }
+      ],
+      "session": {
+        "ready": false,
+        "platformSessionId": null,
+        "commandsAvailable": false,
+        "recordingAvailable": false,
+        "replayAvailable": false,
+        "resourceMatchesPin": true,
+        "deployedContentVerified": false,
+        "recordingRequiredForMotion": true,
+        "contractVersion": "mobilecar-1.0"
+      }
+    },
+    "monitor": {
+      "state": "current",
+      "message": "真实只读监控",
+      "receivedAt": 1792815487308,
+      "requestMs": 43,
+      "snapshots": 9,
+      "intervalMs": 1000
+    },
+    "assetError": "",
+    "ui": {
+      "preset": "standard",
+      "maximized": false,
+      "panels": {
+        "viewport": {
+          "open": true,
+          "width": 914,
+          "height": 512
+        },
+        "hierarchy": {
+          "open": true,
+          "width": 216,
+          "height": 816
+        },
+        "inspector": {
+          "open": true,
+          "width": 308,
+          "height": 816
+        },
+        "sensors": {
+          "open": true,
+          "width": 914,
+          "height": 149
+        },
+        "timeline": {
+          "open": true,
+          "width": 914,
+          "height": 99
+        }
+      },
+      "fullscreen": false,
+      "fullscreenSupported": true,
+      "fullscreenReason": "",
+      "drawer": "none",
+      "canvas": {
+        "width": 912,
+        "height": 469
+      }
+    },
+    "interacting": false
+  },
+  "status": "passed"
+}

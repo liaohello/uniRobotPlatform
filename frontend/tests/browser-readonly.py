@@ -46,19 +46,19 @@ async def main():
    check('real snapshot excludes GT diagnostics',first['actual']['diagnostics']=={})
    check('user and named model angles retain joint4 zero difference',abs(first['actual']['arm']['user_joint_positions_rad'][3]-first['actual']['model_joint_positions_rad']['joint4'])>1.5)
    check('backend target is separate and has no command acknowledgement',first['live']['target']['command_id'] is None and first['live']['target']['tcp'] is None and first['target'] is None and await page.locator('[data-backend-target="joint2"]').count()==1)
-   await edit(page);await page.get_by_role('button',name='侧',exact=True).click();await page.wait_for_timeout(300)
-   await page.get_by_role('button',name='保存布局',exact=True).click();before=await state(page);layout=await page.evaluate('localStorage.getItem("unirobot:m12a:layout:v1")')
+   await edit(page);await page.get_by_role('button',name='车侧',exact=True).click();await page.wait_for_timeout(300)
+   await page.get_by_role('button',name='保存',exact=True).click();before=await state(page);layout=await page.evaluate('localStorage.getItem("unirobot:m12a:layout:v2")')
    await page.wait_for_function('(n)=>window.__workbenchInspect().monitor.snapshots>=n',arg=before['monitor']['snapshots']+4)
    after=await state(page)
    check('real Actual tick/time keep updating',after['actual']['control_tick_id']!=before['actual']['control_tick_id'] and after['actual']['sim_time_s']>before['actual']['sim_time_s'])
    check('polling preserves one renderer, selection and camera',after['scene']['lifecycle']['created']==before['scene']['lifecycle']['created'] and after['scene']['camera']==before['scene']['camera'] and after['selected']==before['selected'])
-   check('polling preserves local target and saved layout',after['target']==before['target'] and layout==await page.evaluate('localStorage.getItem("unirobot:m12a:layout:v1")'))
+   check('polling preserves local target and saved layout',after['target']==before['target'] and layout==await page.evaluate('localStorage.getItem("unirobot:m12a:layout:v2")'))
    await page.get_by_role('button',name='TCP',exact=True).click();x=await page.get_by_role('spinbutton',name='TCP X',exact=True).input_value();await page.get_by_role('spinbutton',name='TCP X',exact=True).fill(str(float(x)+.01));await page.get_by_role('spinbutton',name='TCP X',exact=True).press('Tab')
    check('live source supports explicit local TCP candidate only',(await state(page))['target']['mode']=='tcp' and await page.get_by_role('button',name='提交执行',exact=False).is_disabled())
    await page.get_by_label('轮询间隔',exact=True).select_option('2000');check('poll interval is configurable without replacing the renderer',(await state(page))['monitor']['intervalMs']==2000 and (await state(page))['scene']['lifecycle']['created']==before['scene']['lifecycle']['created']);await page.get_by_label('轮询间隔',exact=True).select_option('1000')
    await page.screenshot(path=str(a.output/'real-readonly.png'),full_page=True)
    real_final=await state(page);report['real_final']=real_final
-   check('takeover, execution, recording remain disabled',await page.get_by_role('button',name='申请接管',exact=True).is_disabled() and await page.get_by_role('button',name='开始录制',exact=True).is_disabled())
+   check('takeover, execution, recording remain disabled',await page.get_by_role('button',name='申请接管',exact=True).is_disabled() and await page.get_by_role('button',name='录制',exact=True).is_disabled())
    # Snapshot fixtures use wire data copies and explicitly synthetic identities/time.
    fixture={'offline':False,'runtime':0,'resource':0,'mismatch_init':False,'asset_bad':False,'asset_http_error':False,'delay':0,'seq':0,'inflight':0,'max_inflight':0,'starts':[],'ends':[],'entered':asyncio.Event()}
    async def intercept(route):
@@ -90,6 +90,11 @@ async def main():
    synthetic=await state(page);fixture['delay']=1.5;fixture['starts'].clear();fixture['ends'].clear()
    await page.wait_for_function('(n)=>window.__workbenchInspect().monitor.snapshots>=n',arg=synthetic['monitor']['snapshots']+3,timeout=30000)
    current=await state(page)
+   # The counter and the proxy log settle a few milliseconds apart; wait for the
+   # measured condition instead of assuming the third completion already landed.
+   for _ in range(40):
+    if len(fixture['ends'])>=3:break
+    await asyncio.sleep(.1)
    check('synthetic continuous Actual update preserves local target',current['actual']['model_joint_positions_rad']['joint1']!=synthetic['actual']['model_joint_positions_rad']['joint1'] and current['target']==synthetic['target'])
    check('slow snapshot requests never overlap',fixture['max_inflight']==1 and len(fixture['ends'])>=3 and all(s-e>.85 for s,e in zip(fixture['starts'][1:],fixture['ends'])))
    report['snapshot_timings']={'fixture':'1.5 s synthetic responses','starts':fixture['starts'][:],'ends':fixture['ends'][:],'max_inflight':fixture['max_inflight']}
@@ -98,7 +103,7 @@ async def main():
    fixture['delay']=0;fixture['offline']=True
    await page.wait_for_function('window.__workbenchInspect().monitor.state==="stale"')
    stale=await state(page);await page.screenshot(path=str(a.output/'fixture-disconnected.png'),full_page=True)
-   check('disconnect marks retained Actual stale without sample fallback',stale['source']['kind']=='live' and stale['actual']['control_tick_id'].startswith('fixture-') and '陈旧' in await page.locator('.monitor-strip').inner_text())
+   check('disconnect marks retained Actual stale without sample fallback',stale['source']['kind']=='live' and stale['actual']['control_tick_id'].startswith('fixture-') and '陈旧' in await page.locator('.monitor-chip').inner_text())
    fixture['offline']=False;await page.wait_for_function('window.__workbenchInspect().monitor.state==="current"')
    check('read polling recovers explicitly on successful same-identity response',(await state(page))['source']['kind']=='live')
    # Runtime and resource changes both force scene/capability reload and invalidate preview.
