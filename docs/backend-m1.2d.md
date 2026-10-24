@@ -52,7 +52,7 @@
 
 ## 二、真实 HTTP 协议集成
 
-在服务器启动隔离 native 候选（mock backend，端口 18947）和测试平台（端口 18948）：
+在服务器启动隔离 native 候选（mock backend，端口 18950）和测试平台（端口 18951）：
 
 - native 使用真实 FastAPI、真实 Recorder、隔离 `runs/`；不创建 MuJoCo 物理实例，不推进物理。
 - 测试平台使用**测试专用 recipe** `mobilecar.g1.teleop.mock-testonly`，期望值来自该 mock 的真实 capabilities/attestation；`backend_kind=mock`、mock model_id、mock config/scene digest、测试 kinematics，**没有**为了让生产 G1 通过而伪造字段，生产 recipe/pin/fingerprint 未改。

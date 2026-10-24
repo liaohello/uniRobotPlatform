@@ -81,7 +81,7 @@
 13. binding 的 `expires_at` 只约束 prepared；started 由 RESET、release、身份变化或未来明确定义的结束事件失效。不要新增短租约替代持续 Session，也不要把 started 的旧过期字段当仍会过期。
 14. 单 Session GET 的 `current` 是只读实时观测；刷新不续租/重绑/Start/清锁/启停录制。`GET /sessions` 是 `source=stored` 存档列表，不是实时状态。失联/身份变化/terminal binding 不报告 ready。
 
-native 接口静态核对和当前服务的只读诊断已完成。最新平台候选为 `m1e-20261024T090448Z-platform`（18949，生产 recipe，只读）；上一轮 `m1c-20261024T065943Z-platform`（18944）保留；M1.2b 候选 18943 仍被前端预览 18946 消费；原生测试 release `m1e-20261024T090412Z-native` 只在 18947 以 mock backend 验证、测试平台 18948 验证后均停止。所有安装、测试、自动浏览器均在服务器执行，未执行本机仿真或自动测试。
+native 接口静态核对和当前服务的只读诊断已完成。最新平台候选为 `m1e-20261024T090448Z-platform`（18949，生产 recipe，只读）；上一轮 `m1c-20261024T065943Z-platform`（18944）保留；M1.2b 候选 18943 仍被前端预览 18946 消费；原生测试 release `m1e-20261024T090412Z-native` 只在 18950 以 mock backend 验证、测试平台 18951 验证后均停止；18947/18948 是前端预览代理。所有安装、测试、自动浏览器均在服务器执行，未执行本机仿真或自动测试。
 
 ## 7. Git 与换笔记本状态
 
