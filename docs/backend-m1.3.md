@@ -120,7 +120,15 @@ M1.3 只增加资源读取/保存链路，不改变 M1.2d 的 native 补丁决�
 | **独立 G4A2 recipe + `a5cef52+patch`** | 保留当前 8792 profile，另签 G4A2 recipe/采集口径 | aggregate 同上；必须把 a5 基线差异纳入新 recipe 证明 | 平台可按实际 G4A2 capabilities 验证 | 把尚未复核的 a5 UI/modelgen/驾驶安全变化带入生产；证据范围更大 | 新 G4A2 attestation/readiness 任一失败则不切换 |
 | **推荐：独立 G4A2 recipe + `drvfix+patch`** | 保留当前 G4A2 profile，另签独立 recipe；不伪装成 G1 | `dd24d1c80d68afa2c80665eb197b9184a267086bf4d5db76c2103475c414f7da` | 最大程度保留已部署行为，同时获得 M1.2d P1 修复 | 必须先定义 G4A2 配置/场景/package/runtime digest 和 Session 口径；仍不是导航能力 | 维护窗口失败即回 drvfix release；binding 内存态随重启消失，新 recording 独立目录，不迁移/删除旧数据 |
 
-矩阵只是待用户决策，不授权本轮部署。成功判据至少包括：新 source pin/patch hash、health/capabilities/attestation、recipe validation、prepared readback、active Start、RECORDING begin、文件哈希和回执一致；本轮均未对 8792 执行。
+矩阵只是待用户决策，不授权本轮部署。若以后进入维护窗口，步骤固定为：
+
+1. 冻结选择（G1 或独立 G4A2、a5+patch 或 drvfix+patch）并记录决策人/时间；为新 release 重签 source manifest/aggregate、patch hash、requirements lock、config/scene digest 和 recipe revision，禁止复用 `a010…911c` 旧 base pin。
+2. 在隔离端口安装并运行聚焦测试，核对 health/capabilities/attestation、binding prepare/readback、Start、begin；失败不触碰 8792。
+3. 启动前记录 8792 的 PID、release、profile、run/generation/episode、owner、safety latch、recording 状态和当前前端/平台端口；确认无活动控制/录制后才停止旧服务。
+4. 用选定 release/profile替换，启动平台候选，验证对应 recipe validation 与 prepared → active → RECORDING；每步保存响应和文件哈希。
+5. 任一步失败立即恢复原 drvfix release + `g4a2_server.yaml`。内存 binding 随重启消失，不伪造恢复；新 recording 使用独立目录，不迁移或删除历史数据。成功判据包括 current 有效、identity/config/binding 一致、durable RECORDING、回执/文件一致、无重复 RESET/start/begin，以及 lease/STOP 门控未放宽。
+
+本轮未执行上述任何部署步骤。
 
 ## 九、真实闭环仍缺
 
