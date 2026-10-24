@@ -2,9 +2,9 @@
 
 规范 ID：`FE-SCENE-TEMPLATES` · 责任层：前端 · 版本：V0.7（2026-10-24）
 
-状态：详细设计草案；本轮字段、默认值和校验行为是建议设计基线，不表示逐字段已由用户确认。Waypoint 在 Scene Setup 创建/编辑/保存为用户已确认范围；产品实现和验收未执行。
+状态：详细设计草案；本轮字段、默认值和校验行为是建议设计基线，不表示逐字段已由用户确认。Waypoint 在 Scene Setup 创建/编辑/保存为用户已确认范围；M1.3 PointGoal/Waypoint 必填 yaw 以 S18 补充。后端资源 API 已有候选，前端页面实现和端到端验收未执行。
 
-当前范围来源：[S16](../../90-governance/sources/S16-mobile-first-spec-repair.md)；三图来源：[S15｜Scene Setup 首条闭环与三图](../../90-governance/sources/S15-scene-setup-first-loop.md)、[S10｜Waypoint 范围确认](../../90-governance/sources/S10-waypoint-scope-confirmation.md)。
+当前范围来源：[S16](../../90-governance/sources/S16-mobile-first-spec-repair.md)；三图来源：[S15｜Scene Setup 首条闭环与三图](../../90-governance/sources/S15-scene-setup-first-loop.md)、[S10｜Waypoint 范围确认](../../90-governance/sources/S10-waypoint-scope-confirmation.md)；本切片字段来源：[S18｜版本化地图与带朝向 Waypoint 路线切片](../../90-governance/sources/S18-navigation-map-route-slice.md)。
 
 [功能包](README.md) · [共享组件与交互契约](05-shared-scene-components.md) · [PAGE-02 三任务图稿](../page-designs/02-scene-setup.md) · [共享配置契约](../../30-contracts/07-task-scene-experiment-config.md)
 

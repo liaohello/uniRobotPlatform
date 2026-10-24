@@ -2,9 +2,9 @@
 
 规范 ID：`CT-NAVIGATION-ROUTE` · 责任层：共享契约 · 版本：V0.6（2026-10-24）
 
-状态：详细设计基线建议；Waypoint 范围以 S10 的用户明确选择为准，字段名不是现存 API。产品实现及验收均未执行。
+状态：详细设计基线；M1.3 版本化 Map 读取与 Route Draft/Version 资源 API 已形成可接线候选，实际路由与 schema 以该候选 OpenAPI 和本节共同维护，不再允许前后端各自维护。产品端到端导航及验收仍未执行。
 
-来源：[S15](../90-governance/sources/S15-scene-setup-first-loop.md)、[S09](../90-governance/sources/S09-unified-development-reuse-analysis.md)、[S10](../90-governance/sources/S10-waypoint-scope-confirmation.md)、[S18](../90-governance/sources/S18-navigation-map-route-slice.md)。S10 原文保留；S18 补充本次必填 yaw、坐标约定和地图/路线切片。
+来源：[S15](../90-governance/sources/S15-scene-setup-first-loop.md)、[S09](../90-governance/sources/S09-unified-development-reuse-analysis.md)、[S10](../90-governance/sources/S10-waypoint-scope-confirmation.md)、[S18](../90-governance/sources/S18-navigation-map-route-slice.md)。S10 原文保留；S18 补充本次必填 yaw、坐标约定和地图/路线切片。M1.3 候选路由、schema 和样例见 [交付记录](../../backend-m1.3.md)。
 
 [上级目录](README.md) · [总索引](../README.md)
 

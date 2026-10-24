@@ -2,9 +2,9 @@
 
 规范 ID：`FE-SCENE-WAYPOINTS` · 责任层：前端 · 版本：V0.4（2026-10-24）
 
-状态：设计草案；S08/S09 是用户提供的分析文本，不自动视为所有细节已确认。Waypoint 范围以 S10 的用户明确选择为准。实现及产品验收均未执行。
+状态：设计草案；S08/S09 是用户提供的分析文本，不自动视为所有细节已确认。Waypoint 范围以 S10 的用户明确选择为准，M1.3 必填 yaw 以 S18 补充。后端 Route Draft/Version 资源候选已可接线；前端页面实现及端到端验收未执行。
 
-来源：[S09](../../90-governance/sources/S09-unified-development-reuse-analysis.md)、[S10](../../90-governance/sources/S10-waypoint-scope-confirmation.md)。
+来源：[S09](../../90-governance/sources/S09-unified-development-reuse-analysis.md)、[S10](../../90-governance/sources/S10-waypoint-scope-confirmation.md)、[S18](../../90-governance/sources/S18-navigation-map-route-slice.md)。
 
 [上级目录](README.md) · [总索引](../../README.md)
 
