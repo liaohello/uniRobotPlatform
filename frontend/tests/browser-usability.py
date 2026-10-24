@@ -155,7 +155,7 @@ with sync_playwright() as pw:
         check('Session drawer separates draft, validation, snapshot and prepared steps',
               all(token in drawer_text for token in ('草案 Draft', '校验 Validation', '不可变配置快照', 'prepared Session')))
         check('Session drawer reports the real empty/blocked state instead of Ready',
-              '空 Session 列表' in drawer_text and 'execution_eligible' in drawer_text and '不是 Ready' in drawer_text)
+              '空 Session 列表' in drawer_text and '不是 Ready' in drawer_text and '刷新 native 观测（只读）' in drawer_text)
         check('Session drawer reads a real Draft or states that the list is empty',
               page.locator('.session-drawer [data-draft-id]').count() == 1 or '后端草案列表为空' in drawer_text)
         check('Session drawer keeps Start disabled',
@@ -555,7 +555,7 @@ with sync_playwright() as pw:
         bad = [r for r in requests if r['method'] != 'GET']
         check('browser issued GET requests only', not bad, bad[:3])
         allowed_prefixes = ('/api/v1/mobilecar/scene', '/api/v1/mobilecar/capabilities', '/api/v1/mobilecar/snapshot',
-                            '/api/v1/mobilecar/kinematics', '/api/v1/mobilecar/execution-recipe',
+                            '/api/v1/mobilecar/kinematics', '/api/v1/mobilecar/execution-recipe', '/api/v1/mobilecar/preflight',
                             '/api/v1/experiment-drafts', '/api/v1/config-snapshots', '/api/v1/sessions')
         external = [r for r in requests if '/api/v1/' in r['url']
                     and not any(urlsplit(r['url']).path.startswith(prefix) for prefix in allowed_prefixes)]

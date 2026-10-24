@@ -1,3 +1,97 @@
+# M1.2c Session 准备与显式 Start 交付（2026-10-24）
+
+本轮把 Session 抽屉接到 18944（M1.2c, recipe revision 3）：真实 Draft/validate/快照/409 成果保留，新增 `preflight` 当前观测、prepared Session 创建、独立显式 Start、binding/owner/recording/motion 分区展示和状态新鲜度。真实 native 仍未部署 binding 补丁，所以真实环境准确显示阻塞；成功交互只在隔离的有状态协议夹具中验证。仅写 `frontend/`，未修改 backend、公共契约、native 或根配置，未推送。
+
+## 冻结版本与入口
+
+| 项 | 值 |
+|---|---|
+| 前端 release | `m1-front-geometry-20261024T091342Z-eecb7395d87a` |
+| 输入 / 聚合 SHA-256 | 70 个输入；`eecb7395d87a8020da602f85cdc9460dccf23c27a4f4b66d3d22a2700b8444c1` |
+| 后端候选 / 上游 | `m1c-20261024T065943Z-platform`（recipe revision 3，fingerprint `4c3e5f42…5e9e`），服务器 18944 |
+| 预览 | 服务器回环 18950，代理 18944；PID 1253949（同一冻结 release）。18946→18943 旧预览保留；临时 18947/18948 已停止 |
+| 真实 native | 8792 仍为 `drvfix` / G4A2 / PID 941842；未部署 binding 补丁，未重启、未发送运动/RESET/录制/命令 |
+| 环境 | cec-sim，Node 20.20.2 / npm 10.8.2，Chromium ANGLE SwiftShader，原锁文件 |
+
+## 本轮行为
+
+- **Session 类型与接口**：新增 `SessionExecution`、`OwnerLease`、`StartReceipt`、`StartBlock`、`StartAttempt`、`RecordingAttempt`、`RecordingBeginReceipt`、`SessionEnvelope`、`CreateSessionRequest` 和 `PreflightRecord`；客户端新增 `createSession`、`startSession`、`preflight`。
+- **创建与 Start 分离**：只有当前快照 `execution_eligible=true` 且 `validated_snapshot_id` 非空时创建按钮可用；创建使用快照的 `execution_revision`、`fingerprint`、validated id 与幂等键。创建成功只进入 prepared，不自动 Start。Start 仅在 `state=prepared`、`start_available=true`、binding verified、运行身份新鲜时启用。
+- **幂等与超时**：同一快照/修订/指纹的重试复用同一个 `idempotency_key`；不同快照生成新键。创建/Start 使用 8s 动作超时；超时显示“结果未知”并立即回读 `GET /sessions`/`GET /sessions/{id}`，恢复则采用存档，不伪造失败或成功。
+- **错误语义**：409 `session_conflict` 回读后端返回的 `session_id`；`idempotency_conflict`、`snapshot_not_found`、`stale_execution_reference`、`recipe_changed`、`validation_incomplete`、`native_offline`、`start_preconditions_unmet`、`native_start_failed` 均保留 code/message/blocking reasons。失效快照提示重新校验或新建草案，不跨数据库复用旧 Draft/快照 ID。
+- **生命周期与独立状态**：抽屉分别显示配置/执行合格、prepared、可 Start、active、Owner/lease、recording required/begin_required/ready、motion_ready/motion_blockers、授权范围、Start/recording 回执和 attempt。active 明确不表示取得 Owner、正在录制或允许运动。
+- **新鲜度**：`GET /sessions` 只读“最近平台动作存档”，按钮明确写“刷新存档（不调用 native）”，显示 `execution.source/observed_at` 和最近读取时间；`GET /mobilecar/preflight` 显示 `checked_at`、当前 runtime、recording 和真实 checks，按钮写“刷新 native 观测（只读）”。preflight 不改变 Session 存档或资格。
+- **失效处理**：选中 Session 的 `native_identity` 与当前 Actual 或 preflight 不一致、或 `native_binding.status!=verified` 时，取消旧手势/待提交目标并禁用 Start；不改变 sample，同内容网格、相机和布局保留，不自动重绑或重发。错误显示 `data-session-invalidated`。
+- **代理**：新增 `GET /mobilecar/preflight`、`POST /sessions`、`POST /sessions/{id}/start`；保留 Draft 写入与既有读取。未代理 `recording/begin`、运动、STOP、RESET、回放、媒体或 native 命令。代理放行不等于授权。
+- **测试夹具**：`tests/browser-session.py` 以 `page.route` 建立进程内状态机，所有 Session/配置响应标注 synthetic；mobilecar 场景/Actual 仍来自真实 18944 GET，用于保留 3D 回归。夹具验证创建、幂等键复用、超时回读、409、Start 拒绝/成功、freshness、binding 失效与目标取消。未加入生产模拟 Passed 或门禁开关。
+
+## 真实 18944 结果（非夹具）
+
+| 操作 | 真实结果 |
+|---|---|
+| GET preflight | 200；`checked_at=2026-10-24T09:25:25+00:00`，`read_contract_compatible=false`，`session_ready=false`，`interface_profile` failed |
+| GET sessions | `[]`；没有 prepared/active/failed Session |
+| Draft create/save/reload | 201/200/200；Draft `draft-525edd1875b241f291d552017a93f263`，draft_revision 2，execution_revision 1，名称/描述持久化 |
+| validate | 200；`status=failed`，`execution_eligible=false`，`validated_snapshot_id=null`，19 项检查，6 条 blocking reasons |
+| 快照 | `cs-78f4238e15010a2a9b8f929f7f5f047389530027`；sha256 `394085075397e3f08147d4d3e027af14ebcc3a456e08f318d9fc65582b64e594` |
+| 创建 / Start | 真实环境不满足条件；创建按钮禁用，未发送真实 `POST /sessions` 或 `/start` |
+| 409 冲突 | 外部宿主 PUT 推进 revision 后，UI 用旧 base_revision 保存得到真实 409 `conflict`；服务端保留外部值，UI 保留本地文本，显式读取后采用服务器版本 |
+| 请求 | 同一 release 经代理 542 GET / 3 POST / 3 PUT；平台写请求来自 Draft create/save/validate，无 Session/start、commands、episodes、RESET、recording 或 native 命令 |
+| native 影响 | run/generation/episode、recording=IDLE 前后一致；无 native mutation、无新物理实例 |
+
+真实运行身份：`run_9c88e3e...` / generation 1 / `episode_43c22f...`；几何内容身份 `cb789964...18a7cc`。
+
+## 合成夹具结果（与真实分开）
+
+`browser-session.py` 24 checks passed，全部标注 synthetic：
+
+- 首次创建 503 `native_offline` 后重试，两个请求使用同一幂等键；创建成功不自动 Start。
+- Start 先被 409 `start_preconditions_unmet` 拒绝，Session 保持 prepared 并记录 refused attempt；显式重试后 active，owner=`not_acquired`、recording_ready=false、motion_ready=false。
+- 同 runtime 已有 Session 时 409 `session_conflict` 被回读；延迟创建超时后通过 GET 存档恢复为 prepared，未自动 Start。
+- 刷新存档不改变 `execution.observed_at`；刷新 preflight 更新 `checked_at` 而不改变 Session 存档。
+- binding/native identity 变化后取消本地 Target，Start 禁用，renderer/camera/instance 不变，且不自动重发。
+- 所有 live mobilecar 请求为 GET；没有 native `/session/*`、commands、recording、RESET 路径；夹具写请求仅 Session create/start。
+
+## 同一冻结版本的验证
+
+| 套件 | 结果 |
+|---|---|
+| 类型检查 + 生产构建 | `tsc --noEmit && vite build` 通过；保留既有大 chunk 提示 |
+| 单元 | 37 passed：新增 create/start/preflight wire、身份/运动学/配置回归 |
+| 真实只读 | 32 passed：三接口、23 资产、Actual 持续、断连/身份/坏字节夹具 |
+| 冻结工作台回归 | 29 passed：Joint/TCP、Actual/Target/Ghost、取消、Orbit、布局 |
+| 几何/装配 | 23 passed：23 网格、TCP 对齐、三视图、跨 Actual 持续拖动 |
+| 可用性 | 100 passed：缩放/取景/分隔条/最大化/全屏/预设/持续拖动/1366/1920/125% |
+| 真实 18944 配置 | 46 passed：preflight、Draft 保存/重载/校验、动态 checks/reasons、快照、真实 409、迟到 validate、断连、创建按钮禁用、无 Session 写 |
+| 合成 Session 协议 | 24 passed（synthetic）：创建幂等、超时恢复、409、Start 拒绝/成功、freshness、binding 失效、3D 目标取消 |
+
+报告：[集成摘要](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/integration-summary.json)、[源码清单](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/source-manifest.json)、[构建](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/build.log)、[37 单元](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/unit.json)、[32 只读](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/browser/browser.json)、[29 冻结](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/frozen-browser/browser.json)、[23 几何](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/geometry/geometry.json)、[100 可用性](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/usability/usability.json)、[46 真实配置](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/config/browser.json)、[24 合成 Session](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/session/browser.json)、[native 前后](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/native-read-only.json)。
+
+截图：[prepared](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/session/session-prepared.png)、[active 且 owner/recording/motion 分离](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/session/session-active.png)、[超时回读恢复](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/session/session-recovered.png)、[binding 失效并取消目标](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/session/session-invalidated.png)、[真实 18944 配置校验](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/config/config-validated.png)、[真实 409 错误态](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/config/config-conflict-actual-final.png)、[Session 抽屉真实空状态](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/usability/usability-session.png)、[真实只读](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/browser/real-readonly.png)。
+
+## 验证中修掉的问题
+
+1. 首轮测试在闭合 `<details>` 内等待 attempt“可见”；改为等待 DOM 挂载，产品本身正常。
+2. 超时创建实际在毫秒级完成“unknown → 存档回读恢复”，测试无法稳定捕获瞬时横幅；改为验证恢复后的提示、最终 prepared 状态和同一幂等键，不把瞬时提示当作唯一证据。
+3. 测试夹具在第二次延迟创建时被“已有 active Session”规则误拦；仅对显式 conflict 模式保留单 Session 冲突，成功/超时路径使用独立合成 runtime 会话。
+4. 真实配置测试早期断言默认快照已存在，改为在自身 Draft validate 后检查 `execution_eligible=false`、创建按钮 blocked、无 Session Start 动作。
+5. 新增 preflight 后，只读/可用性网络白名单同步扩展；仍断言无 native 写路径。
+6. 收紧跨数据库/删除边界：如果选中的草案已不在当前后端列表，抽屉清空旧草案与快照并提示新建；`draft_not_found` 显示具体重建提示，不保留可误用的旧 ID。
+
+## 边界与未覆盖
+
+**真实通过**：18944 preflight 当前观测、真实 Draft 保存/重载/validate、动态 checks/blocking reasons、不可变快照读取、真实 409 冲突、空 Session 读取、创建按钮在真实不合格快照上禁用、无 Session/运动/录制写请求。
+
+**仅合成夹具通过**：prepared 创建、幂等重试/重放、超时回读恢复、Start 拒绝/成功、owner/recording/motion 分离、binding 失效与目标取消、preflight/存档 freshness 分离。夹具不提交到真实 18944，也不证明 native binding。
+
+**等待 native 部署**：真实 G1 prepared/Start、`m1-binding-1` 原生端点、无 RESET 开录 `m1-recording-1`、owner/lease 获取、STOP/停车确认/finalize、真实录制与回放、运动学标定/TCP 姿态/部署 attestation。本轮没有把这些写成 M1 通过，也没有进入运动、录制或回放开发。
+
+## Git
+
+本轮只写 `frontend/`；源码、测试与证据保存在 `codex/m12a-workbench`，未推送。历史保存点 `71c52e5`、`af8ab60a`、`eed1537` 等保留。冻结 release 的 70 个输入在交付前逐一核对与工作树一致；本页按既有约定不参与源码聚合。
+
+---
+
 # M1.2b 配置接线交付（2026-10-24）
 
 本轮把已完成的 3D 工作台接到 M1.2b 候选 18943：真实 Draft 创建/列表/读取/保存、`validate`、不可变配置快照、configuration/readiness 逐项检查、`blocking_reasons`、recipe fingerprint 和空/失败 Session 读取。仅写 `frontend/`；未修改 backend、公共契约、native 或根配置，未推送。

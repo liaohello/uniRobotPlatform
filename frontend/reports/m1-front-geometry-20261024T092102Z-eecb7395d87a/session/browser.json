@@ -1,0 +1,358 @@
+{
+  "scope": "synthetic stateful Session protocol fixture; no native prepared/Start acceptance",
+  "synthetic": true,
+  "checks": [
+    "synthetic preflight is visibly labelled and current",
+    "eligible synthetic snapshot enables explicit create",
+    "offline create is shown without a fabricated Session",
+    "retry after offline reuses one idempotency key",
+    "prepare creation never auto-starts",
+    "prepared session identity and binding are visible",
+    "Start refusal is explicit and leaves the Session prepared",
+    "explicit Start produces active only after the click",
+    "active keeps owner/recording/motion separate",
+    "active execution source and observed_at are visible",
+    "top Start remains disabled",
+    "409 existing Session is read back instead of hidden",
+    "timeout is recovered by reading the Session archive, not reported as a false success",
+    "recovered prepared Session did not auto-start",
+    "archive refresh leaves the stored execution observation unchanged",
+    "preflight refresh updates checked_at without changing Session observation",
+    "binding identity mismatch disables Start and reports invalidation",
+    "binding invalidation cancels the local target but keeps renderer, camera and layout",
+    "binding invalidation does not auto-resend Start",
+    "all live mobilecar requests remain GET",
+    "no native session/commands/recording/RESET path was requested",
+    "fixture writes are only Session create/start",
+    "no production mock switch was used",
+    "no uncaught browser errors"
+  ],
+  "errors": [],
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/?inspect=1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/assets/index-DJ7VEkP3.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/assets/index-QCLuko_A.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/kinematics"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/execution-recipe"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/experiment-drafts"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/execution-recipe"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/config-snapshots"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/experiment-drafts/draft-fixture-a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/config-snapshots/cs-fixture-a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/sessions"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/preflight"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:18950/api/v1/sessions"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:18950/api/v1/sessions"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:18950/api/v1/sessions/ps-fixture-a/start"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/sessions/ps-fixture-a"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:18950/api/v1/sessions/ps-fixture-a/start"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/experiment-drafts/draft-fixture-b"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/config-snapshots/cs-fixture-b"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:18950/api/v1/sessions"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/sessions/ps-fixture-a"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:18950/api/v1/sessions"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/sessions"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/sessions"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/preflight"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/experiment-drafts"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/execution-recipe"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/config-snapshots"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/experiment-drafts/draft-fixture-a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/config-snapshots/cs-fixture-a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/sessions"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/preflight"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18950/api/v1/mobilecar/snapshot"
+    }
+  ],
+  "fixture_writes": [],
+  "status": "passed",
+  "fixture_state": {
+    "identity": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+    },
+    "session_identity_after": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "fixture-episode-after-reset"
+    },
+    "create_keys": [
+      "45c3bcd2-4a84-404a-b064-e40bfcd52677",
+      "45c3bcd2-4a84-404a-b064-e40bfcd52677",
+      "d528eeb6-0e55-46d8-ba4b-fb7b41741681",
+      "d528eeb6-0e55-46d8-ba4b-fb7b41741681"
+    ],
+    "create_calls": 4,
+    "start_calls": [
+      {
+        "session_id": "ps-fixture-a",
+        "mode": "refuse"
+      },
+      {
+        "session_id": "ps-fixture-a",
+        "mode": "success"
+      }
+    ],
+    "sessions_gets": 4,
+    "preflights": 3,
+    "stored_sessions": [
+      "ps-fixture-a",
+      "ps-fixture-b"
+    ]
+  }
+}

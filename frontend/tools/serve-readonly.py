@@ -1,25 +1,26 @@
 """Frontend-owned static preview + allowlisted same-origin API proxy.
 
-GET is exposed for the existing read surface plus execution-recipe, kinematics,
-config snapshots and Sessions. Platform Draft create/save/validate POST/PUT is
-allowed. Session create/start, motion, RESET, recording and native command
-endpoints stay unproxied. Method, path, status, error body and query string are
-preserved; no request body is invented by the proxy.
+GET is exposed for the existing read surface plus preflight, execution-recipe,
+kinematics, config snapshots and Sessions. Platform Draft create/save/validate
+and Session prepare/start are the only writes. Motion, STOP, RESET, recording
+begin/finalize and native command endpoints stay unproxied. Method, path, status,
+error body and query string are preserved; no request body is invented.
 """
 import argparse,functools,http.server,json,re,time,urllib.request,urllib.error
 from pathlib import Path
 
 ID=r'[A-Za-z0-9_.-]{1,128}'
 ROUTES=[
- (re.compile(r'^/api/v1/mobilecar/(scene|capabilities|snapshot|kinematics|execution-recipe)$'),{'GET'}),
+ (re.compile(r'^/api/v1/mobilecar/(scene|capabilities|snapshot|kinematics|execution-recipe|preflight)$'),{'GET'}),
  (re.compile(r'^/api/v1/mobilecar/scene/assets/'+ID+r'$'),{'GET'}),
  (re.compile(r'^/api/v1/experiment-drafts$'),{'GET','POST'}),
  (re.compile(r'^/api/v1/experiment-drafts/'+ID+r'$'),{'GET','PUT'}),
  (re.compile(r'^/api/v1/experiment-drafts/'+ID+r'/validate$'),{'POST'}),
  (re.compile(r'^/api/v1/config-snapshots$'),{'GET'}),
  (re.compile(r'^/api/v1/config-snapshots/'+ID+r'$'),{'GET'}),
- (re.compile(r'^/api/v1/sessions$'),{'GET'}),
+ (re.compile(r'^/api/v1/sessions$'),{'GET','POST'}),
  (re.compile(r'^/api/v1/sessions/'+ID+r'$'),{'GET'}),
+ (re.compile(r'^/api/v1/sessions/'+ID+r'/start$'),{'POST'}),
 ]
 MAX_BODY=65536
 class Preview(http.server.SimpleHTTPRequestHandler):

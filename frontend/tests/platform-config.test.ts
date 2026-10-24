@@ -51,4 +51,16 @@ describe('platform configuration wire client',()=>{
   expect(calls[0].url).toBe('/api/v1/config-snapshots/cs-1');
   expect(calls[1].url).toBe('/api/v1/mobilecar/execution-recipe');
  });
+ it('creates a prepared Session with the exact revision, fingerprint, validated snapshot and idempotency key',async()=>{
+  const calls=reply(201,{session:{session_id:'ps-1',state:'prepared'},replayed:false});const api=new PlatformConfigApi();
+  await api.createSession({execution_revision:2,fingerprint:'a'.repeat(64),validated_snapshot_id:'cs-1',idempotency_key:'intent-1'},signal);
+  expect(calls[0].url).toBe('/api/v1/sessions');expect(calls[0].init.method).toBe('POST');
+  expect(JSON.parse(calls[0].init.body as string)).toEqual({execution_revision:2,fingerprint:'a'.repeat(64),validated_snapshot_id:'cs-1',idempotency_key:'intent-1'});
+ });
+ it('starts an existing Session with an empty POST body and reads preflight on the same origin',async()=>{
+  const calls=reply(200,{session_id:'ps-1',state:'active'});const api=new PlatformConfigApi();
+  await api.startSession('ps-1',signal);await api.preflight(signal);
+  expect(calls[0].url).toBe('/api/v1/sessions/ps-1/start');expect(calls[0].init.method).toBe('POST');expect(calls[0].init.body).toBeUndefined();
+  expect(calls[1].url).toBe('/api/v1/mobilecar/preflight');expect(calls[1].init.method).toBe('GET');
+ });
 });

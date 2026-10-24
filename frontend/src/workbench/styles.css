@@ -321,6 +321,24 @@ button.primary{border-color:#3f6b78;background:#254652;color:#b8eef2}
 .session-card-head b{font-weight:500}
 .session-card-head span{font-size:8.5px;color:#6f8b9f;overflow:hidden;text-overflow:ellipsis}
 .session-kinematics dl{margin-top:2px}
+.session-lifecycle{display:flex;flex-wrap:wrap;gap:3px;margin:0 0 7px}
+.session-lifecycle span{font-size:8.5px;border:1px solid #2b4050;border-radius:3px;padding:2px 5px;background:#17242f;color:#8aa2b4}
+.session-lifecycle span.ok{color:#8fd8bc;border-color:#2c4a44;background:#182a26}
+.session-lifecycle span.bad{color:#e6b584;border-color:#4d3b2b;background:#2a2520}
+.session-lifecycle span.unknown{color:#8d9fb0}
+.session-state-list{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 7px}
+.session-state-list button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:3px 7px;border:1px solid #2b4050;background:#17242f;border-radius:3px;font-size:8.5px;color:#8aa2b4;line-height:1.35}
+.session-state-list button[aria-pressed=true]{border-color:#4b7b86;background:#203d48;color:#b9eef2}
+.session-state-list button b{font-weight:500;font-size:9px}
+.session-state-list button span{font-size:8px;color:#6f8b9f}
+.session-unknown{margin:0 0 7px;padding:7px 8px;border:1px solid #6a5a36;background:#2d281d;border-radius:4px;color:#ecd39e;font-size:9.5px;line-height:1.55}
+.session-unknown p{margin:2px 0 0;color:#c9b184;font-size:9px}
+.session-attempts{list-style:none;margin:5px 0 0;padding:0;display:flex;flex-direction:column;gap:3px}
+.session-attempts li{display:grid;grid-template-columns:58px 1fr;gap:5px;padding:4px 6px;border:1px solid #2b4050;border-radius:3px;background:#14212c;font-size:8.5px;color:#8aa2b4}
+.session-attempts li b{font-weight:500;color:#c4d8e4}
+.session-attempts li span{color:#6f8b9f;text-align:right}
+.session-attempts li p{grid-column:1/-1;margin:1px 0 0;color:#8f9fae;font-size:8.5px;overflow-wrap:anywhere}
+.session-blocked button{margin-top:6px;font-size:9px;padding:3px 7px;border-color:#5a4a2c;background:#332a1c;color:#e8c58f}
 
 /* ---------- misc ---------- */
 .status-bar{height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #293b4a;padding:0 12px;background:#101c26;font-size:9.5px;color:#7a96a9}

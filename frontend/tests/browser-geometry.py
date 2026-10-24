@@ -65,7 +65,7 @@ async def main():
    await page.get_by_role('button',name='取消目标',exact=False).click();s=await state(page)
    check('cancel only clears local Target and Ghost',s['target'] is None and not s['scene']['ghost'] and s['source']['identity']==initial['source']['identity'])
    check('Actual TCP and model chain remain aligned after all interactions',s['scene']['tcp']['errorM']<1e-5)
-   allowed={'/api/v1/mobilecar/scene','/api/v1/mobilecar/capabilities','/api/v1/mobilecar/snapshot','/api/v1/mobilecar/kinematics','/api/v1/mobilecar/execution-recipe'}
+   allowed={'/api/v1/mobilecar/scene','/api/v1/mobilecar/capabilities','/api/v1/mobilecar/snapshot','/api/v1/mobilecar/kinematics','/api/v1/mobilecar/execution-recipe','/api/v1/mobilecar/preflight'}
    check('all browser requests are GET and no robot mutation endpoint is used',all(r['method']=='GET' and (not urlsplit(r['url']).path.startswith('/api/') or urlsplit(r['url']).path in allowed or urlsplit(r['url']).path.startswith('/api/v1/mobilecar/scene/assets/')) for r in report['requests']))
    check('no uncaught browser errors',not report['errors']);report['status']='passed';report['final_tcp']=s['scene']['tcp'];report['renderer']=s['scene']['renderer']
   except Exception as exc:

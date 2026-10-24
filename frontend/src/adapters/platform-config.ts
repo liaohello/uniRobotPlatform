@@ -40,15 +40,55 @@ export interface NativeBinding {
   expires_at_backend_monotonic_s: number | null; verified_at: string | null;
   readback_sha256: string | null; reason: string | null;
 }
-export interface StartAttempt { at: string; result: 'refused' | 'started' | 'failed'; blocking?: string | null; detail?: string | null }
+export interface StartBlock { key: string; scope: 'platform' | 'native' | 'recording'; message: string }
+export interface OwnerLease {
+  state: 'not_acquired' | 'held' | 'unknown'; session_id: string | null;
+  lease_expires_at_backend_monotonic_s: number | null;
+}
+export interface SessionExecution {
+  control_scope_granted: string[]; owner: OwnerLease;
+  recording_required_for_motion: boolean; recording_begin_required: boolean;
+  recording_ready: boolean; motion_ready: boolean; motion_blockers: string[];
+  observed_at: string; source: 'prepared' | 'native_start' | 'native_recording_begin';
+}
+export interface StartReceipt {
+  binding_id: string; native_session_id: string; run_id: string; backend_generation: number; episode_id: string;
+  config_fingerprint: string; started_at_backend_monotonic_s: number;
+  control_scope_granted: string[]; recording_required_for_motion: boolean; recording_begin_required: boolean;
+  owner_state: string; owner_session_id: string | null; lease_expires_at_backend_monotonic_s: number | null;
+  recording_ready: boolean; motion_ready: boolean; motion_blockers: string[];
+}
+export interface StartAttempt { at: string; result: 'refused' | 'started' | 'failed'; blocking: StartBlock[]; detail?: string }
+export interface RecordingAttempt { at: string; result: 'begun' | 'refused' | 'failed'; reason?: string }
+export interface RecordingBeginReceipt {
+  binding_id: string; native_session_id: string; run_id: string; backend_generation: number; episode_id: string;
+  config_fingerprint: string; recording_segment_id: string; recording_status: string;
+  command_capture_ready: boolean; recording_start_event_seq: number;
+  initial_snapshot_sha256: string; durable_start_records: boolean; started_at_backend_monotonic_s: number;
+}
 export interface SessionRecord {
   schema_version: string; session_id: string; state: 'prepared' | 'active' | 'closed' | 'failed';
   created_at: string; updated_at: string; snapshot_id: string;
   recipe_fingerprint: string; execution_revision: number; fingerprint: string;
   native_identity: { run_id: string; backend_generation: number; episode_id: string };
   native_binding: NativeBinding; execution_eligible: boolean; start_available: boolean;
-  blocking_reasons: BlockingReason[]; start_attempts: StartAttempt[];
-  started_at: string | null; start_receipt: Record<string, unknown> | null;
+  execution?: SessionExecution;
+  blocking_reasons: BlockingReason[]; start_attempts?: StartAttempt[];
+  started_at: string | null; start_receipt?: StartReceipt | null;
+  recording_begin_attempts?: RecordingAttempt[]; recording_begin_receipt?: RecordingBeginReceipt | null;
+}
+export interface SessionEnvelope { session: SessionRecord; replayed: boolean }
+export interface CreateSessionRequest {
+  execution_revision: number; fingerprint: string; validated_snapshot_id: string; idempotency_key: string;
+}
+export interface PreflightCheck { key: string; status: string; detail: string }
+export interface PreflightRecord {
+  schema_version: string; task_id: string; checked_at: string; read_only: boolean;
+  session_ready: boolean; read_contract_compatible: boolean; verification_scope: string; transport: string;
+  runtime_identity: { run_id: string; backend_generation: number; episode_id: string };
+  native_resource_identity: { model_id: string; model_sha256: string; scene_id: string; backend_kind: string; interface_profile: string };
+  recording: { status: string; command_capture_ready: boolean; recording_segment_id: string | null };
+  checks: PreflightCheck[];
 }
 export interface ExecutionRecipe {
   schema_version: string; recipe_id: string; recipe_revision: number; recipe_fingerprint: string;
@@ -96,7 +136,14 @@ export class PlatformConfigApi {
   getSnapshot(snapshotId: string, signal: AbortSignal) { return request<SnapshotRecord>(`/api/v1/config-snapshots/${encodeURIComponent(snapshotId)}`, { method: 'GET' }, signal); }
   listSessions(signal: AbortSignal) { return request<SessionRecord[]>('/api/v1/sessions', { method: 'GET' }, signal); }
   getSession(sessionId: string, signal: AbortSignal) { return request<SessionRecord>(`/api/v1/sessions/${encodeURIComponent(sessionId)}`, { method: 'GET' }, signal); }
+  createSession(body: CreateSessionRequest, signal: AbortSignal) {
+    return request<SessionEnvelope>('/api/v1/sessions', { method: 'POST', body: JSON.stringify(body) }, signal);
+  }
+  startSession(sessionId: string, signal: AbortSignal) {
+    return request<SessionRecord>(`/api/v1/sessions/${encodeURIComponent(sessionId)}/start`, { method: 'POST' }, signal);
+  }
   executionRecipe(signal: AbortSignal) { return request<ExecutionRecipe>('/api/v1/mobilecar/execution-recipe', { method: 'GET' }, signal); }
+  preflight(signal: AbortSignal) { return request<PreflightRecord>('/api/v1/mobilecar/preflight', { method: 'GET' }, signal); }
 }
 export function describeApiError(error: unknown): string {
   if (error instanceof ApiError) return `${error.code} · ${error.message}`;
@@ -109,4 +156,7 @@ export function blockingReasonsOf(error: unknown): BlockingReason[] {
 }
 export function isAbort(error: unknown): boolean {
   return (error as Error)?.name === 'AbortError';
+}
+export function isTimeout(error: unknown): boolean {
+  return (error as Error)?.name === 'TimeoutError';
 }

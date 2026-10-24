@@ -1,0 +1,18 @@
+
+> unirobot-workbench@0.1.0 build
+> tsc --noEmit && vite build
+
+vite v7.1.7 building for production...
+transforming...
+✓ 53 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.42 kB │ gzip:   0.32 kB
+dist/assets/index-QCLuko_A.css    170.91 kB │ gzip:  17.49 kB
+dist/assets/index-DJ7VEkP3.js   1,280.72 kB │ gzip: 335.50 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.54s

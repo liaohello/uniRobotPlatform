@@ -1,8 +1,8 @@
-# uniRobot 3D Workbench · M1.2b 配置接入
+# uniRobot 3D Workbench · M1.2c Session 准备与显式 Start
 
 恢复前端实现的用户指令已解除本切片的暂停。此应用位于独立 worktree；主写者只写 `frontend/`，backend、公共契约、参考工程和根配置保持只读。现有诊断和草案实现保留。
 
-本轮面向 M1.2b 候选 18943：3D 工作台消费 geometry-2 与版本化运动学；Session 抽屉可创建、列出、读取、保存真实 Draft，运行后端 validate，并读取不可变配置快照、逐项检查、阻塞原因和空/失败 Session 状态。
+本轮面向 M1.2c 候选 18944：3D 工作台消费 geometry-2 与版本化运动学；Session 抽屉可创建/列出/读取/保存真实 Draft，运行后端 validate，读取不可变配置快照、逐项检查、阻塞原因和空/失败 Session 状态；在满足后端资格时可显式创建 prepared Session 并独立 Start。真实 native 仍未部署 binding 补丁，所以真实界面准确显示阻塞，成功交互只在隔离的状态协议夹具中验证。
 
 ## 现在可以操作
 
@@ -14,6 +14,10 @@
 - 布局：标准工作台 / 3D 专注预设；导航可收起；层级、Inspector、传感器、时间轴可折叠与恢复；分隔条可拖动；保存/恢复/重置布局不改变渲染器、相机、目标或运行状态。
 - 3D 视口可应用内最大化（Dockview 最大化）或进入浏览器全屏（覆盖视口、来源/状态、目标操作与弹层）。全屏被环境拒绝时显示真实原因，应用内最大化仍可用。
 - Session 准备抽屉请求真实平台 API：Draft 创建/列表/读取/保存（仅 `name`/`description`）、`validate`、不可变配置快照读取、configuration/readiness 逐项结果、证据来源、`blocking_reasons`、recipe fingerprint，以及 Session 列表中的空/失败/unsupported 状态。
+- 合格快照可显式“创建 prepared Session”，之后独立点击“显式 Start”。创建使用 validated snapshot、execution_revision、fingerprint 和幂等键；不因 validate 自动创建，不因创建自动 Start。超时标记结果未知并优先通过 GET 存档回读恢复。
+- Session 详情分别展示生命周期（配置合格 / prepared / 可 Start / active）、native binding 身份与状态、授权范围、Owner/lease、recording ready、motion ready/blockers、Start/recording 回执和 attempt。active 不表示取得 Owner、正在录制或允许运动。
+- 新鲜度双通道：`GET /sessions` 明确标为“最近平台动作存档”，显式刷新只重读存档；`GET /mobilecar/preflight` 是当前 native 只读观测（`checked_at`），刷新它不会改变 Session 存档或资格。运行身份或 binding 失效会取消旧本地目标/手势并禁用 Start，保留同内容网格、相机和布局。
+- 代理新增 `POST /sessions` 与 `POST /sessions/{id}/start`，仍不代理运动、STOP、RESET、recording begin/finalize 或 native 命令。代理白名单不放宽后端资格判定。
 - geometry-2 区分内容身份与 run/generation/episode：运行身份变化时取消旧手势和本地目标，保留网格、相机与布局；内容身份变化时明确失效，不沿用旧资产。
 - live 运动学来自 `GET /api/v1/mobilecar/kinematics`，并与 execution-recipe 的模型 pin、关节顺序、单位、TCP 父节点/site、相机父节点和一致性结果交叉核对；`orientation=null` 显示“未声明”，不伪造标定姿态。冻结样本保留独立参考 profile，不自动回退。
 - 观察用相机、传感器区域与时间/事件区域统一装配。传感器媒体及连续 Episode 不在本单帧样本中，明确显示缺失，不放假视频或轨迹。
@@ -44,8 +48,11 @@ npm run build
 npm test -- --maxWorkers=2
 python3 tests/browser-usability.py http://127.0.0.1:18934 /tmp/usability --release <release_id>
 python3 tests/browser-config.py http://127.0.0.1:18934 /tmp/config
-python3 tools/serve-readonly.py --directory dist --port 18933 --upstream http://127.0.0.1:18943
+python3 tests/browser-session.py http://127.0.0.1:18934 /tmp/session
+python3 tools/serve-readonly.py --directory dist --port 18947 --upstream http://127.0.0.1:18944
 ```
+
+`tests/browser-session.py` is an explicitly synthetic, stateful protocol fixture; it does not create a real Session or prove native prepared/Start.
 
 本地可运行 `python3 frontend/tools/release-source.py` 制作文件白名单、哈希和归档；上传后使用服务器 `tools/check-release.py` 核对输入、构建、测试并运行生产构建的 Chromium 检查。禁止用本机测试替代服务器执行。报告绑定同一 release，旧失败迭代不拼成最终通过。具体交付结果另见本方 [开发记录](docs/development.md)。
 

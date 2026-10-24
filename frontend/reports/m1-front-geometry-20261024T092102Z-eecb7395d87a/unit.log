@@ -1,0 +1,18 @@
+
+> unirobot-workbench@0.1.0 test
+> vitest run --maxWorkers=2 --reporter=default --reporter=json --outputFile=/home/liaozhengyan/Desktop/uniRobotPlatform/reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/unit.json
+
+
+ RUN  v3.2.4 /home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-front-geometry-20261024T092102Z-eecb7395d87a/frontend
+
+ ✓ tests/mobilecar-read.test.ts (17 tests) 39ms
+ ✓ tests/targets.test.ts (6 tests) 109ms
+ ✓ tests/platform-config.test.ts (8 tests) 14ms
+ ✓ tests/geometry-visibility.test.ts (6 tests) 9ms
+
+ Test Files  4 passed (4)
+      Tests  37 passed (37)
+   Start at  17:21:20
+   Duration  887ms (transform 334ms, setup 0ms, collect 617ms, tests 172ms, environment 1ms, prepare 297ms)
+
+JSON report written to /home/liaozhengyan/Desktop/uniRobotPlatform/reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/unit.json

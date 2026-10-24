@@ -1,0 +1,331 @@
+{
+  "release_id": "m1-front-geometry-20261024T092102Z-eecb7395d87a",
+  "aggregate_sha256": "eecb7395d87a8020da602f85cdc9460dccf23c27a4f4b66d3d22a2700b8444c1",
+  "input_files": 70,
+  "preview": {
+    "pid": 1253949,
+    "port": 18950,
+    "upstream": "http://127.0.0.1:18944",
+    "release_id": "m1-front-geometry-20261024T092102Z-eecb7395d87a",
+    "directory": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-front-geometry-20261024T092102Z-eecb7395d87a/frontend/dist",
+    "started_at_utc": "2026-10-24T09:21:21.852701+00:00"
+  },
+  "upstream": "http://127.0.0.1:18944",
+  "backend": {
+    "candidate_release": "m1c-20261024T065943Z-platform",
+    "recipe_revision": 3,
+    "recipe_fingerprint": "4c3e5f42278b0997175f4cb1bcaeaf232aee5d4645d869239d65aef1bca35e9e",
+    "wire": [
+      "unirobot-mobilecar-geometry-2",
+      "unirobot-mobilecar-read-1",
+      "unirobot-mobilecar-kinematics-1",
+      "unirobot-execution-recipe-1",
+      "mobilecar-integration-1 preflight",
+      "unirobot-prepared-session-1"
+    ],
+    "real_native_note": "8792 remains drvfix/G4A2; binding patch not deployed"
+  },
+  "real": {
+    "sessions_before": [],
+    "preflight": {
+      "checked_at": "2026-10-24T09:25:25+00:00",
+      "read_contract_compatible": "false"
+    },
+    "created": {
+      "draft_id": "draft-525edd1875b241f291d552017a93f263",
+      "draft_revision": 1,
+      "execution_revision": 1,
+      "fingerprint": "58419468e11fc9837b4d72050d06572c4b1d5430549ac9b6b4daeb16ff50f8a9",
+      "recipe_fingerprint": "4c3e5f42278b0997175f4cb1bcaeaf232aee5d4645d869239d65aef1bca35e9e",
+      "name": "前端 M1.2c 保存检查 2026-10-24 17:25:25"
+    },
+    "saved": {
+      "draft_id": "draft-525edd1875b241f291d552017a93f263",
+      "draft_revision": 2,
+      "execution_revision": 1,
+      "name": "前端 M1.2c 保存检查 2026-10-24 17:25:25 · saved",
+      "description": "保存后重新加载仍应可见"
+    },
+    "validation": {
+      "snapshot_id": "cs-78f4238e15010a2a9b8f929f7f5f047389530027",
+      "snapshot_sha256": "394085075397e3f08147d4d3e027af14ebcc3a456e08f318d9fc65582b64e594",
+      "status": "failed",
+      "execution_eligible": false,
+      "validated_snapshot_id": null,
+      "recipe_fingerprint": "4c3e5f42278b0997175f4cb1bcaeaf232aee5d4645d869239d65aef1bca35e9e",
+      "checks": 19,
+      "blocking_reasons": [
+        {
+          "key": "interface_profile",
+          "scope": "configuration",
+          "message": "native /api/v1/health self-report: observed g4a1-1.0; recipe expects g2a-1.0; this value is derived from config flags, not attested"
+        },
+        {
+          "key": "deployed_config_attestation",
+          "scope": "readiness",
+          "message": "native declared config manifest digest: Native HTTP does not attest the deployed config manifest; a healthy service cannot supply it"
+        },
+        {
+          "key": "scene_manifest_attestation",
+          "scope": "readiness",
+          "message": "native declared compiled scene manifest digest: Observed scene manifest digest 5969e260b5ca87849387e8827b3e83c332f845281d0d69c0f7b141a8c3f1bf2d is not attested; the pin only covers the scene XML file"
+        },
+        {
+          "key": "runtime_python_version",
+          "scope": "readiness",
+          "message": "native reported Python version vs recipe range: Native does not report a Python version"
+        },
+        {
+          "key": "runtime_package_versions",
+          "scope": "readiness",
+          "message": "native reported installed package versions vs requirements lock: Native does not report installed package versions"
+        },
+        {
+          "key": "session_binding_protocol",
+          "scope": "readiness",
+          "message": "native declared session binding protocol: Native declares no motion-free Session binding; required m1-binding-1. episodes/start performs RESET and recording"
+        }
+      ]
+    },
+    "snapshot": {
+      "snapshot_id": "cs-78f4238e15010a2a9b8f929f7f5f047389530027",
+      "snapshot_sha256": "394085075397e3f08147d4d3e027af14ebcc3a456e08f318d9fc65582b64e594",
+      "validation_scope": "motion_free_configuration_and_declared_protocol_only",
+      "check_count": 19
+    },
+    "sessions_after": [],
+    "request_count": 97,
+    "write_requests": [
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18950/api/v1/experiment-drafts"
+      },
+      {
+        "method": "PUT",
+        "url": "http://127.0.0.1:18950/api/v1/experiment-drafts/draft-525edd1875b241f291d552017a93f263"
+      },
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18950/api/v1/experiment-drafts/draft-525edd1875b241f291d552017a93f263/validate"
+      },
+      {
+        "method": "PUT",
+        "url": "http://127.0.0.1:18950/api/v1/experiment-drafts/draft-525edd1875b241f291d552017a93f263"
+      },
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18950/api/v1/experiment-drafts/draft-525edd1875b241f291d552017a93f263/validate"
+      }
+    ]
+  },
+  "fixtures": [
+    {
+      "name": "delayed validate",
+      "synthetic": true,
+      "result": "switched draft preserved"
+    },
+    {
+      "name": "draft list disconnect",
+      "synthetic": true,
+      "result": "visible error then explicit recovery"
+    }
+  ],
+  "session_fixture": {
+    "identity": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+    },
+    "session_identity_after": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "fixture-episode-after-reset"
+    },
+    "create_keys": [
+      "45c3bcd2-4a84-404a-b064-e40bfcd52677",
+      "45c3bcd2-4a84-404a-b064-e40bfcd52677",
+      "d528eeb6-0e55-46d8-ba4b-fb7b41741681",
+      "d528eeb6-0e55-46d8-ba4b-fb7b41741681"
+    ],
+    "create_calls": 4,
+    "start_calls": [
+      {
+        "session_id": "ps-fixture-a",
+        "mode": "refuse"
+      },
+      {
+        "session_id": "ps-fixture-a",
+        "mode": "success"
+      }
+    ],
+    "sessions_gets": 4,
+    "preflights": 3,
+    "stored_sessions": [
+      "ps-fixture-a",
+      "ps-fixture-b"
+    ]
+  },
+  "verification": {
+    "unit": "37 passed",
+    "readonly": {
+      "status": "passed",
+      "checks": 32,
+      "synthetic": false,
+      "exception": null
+    },
+    "frozen_workbench": {
+      "status": "passed",
+      "checks": 29,
+      "synthetic": false,
+      "exception": null
+    },
+    "geometry": {
+      "status": "passed",
+      "checks": 23,
+      "synthetic": false,
+      "exception": null
+    },
+    "usability": {
+      "status": "passed",
+      "checks": 100,
+      "synthetic": false,
+      "exception": null
+    },
+    "config": {
+      "status": "passed",
+      "checks": 46,
+      "synthetic": false,
+      "exception": null
+    },
+    "session": {
+      "status": "passed",
+      "checks": 24,
+      "synthetic": true,
+      "exception": null
+    }
+  },
+  "native": {
+    "before": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "recording_status": "IDLE"
+    },
+    "after": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "recording_status": "IDLE"
+    },
+    "native_mutations_sent": false,
+    "new_physics_process_started": false
+  },
+  "network": {
+    "events": 548,
+    "methods": {
+      "GET": 542,
+      "POST": 3,
+      "PUT": 3
+    },
+    "real_config_write_requests": [
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18950/api/v1/experiment-drafts"
+      },
+      {
+        "method": "PUT",
+        "url": "http://127.0.0.1:18950/api/v1/experiment-drafts/draft-525edd1875b241f291d552017a93f263"
+      },
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18950/api/v1/experiment-drafts/draft-525edd1875b241f291d552017a93f263/validate"
+      },
+      {
+        "method": "PUT",
+        "url": "http://127.0.0.1:18950/api/v1/experiment-drafts/draft-525edd1875b241f291d552017a93f263"
+      },
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:18950/api/v1/experiment-drafts/draft-525edd1875b241f291d552017a93f263/validate"
+      }
+    ],
+    "paths": {
+      "GET /api/v1/config-snapshots": 3,
+      "GET /api/v1/config-snapshots/cs-6a3058c43810054d405ae34b15d58becfee7cb07": 1,
+      "GET /api/v1/config-snapshots/cs-78f4238e15010a2a9b8f929f7f5f047389530027": 3,
+      "GET /api/v1/config-snapshots/cs-8ed29f50b8536ddde092762db4b115ee69e07ae0": 3,
+      "GET /api/v1/experiment-drafts": 5,
+      "GET /api/v1/experiment-drafts/draft-2aa5503913124f17b1a0f6b4d93ef2be": 3,
+      "GET /api/v1/experiment-drafts/draft-525edd1875b241f291d552017a93f263": 5,
+      "GET /api/v1/mobilecar/capabilities": 10,
+      "GET /api/v1/mobilecar/execution-recipe": 20,
+      "GET /api/v1/mobilecar/kinematics": 15,
+      "GET /api/v1/mobilecar/preflight": 3,
+      "GET /api/v1/mobilecar/scene": 10,
+      "GET /api/v1/mobilecar/scene/assets/back_shell_black_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/back_shell_middle_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/base_link": 13,
+      "GET /api/v1/mobilecar/scene/assets/camera_connect_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/depth_cam_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/gripper_base_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/gripper_left_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/gripper_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/gripper_right_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/guide_rod_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/imu_link": 1,
+      "GET /api/v1/mobilecar/scene/assets/left_jaw_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/lidar_frame": 14,
+      "GET /api/v1/mobilecar/scene/assets/link1": 14,
+      "GET /api/v1/mobilecar/scene/assets/link2": 14,
+      "GET /api/v1/mobilecar/scene/assets/link3": 14,
+      "GET /api/v1/mobilecar/scene/assets/link4": 14,
+      "GET /api/v1/mobilecar/scene/assets/link5": 14,
+      "GET /api/v1/mobilecar/scene/assets/right_jaw_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/wheel_left_back_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/wheel_left_front_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/wheel_right_back_link": 14,
+      "GET /api/v1/mobilecar/scene/assets/wheel_right_front_link": 14,
+      "GET /api/v1/mobilecar/snapshot": 146,
+      "GET /api/v1/sessions": 7,
+      "POST /api/v1/experiment-drafts": 1,
+      "POST /api/v1/experiment-drafts/draft-525edd1875b241f291d552017a93f263/validate": 2,
+      "PUT /api/v1/experiment-drafts/draft-525edd1875b241f291d552017a93f263": 3
+    }
+  },
+  "screenshots": [
+    "config/config-validated.png",
+    "config/config-conflict-actual-final.png",
+    "session/session-prepared.png",
+    "session/session-active.png",
+    "session/session-recovered.png",
+    "session/session-invalidated.png",
+    "usability/usability-session.png",
+    "usability/usability-1366.png",
+    "usability/usability-focus3d.png",
+    "browser/real-readonly.png"
+  ],
+  "environment": {
+    "node": "v20.20.2",
+    "npm": "10.8.2",
+    "browser_python": "/home/liaozhengyan/Desktop/mobileCar/envs/g2a-py310-mujoco316/bin/python",
+    "hostname": "cec-sim",
+    "lock_sha256": "1bb055b6e003c960e116b8561b174dad8100dec2ab282c29370b0b10aa7a04bd"
+  },
+  "limitations": [
+    "Real 18944 still has an empty Session list; the create button is disabled because validation is failed/execution_eligible=false. No real POST /sessions or /start was sent.",
+    "Session create/start success, idempotent replay, timeout recovery, Start refusal and binding invalidation are synthetic stateful browser fixtures (browser-session.py), not native deployment evidence.",
+    "8792 native remains the old drvfix/G4A2 release; the m1-binding-1/m1-recording-1 patch is not deployed. No native motion, RESET, recording or command was sent.",
+    "GET /sessions is an archive of the last platform action; GET /mobilecar/preflight is the current read-only native observation. The latter does not refresh Session eligibility.",
+    "Recording begin/finalize, STOP, RESET, media and replay remain unproxied/disabled.",
+    "The previous 18946→18943 preview is preserved; this round uses 18950→18944."
+  ],
+  "supplemental_conflict_capture": {
+    "same_preview": true,
+    "ui_status": 409,
+    "ui_code": "conflict",
+    "local_input_preserved": true,
+    "screenshot": "config/config-conflict-actual-final.png",
+    "script": "config/conflict-capture.py",
+    "note": "Captured after the frozen suite; frozen source/tests unchanged."
+  }
+}

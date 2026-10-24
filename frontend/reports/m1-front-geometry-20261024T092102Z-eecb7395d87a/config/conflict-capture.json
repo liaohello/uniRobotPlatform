@@ -1,0 +1,12 @@
+{
+  "scope": "supplemental same-release evidence; real 18944 409 conflict",
+  "draft_id": "draft-525edd1875b241f291d552017a93f263",
+  "revision_before": 3,
+  "external_status": 200,
+  "external_revision": 4,
+  "ui_status": 409,
+  "ui_code": "conflict",
+  "local_input_preserved": true,
+  "screenshot": "config-conflict-actual-final.png",
+  "note": "Captured after the frozen suite on the same preview 18950 and backend 18944. Frozen source/tests were not modified."
+}

@@ -58,6 +58,7 @@ async def main():
             await page.wait_for_function('window.__workbenchInspect().monitor.snapshots>=2')
             await open_drawer(page)
             drawer = page.locator('.session-drawer')
+            await page.wait_for_function("()=>{const e=document.querySelector('.session-drawer [data-preflight-checked-at]');return !!(e&&e.getAttribute('data-preflight-checked-at'))}", timeout=20000)
             text = await drawer.inner_text()
             check('drawer shows the real configuration surface', all(token in text for token in ('草案 Draft', '校验 Validation', '不可变配置快照', 'prepared Session')))
             check('Start stays disabled before and after config work', await page.get_by_role('button', name='Start', exact=True).is_disabled())
@@ -66,10 +67,18 @@ async def main():
             sessions_before = await real_sessions.json()
             report['real']['sessions_before'] = sessions_before
             check('empty real Session list is rendered as empty, not Ready', ('空 Session 列表' in text) if not sessions_before else True)
+            preflight_checked = await page.locator('.session-drawer [data-preflight-checked-at]').get_attribute('data-preflight-checked-at')
+            preflight_compatible = await page.locator('.session-drawer [data-preflight-compatible]').get_attribute('data-preflight-compatible')
+            report['real']['preflight'] = {'checked_at': preflight_checked, 'read_contract_compatible': preflight_compatible}
+            check('18944 preflight is displayed as a current native observation with checked_at', bool(preflight_checked))
+            check('18944 live preflight does not claim a compatible session contract', preflight_compatible == 'false')
+            check('preflight renders the real interface_profile failure', await page.locator('.session-drawer [data-preflight-check="interface_profile"][data-preflight-check-status="failed"]').count() == 1)
+            check('archive and current observation are labelled separately', '刷新存档（不调用 native）' in text and '刷新 native 观测（只读）' in text)
+            check('archive GET is not described as refreshing native', '不会刷新 native' in text or '不调用 native' in text)
 
             # ---- create ----
             stamp = time.strftime('%Y-%m-%d %H:%M:%S')
-            create_name = f'前端 M1.2b 保存检查 {stamp}'
+            create_name = f'前端 M1.2c 保存检查 {stamp}'
             await page.get_by_role('button', name='新建草案', exact=True).click()
             await page.get_by_label('新草案名称', exact=True).fill(create_name)
             await page.get_by_label('新草案描述', exact=True).fill('真实保存 / 校验 / 快照检查')
@@ -123,6 +132,11 @@ async def main():
                                             'blocking_reasons': result['blocking_reasons'][:6]}
             await page.wait_for_selector('.session-drawer [data-snapshot-id]', timeout=20000)
             check('UI shows execution_eligible=false rather than Ready', await page.locator('.session-drawer [data-execution-eligible]').get_attribute('data-execution-eligible') == 'false')
+            post_validation_text = await drawer.inner_text()
+            check('real failed snapshot is not presented as Ready or config eligible', 'execution_eligible' in post_validation_text and '不是 Ready' in post_validation_text)
+            create_button = page.locator('.session-drawer [data-session-create]')
+            check('real ineligible snapshot keeps create prepared Session disabled', await create_button.get_attribute('data-session-create') == 'blocked' and await create_button.is_disabled())
+            check('real empty Session list offers no Start action', await page.locator('.session-drawer [data-session-start]').count() == 0)
             check('UI counts checks but keeps the eligibility verdict separate', '通过' in await drawer.inner_text() and '不能替代 execution_eligible' in await drawer.inner_text())
             check('UI shows snapshot hash and recipe fingerprint', await page.locator('.session-drawer [data-snapshot-sha]').get_attribute('data-snapshot-sha') == result['snapshot_sha256']
                   and await page.locator('.session-drawer [data-recipe-fingerprint]').get_attribute('data-recipe-fingerprint') == result['recipe_fingerprint'])

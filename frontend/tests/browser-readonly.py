@@ -153,7 +153,7 @@ async def main():
    await reload_source(page)
    await page.wait_for_function('window.__workbenchInspect().monitor.snapshots>=2');await page.screenshot(path=str(a.output/'final-real-readonly.png'),full_page=True)
    check('real source restores with one renderer after fault fixtures',(await state(page))['scene']['lifecycle']['active']==1 and (await state(page))['assetError']=='')
-   allowed={'/api/v1/mobilecar/scene','/api/v1/mobilecar/capabilities','/api/v1/mobilecar/snapshot','/api/v1/mobilecar/kinematics','/api/v1/mobilecar/execution-recipe'}
+   allowed={'/api/v1/mobilecar/scene','/api/v1/mobilecar/capabilities','/api/v1/mobilecar/snapshot','/api/v1/mobilecar/kinematics','/api/v1/mobilecar/execution-recipe','/api/v1/mobilecar/preflight'}
    check('browser network contains only GET and allowlisted read endpoints',all(r['method']=='GET' and (not urlsplit(r['url']).path.startswith('/api/') or urlsplit(r['url']).path in allowed or urlsplit(r['url']).path.startswith('/api/v1/mobilecar/scene/assets/')) for r in report['requests']))
    check('no uncaught browser errors',not report['errors']);report['status']='passed'
   except Exception as exc:
