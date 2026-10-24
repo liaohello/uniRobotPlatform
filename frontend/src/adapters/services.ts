@@ -1,4 +1,5 @@
-import type { ViewSample, WorkbenchService, SceneManifest } from './types';
+import type { ViewSample, WorkbenchService } from './types';
+import { initializeSample, mapSnapshot, readEnvelope, type SceneRead, type CapabilitiesRead, type SnapshotRead } from './mobilecar-read';
 async function readJson<T>(url: URL, signal: AbortSignal): Promise<T> {
   const response = await fetch(url, { signal, cache: 'no-store' });
   if (!response.ok) throw new Error(`${url.pathname}: HTTP ${response.status}`);
@@ -16,23 +17,20 @@ export class FrozenSampleService implements WorkbenchService {
       readJson<ViewSample['source']>(new URL('sample/provenance.json', base), signal),
     ]);
     if (!scene.links.length || !actual.tcp || !capabilities.arm_joint_names.length) throw new Error('冻结样本缺少 scene / Actual / joints，不能加载工作台。');
-    scene.mesh_assets = scene.mesh_assets.map(asset => ({ ...asset, uri: new URL(asset.uri, base).href }));
-    return { scene, actual, capabilities, armSpec, source: { ...source, kind: 'frozen', label: '冻结原生样本 · 非实时' } };
+    scene.mesh_assets = scene.mesh_assets.map(asset => ({ ...asset, uri: new URL(asset.uri, base).href, coordinate_space:'legacy_raw_stl' as const }));
+    return { scene, actual, capabilities, armSpec, source: { ...source, kind: 'frozen', label: '冻结旧样板 · 网格坐标未修正' } };
   }
   submit = unsupported;
   dispose() {}
 }
-// Real transport is deliberately confined to this adapter. The backend dialogue owns wire schemas.
-// No guessed endpoint or native POST is issued while the platform feed is unavailable.
 export class PlatformService implements WorkbenchService {
-  constructor(private readonly feedUrl: string) {}
   async load(signal: AbortSignal): Promise<ViewSample> {
-    if (!this.feedUrl) throw new Error('平台 scene/state feed 尚未配置；可显式切回冻结样本，不自动回退。');
-    const url = new URL(this.feedUrl, window.location.href);
-    const data = await readJson<ViewSample>(url, signal);
-    if (data.source.kind !== 'live' || !data.source.is_platform_session) throw new Error('平台 feed 缺少真实来源/Session 标识，拒绝标为实时。');
-    const scene: SceneManifest = { ...data.scene, mesh_assets: data.scene.mesh_assets.map(a => ({ ...a, uri: new URL(a.uri, url).href })) };
-    return { ...data, scene };
+    const [scene,caps]=await Promise.all([readEnvelope<SceneRead>('/api/v1/mobilecar/scene',signal),readEnvelope<CapabilitiesRead>('/api/v1/mobilecar/capabilities',signal)]);
+    const snapshot=await readEnvelope<SnapshotRead>('/api/v1/mobilecar/snapshot',signal);
+    return initializeSample(scene,caps,snapshot);
+  }
+  async refresh(sample:ViewSample,signal:AbortSignal):Promise<ViewSample>{
+    return mapSnapshot(sample,await readEnvelope<SnapshotRead>('/api/v1/mobilecar/snapshot',signal));
   }
   submit = unsupported;
   dispose() {}

@@ -1,0 +1,29 @@
+{
+  "source_release": "m1-front-read-20261023T180841Z-25c387722858",
+  "verified_at_utc": "2026-10-23T18:14:37.971320+00:00",
+  "api_request_count": 254,
+  "methods": [
+    "GET"
+  ],
+  "snapshot_duration_ms": {
+    "n": 26,
+    "min": 22.25,
+    "median": 31.905,
+    "max": 233.21
+  },
+  "outside_read_allowlist": [],
+  "old_preview_preserved": {
+    "port": 18931,
+    "pid": 2614787
+  },
+  "gateway": {
+    "port": 18941,
+    "pid": 1155600,
+    "release": "m1-read-20261023T155543Z-cef9ddedf781"
+  },
+  "native": {
+    "port": 8792,
+    "pid": 941842,
+    "release": "drvfix-20261019T044549Z-0a80415b2577"
+  }
+}

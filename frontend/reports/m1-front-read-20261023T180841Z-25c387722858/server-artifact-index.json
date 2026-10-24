@@ -1,0 +1,274 @@
+{
+  "release_id": "m1-front-read-20261023T180841Z-25c387722858",
+  "source_aggregate_sha256": "25c387722858c7414ec4f539a26e88b457042d8ae798691565b4cef7548392af",
+  "remote_root": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-front-read-20261023T180841Z-25c387722858",
+  "result": "read-only integration passed; no M1 control-loop acceptance",
+  "artifacts": [
+    {
+      "path": "source-manifest.json",
+      "bytes": 10501,
+      "sha256": "d119f733406d75c4d84d89cf8d3db2301d5788a052dd6db35f472f05c066667f"
+    },
+    {
+      "path": "report/build.log",
+      "bytes": 733,
+      "sha256": "969261e402fcec55c3060af147f8e7a32a8825cf57f67f9fc474bfd31a41ab0b"
+    },
+    {
+      "path": "report/unit.log",
+      "bytes": 759,
+      "sha256": "4b4545f69929832cf9bfae574f2e94886c5732c12fd11d5b8e82b2e4f5b55c00"
+    },
+    {
+      "path": "report/unit.json",
+      "bytes": 5111,
+      "sha256": "3a09c62e734b820bca88f67c1a85b124739d3d2916c53b86dc189745a75c4edd"
+    },
+    {
+      "path": "report/environment.json",
+      "bytes": 250,
+      "sha256": "dfc993625c2f2e860decdcdbd6c88918b7a565d54eb6a814cc285bc76dae2a74"
+    },
+    {
+      "path": "report/preview.json",
+      "bytes": 285,
+      "sha256": "6da296c0dfa1582d4b93022bcfb031739a678a9be3597e44a66142bd13c97a72"
+    },
+    {
+      "path": "report/native-read-only.json",
+      "bytes": 466,
+      "sha256": "b11bda42535b9a13eb2e3397449f4f904c7c5cebd790c7e4a161bf6bcb8c3d4a"
+    },
+    {
+      "path": "report/listeners-before.txt",
+      "bytes": 3045,
+      "sha256": "8d6a5b5bb3c9f02066b3c923f80f382d588d545f2e7c4d4d8020fcc36e3f6ae0"
+    },
+    {
+      "path": "report/listeners-after.txt",
+      "bytes": 3150,
+      "sha256": "9d2b9f8f2f10b07edf58de3df9dd66b99de77817044e18821650edf86bd2749d"
+    },
+    {
+      "path": "report/integration-summary.json",
+      "bytes": 617,
+      "sha256": "9fe86b027939c6b3cd315cfb940385a8895c63a4d0b9e634528155c9d910aa0f"
+    },
+    {
+      "path": "report/proxy-network.json",
+      "bytes": 54767,
+      "sha256": "71792cf038eeee310d4994caa5a989f76fbb8e6e1f91f60191dfc7ef2f862877"
+    },
+    {
+      "path": "report/browser.log",
+      "bytes": 50,
+      "sha256": "133a0a56fffd2c9f3c63b6a3d78eb5c07b1d6d17110e2fe50c68d8d413d0fdc4"
+    },
+    {
+      "path": "report/frozen-browser.log",
+      "bytes": 50,
+      "sha256": "e977659837e68e882b0feb9cbfc86a93739ac2a7494e85bf6e41492191dfbb83"
+    },
+    {
+      "path": "report/browser/browser.json",
+      "bytes": 129728,
+      "sha256": "c966a3a8fac19488dfad0cc25c283b09cd0aaa0a487bad4b12c1369971c4b257"
+    },
+    {
+      "path": "report/frozen-browser/browser.json",
+      "bytes": 10196,
+      "sha256": "4ecde55c1b1a2c4bad6441e9c358373962b68bb69d9162dd69832f36fdf6e106"
+    },
+    {
+      "path": "report/browser/real-readonly.png",
+      "bytes": 214128,
+      "sha256": "08b74e629964895ecbb2668b207e6f035da603a879b8b73bfdd5f6911778529d"
+    },
+    {
+      "path": "report/browser/final-real-readonly.png",
+      "bytes": 249207,
+      "sha256": "23678f201be4464e9b921e33d81f86d4545ac6208cda69ffd4ff2819833752bc"
+    },
+    {
+      "path": "report/browser/fixture-disconnected.png",
+      "bytes": 256655,
+      "sha256": "e4caa44f6dfab3e6e3b1e1f64732c3af80e5cf932c3bbc174d483071f311a9bf"
+    },
+    {
+      "path": "report/browser/fixture-asset-integrity.png",
+      "bytes": 246264,
+      "sha256": "73e75979e7c88e863bcec87f3b708219bf89699ebf79f41a17724ee32c7920fc"
+    },
+    {
+      "path": "frontend/dist/assets/index-DVDl73CB.css",
+      "bytes": 160292,
+      "sha256": "bb69eeb4720f28e6bab2e6548a1418ac27c0b805fc8787398a0fbf18c67e4a88"
+    },
+    {
+      "path": "frontend/dist/assets/index-m3ZscVDx.js",
+      "bytes": 1211346,
+      "sha256": "a617ab5cf3f3759c5d045ae62093d44502c8268325c880a9465e7a6272e08504"
+    },
+    {
+      "path": "frontend/dist/index.html",
+      "bytes": 419,
+      "sha256": "5e14773177c9ee89d4c0657d958e521c32d9d371923f72645f72e1c2dfdfc6de"
+    },
+    {
+      "path": "frontend/dist/sample/arm-spec.json",
+      "bytes": 2886,
+      "sha256": "8d1dc917c7c76c58dcd96ab07525e247479d6295f427dd75c8ba3a13c0ecdfa9"
+    },
+    {
+      "path": "frontend/dist/sample/capabilities.json",
+      "bytes": 2206,
+      "sha256": "767312d2191e3e89c0d1c2319959f5abdbf2cc31daa4e172adf6ae3047c6e67d"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/back_shell_black_link.stl",
+      "bytes": 371284,
+      "sha256": "a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/back_shell_middle_link.stl",
+      "bytes": 293384,
+      "sha256": "b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/base_link.stl",
+      "bytes": 525884,
+      "sha256": "9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/camera_connect_link.stl",
+      "bytes": 41084,
+      "sha256": "1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/depth_cam_link.stl",
+      "bytes": 1169884,
+      "sha256": "4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/gripper_base_link.stl",
+      "bytes": 105284,
+      "sha256": "46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/gripper_left_link.stl",
+      "bytes": 19284,
+      "sha256": "9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/gripper_link.stl",
+      "bytes": 1041384,
+      "sha256": "31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/gripper_right_link.stl",
+      "bytes": 19284,
+      "sha256": "5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/guide_rod_link.stl",
+      "bytes": 12084,
+      "sha256": "d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/imu_link.stl",
+      "bytes": 293384,
+      "sha256": "2d3f2e16a2150d97c01ed0ff6101fb5815bfde44143871dc8368149cd024e222"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/left_jaw_link.stl",
+      "bytes": 46684,
+      "sha256": "47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/lidar_frame.stl",
+      "bytes": 191734,
+      "sha256": "94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/link1.stl",
+      "bytes": 1020984,
+      "sha256": "7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/link2.stl",
+      "bytes": 1215334,
+      "sha256": "553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/link3.stl",
+      "bytes": 1215634,
+      "sha256": "cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/link4.stl",
+      "bytes": 1174984,
+      "sha256": "158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/link5.stl",
+      "bytes": 94084,
+      "sha256": "c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/right_jaw_link.stl",
+      "bytes": 49584,
+      "sha256": "37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/wheel_left_back_link.stl",
+      "bytes": 3278784,
+      "sha256": "22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/wheel_left_front_link.stl",
+      "bytes": 3299084,
+      "sha256": "2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/wheel_right_back_link.stl",
+      "bytes": 4184384,
+      "sha256": "68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/wheel_right_front_link.stl",
+      "bytes": 3276484,
+      "sha256": "9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9"
+    },
+    {
+      "path": "frontend/dist/sample/provenance.json",
+      "bytes": 5757,
+      "sha256": "0bcdc534f6098e55323fceba41119bb2317a4fd9057b4436a718fc796fcd2be8"
+    },
+    {
+      "path": "frontend/dist/sample/scene.json",
+      "bytes": 116370,
+      "sha256": "4ae29235013ba992f723971e5e0870f2dd08f1161361f864b2009ebb774aee6e"
+    },
+    {
+      "path": "frontend/dist/sample/snapshot.json",
+      "bytes": 15741,
+      "sha256": "759aa9947c1241119d2946f05d18dbb09b67461012ce16af16f27f7c1418a05f"
+    },
+    {
+      "path": "report/final-preview-check.py",
+      "bytes": 4414,
+      "sha256": "f314c5949858929a14fc82c54eb9b39e357113f1d0a9e8537983e7e244e4e9f2"
+    },
+    {
+      "path": "report/final-preview-check.json",
+      "bytes": 23363,
+      "sha256": "15cc19d5c3bf6de2be4e6cf19e2215d52742ab2b0b401cbba644795c1d255b8a"
+    },
+    {
+      "path": "report/browser/settled-real-readonly.png",
+      "bytes": 252563,
+      "sha256": "d8077773ffbdf45e7af498b67113b4927586639e925b7abfdfbd7b0b5787d451"
+    }
+  ],
+  "supplemental_validation_input_sha256": "f314c5949858929a14fc82c54eb9b39e357113f1d0a9e8537983e7e244e4e9f2"
+}

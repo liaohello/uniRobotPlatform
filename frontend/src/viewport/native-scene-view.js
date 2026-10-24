@@ -11,17 +11,26 @@ function quaternionFromXyzw(values) {
   return new THREE.Quaternion(x, y, z, w).normalize();
 }
 
-function materialFor(rgba, { ghost = false, mesh = false } = {}) {
+export function materialFor(rgba, { ghost = false, mesh = false } = {}) {
   const color = new THREE.Color(rgba?.[0] ?? 0.65, rgba?.[1] ?? 0.68, rgba?.[2] ?? 0.72);
+  const alpha = rgba?.[3] ?? 1;
   return new THREE.MeshStandardMaterial({
     color,
-    transparent: ghost,
-    opacity: ghost ? 0.26 : (rgba?.[3] ?? 1),
+    transparent: ghost || alpha < 1,
+    opacity: ghost ? 0.26 * alpha : alpha,
     roughness: ghost ? 0.8 : (mesh ? 0.55 : 0.68),
     metalness: ghost ? 0 : (mesh ? 0.18 : 0.04),
-    depthWrite: !ghost,
+    depthWrite: !ghost && alpha >= 1,
     side: THREE.DoubleSide,
   });
+}
+
+// The verified read adapter supplies compiled vertices in meters. Legacy frozen
+// samples are explicitly marked; they remain historical interaction fixtures.
+export function applyMeshCoordinateSpace(geometry, asset, legacyScale) {
+  if (asset.coordinate_space === "legacy_raw_stl") geometry.scale(...legacyScale);
+  else if (asset.coordinate_space !== "mujoco_compiled_mesh") throw new Error("mesh_coordinates_unavailable");
+  return geometry;
 }
 
 function widgetMaterial(color, opacity = 1) {
@@ -34,7 +43,7 @@ function widgetMaterial(color, opacity = 1) {
 }
 
 export class SceneView {
-  constructor(container, { onTargetDrag = () => {}, onNotice = () => {} } = {}) {
+  constructor(container, { onTargetDrag = () => {}, onNotice = () => {}, onAssetError = () => {} } = {}) {
     this.disposed = false;
     this.manifestRevision = 0;
     this.pendingLoads = 0;
@@ -42,6 +51,9 @@ export class SceneView {
     this.container = container;
     this.onTargetDrag = onTargetDrag;
     this.onNotice = onNotice;
+    this.onAssetError = onAssetError;
+    this.assetAbort = new AbortController();
+    this.assetBytes = new Map();
     this.manifest = null;
     this.snapshot = null;
     this.worldGroups = new Map();
@@ -252,6 +264,9 @@ export class SceneView {
 
   clearManifest() {
     this.manifestRevision += 1;
+    this.assetAbort.abort();
+    this.assetAbort = new AbortController();
+    this.assetBytes.clear();
     this.snapshot = null;
     this.targetGroup.visible = false;
     this.actualTcp.visible = false;
@@ -313,6 +328,9 @@ export class SceneView {
   }
 
   _buildGeom(geom, ghost) {
+    // Visibility follows authored alpha, not the native export's defaulted
+    // collision/group fields. Keep visible primitives as well as visual meshes.
+    if ((geom.rgba?.[3] ?? 1) <= 0) return null;
     const transform = geom.local_transform || {};
     const parent = new THREE.Group();
     parent.position.fromArray(transform.position_m || [0, 0, 0]);
@@ -373,17 +391,32 @@ export class SceneView {
     fallback.userData.meshPending = true;
     const revision = this.manifestRevision;
     this.pendingLoads += 1;
-    this.meshLoader.load(
-      asset.uri,
-      (geometry) => {
+    if (!this.assetBytes.has(asset.uri)) {
+      const signal = AbortSignal.any([this.assetAbort.signal, AbortSignal.timeout(20000)]);
+      this.assetBytes.set(asset.uri, fetch(asset.uri, {signal, cache: 'no-store'}).then(async response => {
+        if (!response.ok) {
+          const body = await response.json();
+          throw new Error(`${body.detail?.code || 'HTTP_'+response.status}: ${asset.asset_id}`);
+        }
+        const bytes = await response.arrayBuffer();
+        const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b=>b.toString(16).padStart(2,'0')).join('');
+        if (digest !== asset.sha256) throw new Error(`asset_integrity_failed: ${asset.asset_id}`);
+        return bytes;
+      }));
+    }
+    this.assetBytes.get(asset.uri).then(bytes => {
+      if (this.disposed || revision !== this.manifestRevision) return null;
+      return this.meshLoader.parse(bytes);
+    }).then((geometry) => {
         this.pendingLoads -= 1;
+        if (!geometry) return;
         if (this.disposed || revision !== this.manifestRevision || !fallback.parent) {
           geometry.dispose();
           material.dispose();
           return;
         }
         geometry.computeVertexNormals();
-        if (geom.size_m?.length === 3) geometry.scale(...geom.size_m);
+        applyMeshCoordinateSpace(geometry, asset, geom.size_m);
         const mesh = new THREE.Mesh(geometry, material);
         mesh.castShadow = !ghost;
         mesh.receiveShadow = !ghost;
@@ -395,17 +428,15 @@ export class SceneView {
         fallback.geometry.dispose();
         this._scheduleFit();
         this._requestRender(true);
-      },
-      undefined,
-      () => {
+      }).catch((error) => {
         this.pendingLoads -= 1;
         if (this.disposed || revision !== this.manifestRevision) return;
         this.failedAssets.add(asset.asset_id);
         fallback.visible = false;
         this.onNotice(`网格加载失败：${asset.asset_id}`);
+        this.onAssetError(error.message);
         this._requestRender(true);
-      },
-    );
+      });
     return fallback;
   }
 

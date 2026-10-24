@@ -1,0 +1,1829 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene",
+    "status": 200,
+    "elapsed_ms": 111.01,
+    "bytes": 105299
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/capabilities",
+    "status": 200,
+    "elapsed_ms": 25.41,
+    "bytes": 1915
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 81.69,
+    "bytes": 10423
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae",
+    "status": 200,
+    "elapsed_ms": 159.71,
+    "bytes": 525884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+    "status": 200,
+    "elapsed_ms": 122.57,
+    "bytes": 293384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+    "status": 200,
+    "elapsed_ms": 82.76,
+    "bytes": 371284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+    "status": 200,
+    "elapsed_ms": 104.6,
+    "bytes": 191734
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+    "status": 200,
+    "elapsed_ms": 150.31,
+    "bytes": 3299084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+    "status": 200,
+    "elapsed_ms": 127.49,
+    "bytes": 3278784
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+    "status": 200,
+    "elapsed_ms": 127.86,
+    "bytes": 3276484
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+    "status": 200,
+    "elapsed_ms": 174.9,
+    "bytes": 4184384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/imu_link?sha256=03e01c87ba3eb6bdbb8f62fcd4d8187bcca1b284a088af0a653a5de7ee7df924",
+    "status": 200,
+    "elapsed_ms": 175.94,
+    "bytes": 293384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+    "status": 200,
+    "elapsed_ms": 165.44,
+    "bytes": 1020984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+    "status": 200,
+    "elapsed_ms": 192.31,
+    "bytes": 1215334
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+    "status": 200,
+    "elapsed_ms": 144.05,
+    "bytes": 1215634
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+    "status": 200,
+    "elapsed_ms": 162.34,
+    "bytes": 1174984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+    "status": 200,
+    "elapsed_ms": 156.57,
+    "bytes": 94084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+    "status": 200,
+    "elapsed_ms": 214.4,
+    "bytes": 1041384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+    "status": 200,
+    "elapsed_ms": 126.9,
+    "bytes": 41084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+    "status": 200,
+    "elapsed_ms": 157.09,
+    "bytes": 1169884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+    "status": 200,
+    "elapsed_ms": 80.79,
+    "bytes": 105284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+    "status": 200,
+    "elapsed_ms": 107.07,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+    "status": 200,
+    "elapsed_ms": 169.33,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+    "status": 200,
+    "elapsed_ms": 158.03,
+    "bytes": 12084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+    "status": 200,
+    "elapsed_ms": 99.7,
+    "bytes": 46684
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+    "status": 200,
+    "elapsed_ms": 125.23,
+    "bytes": 49584
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/base_link?sha256=0000000000000000000000000000000000000000000000000000000000000000",
+    "status": 409,
+    "elapsed_ms": 50.86,
+    "bytes": 153
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/capabilities",
+    "status": 200,
+    "elapsed_ms": 120.37,
+    "bytes": 1915
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene",
+    "status": 200,
+    "elapsed_ms": 124.27,
+    "bytes": 105299
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 116.36,
+    "bytes": 10436
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae",
+    "status": 200,
+    "elapsed_ms": 140.55,
+    "bytes": 525884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+    "status": 200,
+    "elapsed_ms": 139.51,
+    "bytes": 3299084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+    "status": 200,
+    "elapsed_ms": 290.54,
+    "bytes": 293384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+    "status": 200,
+    "elapsed_ms": 294.17,
+    "bytes": 3276484
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+    "status": 200,
+    "elapsed_ms": 299.69,
+    "bytes": 4184384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+    "status": 200,
+    "elapsed_ms": 225.76,
+    "bytes": 371284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+    "status": 200,
+    "elapsed_ms": 368.11,
+    "bytes": 3278784
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+    "status": 200,
+    "elapsed_ms": 101.12,
+    "bytes": 1215334
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+    "status": 200,
+    "elapsed_ms": 169.06,
+    "bytes": 1020984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+    "status": 200,
+    "elapsed_ms": 94.97,
+    "bytes": 1174984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+    "status": 200,
+    "elapsed_ms": 96.94,
+    "bytes": 1215634
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+    "status": 200,
+    "elapsed_ms": 147.47,
+    "bytes": 94084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+    "status": 200,
+    "elapsed_ms": 152.81,
+    "bytes": 1041384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+    "status": 200,
+    "elapsed_ms": 195.63,
+    "bytes": 105284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+    "status": 200,
+    "elapsed_ms": 189.78,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+    "status": 200,
+    "elapsed_ms": 209.83,
+    "bytes": 12084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+    "status": 200,
+    "elapsed_ms": 211.8,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+    "status": 200,
+    "elapsed_ms": 225.1,
+    "bytes": 41084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+    "status": 200,
+    "elapsed_ms": 233.41,
+    "bytes": 49584
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+    "status": 200,
+    "elapsed_ms": 242.53,
+    "bytes": 46684
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+    "status": 200,
+    "elapsed_ms": 231.12,
+    "bytes": 1169884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+    "status": 200,
+    "elapsed_ms": 182.02,
+    "bytes": 191734
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 188.66,
+    "bytes": 10424
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 34.35,
+    "bytes": 10417
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 35.89,
+    "bytes": 10439
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 28.84,
+    "bytes": 10428
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 45.56,
+    "bytes": 10426
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 81.37,
+    "bytes": 10435
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 37.56,
+    "bytes": 10428
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+    "status": 200,
+    "elapsed_ms": 143.46,
+    "bytes": 293384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+    "status": 200,
+    "elapsed_ms": 150.81,
+    "bytes": 3278784
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+    "status": 200,
+    "elapsed_ms": 515.19,
+    "bytes": 3299084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae",
+    "status": 200,
+    "elapsed_ms": 516.08,
+    "bytes": 525884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+    "status": 200,
+    "elapsed_ms": 519.65,
+    "bytes": 3276484
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+    "status": 200,
+    "elapsed_ms": 554.08,
+    "bytes": 4184384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+    "status": 200,
+    "elapsed_ms": 444.88,
+    "bytes": 1020984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+    "status": 200,
+    "elapsed_ms": 486.84,
+    "bytes": 371284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+    "status": 200,
+    "elapsed_ms": 180.15,
+    "bytes": 1215334
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+    "status": 200,
+    "elapsed_ms": 170.95,
+    "bytes": 1215634
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+    "status": 200,
+    "elapsed_ms": 185.44,
+    "bytes": 94084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+    "status": 200,
+    "elapsed_ms": 247.86,
+    "bytes": 1174984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+    "status": 200,
+    "elapsed_ms": 174.76,
+    "bytes": 1041384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+    "status": 200,
+    "elapsed_ms": 179.79,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+    "status": 200,
+    "elapsed_ms": 214.79,
+    "bytes": 105284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+    "status": 200,
+    "elapsed_ms": 198.03,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+    "status": 200,
+    "elapsed_ms": 200.4,
+    "bytes": 12084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+    "status": 200,
+    "elapsed_ms": 197.74,
+    "bytes": 49584
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+    "status": 200,
+    "elapsed_ms": 198.5,
+    "bytes": 46684
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+    "status": 200,
+    "elapsed_ms": 268.47,
+    "bytes": 41084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+    "status": 200,
+    "elapsed_ms": 252.07,
+    "bytes": 1169884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+    "status": 200,
+    "elapsed_ms": 252.08,
+    "bytes": 191734
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae",
+    "status": 200,
+    "elapsed_ms": 164.21,
+    "bytes": 525884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+    "status": 200,
+    "elapsed_ms": 163.67,
+    "bytes": 3276484
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+    "status": 200,
+    "elapsed_ms": 166.05,
+    "bytes": 3278784
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+    "status": 200,
+    "elapsed_ms": 357.47,
+    "bytes": 293384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+    "status": 200,
+    "elapsed_ms": 372.59,
+    "bytes": 3299084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+    "status": 200,
+    "elapsed_ms": 376.9,
+    "bytes": 4184384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+    "status": 200,
+    "elapsed_ms": 492.57,
+    "bytes": 1020984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+    "status": 200,
+    "elapsed_ms": 506.05,
+    "bytes": 371284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+    "status": 200,
+    "elapsed_ms": 460.34,
+    "bytes": 1215334
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+    "status": 200,
+    "elapsed_ms": 298.42,
+    "bytes": 94084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+    "status": 200,
+    "elapsed_ms": 423.2,
+    "bytes": 1215634
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+    "status": 200,
+    "elapsed_ms": 450.3,
+    "bytes": 1174984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+    "status": 200,
+    "elapsed_ms": 242.87,
+    "bytes": 1041384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+    "status": 200,
+    "elapsed_ms": 241.28,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+    "status": 200,
+    "elapsed_ms": 241.96,
+    "bytes": 105284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+    "status": 200,
+    "elapsed_ms": 354.08,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+    "status": 200,
+    "elapsed_ms": 353.92,
+    "bytes": 12084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+    "status": 200,
+    "elapsed_ms": 464.25,
+    "bytes": 41084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+    "status": 200,
+    "elapsed_ms": 478.37,
+    "bytes": 46684
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+    "status": 200,
+    "elapsed_ms": 490.56,
+    "bytes": 49584
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+    "status": 200,
+    "elapsed_ms": 499.28,
+    "bytes": 1169884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+    "status": 200,
+    "elapsed_ms": 350.56,
+    "bytes": 191734
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+    "status": 200,
+    "elapsed_ms": 293.42,
+    "bytes": 3299084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+    "status": 200,
+    "elapsed_ms": 300.0,
+    "bytes": 3278784
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae",
+    "status": 200,
+    "elapsed_ms": 305.27,
+    "bytes": 525884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+    "status": 200,
+    "elapsed_ms": 300.6,
+    "bytes": 293384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+    "status": 200,
+    "elapsed_ms": 312.74,
+    "bytes": 4184384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+    "status": 200,
+    "elapsed_ms": 316.03,
+    "bytes": 3276484
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+    "status": 200,
+    "elapsed_ms": 157.73,
+    "bytes": 1215334
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+    "status": 200,
+    "elapsed_ms": 160.92,
+    "bytes": 1020984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+    "status": 200,
+    "elapsed_ms": 173.2,
+    "bytes": 371284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+    "status": 200,
+    "elapsed_ms": 174.98,
+    "bytes": 1215634
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+    "status": 200,
+    "elapsed_ms": 402.02,
+    "bytes": 94084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+    "status": 200,
+    "elapsed_ms": 376.22,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+    "status": 200,
+    "elapsed_ms": 379.78,
+    "bytes": 105284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+    "status": 200,
+    "elapsed_ms": 295.6,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+    "status": 200,
+    "elapsed_ms": 474.89,
+    "bytes": 1041384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+    "status": 200,
+    "elapsed_ms": 478.99,
+    "bytes": 1174984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+    "status": 200,
+    "elapsed_ms": 150.2,
+    "bytes": 46684
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+    "status": 200,
+    "elapsed_ms": 151.51,
+    "bytes": 12084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+    "status": 200,
+    "elapsed_ms": 175.99,
+    "bytes": 49584
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+    "status": 200,
+    "elapsed_ms": 163.45,
+    "bytes": 191734
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+    "status": 200,
+    "elapsed_ms": 165.71,
+    "bytes": 1169884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+    "status": 200,
+    "elapsed_ms": 180.67,
+    "bytes": 41084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+    "status": 200,
+    "elapsed_ms": 237.08,
+    "bytes": 4184384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+    "status": 200,
+    "elapsed_ms": 239.46,
+    "bytes": 293384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae",
+    "status": 200,
+    "elapsed_ms": 246.7,
+    "bytes": 525884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+    "status": 200,
+    "elapsed_ms": 249.36,
+    "bytes": 3278784
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+    "status": 200,
+    "elapsed_ms": 250.54,
+    "bytes": 3276484
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+    "status": 200,
+    "elapsed_ms": 253.88,
+    "bytes": 3299084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+    "status": 200,
+    "elapsed_ms": 202.19,
+    "bytes": 371284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+    "status": 200,
+    "elapsed_ms": 401.83,
+    "bytes": 1215634
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+    "status": 200,
+    "elapsed_ms": 549.17,
+    "bytes": 1174984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+    "status": 200,
+    "elapsed_ms": 360.42,
+    "bytes": 1041384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+    "status": 200,
+    "elapsed_ms": 635.02,
+    "bytes": 1020984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+    "status": 200,
+    "elapsed_ms": 628.4,
+    "bytes": 1215334
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+    "status": 200,
+    "elapsed_ms": 432.74,
+    "bytes": 94084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+    "status": 200,
+    "elapsed_ms": 218.66,
+    "bytes": 105284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+    "status": 200,
+    "elapsed_ms": 174.73,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+    "status": 200,
+    "elapsed_ms": 168.18,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+    "status": 200,
+    "elapsed_ms": 247.86,
+    "bytes": 41084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+    "status": 200,
+    "elapsed_ms": 277.57,
+    "bytes": 46684
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+    "status": 200,
+    "elapsed_ms": 278.81,
+    "bytes": 12084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+    "status": 200,
+    "elapsed_ms": 290.38,
+    "bytes": 49584
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+    "status": 200,
+    "elapsed_ms": 223.04,
+    "bytes": 191734
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+    "status": 200,
+    "elapsed_ms": 223.65,
+    "bytes": 1169884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+    "status": 200,
+    "elapsed_ms": 300.04,
+    "bytes": 3276484
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+    "status": 200,
+    "elapsed_ms": 301.66,
+    "bytes": 293384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+    "status": 200,
+    "elapsed_ms": 304.83,
+    "bytes": 371284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+    "status": 200,
+    "elapsed_ms": 309.01,
+    "bytes": 3299084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+    "status": 200,
+    "elapsed_ms": 314.0,
+    "bytes": 3278784
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+    "status": 200,
+    "elapsed_ms": 316.26,
+    "bytes": 4184384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+    "status": 200,
+    "elapsed_ms": 222.51,
+    "bytes": 1215334
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+    "status": 200,
+    "elapsed_ms": 227.09,
+    "bytes": 1020984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+    "status": 200,
+    "elapsed_ms": 213.4,
+    "bytes": 1174984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+    "status": 200,
+    "elapsed_ms": 218.01,
+    "bytes": 1215634
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+    "status": 200,
+    "elapsed_ms": 253.85,
+    "bytes": 1041384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+    "status": 200,
+    "elapsed_ms": 297.56,
+    "bytes": 105284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+    "status": 200,
+    "elapsed_ms": 310.99,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+    "status": 200,
+    "elapsed_ms": 314.41,
+    "bytes": 12084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+    "status": 200,
+    "elapsed_ms": 314.29,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+    "status": 200,
+    "elapsed_ms": 513.92,
+    "bytes": 94084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+    "status": 200,
+    "elapsed_ms": 305.36,
+    "bytes": 46684
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+    "status": 200,
+    "elapsed_ms": 279.85,
+    "bytes": 191734
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+    "status": 200,
+    "elapsed_ms": 288.7,
+    "bytes": 41084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+    "status": 200,
+    "elapsed_ms": 302.05,
+    "bytes": 49584
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+    "status": 200,
+    "elapsed_ms": 286.27,
+    "bytes": 1169884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+    "status": 200,
+    "elapsed_ms": 275.48,
+    "bytes": 3278784
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+    "status": 200,
+    "elapsed_ms": 297.36,
+    "bytes": 3299084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+    "status": 200,
+    "elapsed_ms": 299.33,
+    "bytes": 293384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+    "status": 200,
+    "elapsed_ms": 306.38,
+    "bytes": 371284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+    "status": 200,
+    "elapsed_ms": 308.1,
+    "bytes": 3276484
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+    "status": 200,
+    "elapsed_ms": 319.22,
+    "bytes": 4184384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+    "status": 200,
+    "elapsed_ms": 310.84,
+    "bytes": 1215634
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+    "status": 200,
+    "elapsed_ms": 318.02,
+    "bytes": 1215334
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+    "status": 200,
+    "elapsed_ms": 352.53,
+    "bytes": 1020984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+    "status": 200,
+    "elapsed_ms": 327.06,
+    "bytes": 94084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+    "status": 200,
+    "elapsed_ms": 353.06,
+    "bytes": 1174984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+    "status": 200,
+    "elapsed_ms": 333.28,
+    "bytes": 1041384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+    "status": 200,
+    "elapsed_ms": 336.73,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+    "status": 200,
+    "elapsed_ms": 338.92,
+    "bytes": 105284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+    "status": 200,
+    "elapsed_ms": 377.29,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+    "status": 200,
+    "elapsed_ms": 326.65,
+    "bytes": 46684
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+    "status": 200,
+    "elapsed_ms": 327.16,
+    "bytes": 49584
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+    "status": 200,
+    "elapsed_ms": 230.56,
+    "bytes": 41084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+    "status": 200,
+    "elapsed_ms": 197.2,
+    "bytes": 191734
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+    "status": 200,
+    "elapsed_ms": 461.48,
+    "bytes": 12084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+    "status": 200,
+    "elapsed_ms": 236.69,
+    "bytes": 1169884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/capabilities",
+    "status": 200,
+    "elapsed_ms": 135.52,
+    "bytes": 1915
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene",
+    "status": 200,
+    "elapsed_ms": 136.22,
+    "bytes": 105299
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 33.89,
+    "bytes": 10417
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+    "status": 200,
+    "elapsed_ms": 263.49,
+    "bytes": 3276484
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+    "status": 200,
+    "elapsed_ms": 276.89,
+    "bytes": 3299084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae",
+    "status": 200,
+    "elapsed_ms": 282.41,
+    "bytes": 525884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+    "status": 200,
+    "elapsed_ms": 282.51,
+    "bytes": 293384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+    "status": 200,
+    "elapsed_ms": 284.89,
+    "bytes": 3278784
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+    "status": 200,
+    "elapsed_ms": 292.44,
+    "bytes": 4184384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+    "status": 200,
+    "elapsed_ms": 119.61,
+    "bytes": 371284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+    "status": 200,
+    "elapsed_ms": 223.96,
+    "bytes": 1215334
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+    "status": 200,
+    "elapsed_ms": 229.0,
+    "bytes": 1020984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+    "status": 200,
+    "elapsed_ms": 296.68,
+    "bytes": 1215634
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+    "status": 200,
+    "elapsed_ms": 241.14,
+    "bytes": 1041384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+    "status": 200,
+    "elapsed_ms": 250.36,
+    "bytes": 94084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+    "status": 200,
+    "elapsed_ms": 257.28,
+    "bytes": 1174984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+    "status": 200,
+    "elapsed_ms": 275.94,
+    "bytes": 105284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+    "status": 200,
+    "elapsed_ms": 286.11,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+    "status": 200,
+    "elapsed_ms": 245.31,
+    "bytes": 12084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+    "status": 200,
+    "elapsed_ms": 244.53,
+    "bytes": 49584
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+    "status": 200,
+    "elapsed_ms": 245.07,
+    "bytes": 46684
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+    "status": 200,
+    "elapsed_ms": 335.15,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+    "status": 200,
+    "elapsed_ms": 209.19,
+    "bytes": 1169884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+    "status": 200,
+    "elapsed_ms": 219.25,
+    "bytes": 41084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+    "status": 200,
+    "elapsed_ms": 122.01,
+    "bytes": 191734
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 43.42,
+    "bytes": 10438
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 94.87,
+    "bytes": 10439
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene",
+    "status": 200,
+    "elapsed_ms": 68.49,
+    "bytes": 105299
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/capabilities",
+    "status": 200,
+    "elapsed_ms": 171.54,
+    "bytes": 1915
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene",
+    "status": 200,
+    "elapsed_ms": 176.9,
+    "bytes": 105299
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 38.42,
+    "bytes": 10436
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/base_link?sha256=a04312293b54b7092e7fe947d82ae582f7d415eb5c352fc3e99b6f571021d1ae",
+    "status": 200,
+    "elapsed_ms": 76.15,
+    "bytes": 525884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=9382650e7d436eb449869658ac9bfcf82210429aaf165b3655403abb11cc42fc",
+    "status": 200,
+    "elapsed_ms": 448.78,
+    "bytes": 4184384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=d042e30d86ce0ba002b45b5afc4c65614681ead997cf46ddf0c453577eaba8a5",
+    "status": 200,
+    "elapsed_ms": 455.79,
+    "bytes": 3299084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=d6f8260be3111d3b8e49e27be5bba0dd594f3ffaebc4188cc15a09ee0ed01f16",
+    "status": 200,
+    "elapsed_ms": 459.09,
+    "bytes": 3278784
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=a8b9b54815f916ede23d8c6ce25ace0c839bfec0f0332b576fc53325ab95b222",
+    "status": 200,
+    "elapsed_ms": 463.1,
+    "bytes": 3276484
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=69c20b535beb362b19ce390257921e3e7a058fa27eefd3d91aa063af84472874",
+    "status": 200,
+    "elapsed_ms": 463.54,
+    "bytes": 293384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link1?sha256=28184761b2f9253022c1b9845ea8075461a8afc6352d397725c2c57a7563c0e7",
+    "status": 200,
+    "elapsed_ms": 278.29,
+    "bytes": 1020984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=aa63a6328dc6d08455befe3db3da16b5a2af5e1345f81ba6f1e72a4f79320cda",
+    "status": 200,
+    "elapsed_ms": 684.23,
+    "bytes": 371284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link5?sha256=021926c17913ea2ce129bb1dc318bc52f298481dcc3011eac02f4129bd340977",
+    "status": 200,
+    "elapsed_ms": 264.27,
+    "bytes": 94084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link3?sha256=87fe1101cc93540cce4543f4b7a431ec927a96ad0ad4e442a5bce26ad812c67e",
+    "status": 200,
+    "elapsed_ms": 279.12,
+    "bytes": 1215634
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link2?sha256=c95616e250811cee9bbf2079d1fa2ae1fcc12293e8182d95ab4350d36097c842",
+    "status": 200,
+    "elapsed_ms": 291.93,
+    "bytes": 1215334
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/link4?sha256=e91d38d6b367088cbfce7732850e55c3cd6908ed8090bd303529c5e874d12dd8",
+    "status": 200,
+    "elapsed_ms": 366.9,
+    "bytes": 1174984
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=c6e978791b6943a068cade540a52a201592813fe3a82bffd2bc60a73c6f7c05e",
+    "status": 200,
+    "elapsed_ms": 300.19,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=48dafe99853c19660ceb924a88ad97b6bce44d4e2aafec47096c26bcd6939c12",
+    "status": 200,
+    "elapsed_ms": 319.68,
+    "bytes": 12084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=5a6126b440c1be8a2fc1758955ef3e082740eaa9754fc76bfa74bc3bc47c80a3",
+    "status": 200,
+    "elapsed_ms": 331.84,
+    "bytes": 19284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=d8a6417ac750096a2cf0f5a3e0f966386d473fab88214d77aeb1034b35ceb2e1",
+    "status": 200,
+    "elapsed_ms": 342.12,
+    "bytes": 105284
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/gripper_link?sha256=debdfefffd2849f0a7f2faaae57e0a89ee4446ec3238c588215ba3c849ff5ad8",
+    "status": 200,
+    "elapsed_ms": 349.93,
+    "bytes": 1041384
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=abad4fce00ed6da3fb4b8b4a09b6f6b1e081242cc2ed50465c3ed31a242b4829",
+    "status": 200,
+    "elapsed_ms": 347.09,
+    "bytes": 46684
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/lidar_frame?sha256=ffe86273b99c050277b1bfdbdf9b971e3d9c4f3f25190b3af5af9cee715dba0b",
+    "status": 200,
+    "elapsed_ms": 293.87,
+    "bytes": 191734
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=2fafd43d9ab48027aab1049a70b007c25d92855d1faa55d931b80048aefdb504",
+    "status": 200,
+    "elapsed_ms": 309.7,
+    "bytes": 41084
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=c46a4542f75cc98a7401d99c34e6b8727f2f01ace4f69d8f848bbed83dfd9570",
+    "status": 200,
+    "elapsed_ms": 331.22,
+    "bytes": 49584
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=763e5cab748239671687d0c3b235ee780edaa4577e6863b64307a648405859c6",
+    "status": 200,
+    "elapsed_ms": 307.29,
+    "bytes": 1169884
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 234.02,
+    "bytes": 10426
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 27.14,
+    "bytes": 10438
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 72.67,
+    "bytes": 10429
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 41.32,
+    "bytes": 10410
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 42.47,
+    "bytes": 10430
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 31.3,
+    "bytes": 10429
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 37.35,
+    "bytes": 10426
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 19.69,
+    "bytes": 10436
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 50.2,
+    "bytes": 10436
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 63.43,
+    "bytes": 10439
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 43.01,
+    "bytes": 10421
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 33.39,
+    "bytes": 10443
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 38.84,
+    "bytes": 10433
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 35.48,
+    "bytes": 10429
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 37.39,
+    "bytes": 10430
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 25.81,
+    "bytes": 10428
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 20.95,
+    "bytes": 10427
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/snapshot",
+    "status": 200,
+    "elapsed_ms": 39.27,
+    "bytes": 10430
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mobilecar/scene",
+    "status": 200,
+    "elapsed_ms": 128.75,
+    "bytes": 105299
+  }
+]

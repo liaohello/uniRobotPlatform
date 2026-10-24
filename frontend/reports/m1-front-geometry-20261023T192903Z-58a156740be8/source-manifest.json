@@ -1,0 +1,321 @@
+{
+  "release_id": "m1-front-geometry-20261023T192903Z-58a156740be8",
+  "aggregate_sha256": "58a156740be83a2879e5a1d2145f77d552d51f6682b1e3d318d6a2b048044276",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "65f4a5e99edd19d4143edd60b3bcf23fab901a020aaa23bea51424e53ef516f9",
+      "size_bytes": 5916
+    },
+    {
+      "path": "docs/backend-gaps.md",
+      "sha256": "653bea9ac8d0161d4ababfdcd13e67c9a2e18cf668f101e40f985ac05a052360",
+      "size_bytes": 3212
+    },
+    {
+      "path": "docs/provenance.md",
+      "sha256": "cbd27c8c89ebe14d05f3174322eeb19c20c35cc63a9518f1598a9a83a672a8b7",
+      "size_bytes": 3927
+    },
+    {
+      "path": "index.html",
+      "sha256": "f02d1d7e935883b240161fe48555f96313c8db0b14f244accdd2377369e1c1b9",
+      "size_bytes": 318
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "1bb055b6e003c960e116b8561b174dad8100dec2ab282c29370b0b10aa7a04bd",
+      "size_bytes": 59850
+    },
+    {
+      "path": "package.json",
+      "sha256": "db14be8e25acd34baf23201dab3785b3cd08727bfc61498c1c516b7e5d1de9de",
+      "size_bytes": 659
+    },
+    {
+      "path": "public/sample/arm-spec.json",
+      "sha256": "8d1dc917c7c76c58dcd96ab07525e247479d6295f427dd75c8ba3a13c0ecdfa9",
+      "size_bytes": 2886
+    },
+    {
+      "path": "public/sample/capabilities.json",
+      "sha256": "767312d2191e3e89c0d1c2319959f5abdbf2cc31daa4e172adf6ae3047c6e67d",
+      "size_bytes": 2206
+    },
+    {
+      "path": "public/sample/meshes/back_shell_black_link.stl",
+      "sha256": "a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049",
+      "size_bytes": 371284
+    },
+    {
+      "path": "public/sample/meshes/back_shell_middle_link.stl",
+      "sha256": "b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030",
+      "size_bytes": 293384
+    },
+    {
+      "path": "public/sample/meshes/base_link.stl",
+      "sha256": "9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223",
+      "size_bytes": 525884
+    },
+    {
+      "path": "public/sample/meshes/camera_connect_link.stl",
+      "sha256": "1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212",
+      "size_bytes": 41084
+    },
+    {
+      "path": "public/sample/meshes/depth_cam_link.stl",
+      "sha256": "4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958",
+      "size_bytes": 1169884
+    },
+    {
+      "path": "public/sample/meshes/gripper_base_link.stl",
+      "sha256": "46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8",
+      "size_bytes": 105284
+    },
+    {
+      "path": "public/sample/meshes/gripper_left_link.stl",
+      "sha256": "9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f",
+      "size_bytes": 19284
+    },
+    {
+      "path": "public/sample/meshes/gripper_link.stl",
+      "sha256": "31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a",
+      "size_bytes": 1041384
+    },
+    {
+      "path": "public/sample/meshes/gripper_right_link.stl",
+      "sha256": "5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598",
+      "size_bytes": 19284
+    },
+    {
+      "path": "public/sample/meshes/guide_rod_link.stl",
+      "sha256": "d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a",
+      "size_bytes": 12084
+    },
+    {
+      "path": "public/sample/meshes/imu_link.stl",
+      "sha256": "2d3f2e16a2150d97c01ed0ff6101fb5815bfde44143871dc8368149cd024e222",
+      "size_bytes": 293384
+    },
+    {
+      "path": "public/sample/meshes/left_jaw_link.stl",
+      "sha256": "47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5",
+      "size_bytes": 46684
+    },
+    {
+      "path": "public/sample/meshes/lidar_frame.stl",
+      "sha256": "94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096",
+      "size_bytes": 191734
+    },
+    {
+      "path": "public/sample/meshes/link1.stl",
+      "sha256": "7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894",
+      "size_bytes": 1020984
+    },
+    {
+      "path": "public/sample/meshes/link2.stl",
+      "sha256": "553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5",
+      "size_bytes": 1215334
+    },
+    {
+      "path": "public/sample/meshes/link3.stl",
+      "sha256": "cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd",
+      "size_bytes": 1215634
+    },
+    {
+      "path": "public/sample/meshes/link4.stl",
+      "sha256": "158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa",
+      "size_bytes": 1174984
+    },
+    {
+      "path": "public/sample/meshes/link5.stl",
+      "sha256": "c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7",
+      "size_bytes": 94084
+    },
+    {
+      "path": "public/sample/meshes/right_jaw_link.stl",
+      "sha256": "37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c",
+      "size_bytes": 49584
+    },
+    {
+      "path": "public/sample/meshes/wheel_left_back_link.stl",
+      "sha256": "22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2",
+      "size_bytes": 3278784
+    },
+    {
+      "path": "public/sample/meshes/wheel_left_front_link.stl",
+      "sha256": "2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680",
+      "size_bytes": 3299084
+    },
+    {
+      "path": "public/sample/meshes/wheel_right_back_link.stl",
+      "sha256": "68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8",
+      "size_bytes": 4184384
+    },
+    {
+      "path": "public/sample/meshes/wheel_right_front_link.stl",
+      "sha256": "9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9",
+      "size_bytes": 3276484
+    },
+    {
+      "path": "public/sample/provenance.json",
+      "sha256": "0bcdc534f6098e55323fceba41119bb2317a4fd9057b4436a718fc796fcd2be8",
+      "size_bytes": 5757
+    },
+    {
+      "path": "public/sample/scene.json",
+      "sha256": "4ae29235013ba992f723971e5e0870f2dd08f1161361f864b2009ebb774aee6e",
+      "size_bytes": 116370
+    },
+    {
+      "path": "public/sample/snapshot.json",
+      "sha256": "759aa9947c1241119d2946f05d18dbb09b67461012ce16af16f27f7c1418a05f",
+      "size_bytes": 15741
+    },
+    {
+      "path": "src/adapters/mobilecar-read.ts",
+      "sha256": "dc64041b8e8c12a7d2b4652b2354cd646fbd02768ed0dd7c2de9f80c714bc2d2",
+      "size_bytes": 7347
+    },
+    {
+      "path": "src/adapters/robot-profile.ts",
+      "sha256": "88e0e53ddf7ac39c4f36d61c0d55e4f3f6af8dae249185caac97cf4aa1eb6ee0",
+      "size_bytes": 1153
+    },
+    {
+      "path": "src/adapters/services.ts",
+      "sha256": "5d1e567319cfb139d6fd4449675fc22660f3f92d3e094f37284addefe1512cef",
+      "size_bytes": 2519
+    },
+    {
+      "path": "src/adapters/types.ts",
+      "sha256": "428d59343ad894f60ca9809e007886eaa26431837abe0ded6a8efac74ad4e4b9",
+      "size_bytes": 4805
+    },
+    {
+      "path": "src/app/App.tsx",
+      "sha256": "093a5074d53c705727d6d9c5f379cbbefe8b37a844b2c0018642a95fe94b6b32",
+      "size_bytes": 10683
+    },
+    {
+      "path": "src/app/context.tsx",
+      "sha256": "bbdc9a8b630233b628faa56665dbb9561507cd4a35a6925aef3662e43cc79a4b",
+      "size_bytes": 1047
+    },
+    {
+      "path": "src/app/state.ts",
+      "sha256": "c9be91e0d83e6d7d4b02c0f7a8066df5936b7b4c2f09d57a31a5f099ffbca44d",
+      "size_bytes": 2279
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "b4d0cc34d5467be3a26c595b60106a9c23f9344267d0dcfb56a79000773d1dda",
+      "size_bytes": 236
+    },
+    {
+      "path": "src/viewport/kinematics.ts",
+      "sha256": "1d1b645cd8b19fc2b709c727f01928c186eb7204be2606817fc74f407dbe30f8",
+      "size_bytes": 3023
+    },
+    {
+      "path": "src/viewport/native-scene-view.d.ts",
+      "sha256": "9875535b82912e64b35aa9dbf3f9621baad4e93eec38c6a3067cc7bd336fdb5c",
+      "size_bytes": 1931
+    },
+    {
+      "path": "src/viewport/native-scene-view.js",
+      "sha256": "badb467db835a9b17d3f8c5a05546539b9df598d426d6a4a121904c4b94b33c2",
+      "size_bytes": 26859
+    },
+    {
+      "path": "src/viewport/workbench-scene.ts",
+      "sha256": "57cb519d415d3df2d358469fd50479a3444abe303451d6716a5435dc31dddf18",
+      "size_bytes": 17574
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
+      "size_bytes": 38
+    },
+    {
+      "path": "src/workbench/Icon.tsx",
+      "sha256": "82f828642921bf991bc0b6e6ae7b49646243fbf83d333afeca593bbc8e040c92",
+      "size_bytes": 1347
+    },
+    {
+      "path": "src/workbench/Layout.tsx",
+      "sha256": "29deee7706ba480279ab24b1c582b5d0ce47c466ef432b19832056cde501b21f",
+      "size_bytes": 2896
+    },
+    {
+      "path": "src/workbench/panels.tsx",
+      "sha256": "4775038c27b8f5ee045bd1324e0dabb3ea9f6fefd554c04327fffdf720778d68",
+      "size_bytes": 16551
+    },
+    {
+      "path": "src/workbench/styles.css",
+      "sha256": "d007f37a4ddb35e78582b67cfa7f026cf787671952c9338464c8b668a5f5f144",
+      "size_bytes": 19470
+    },
+    {
+      "path": "tests/browser-geometry.py",
+      "sha256": "9480ff930259ba7da24d28a31045cf0ff143c362a82a7e53922ee9b23bf1b9f3",
+      "size_bytes": 9671
+    },
+    {
+      "path": "tests/browser-readonly.py",
+      "sha256": "58814db9539c55a60a3a944185b7a3be7127a47f54d85d31ec3ea7478e28dd3e",
+      "size_bytes": 15074
+    },
+    {
+      "path": "tests/browser-workbench.py",
+      "sha256": "8f3f6445bd9d33d43fc919774da5bf583d111737f5899cded8d55ae83bd6ab96",
+      "size_bytes": 11048
+    },
+    {
+      "path": "tests/geometry-visibility.test.ts",
+      "sha256": "1711412fe9092eb0964a26b3444adbb08922ceda115cd4cd67a7d3a66866c28e",
+      "size_bytes": 2638
+    },
+    {
+      "path": "tests/mobilecar-read.test.ts",
+      "sha256": "44bc00b891da09993a3ba4a90bf6e1c86fea3e7cff3f8f0d5a4aee991c62f8fb",
+      "size_bytes": 5593
+    },
+    {
+      "path": "tests/targets.test.ts",
+      "sha256": "205768469b3483157cc07558001d1e81ca37bdc0dffb076c6308e4848b5db704",
+      "size_bytes": 2585
+    },
+    {
+      "path": "tools/check-release.py",
+      "sha256": "755d784276fe7f76d9a3714d14a8d7acdd9b6fc1f337c2e5714dcbcd7b7aae54",
+      "size_bytes": 4241
+    },
+    {
+      "path": "tools/freeze-scene.py",
+      "sha256": "d063d2fe89bb43872d3baf02734251a201d38c2e295366f1b0f9f0b34af88a18",
+      "size_bytes": 2238
+    },
+    {
+      "path": "tools/release-source.py",
+      "sha256": "e059f287b7587634fa0798e1c460a38e659660c54371b158b07b11c71f0512f8",
+      "size_bytes": 1300
+    },
+    {
+      "path": "tools/serve-readonly.py",
+      "sha256": "edde1615d3bc49f5f85b38c0573dcefde1269527930d7b08fe7697327e123e89",
+      "size_bytes": 2836
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "ff8726ea9b510f1c1fd7b8cb2979e8c451f6d38305643b71611b0325f9bc6187",
+      "size_bytes": 369
+    },
+    {
+      "path": "vite.config.ts",
+      "sha256": "fcb8cdaff179c25ec62f725dbe3d9548fdd380033f1aef393099aeb005bd7148",
+      "size_bytes": 142
+    }
+  ]
+}

@@ -1,0 +1,381 @@
+{
+  "scope": "M1.2a frozen-sample frontend interaction; no physical control/session/recording acceptance",
+  "checks": [
+    "23 real STL assets loaded without failure",
+    "offline source does not grant platform Session",
+    "single active renderer after React lifecycle",
+    "execution and recording controls stay disabled",
+    "tree and Inspector share stable link selection",
+    "Joint edit shows local Ghost without changing Actual",
+    "editing another Joint preserves existing target",
+    "visible single-joint ring is pickable",
+    "Joint ring changes only the selected target",
+    "Joint ring drag leaves Orbit camera unchanged",
+    "unit switch preserves target revision",
+    "text focus does not cancel target",
+    "cancel clears Ghost and Target only",
+    "TCP numeric target uses explicit frame and preserves Actual",
+    "TCP handle pointer drag updates target",
+    "TCP handle drag does not Orbit camera",
+    "TCP drag enters active gesture",
+    "blur event clears active gesture and enables Orbit",
+    "resize keeps one usable renderer and target",
+    "layout reset cleans old renderer and retains target",
+    "layout restore retains target and source identity",
+    "viewport ESC cancels local target",
+    "mesh click updates shared selection",
+    "blank-space Orbit remains usable",
+    "unavailable platform source clears old view without silent fallback",
+    "explicit source switch recreates a single renderer",
+    "browser issued GET requests only",
+    "browser made no native command/runtime calls",
+    "no uncaught browser errors"
+  ],
+  "errors": [],
+  "initial_load_s": 1.687422625022009,
+  "tcp_pointer_drag": {
+    "before_x": 0.33175,
+    "after_x": 0.3676792454161343,
+    "handle": {
+      "x": 961.6960617329432,
+      "y": 424.5604678788131
+    },
+    "camera_before": [
+      0.6605718504184959,
+      0.47705992631316074,
+      0.4774268725057993
+    ],
+    "camera_after": [
+      0.6605718504184959,
+      0.47705992631316074,
+      0.4774268725057993
+    ]
+  },
+  "final_scene": {
+    "gizmoAxis": null,
+    "pendingLoads": 0,
+    "failedAssets": [],
+    "renderCount": 43,
+    "lastFrameCostMs": 2.200000047683716,
+    "selected": "gripper_link",
+    "tool": "select",
+    "ghost": false,
+    "dragging": false,
+    "orbitEnabled": true,
+    "linkPoints": {
+      "base_link": {
+        "x": 830.9999999999999,
+        "y": 492
+      },
+      "front_left_wheel": {
+        "x": 872.203618959559,
+        "y": 548.457976763617
+      },
+      "front_left_roller_0": {
+        "x": 870.4902211755611,
+        "y": 531.8133113119986
+      },
+      "front_left_roller_1": {
+        "x": 876.8779104922191,
+        "y": 535.073152201777
+      },
+      "front_left_roller_2": {
+        "x": 882.3270617252464,
+        "y": 541.6746840273079
+      },
+      "front_left_roller_3": {
+        "x": 885.259873863016,
+        "y": 549.7777739800066
+      },
+      "front_left_roller_4": {
+        "x": 884.8452163191575,
+        "y": 557.0615159028748
+      },
+      "front_left_roller_5": {
+        "x": 881.2681825897375,
+        "y": 561.5022309437825
+      },
+      "front_left_roller_6": {
+        "x": 875.6016395578597,
+        "y": 561.9870763677288
+      },
+      "front_left_roller_7": {
+        "x": 869.4030204795844,
+        "y": 558.5289636506964
+      },
+      "front_left_roller_8": {
+        "x": 864.2626088552072,
+        "y": 552.1210149016274
+      },
+      "front_left_roller_9": {
+        "x": 861.4493382800047,
+        "y": 544.409860561957
+      },
+      "front_left_roller_10": {
+        "x": 861.6747565995161,
+        "y": 537.3242518192718
+      },
+      "front_left_roller_11": {
+        "x": 864.9431785318492,
+        "y": 532.6898730523967
+      },
+      "rear_left_wheel": {
+        "x": 816.7627217080678,
+        "y": 517.8170062208482
+      },
+      "rear_left_roller_0": {
+        "x": 815.5099230326272,
+        "y": 503.75669052366186
+      },
+      "rear_left_roller_1": {
+        "x": 820.7280548691165,
+        "y": 506.4184305453222
+      },
+      "rear_left_roller_2": {
+        "x": 825.3523662926858,
+        "y": 512.226720211678
+      },
+      "rear_left_roller_3": {
+        "x": 828.0564979869005,
+        "y": 519.5716122647624
+      },
+      "rear_left_roller_4": {
+        "x": 828.0770852593532,
+        "y": 526.3619847614856
+      },
+      "rear_left_roller_5": {
+        "x": 825.4583588165053,
+        "y": 530.7137164389097
+      },
+      "rear_left_roller_6": {
+        "x": 820.987371322728,
+        "y": 531.5189468021263
+      },
+      "rear_left_roller_7": {
+        "x": 815.8966235457565,
+        "y": 528.6800749958056
+      },
+      "rear_left_roller_8": {
+        "x": 811.5023840371424,
+        "y": 523.0180655153493
+      },
+      "rear_left_roller_9": {
+        "x": 808.9008678385985,
+        "y": 515.9966467891846
+      },
+      "rear_left_roller_10": {
+        "x": 808.7527922072892,
+        "y": 509.3833180035987
+      },
+      "rear_left_roller_11": {
+        "x": 811.141519098541,
+        "y": 504.88524481755917
+      },
+      "front_right_wheel": {
+        "x": 806.104721981801,
+        "y": 583.0438999916214
+      },
+      "front_right_roller_0": {
+        "x": 801.5404716660521,
+        "y": 567.906762611597
+      },
+      "front_right_roller_1": {
+        "x": 807.8624620733015,
+        "y": 572.024374728632
+      },
+      "front_right_roller_2": {
+        "x": 813.5420912619729,
+        "y": 579.6971462107299
+      },
+      "front_right_roller_3": {
+        "x": 816.9254659786931,
+        "y": 588.7700674970536
+      },
+      "front_right_roller_4": {
+        "x": 817.0452966660011,
+        "y": 596.6245410028114
+      },
+      "front_right_roller_5": {
+        "x": 813.9432708393052,
+        "y": 601.0765412508435
+      },
+      "front_right_roller_6": {
+        "x": 808.5791603540547,
+        "y": 601.0397596460277
+      },
+      "front_right_roller_7": {
+        "x": 802.4429336140295,
+        "y": 596.7014283042367
+      },
+      "front_right_roller_8": {
+        "x": 797.10854798854,
+        "y": 589.2963915800249
+      },
+      "front_right_roller_9": {
+        "x": 793.8844896354746,
+        "y": 580.7120306105965
+      },
+      "front_right_roller_10": {
+        "x": 793.5786540753218,
+        "y": 573.0780418705817
+      },
+      "front_right_roller_11": {
+        "x": 796.3355998853399,
+        "y": 568.3582006461377
+      },
+      "rear_right_wheel": {
+        "x": 753.1448728789619,
+        "y": 548.1054078182414
+      },
+      "rear_right_roller_0": {
+        "x": 747.8330343945026,
+        "y": 532.9282674623064
+      },
+      "rear_right_roller_1": {
+        "x": 752.8764717052052,
+        "y": 536.2117970836525
+      },
+      "rear_right_roller_2": {
+        "x": 757.6207209228355,
+        "y": 542.8448773446455
+      },
+      "rear_right_roller_3": {
+        "x": 760.6999688116703,
+        "y": 550.9781978566332
+      },
+      "rear_right_roller_4": {
+        "x": 761.2385365061104,
+        "y": 558.2816322037067
+      },
+      "rear_right_roller_5": {
+        "x": 759.1380172721806,
+        "y": 562.7259013522619
+      },
+      "rear_right_roller_6": {
+        "x": 755.0540838251585,
+        "y": 563.1979900690596
+      },
+      "rear_right_roller_7": {
+        "x": 750.1262566624313,
+        "y": 559.7152625867319
+      },
+      "rear_right_roller_8": {
+        "x": 745.6308710238143,
+        "y": 553.2777090138313
+      },
+      "rear_right_roller_9": {
+        "x": 742.6847916229635,
+        "y": 545.5391947272657
+      },
+      "rear_right_roller_10": {
+        "x": 742.0304726961658,
+        "y": 538.4348173098172
+      },
+      "rear_right_roller_11": {
+        "x": 743.8822133040937,
+        "y": 533.7949398579733
+      },
+      "back_shell_middle_link": {
+        "x": 834.4765373183338,
+        "y": 485.2210126716644
+      },
+      "back_shell_black_link": {
+        "x": 832.8684967976938,
+        "y": 462.7586026621272
+      },
+      "link1": {
+        "x": 864.4527222111689,
+        "y": 445.02079527331296
+      },
+      "link2": {
+        "x": 867.9065541445301,
+        "y": 435.277354208777
+      },
+      "link3": {
+        "x": 869.1749524261754,
+        "y": 407.7644591093924
+      },
+      "link4": {
+        "x": 871.2019258239941,
+        "y": 397.0196116940094
+      },
+      "link5": {
+        "x": 884.8094983435158,
+        "y": 411.27478161170325
+      },
+      "gripper_link": {
+        "x": 884.8094983435158,
+        "y": 411.27478161170325
+      },
+      "gripper_base_link": {
+        "x": 887.2531060731134,
+        "y": 407.94377245820783
+      },
+      "gripper_left_link": {
+        "x": 894.3555930140305,
+        "y": 393.8367592468612
+      },
+      "gripper_right_link": {
+        "x": 879.9932511011774,
+        "y": 421.7012874908969
+      },
+      "guide_rod_link": {
+        "x": 902.7018548269177,
+        "y": 412.69611802517863
+      },
+      "left_jaw_link": {
+        "x": 910.7558850556115,
+        "y": 410.1980921394664
+      },
+      "right_jaw_link": {
+        "x": 889.7677006648737,
+        "y": 416.73468928973216
+      },
+      "camera_connect_link": {
+        "x": 865.9129979264854,
+        "y": 373.6091413300655
+      },
+      "depth_cam_link": {
+        "x": 865.9176131573911,
+        "y": 373.4596016694841
+      },
+      "lidar_frame": {
+        "x": 846.8248622278098,
+        "y": 535.7093555694044
+      }
+    },
+    "handles": {
+      "x": {
+        "x": 940.6771941658038,
+        "y": 422.7139504405159
+      },
+      "y": {
+        "x": 932.4686139761776,
+        "y": 406.5747096172589
+      },
+      "z": {
+        "x": 912.9637148871446,
+        "y": 377.51143429253915
+      }
+    },
+    "rings": {},
+    "viewport": {
+      "width": 880,
+      "height": 430
+    },
+    "camera": [
+      0.6707804261696048,
+      0.48588038459239163,
+      0.46069955830140713
+    ],
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "lifecycle": {
+      "created": 3,
+      "disposed": 2,
+      "active": 1
+    }
+  },
+  "status": "passed",
+  "request_count": 103,
+  "actual_sha256": "1149b5ec08e374d12daba95562f020ce5a3c1099dcb079e13a6a86c1f4eb544a"
+}

@@ -1,0 +1,3523 @@
+{
+  "scope": "real read-only GET integration + explicitly synthetic fault fixtures; NOT M1 control acceptance",
+  "checks": [
+    "proxy scene HTTP 200",
+    "proxy capabilities HTTP 200",
+    "proxy snapshot HTTP 200",
+    "23 meshes traverse frontend proxy and match all SHA256 digests",
+    "proxy preserves asset digest query and backend 409",
+    "real source is read-only and does not create platform Session",
+    "real scene meshes are rendered without failures",
+    "real snapshot excludes GT diagnostics",
+    "user and named model angles retain joint4 zero difference",
+    "backend target is separate and has no command acknowledgement",
+    "real Actual tick/time keep updating",
+    "polling preserves one renderer, selection and camera",
+    "polling preserves local target and saved layout",
+    "live source supports explicit local TCP candidate only",
+    "poll interval is configurable without replacing the renderer",
+    "takeover, execution, recording remain disabled",
+    "synthetic continuous Actual update preserves local target",
+    "slow snapshot requests never overlap",
+    "synthetic diagnostics are not merged into live Actual",
+    "disconnect marks retained Actual stale without sample fallback",
+    "read polling recovers explicitly on successful same-identity response",
+    "runtime identity change invalidates old Target and reloads scene",
+    "resource identity change invalidates old Target and reloads scene",
+    "cross-request initialization mismatch displays no mixed renderer",
+    "source switch cancels delayed live result and clears local Target",
+    "wrong mesh bytes are rejected before STL parsing",
+    "backend integrity error remains visible without frozen asset fallback",
+    "real source restores with one renderer after fault fixtures",
+    "browser network contains only GET and allowlisted read endpoints",
+    "no uncaught browser errors"
+  ],
+  "errors": [],
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/?inspect=1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/assets/index-m3ZscVDx.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/assets/index-DVDl73CB.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/base_link?sha256=9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link1?sha256=7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link2?sha256=553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link3?sha256=cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link4?sha256=158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link5?sha256=c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_link?sha256=31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/lidar_frame?sha256=94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/base_link?sha256=9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link1?sha256=7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link2?sha256=553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link3?sha256=cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link4?sha256=158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link5?sha256=c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_link?sha256=31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/lidar_frame?sha256=94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/base_link?sha256=9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link1?sha256=7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link2?sha256=553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link3?sha256=cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link4?sha256=158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link5?sha256=c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_link?sha256=31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/lidar_frame?sha256=94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/base_link?sha256=9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link1?sha256=7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link2?sha256=553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link3?sha256=cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link4?sha256=158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link5?sha256=c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_link?sha256=31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/lidar_frame?sha256=94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/base_link?sha256=9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link1?sha256=7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link2?sha256=553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link3?sha256=cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link4?sha256=158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link5?sha256=c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_link?sha256=31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/lidar_frame?sha256=94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/scene.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/snapshot.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/capabilities.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/arm-spec.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/provenance.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/base_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/wheel_left_front_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/wheel_left_back_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/wheel_right_front_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/wheel_right_back_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/back_shell_middle_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/back_shell_black_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/link1.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/link2.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/link3.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/link4.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/link5.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/gripper_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/gripper_base_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/gripper_left_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/gripper_right_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/guide_rod_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/left_jaw_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/right_jaw_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/camera_connect_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/depth_cam_link.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/sample/meshes/lidar_frame.stl"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/base_link?sha256=9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link1?sha256=7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link2?sha256=553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link3?sha256=cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link4?sha256=158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link5?sha256=c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_link?sha256=31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/lidar_frame?sha256=94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/base_link?sha256=9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link1?sha256=7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link2?sha256=553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link3?sha256=cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link4?sha256=158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link5?sha256=c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_link?sha256=31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/lidar_frame?sha256=94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/base_link?sha256=9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link1?sha256=7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link2?sha256=553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link3?sha256=cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link4?sha256=158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link5?sha256=c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_link?sha256=31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/lidar_frame?sha256=94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    }
+  ],
+  "assets": [
+    {
+      "id": "base_link",
+      "status": 200,
+      "bytes": 525884,
+      "sha256": "9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223",
+      "matches": true,
+      "etag": "\"9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223\""
+    },
+    {
+      "id": "back_shell_middle_link",
+      "status": 200,
+      "bytes": 293384,
+      "sha256": "b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030",
+      "matches": true,
+      "etag": "\"b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030\""
+    },
+    {
+      "id": "back_shell_black_link",
+      "status": 200,
+      "bytes": 371284,
+      "sha256": "a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049",
+      "matches": true,
+      "etag": "\"a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049\""
+    },
+    {
+      "id": "lidar_frame",
+      "status": 200,
+      "bytes": 191734,
+      "sha256": "94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096",
+      "matches": true,
+      "etag": "\"94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096\""
+    },
+    {
+      "id": "wheel_left_front_link",
+      "status": 200,
+      "bytes": 3299084,
+      "sha256": "2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680",
+      "matches": true,
+      "etag": "\"2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680\""
+    },
+    {
+      "id": "wheel_left_back_link",
+      "status": 200,
+      "bytes": 3278784,
+      "sha256": "22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2",
+      "matches": true,
+      "etag": "\"22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2\""
+    },
+    {
+      "id": "wheel_right_front_link",
+      "status": 200,
+      "bytes": 3276484,
+      "sha256": "9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9",
+      "matches": true,
+      "etag": "\"9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9\""
+    },
+    {
+      "id": "wheel_right_back_link",
+      "status": 200,
+      "bytes": 4184384,
+      "sha256": "68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8",
+      "matches": true,
+      "etag": "\"68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8\""
+    },
+    {
+      "id": "imu_link",
+      "status": 200,
+      "bytes": 293384,
+      "sha256": "2d3f2e16a2150d97c01ed0ff6101fb5815bfde44143871dc8368149cd024e222",
+      "matches": true,
+      "etag": "\"2d3f2e16a2150d97c01ed0ff6101fb5815bfde44143871dc8368149cd024e222\""
+    },
+    {
+      "id": "link1",
+      "status": 200,
+      "bytes": 1020984,
+      "sha256": "7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894",
+      "matches": true,
+      "etag": "\"7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894\""
+    },
+    {
+      "id": "link2",
+      "status": 200,
+      "bytes": 1215334,
+      "sha256": "553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5",
+      "matches": true,
+      "etag": "\"553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5\""
+    },
+    {
+      "id": "link3",
+      "status": 200,
+      "bytes": 1215634,
+      "sha256": "cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd",
+      "matches": true,
+      "etag": "\"cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd\""
+    },
+    {
+      "id": "link4",
+      "status": 200,
+      "bytes": 1174984,
+      "sha256": "158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa",
+      "matches": true,
+      "etag": "\"158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa\""
+    },
+    {
+      "id": "link5",
+      "status": 200,
+      "bytes": 94084,
+      "sha256": "c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7",
+      "matches": true,
+      "etag": "\"c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7\""
+    },
+    {
+      "id": "gripper_link",
+      "status": 200,
+      "bytes": 1041384,
+      "sha256": "31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a",
+      "matches": true,
+      "etag": "\"31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a\""
+    },
+    {
+      "id": "camera_connect_link",
+      "status": 200,
+      "bytes": 41084,
+      "sha256": "1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212",
+      "matches": true,
+      "etag": "\"1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212\""
+    },
+    {
+      "id": "depth_cam_link",
+      "status": 200,
+      "bytes": 1169884,
+      "sha256": "4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958",
+      "matches": true,
+      "etag": "\"4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958\""
+    },
+    {
+      "id": "gripper_base_link",
+      "status": 200,
+      "bytes": 105284,
+      "sha256": "46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8",
+      "matches": true,
+      "etag": "\"46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8\""
+    },
+    {
+      "id": "gripper_left_link",
+      "status": 200,
+      "bytes": 19284,
+      "sha256": "9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f",
+      "matches": true,
+      "etag": "\"9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f\""
+    },
+    {
+      "id": "gripper_right_link",
+      "status": 200,
+      "bytes": 19284,
+      "sha256": "5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598",
+      "matches": true,
+      "etag": "\"5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598\""
+    },
+    {
+      "id": "guide_rod_link",
+      "status": 200,
+      "bytes": 12084,
+      "sha256": "d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a",
+      "matches": true,
+      "etag": "\"d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a\""
+    },
+    {
+      "id": "left_jaw_link",
+      "status": 200,
+      "bytes": 46684,
+      "sha256": "47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5",
+      "matches": true,
+      "etag": "\"47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5\""
+    },
+    {
+      "id": "right_jaw_link",
+      "status": 200,
+      "bytes": 49584,
+      "sha256": "37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c",
+      "matches": true,
+      "etag": "\"37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c\""
+    }
+  ],
+  "snapshot_timings": {
+    "fixture": "1.5 s synthetic responses",
+    "starts": [
+      952025.241080118,
+      952027.75265886,
+      952030.263070169
+    ],
+    "ends": [
+      952026.749979807,
+      952029.259427899,
+      952031.769575399
+    ],
+    "max_inflight": 1
+  },
+  "initial_http": [
+    {
+      "endpoint": "scene",
+      "elapsed_ms": 100.14
+    },
+    {
+      "endpoint": "capabilities",
+      "elapsed_ms": 28.69
+    },
+    {
+      "endpoint": "snapshot",
+      "elapsed_ms": 52.05
+    }
+  ],
+  "real_identity": {
+    "kind": "live",
+    "label": "真实只读监控",
+    "captured_at_utc": "2026-10-23T18:09:12.172758Z",
+    "identity": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+    },
+    "interface_profile": "g4a1-1.0",
+    "is_platform_session": false,
+    "is_episode_replay": false
+  },
+  "real_resource": {
+    "contract_version": "mobilecar-1.0",
+    "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+    "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "scene_id": "mobile_pick"
+  },
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "real_final": {
+    "scene": {
+      "gizmoAxis": null,
+      "pendingLoads": 0,
+      "failedAssets": [],
+      "renderCount": 25,
+      "lastFrameCostMs": 5.700000047683716,
+      "selected": "link2",
+      "tool": "tcp",
+      "ghost": true,
+      "dragging": false,
+      "orbitEnabled": true,
+      "linkPoints": {
+        "base_link": {
+          "x": 831,
+          "y": 507.5
+        },
+        "front_left_wheel": {
+          "x": 877.1675925822847,
+          "y": 585.1349541076488
+        },
+        "front_left_roller_0": {
+          "x": 878.1226789236309,
+          "y": 566.5726086857169
+        },
+        "front_left_roller_1": {
+          "x": 879.0350976863244,
+          "y": 567.8604652943894
+        },
+        "front_left_roller_2": {
+          "x": 879.8466863997141,
+          "y": 573.6340909408009
+        },
+        "front_left_roller_3": {
+          "x": 880.3188917080835,
+          "y": 582.4389151588848
+        },
+        "front_left_roller_4": {
+          "x": 880.3033522087655,
+          "y": 591.7556817932864
+        },
+        "front_left_roller_5": {
+          "x": 879.805062580328,
+          "y": 598.8382259009661
+        },
+        "front_left_roller_6": {
+          "x": 878.9801270162698,
+          "y": 601.7146221743646
+        },
+        "front_left_roller_7": {
+          "x": 878.0697741493385,
+          "y": 599.7858909475576
+        },
+        "front_left_roller_8": {
+          "x": 877.315700633578,
+          "y": 593.7999615199726
+        },
+        "front_left_roller_9": {
+          "x": 876.8990092304125,
+          "y": 585.424236012218
+        },
+        "front_left_roller_10": {
+          "x": 876.9124779224039,
+          "y": 576.749100909507
+        },
+        "front_left_roller_11": {
+          "x": 877.3531877542482,
+          "y": 569.8783322633872
+        },
+        "rear_left_wheel": {
+          "x": 869.9018445711196,
+          "y": 570.7905301322178
+        },
+        "rear_left_roller_0": {
+          "x": 870.8398072671023,
+          "y": 556.294762404329
+        },
+        "rear_left_roller_1": {
+          "x": 871.49005084349,
+          "y": 557.2111913717462
+        },
+        "rear_left_roller_2": {
+          "x": 872.0652459325343,
+          "y": 561.9126734687552
+        },
+        "rear_left_roller_3": {
+          "x": 872.398584529939,
+          "y": 569.2078604674682
+        },
+        "rear_left_roller_4": {
+          "x": 872.3877581341596,
+          "y": 577.0325703831327
+        },
+        "rear_left_roller_5": {
+          "x": 872.0361546855008,
+          "y": 583.1137412126456
+        },
+        "rear_left_roller_6": {
+          "x": 871.4514254843782,
+          "y": 585.7642114083555
+        },
+        "rear_left_roller_7": {
+          "x": 870.8024109411729,
+          "y": 584.3905406538202
+        },
+        "rear_left_roller_8": {
+          "x": 870.2618143702073,
+          "y": 579.5263738945267
+        },
+        "rear_left_roller_9": {
+          "x": 869.9618729674835,
+          "y": 572.526002949045
+        },
+        "rear_left_roller_10": {
+          "x": 869.9714682485145,
+          "y": 565.1589199970279
+        },
+        "rear_left_roller_11": {
+          "x": 870.2884454706307,
+          "y": 559.2401747394015
+        },
+        "front_right_wheel": {
+          "x": 784.8370936228546,
+          "y": 582.8686993614285
+        },
+        "front_right_roller_0": {
+          "x": 783.8961601713205,
+          "y": 566.5724181491581
+        },
+        "front_right_roller_1": {
+          "x": 782.9841482841769,
+          "y": 567.8603201128071
+        },
+        "front_right_roller_2": {
+          "x": 782.1729036294967,
+          "y": 573.6339858516417
+        },
+        "front_right_roller_3": {
+          "x": 781.7008775778936,
+          "y": 582.4388318896633
+        },
+        "front_right_roller_4": {
+          "x": 781.7163742034502,
+          "y": 591.7555939941105
+        },
+        "front_right_roller_5": {
+          "x": 782.2144115132367,
+          "y": 598.8381087231448
+        },
+        "front_right_roller_6": {
+          "x": 783.0389633392215,
+          "y": 601.7144611284907
+        },
+        "front_right_roller_7": {
+          "x": 783.9489123962146,
+          "y": 599.7856852508204
+        },
+        "front_right_roller_8": {
+          "x": 784.7026684557267,
+          "y": 593.7997218676687
+        },
+        "front_right_roller_9": {
+          "x": 785.1192041666957,
+          "y": 585.4239799855766
+        },
+        "front_right_roller_10": {
+          "x": 785.1057752789466,
+          "y": 576.7488487065107
+        },
+        "front_right_roller_11": {
+          "x": 784.6652911355741,
+          "y": 569.878103289325
+        },
+        "rear_right_wheel": {
+          "x": 791.9696146197452,
+          "y": 571.0583060959954
+        },
+        "rear_right_roller_0": {
+          "x": 791.1757967062211,
+          "y": 556.2946177221152
+        },
+        "rear_right_roller_1": {
+          "x": 790.5258435448493,
+          "y": 557.2110036169622
+        },
+        "rear_right_roller_2": {
+          "x": 789.9508863910676,
+          "y": 561.9124510096992
+        },
+        "rear_right_roller_3": {
+          "x": 789.617663372369,
+          "y": 569.2076227993452
+        },
+        "rear_right_roller_4": {
+          "x": 789.6284467105352,
+          "y": 577.0323425821492
+        },
+        "rear_right_roller_5": {
+          "x": 789.9798611660177,
+          "y": 583.1135452363451
+        },
+        "rear_right_roller_6": {
+          "x": 790.5643124818062,
+          "y": 585.7640587460437
+        },
+        "rear_right_roller_7": {
+          "x": 791.2130395990467,
+          "y": 584.3904298720446
+        },
+        "rear_right_roller_8": {
+          "x": 791.7534147949882,
+          "y": 579.5262929139722
+        },
+        "rear_right_roller_9": {
+          "x": 792.053254201167,
+          "y": 572.5259334605435
+        },
+        "rear_right_roller_10": {
+          "x": 792.0436989853519,
+          "y": 565.1588418356963
+        },
+        "rear_right_roller_11": {
+          "x": 791.7268941852014,
+          "y": 559.240069662433
+        },
+        "back_shell_middle_link": {
+          "x": 829.7271439274564,
+          "y": 497.9808169838759
+        },
+        "back_shell_black_link": {
+          "x": 827.6251183238086,
+          "y": 474.82466438148793
+        },
+        "link1": {
+          "x": 832.0244036054805,
+          "y": 445.34604672999933
+        },
+        "link2": {
+          "x": 832.0331121162249,
+          "y": 434.4367597570176
+        },
+        "link3": {
+          "x": 832.0348259277846,
+          "y": 408.6705177394749
+        },
+        "link4": {
+          "x": 832.0394329280668,
+          "y": 398.18248235074356
+        },
+        "link5": {
+          "x": 831.8039344795766,
+          "y": 403.84968275780693
+        },
+        "gripper_link": {
+          "x": 831.8039344795766,
+          "y": 403.84968275780693
+        },
+        "gripper_base_link": {
+          "x": 832.8058055680464,
+          "y": 400.2210347263664
+        },
+        "gripper_left_link": {
+          "x": 845.2471917829973,
+          "y": 391.1937570642669
+        },
+        "gripper_right_link": {
+          "x": 820.1989465897484,
+          "y": 408.72719956010377
+        },
+        "guide_rod_link": {
+          "x": 832.03010095427,
+          "y": 396.14633728967067
+        },
+        "left_jaw_link": {
+          "x": 842.3382221857005,
+          "y": 395.62975141122104
+        },
+        "right_jaw_link": {
+          "x": 813.2016116211195,
+          "y": 395.2760715413878
+        },
+        "camera_connect_link": {
+          "x": 832.7419734724501,
+          "y": 381.15460800264685
+        },
+        "depth_cam_link": {
+          "x": 832.7419808825706,
+          "y": 381.02680258041323
+        },
+        "lidar_frame": {
+          "x": 833.4842386867008,
+          "y": 549.3033390507622
+        }
+      },
+      "handles": {
+        "x": {
+          "x": 833.1771772125823,
+          "y": 367.83807036490657
+        },
+        "y": {
+          "x": 875.111786861502,
+          "y": 379.69396129777164
+        },
+        "z": {
+          "x": 832.9848355422421,
+          "y": 337.32981469648263
+        }
+      },
+      "rings": {},
+      "viewport": {
+        "width": 880,
+        "height": 399
+      },
+      "camera": [
+        0.9330863625316277,
+        0.16220312433778233,
+        3.391025727847176e-05
+      ],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "lifecycle": {
+        "created": 1,
+        "disposed": 0,
+        "active": 1
+      }
+    },
+    "target": {
+      "mode": "tcp",
+      "revision": 2,
+      "jointModelRad": {
+        "front_left_joint": -0.26178483185447804,
+        "front_left_roller_0_joint": 1.6947753680959387e-07,
+        "front_left_roller_1_joint": 1.2476384632908788e-07,
+        "front_left_roller_2_joint": 1.0100118193194936e-07,
+        "front_left_roller_3_joint": 1.0467250543829767e-07,
+        "front_left_roller_4_joint": 1.346835856949721e-07,
+        "front_left_roller_5_joint": 1.8316427977594472e-07,
+        "front_left_roller_6_joint": 0.006693181136284113,
+        "front_left_roller_7_joint": -0.08367698679130416,
+        "front_left_roller_8_joint": 3.051304507718922e-07,
+        "front_left_roller_9_joint": 3.014397171289397e-07,
+        "front_left_roller_10_joint": 2.715305917657e-07,
+        "front_left_roller_11_joint": 2.232227554348661e-07,
+        "rear_left_joint": -0.2619676035177588,
+        "rear_left_roller_0_joint": -3.015662169358663e-07,
+        "rear_left_roller_1_joint": -3.140258155705554e-07,
+        "rear_left_roller_2_joint": -2.969019489058219e-07,
+        "rear_left_roller_3_joint": -2.5472820573266365e-07,
+        "rear_left_roller_4_joint": -1.9889892631863382e-07,
+        "rear_left_roller_5_joint": -1.4463679696185785e-07,
+        "rear_left_roller_6_joint": 0.012002664695845726,
+        "rear_left_roller_7_joint": 0.06869814532888587,
+        "rear_left_roller_8_joint": -1.1000693589490234e-07,
+        "rear_left_roller_9_joint": -1.5183657115710586e-07,
+        "rear_left_roller_10_joint": -2.0801774275375103e-07,
+        "rear_left_roller_11_joint": -2.6281557934580535e-07,
+        "front_right_joint": -0.2617795276679354,
+        "front_right_roller_0_joint": -3.101422608492076e-07,
+        "front_right_roller_1_joint": -3.092147980414989e-07,
+        "front_right_roller_2_joint": -2.7988714018188106e-07,
+        "front_right_roller_3_joint": -2.2988119333133555e-07,
+        "front_right_roller_4_joint": -1.7287210063775057e-07,
+        "front_right_roller_5_joint": -1.2356838678674914e-07,
+        "front_right_roller_6_joint": -0.0193425509819371,
+        "front_right_roller_7_joint": -0.042562330433411136,
+        "front_right_roller_8_joint": -1.2622055509599186e-07,
+        "front_right_roller_9_joint": -1.7621517126294749e-07,
+        "front_right_roller_10_joint": -2.3331232336443436e-07,
+        "front_right_roller_11_joint": -2.823710931358036e-07,
+        "rear_right_joint": -0.2619729491106256,
+        "rear_right_roller_0_joint": 1.6782987754122998e-07,
+        "rear_right_roller_1_joint": 1.0470178693781233e-07,
+        "rear_right_roller_2_joint": 6.782895563278729e-08,
+        "rear_right_roller_3_joint": 6.752365468877088e-08,
+        "rear_right_roller_4_joint": 1.0379362076657603e-07,
+        "rear_right_roller_5_joint": 1.6649559626309762e-07,
+        "rear_right_roller_6_joint": -0.004805689687163713,
+        "rear_right_roller_7_joint": 0.004489520204373075,
+        "rear_right_roller_8_joint": 3.3943133379217304e-07,
+        "rear_right_roller_9_joint": 3.3983539406853214e-07,
+        "rear_right_roller_10_joint": 3.036181589016174e-07,
+        "rear_right_roller_11_joint": 2.407803165878478e-07,
+        "joint1": -6.550493803779923e-05,
+        "joint2": 0.14718234630928467,
+        "joint3": -0.004937082726820248,
+        "joint4": -1.5187528548117784,
+        "joint5": -3.948421053116889e-07,
+        "gripper_base_joint": -1.0776330776100003,
+        "gripper_left_join": 1.6164555010235442,
+        "gripper_right_joint": 1.6164437321936282,
+        "left_jaw_joint": 0.012484051952558443,
+        "right_jaw_joint": -0.012515957816161872
+      },
+      "tcpWorldM": [
+        0.2932,
+        0.002653455565330455,
+        0.32545919357998454
+      ],
+      "frame": "world_sim",
+      "preview": "local-position-ik",
+      "residualM": 0.0004663452921165907
+    },
+    "actual": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "sim_time_s": 393648.82733320055,
+      "backend_monotonic_s": 952021.916040399,
+      "wall_utc": "2026-10-23T18:09:17.401805Z",
+      "clock_id": "backend_monotonic",
+      "control_tick_id": "tick_039364883",
+      "base": {
+        "frame_id": "base_link",
+        "position_world_sim_m": [
+          0.1386513174901792,
+          -1.9292933523378612e-05,
+          0.053214146592907866
+        ],
+        "orientation_world_sim_xyzw": [
+          -1.1200977679977838e-06,
+          5.463690980372125e-05,
+          1.1716395244393777e-06,
+          0.9999999985060893
+        ],
+        "vx_m_s": 1.1072590089941715e-16,
+        "vy_m_s": 5.222989060368642e-17,
+        "wz_rad_s": 7.575279744276473e-16,
+        "stopped": true,
+        "stop_latched": true
+      },
+      "arm": {
+        "user_joint_positions_rad": [
+          -2.1849645420746305e-12,
+          3.3431614208076777e-14,
+          2.257680670152757e-14,
+          -4.6629367034256575e-15,
+          -1.0156417795626139e-12
+        ],
+        "model_joint_positions_rad": [
+          -2.1849645420746305e-12,
+          3.3431614208076777e-14,
+          2.257680670152757e-14,
+          -1.5707963267949012,
+          -1.0156417795626139e-12
+        ],
+        "joint_velocities_rad_s": [
+          -2.6107075803192203e-15,
+          -1.1602164667244432e-15,
+          2.4337105894069467e-15,
+          1.8900103423605433e-14,
+          -2.0175417836775914e-16
+        ],
+        "joint_torques_nm": [
+          0.0014711721051494948,
+          0.16853927342276007,
+          0.16542863598162186,
+          0.16056687327878194,
+          -1.6194806373859932e-05
+        ],
+        "joint_margin_rad": [
+          2.089999999997815,
+          2.0899999999999666,
+          2.089999999999977,
+          0.5192036732050986,
+          2.0899999999989842
+        ],
+        "model_limits_rad": [
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ],
+          [
+            -2.09,
+            2.09
+          ]
+        ],
+        "coordinates_status": "user_defined_photo_pose_not_hardware_500"
+      },
+      "tcp": {
+        "frame_id": "world_sim",
+        "position_m": [
+          0.31675496511988527,
+          0.00244349524668139,
+          0.3009214429907374
+        ],
+        "orientation_xyzw": [
+          -0.002980881052150885,
+          0.7097262160226515,
+          -0.003112763969875617,
+          0.70446442304689
+        ],
+        "position_error_m": null,
+        "orientation_error_rad": null,
+        "held": false
+      },
+      "gripper": {
+        "width_m": 0.024999990231479596,
+        "model_drive_position_rad": -1.0776330776100003
+      },
+      "model_joint_positions_rad": {
+        "front_left_joint": -0.26178483185447804,
+        "front_left_roller_0_joint": 1.6947753549128415e-07,
+        "front_left_roller_1_joint": 1.2476383556527197e-07,
+        "front_left_roller_2_joint": 1.010011635516347e-07,
+        "front_left_roller_3_joint": 1.0467250178619098e-07,
+        "front_left_roller_4_joint": 1.346835803829895e-07,
+        "front_left_roller_5_joint": 1.8316426775170614e-07,
+        "front_left_roller_6_joint": 0.0066931811362632,
+        "front_left_roller_7_joint": -0.08367698679130658,
+        "front_left_roller_8_joint": 3.0513044617673465e-07,
+        "front_left_roller_9_joint": 3.0143971287301065e-07,
+        "front_left_roller_10_joint": 2.71530587747319e-07,
+        "front_left_roller_11_joint": 2.232227475561641e-07,
+        "rear_left_joint": -0.2619676035177588,
+        "rear_left_roller_0_joint": -3.0156620318338656e-07,
+        "rear_left_roller_1_joint": -3.140258030188951e-07,
+        "rear_left_roller_2_joint": -2.9690192939576135e-07,
+        "rear_left_roller_3_joint": -2.5472820039583325e-07,
+        "rear_left_roller_4_joint": -1.9889892540691897e-07,
+        "rear_left_roller_5_joint": -1.4463681519939885e-07,
+        "rear_left_roller_6_joint": 0.01200266469584934,
+        "rear_left_roller_7_joint": 0.06869814532889257,
+        "rear_left_roller_8_joint": -1.100069313531208e-07,
+        "rear_left_roller_9_joint": -1.518365811132888e-07,
+        "rear_left_roller_10_joint": -2.080177515632567e-07,
+        "rear_left_roller_11_joint": -2.628155689215839e-07,
+        "front_right_joint": -0.2617795276679354,
+        "front_right_roller_0_joint": -3.101422727283376e-07,
+        "front_right_roller_1_joint": -3.0921483389789496e-07,
+        "front_right_roller_2_joint": -2.7988713269204945e-07,
+        "front_right_roller_3_joint": -2.298812104437549e-07,
+        "front_right_roller_4_joint": -1.7287209515806253e-07,
+        "front_right_roller_5_joint": -1.2356837582012885e-07,
+        "front_right_roller_6_joint": -0.019342550981918807,
+        "front_right_roller_7_joint": -0.04256233043341034,
+        "front_right_roller_8_joint": -1.2622052508104848e-07,
+        "front_right_roller_9_joint": -1.762151768110729e-07,
+        "front_right_roller_10_joint": -2.333123322655251e-07,
+        "front_right_roller_11_joint": -2.823711048700853e-07,
+        "rear_right_joint": -0.2619729491106256,
+        "rear_right_roller_0_joint": 1.6782987574121726e-07,
+        "rear_right_roller_1_joint": 1.0470179559887109e-07,
+        "rear_right_roller_2_joint": 6.782896731137704e-08,
+        "rear_right_roller_3_joint": 6.752364477533857e-08,
+        "rear_right_roller_4_joint": 1.0379364022243073e-07,
+        "rear_right_roller_5_joint": 1.6649559287172048e-07,
+        "rear_right_roller_6_joint": -0.004805689687155155,
+        "rear_right_roller_7_joint": 0.004489520204381017,
+        "rear_right_roller_8_joint": 3.3943134187289213e-07,
+        "rear_right_roller_9_joint": 3.3983542536368575e-07,
+        "rear_right_roller_10_joint": 3.0361812580796635e-07,
+        "rear_right_roller_11_joint": 2.407803144961572e-07,
+        "joint1": -2.1849645420746305e-12,
+        "joint2": 3.3431614208076777e-14,
+        "joint3": 2.257680670152757e-14,
+        "joint4": -1.5707963267949012,
+        "joint5": -1.0156417795626139e-12,
+        "gripper_base_joint": -1.0776330776100003,
+        "gripper_left_join": 1.6164555010235442,
+        "gripper_right_joint": 1.6164437321936282,
+        "left_jaw_joint": 0.012484051952558443,
+        "right_jaw_joint": -0.012515957816161872
+      },
+      "diagnostics": {}
+    },
+    "selected": "link2",
+    "source": {
+      "kind": "live",
+      "label": "真实只读监控",
+      "captured_at_utc": "2026-10-23T18:09:17.401805Z",
+      "identity": {
+        "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+        "backend_generation": 1,
+        "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+      },
+      "interface_profile": "g4a1-1.0",
+      "is_platform_session": false,
+      "is_episode_replay": false
+    },
+    "live": {
+      "identityKey": "[\"mobilecar\",\"landerpi\",\"run_9c88e3e36e7648a3852c9f590e43ed5f\",1,\"episode_43c22f95536f4517be04e4b195d6d354\",\"mobilecar-1.0\",\"landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a\",\"3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280\",\"mobile_pick\",\"g4a1-1.0\"]",
+      "resource": {
+        "contract_version": "mobilecar-1.0",
+        "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+        "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+        "scene_id": "mobile_pick"
+      },
+      "objects": [
+        {
+          "object_id": "body:base_link",
+          "kind": "robot_link",
+          "native_name": "base_link",
+          "parent_object_id": null
+        },
+        {
+          "object_id": "joint:base_free",
+          "kind": "joint",
+          "native_name": "base_free",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "geom:base_link/chassis_collision",
+          "kind": "geom",
+          "native_name": "chassis_collision",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "geom:base_link/base_link_visual",
+          "kind": "geom",
+          "native_name": "base_link_visual",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "body:front_left_wheel",
+          "kind": "robot_link",
+          "native_name": "front_left_wheel",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "joint:front_left_joint",
+          "kind": "joint",
+          "native_name": "front_left_joint",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "geom:front_left_wheel/front_left_hub_contact",
+          "kind": "geom",
+          "native_name": "front_left_hub_contact",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "geom:front_left_wheel/wheel_left_front_link_visual",
+          "kind": "geom",
+          "native_name": "wheel_left_front_link_visual",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "body:front_left_roller_0",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_0",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_0_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_0_joint",
+          "parent_object_id": "body:front_left_roller_0"
+        },
+        {
+          "object_id": "geom:front_left_roller_0/front_left_roller_0_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_0_contact",
+          "parent_object_id": "body:front_left_roller_0"
+        },
+        {
+          "object_id": "body:front_left_roller_1",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_1",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_1_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_1_joint",
+          "parent_object_id": "body:front_left_roller_1"
+        },
+        {
+          "object_id": "geom:front_left_roller_1/front_left_roller_1_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_1_contact",
+          "parent_object_id": "body:front_left_roller_1"
+        },
+        {
+          "object_id": "body:front_left_roller_2",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_2",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_2_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_2_joint",
+          "parent_object_id": "body:front_left_roller_2"
+        },
+        {
+          "object_id": "geom:front_left_roller_2/front_left_roller_2_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_2_contact",
+          "parent_object_id": "body:front_left_roller_2"
+        },
+        {
+          "object_id": "body:front_left_roller_3",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_3",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_3_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_3_joint",
+          "parent_object_id": "body:front_left_roller_3"
+        },
+        {
+          "object_id": "geom:front_left_roller_3/front_left_roller_3_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_3_contact",
+          "parent_object_id": "body:front_left_roller_3"
+        },
+        {
+          "object_id": "body:front_left_roller_4",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_4",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_4_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_4_joint",
+          "parent_object_id": "body:front_left_roller_4"
+        },
+        {
+          "object_id": "geom:front_left_roller_4/front_left_roller_4_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_4_contact",
+          "parent_object_id": "body:front_left_roller_4"
+        },
+        {
+          "object_id": "body:front_left_roller_5",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_5",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_5_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_5_joint",
+          "parent_object_id": "body:front_left_roller_5"
+        },
+        {
+          "object_id": "geom:front_left_roller_5/front_left_roller_5_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_5_contact",
+          "parent_object_id": "body:front_left_roller_5"
+        },
+        {
+          "object_id": "body:front_left_roller_6",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_6",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_6_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_6_joint",
+          "parent_object_id": "body:front_left_roller_6"
+        },
+        {
+          "object_id": "geom:front_left_roller_6/front_left_roller_6_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_6_contact",
+          "parent_object_id": "body:front_left_roller_6"
+        },
+        {
+          "object_id": "body:front_left_roller_7",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_7",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_7_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_7_joint",
+          "parent_object_id": "body:front_left_roller_7"
+        },
+        {
+          "object_id": "geom:front_left_roller_7/front_left_roller_7_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_7_contact",
+          "parent_object_id": "body:front_left_roller_7"
+        },
+        {
+          "object_id": "body:front_left_roller_8",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_8",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_8_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_8_joint",
+          "parent_object_id": "body:front_left_roller_8"
+        },
+        {
+          "object_id": "geom:front_left_roller_8/front_left_roller_8_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_8_contact",
+          "parent_object_id": "body:front_left_roller_8"
+        },
+        {
+          "object_id": "body:front_left_roller_9",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_9",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_9_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_9_joint",
+          "parent_object_id": "body:front_left_roller_9"
+        },
+        {
+          "object_id": "geom:front_left_roller_9/front_left_roller_9_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_9_contact",
+          "parent_object_id": "body:front_left_roller_9"
+        },
+        {
+          "object_id": "body:front_left_roller_10",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_10",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_10_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_10_joint",
+          "parent_object_id": "body:front_left_roller_10"
+        },
+        {
+          "object_id": "geom:front_left_roller_10/front_left_roller_10_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_10_contact",
+          "parent_object_id": "body:front_left_roller_10"
+        },
+        {
+          "object_id": "body:front_left_roller_11",
+          "kind": "robot_link",
+          "native_name": "front_left_roller_11",
+          "parent_object_id": "body:front_left_wheel"
+        },
+        {
+          "object_id": "joint:front_left_roller_11_joint",
+          "kind": "joint",
+          "native_name": "front_left_roller_11_joint",
+          "parent_object_id": "body:front_left_roller_11"
+        },
+        {
+          "object_id": "geom:front_left_roller_11/front_left_roller_11_contact",
+          "kind": "geom",
+          "native_name": "front_left_roller_11_contact",
+          "parent_object_id": "body:front_left_roller_11"
+        },
+        {
+          "object_id": "body:rear_left_wheel",
+          "kind": "robot_link",
+          "native_name": "rear_left_wheel",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "joint:rear_left_joint",
+          "kind": "joint",
+          "native_name": "rear_left_joint",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "geom:rear_left_wheel/rear_left_hub_contact",
+          "kind": "geom",
+          "native_name": "rear_left_hub_contact",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "geom:rear_left_wheel/wheel_left_back_link_visual",
+          "kind": "geom",
+          "native_name": "wheel_left_back_link_visual",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "body:rear_left_roller_0",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_0",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_0_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_0_joint",
+          "parent_object_id": "body:rear_left_roller_0"
+        },
+        {
+          "object_id": "geom:rear_left_roller_0/rear_left_roller_0_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_0_contact",
+          "parent_object_id": "body:rear_left_roller_0"
+        },
+        {
+          "object_id": "body:rear_left_roller_1",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_1",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_1_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_1_joint",
+          "parent_object_id": "body:rear_left_roller_1"
+        },
+        {
+          "object_id": "geom:rear_left_roller_1/rear_left_roller_1_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_1_contact",
+          "parent_object_id": "body:rear_left_roller_1"
+        },
+        {
+          "object_id": "body:rear_left_roller_2",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_2",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_2_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_2_joint",
+          "parent_object_id": "body:rear_left_roller_2"
+        },
+        {
+          "object_id": "geom:rear_left_roller_2/rear_left_roller_2_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_2_contact",
+          "parent_object_id": "body:rear_left_roller_2"
+        },
+        {
+          "object_id": "body:rear_left_roller_3",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_3",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_3_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_3_joint",
+          "parent_object_id": "body:rear_left_roller_3"
+        },
+        {
+          "object_id": "geom:rear_left_roller_3/rear_left_roller_3_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_3_contact",
+          "parent_object_id": "body:rear_left_roller_3"
+        },
+        {
+          "object_id": "body:rear_left_roller_4",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_4",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_4_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_4_joint",
+          "parent_object_id": "body:rear_left_roller_4"
+        },
+        {
+          "object_id": "geom:rear_left_roller_4/rear_left_roller_4_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_4_contact",
+          "parent_object_id": "body:rear_left_roller_4"
+        },
+        {
+          "object_id": "body:rear_left_roller_5",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_5",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_5_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_5_joint",
+          "parent_object_id": "body:rear_left_roller_5"
+        },
+        {
+          "object_id": "geom:rear_left_roller_5/rear_left_roller_5_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_5_contact",
+          "parent_object_id": "body:rear_left_roller_5"
+        },
+        {
+          "object_id": "body:rear_left_roller_6",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_6",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_6_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_6_joint",
+          "parent_object_id": "body:rear_left_roller_6"
+        },
+        {
+          "object_id": "geom:rear_left_roller_6/rear_left_roller_6_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_6_contact",
+          "parent_object_id": "body:rear_left_roller_6"
+        },
+        {
+          "object_id": "body:rear_left_roller_7",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_7",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_7_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_7_joint",
+          "parent_object_id": "body:rear_left_roller_7"
+        },
+        {
+          "object_id": "geom:rear_left_roller_7/rear_left_roller_7_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_7_contact",
+          "parent_object_id": "body:rear_left_roller_7"
+        },
+        {
+          "object_id": "body:rear_left_roller_8",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_8",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_8_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_8_joint",
+          "parent_object_id": "body:rear_left_roller_8"
+        },
+        {
+          "object_id": "geom:rear_left_roller_8/rear_left_roller_8_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_8_contact",
+          "parent_object_id": "body:rear_left_roller_8"
+        },
+        {
+          "object_id": "body:rear_left_roller_9",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_9",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_9_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_9_joint",
+          "parent_object_id": "body:rear_left_roller_9"
+        },
+        {
+          "object_id": "geom:rear_left_roller_9/rear_left_roller_9_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_9_contact",
+          "parent_object_id": "body:rear_left_roller_9"
+        },
+        {
+          "object_id": "body:rear_left_roller_10",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_10",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_10_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_10_joint",
+          "parent_object_id": "body:rear_left_roller_10"
+        },
+        {
+          "object_id": "geom:rear_left_roller_10/rear_left_roller_10_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_10_contact",
+          "parent_object_id": "body:rear_left_roller_10"
+        },
+        {
+          "object_id": "body:rear_left_roller_11",
+          "kind": "robot_link",
+          "native_name": "rear_left_roller_11",
+          "parent_object_id": "body:rear_left_wheel"
+        },
+        {
+          "object_id": "joint:rear_left_roller_11_joint",
+          "kind": "joint",
+          "native_name": "rear_left_roller_11_joint",
+          "parent_object_id": "body:rear_left_roller_11"
+        },
+        {
+          "object_id": "geom:rear_left_roller_11/rear_left_roller_11_contact",
+          "kind": "geom",
+          "native_name": "rear_left_roller_11_contact",
+          "parent_object_id": "body:rear_left_roller_11"
+        },
+        {
+          "object_id": "body:front_right_wheel",
+          "kind": "robot_link",
+          "native_name": "front_right_wheel",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "joint:front_right_joint",
+          "kind": "joint",
+          "native_name": "front_right_joint",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "geom:front_right_wheel/front_right_hub_contact",
+          "kind": "geom",
+          "native_name": "front_right_hub_contact",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "geom:front_right_wheel/wheel_right_front_link_visual",
+          "kind": "geom",
+          "native_name": "wheel_right_front_link_visual",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "body:front_right_roller_0",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_0",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_0_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_0_joint",
+          "parent_object_id": "body:front_right_roller_0"
+        },
+        {
+          "object_id": "geom:front_right_roller_0/front_right_roller_0_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_0_contact",
+          "parent_object_id": "body:front_right_roller_0"
+        },
+        {
+          "object_id": "body:front_right_roller_1",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_1",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_1_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_1_joint",
+          "parent_object_id": "body:front_right_roller_1"
+        },
+        {
+          "object_id": "geom:front_right_roller_1/front_right_roller_1_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_1_contact",
+          "parent_object_id": "body:front_right_roller_1"
+        },
+        {
+          "object_id": "body:front_right_roller_2",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_2",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_2_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_2_joint",
+          "parent_object_id": "body:front_right_roller_2"
+        },
+        {
+          "object_id": "geom:front_right_roller_2/front_right_roller_2_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_2_contact",
+          "parent_object_id": "body:front_right_roller_2"
+        },
+        {
+          "object_id": "body:front_right_roller_3",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_3",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_3_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_3_joint",
+          "parent_object_id": "body:front_right_roller_3"
+        },
+        {
+          "object_id": "geom:front_right_roller_3/front_right_roller_3_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_3_contact",
+          "parent_object_id": "body:front_right_roller_3"
+        },
+        {
+          "object_id": "body:front_right_roller_4",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_4",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_4_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_4_joint",
+          "parent_object_id": "body:front_right_roller_4"
+        },
+        {
+          "object_id": "geom:front_right_roller_4/front_right_roller_4_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_4_contact",
+          "parent_object_id": "body:front_right_roller_4"
+        },
+        {
+          "object_id": "body:front_right_roller_5",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_5",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_5_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_5_joint",
+          "parent_object_id": "body:front_right_roller_5"
+        },
+        {
+          "object_id": "geom:front_right_roller_5/front_right_roller_5_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_5_contact",
+          "parent_object_id": "body:front_right_roller_5"
+        },
+        {
+          "object_id": "body:front_right_roller_6",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_6",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_6_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_6_joint",
+          "parent_object_id": "body:front_right_roller_6"
+        },
+        {
+          "object_id": "geom:front_right_roller_6/front_right_roller_6_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_6_contact",
+          "parent_object_id": "body:front_right_roller_6"
+        },
+        {
+          "object_id": "body:front_right_roller_7",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_7",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_7_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_7_joint",
+          "parent_object_id": "body:front_right_roller_7"
+        },
+        {
+          "object_id": "geom:front_right_roller_7/front_right_roller_7_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_7_contact",
+          "parent_object_id": "body:front_right_roller_7"
+        },
+        {
+          "object_id": "body:front_right_roller_8",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_8",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_8_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_8_joint",
+          "parent_object_id": "body:front_right_roller_8"
+        },
+        {
+          "object_id": "geom:front_right_roller_8/front_right_roller_8_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_8_contact",
+          "parent_object_id": "body:front_right_roller_8"
+        },
+        {
+          "object_id": "body:front_right_roller_9",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_9",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_9_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_9_joint",
+          "parent_object_id": "body:front_right_roller_9"
+        },
+        {
+          "object_id": "geom:front_right_roller_9/front_right_roller_9_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_9_contact",
+          "parent_object_id": "body:front_right_roller_9"
+        },
+        {
+          "object_id": "body:front_right_roller_10",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_10",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_10_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_10_joint",
+          "parent_object_id": "body:front_right_roller_10"
+        },
+        {
+          "object_id": "geom:front_right_roller_10/front_right_roller_10_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_10_contact",
+          "parent_object_id": "body:front_right_roller_10"
+        },
+        {
+          "object_id": "body:front_right_roller_11",
+          "kind": "robot_link",
+          "native_name": "front_right_roller_11",
+          "parent_object_id": "body:front_right_wheel"
+        },
+        {
+          "object_id": "joint:front_right_roller_11_joint",
+          "kind": "joint",
+          "native_name": "front_right_roller_11_joint",
+          "parent_object_id": "body:front_right_roller_11"
+        },
+        {
+          "object_id": "geom:front_right_roller_11/front_right_roller_11_contact",
+          "kind": "geom",
+          "native_name": "front_right_roller_11_contact",
+          "parent_object_id": "body:front_right_roller_11"
+        },
+        {
+          "object_id": "body:rear_right_wheel",
+          "kind": "robot_link",
+          "native_name": "rear_right_wheel",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "joint:rear_right_joint",
+          "kind": "joint",
+          "native_name": "rear_right_joint",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "geom:rear_right_wheel/rear_right_hub_contact",
+          "kind": "geom",
+          "native_name": "rear_right_hub_contact",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "geom:rear_right_wheel/wheel_right_back_link_visual",
+          "kind": "geom",
+          "native_name": "wheel_right_back_link_visual",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "body:rear_right_roller_0",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_0",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_0_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_0_joint",
+          "parent_object_id": "body:rear_right_roller_0"
+        },
+        {
+          "object_id": "geom:rear_right_roller_0/rear_right_roller_0_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_0_contact",
+          "parent_object_id": "body:rear_right_roller_0"
+        },
+        {
+          "object_id": "body:rear_right_roller_1",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_1",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_1_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_1_joint",
+          "parent_object_id": "body:rear_right_roller_1"
+        },
+        {
+          "object_id": "geom:rear_right_roller_1/rear_right_roller_1_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_1_contact",
+          "parent_object_id": "body:rear_right_roller_1"
+        },
+        {
+          "object_id": "body:rear_right_roller_2",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_2",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_2_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_2_joint",
+          "parent_object_id": "body:rear_right_roller_2"
+        },
+        {
+          "object_id": "geom:rear_right_roller_2/rear_right_roller_2_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_2_contact",
+          "parent_object_id": "body:rear_right_roller_2"
+        },
+        {
+          "object_id": "body:rear_right_roller_3",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_3",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_3_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_3_joint",
+          "parent_object_id": "body:rear_right_roller_3"
+        },
+        {
+          "object_id": "geom:rear_right_roller_3/rear_right_roller_3_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_3_contact",
+          "parent_object_id": "body:rear_right_roller_3"
+        },
+        {
+          "object_id": "body:rear_right_roller_4",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_4",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_4_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_4_joint",
+          "parent_object_id": "body:rear_right_roller_4"
+        },
+        {
+          "object_id": "geom:rear_right_roller_4/rear_right_roller_4_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_4_contact",
+          "parent_object_id": "body:rear_right_roller_4"
+        },
+        {
+          "object_id": "body:rear_right_roller_5",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_5",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_5_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_5_joint",
+          "parent_object_id": "body:rear_right_roller_5"
+        },
+        {
+          "object_id": "geom:rear_right_roller_5/rear_right_roller_5_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_5_contact",
+          "parent_object_id": "body:rear_right_roller_5"
+        },
+        {
+          "object_id": "body:rear_right_roller_6",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_6",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_6_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_6_joint",
+          "parent_object_id": "body:rear_right_roller_6"
+        },
+        {
+          "object_id": "geom:rear_right_roller_6/rear_right_roller_6_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_6_contact",
+          "parent_object_id": "body:rear_right_roller_6"
+        },
+        {
+          "object_id": "body:rear_right_roller_7",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_7",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_7_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_7_joint",
+          "parent_object_id": "body:rear_right_roller_7"
+        },
+        {
+          "object_id": "geom:rear_right_roller_7/rear_right_roller_7_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_7_contact",
+          "parent_object_id": "body:rear_right_roller_7"
+        },
+        {
+          "object_id": "body:rear_right_roller_8",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_8",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_8_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_8_joint",
+          "parent_object_id": "body:rear_right_roller_8"
+        },
+        {
+          "object_id": "geom:rear_right_roller_8/rear_right_roller_8_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_8_contact",
+          "parent_object_id": "body:rear_right_roller_8"
+        },
+        {
+          "object_id": "body:rear_right_roller_9",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_9",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_9_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_9_joint",
+          "parent_object_id": "body:rear_right_roller_9"
+        },
+        {
+          "object_id": "geom:rear_right_roller_9/rear_right_roller_9_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_9_contact",
+          "parent_object_id": "body:rear_right_roller_9"
+        },
+        {
+          "object_id": "body:rear_right_roller_10",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_10",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_10_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_10_joint",
+          "parent_object_id": "body:rear_right_roller_10"
+        },
+        {
+          "object_id": "geom:rear_right_roller_10/rear_right_roller_10_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_10_contact",
+          "parent_object_id": "body:rear_right_roller_10"
+        },
+        {
+          "object_id": "body:rear_right_roller_11",
+          "kind": "robot_link",
+          "native_name": "rear_right_roller_11",
+          "parent_object_id": "body:rear_right_wheel"
+        },
+        {
+          "object_id": "joint:rear_right_roller_11_joint",
+          "kind": "joint",
+          "native_name": "rear_right_roller_11_joint",
+          "parent_object_id": "body:rear_right_roller_11"
+        },
+        {
+          "object_id": "geom:rear_right_roller_11/rear_right_roller_11_contact",
+          "kind": "geom",
+          "native_name": "rear_right_roller_11_contact",
+          "parent_object_id": "body:rear_right_roller_11"
+        },
+        {
+          "object_id": "body:back_shell_middle_link",
+          "kind": "robot_link",
+          "native_name": "back_shell_middle_link",
+          "parent_object_id": "body:base_link"
+        },
+        {
+          "object_id": "geom:back_shell_middle_link/back_shell_middle_link_visual",
+          "kind": "geom",
+          "native_name": "back_shell_middle_link_visual",
+          "parent_object_id": "body:back_shell_middle_link"
+        },
+        {
+          "object_id": "body:back_shell_black_link",
+          "kind": "robot_link",
+          "native_name": "back_shell_black_link",
+          "parent_object_id": "body:back_shell_middle_link"
+        },
+        {
+          "object_id": "geom:back_shell_black_link/back_shell_black_link_visual",
+          "kind": "geom",
+          "native_name": "back_shell_black_link_visual",
+          "parent_object_id": "body:back_shell_black_link"
+        },
+        {
+          "object_id": "body:link1",
+          "kind": "robot_link",
+          "native_name": "link1",
+          "parent_object_id": "body:back_shell_black_link"
+        },
+        {
+          "object_id": "joint:joint1",
+          "kind": "joint",
+          "native_name": "joint1",
+          "parent_object_id": "body:link1"
+        },
+        {
+          "object_id": "geom:link1/link1_collision",
+          "kind": "geom",
+          "native_name": "link1_collision",
+          "parent_object_id": "body:link1"
+        },
+        {
+          "object_id": "geom:link1/link1_visual",
+          "kind": "geom",
+          "native_name": "link1_visual",
+          "parent_object_id": "body:link1"
+        },
+        {
+          "object_id": "body:link2",
+          "kind": "robot_link",
+          "native_name": "link2",
+          "parent_object_id": "body:link1"
+        },
+        {
+          "object_id": "joint:joint2",
+          "kind": "joint",
+          "native_name": "joint2",
+          "parent_object_id": "body:link2"
+        },
+        {
+          "object_id": "geom:link2/link2_collision",
+          "kind": "geom",
+          "native_name": "link2_collision",
+          "parent_object_id": "body:link2"
+        },
+        {
+          "object_id": "geom:link2/link2_visual",
+          "kind": "geom",
+          "native_name": "link2_visual",
+          "parent_object_id": "body:link2"
+        },
+        {
+          "object_id": "body:link3",
+          "kind": "robot_link",
+          "native_name": "link3",
+          "parent_object_id": "body:link2"
+        },
+        {
+          "object_id": "joint:joint3",
+          "kind": "joint",
+          "native_name": "joint3",
+          "parent_object_id": "body:link3"
+        },
+        {
+          "object_id": "geom:link3/link3_collision",
+          "kind": "geom",
+          "native_name": "link3_collision",
+          "parent_object_id": "body:link3"
+        },
+        {
+          "object_id": "geom:link3/link3_visual",
+          "kind": "geom",
+          "native_name": "link3_visual",
+          "parent_object_id": "body:link3"
+        },
+        {
+          "object_id": "body:link4",
+          "kind": "robot_link",
+          "native_name": "link4",
+          "parent_object_id": "body:link3"
+        },
+        {
+          "object_id": "joint:joint4",
+          "kind": "joint",
+          "native_name": "joint4",
+          "parent_object_id": "body:link4"
+        },
+        {
+          "object_id": "geom:link4/link4_collision",
+          "kind": "geom",
+          "native_name": "link4_collision",
+          "parent_object_id": "body:link4"
+        },
+        {
+          "object_id": "geom:link4/link4_visual",
+          "kind": "geom",
+          "native_name": "link4_visual",
+          "parent_object_id": "body:link4"
+        },
+        {
+          "object_id": "body:link5",
+          "kind": "robot_link",
+          "native_name": "link5",
+          "parent_object_id": "body:link4"
+        },
+        {
+          "object_id": "joint:joint5",
+          "kind": "joint",
+          "native_name": "joint5",
+          "parent_object_id": "body:link5"
+        },
+        {
+          "object_id": "geom:link5/link5_collision",
+          "kind": "geom",
+          "native_name": "link5_collision",
+          "parent_object_id": "body:link5"
+        },
+        {
+          "object_id": "geom:link5/link5_visual",
+          "kind": "geom",
+          "native_name": "link5_visual",
+          "parent_object_id": "body:link5"
+        },
+        {
+          "object_id": "body:gripper_link",
+          "kind": "robot_link",
+          "native_name": "gripper_link",
+          "parent_object_id": "body:link5"
+        },
+        {
+          "object_id": "geom:gripper_link/gripper_link_collision",
+          "kind": "geom",
+          "native_name": "gripper_link_collision",
+          "parent_object_id": "body:gripper_link"
+        },
+        {
+          "object_id": "geom:gripper_link/gripper_link_visual",
+          "kind": "geom",
+          "native_name": "gripper_link_visual",
+          "parent_object_id": "body:gripper_link"
+        },
+        {
+          "object_id": "body:gripper_base_link",
+          "kind": "robot_link",
+          "native_name": "gripper_base_link",
+          "parent_object_id": "body:gripper_link"
+        },
+        {
+          "object_id": "joint:gripper_base_joint",
+          "kind": "joint",
+          "native_name": "gripper_base_joint",
+          "parent_object_id": "body:gripper_base_link"
+        },
+        {
+          "object_id": "geom:gripper_base_link/gripper_base_link_collision",
+          "kind": "geom",
+          "native_name": "gripper_base_link_collision",
+          "parent_object_id": "body:gripper_base_link"
+        },
+        {
+          "object_id": "geom:gripper_base_link/gripper_base_link_visual",
+          "kind": "geom",
+          "native_name": "gripper_base_link_visual",
+          "parent_object_id": "body:gripper_base_link"
+        },
+        {
+          "object_id": "body:gripper_left_link",
+          "kind": "robot_link",
+          "native_name": "gripper_left_link",
+          "parent_object_id": "body:gripper_base_link"
+        },
+        {
+          "object_id": "joint:gripper_left_join",
+          "kind": "joint",
+          "native_name": "gripper_left_join",
+          "parent_object_id": "body:gripper_left_link"
+        },
+        {
+          "object_id": "geom:gripper_left_link/gripper_left_link_collision",
+          "kind": "geom",
+          "native_name": "gripper_left_link_collision",
+          "parent_object_id": "body:gripper_left_link"
+        },
+        {
+          "object_id": "geom:gripper_left_link/gripper_left_link_visual",
+          "kind": "geom",
+          "native_name": "gripper_left_link_visual",
+          "parent_object_id": "body:gripper_left_link"
+        },
+        {
+          "object_id": "body:gripper_right_link",
+          "kind": "robot_link",
+          "native_name": "gripper_right_link",
+          "parent_object_id": "body:gripper_base_link"
+        },
+        {
+          "object_id": "joint:gripper_right_joint",
+          "kind": "joint",
+          "native_name": "gripper_right_joint",
+          "parent_object_id": "body:gripper_right_link"
+        },
+        {
+          "object_id": "geom:gripper_right_link/gripper_right_link_collision",
+          "kind": "geom",
+          "native_name": "gripper_right_link_collision",
+          "parent_object_id": "body:gripper_right_link"
+        },
+        {
+          "object_id": "geom:gripper_right_link/gripper_right_link_visual",
+          "kind": "geom",
+          "native_name": "gripper_right_link_visual",
+          "parent_object_id": "body:gripper_right_link"
+        },
+        {
+          "object_id": "body:guide_rod_link",
+          "kind": "robot_link",
+          "native_name": "guide_rod_link",
+          "parent_object_id": "body:gripper_link"
+        },
+        {
+          "object_id": "geom:guide_rod_link/guide_rod_link_collision",
+          "kind": "geom",
+          "native_name": "guide_rod_link_collision",
+          "parent_object_id": "body:guide_rod_link"
+        },
+        {
+          "object_id": "geom:guide_rod_link/guide_rod_link_visual",
+          "kind": "geom",
+          "native_name": "guide_rod_link_visual",
+          "parent_object_id": "body:guide_rod_link"
+        },
+        {
+          "object_id": "body:left_jaw_link",
+          "kind": "robot_link",
+          "native_name": "left_jaw_link",
+          "parent_object_id": "body:guide_rod_link"
+        },
+        {
+          "object_id": "joint:left_jaw_joint",
+          "kind": "joint",
+          "native_name": "left_jaw_joint",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_pad",
+          "kind": "geom",
+          "native_name": "left_jaw_link_pad",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_shell_0",
+          "kind": "geom",
+          "native_name": "left_jaw_link_shell_0",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_shell_1",
+          "kind": "geom",
+          "native_name": "left_jaw_link_shell_1",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_shell_2",
+          "kind": "geom",
+          "native_name": "left_jaw_link_shell_2",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_shell_3",
+          "kind": "geom",
+          "native_name": "left_jaw_link_shell_3",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "geom:left_jaw_link/left_jaw_link_visual",
+          "kind": "geom",
+          "native_name": "left_jaw_link_visual",
+          "parent_object_id": "body:left_jaw_link"
+        },
+        {
+          "object_id": "body:right_jaw_link",
+          "kind": "robot_link",
+          "native_name": "right_jaw_link",
+          "parent_object_id": "body:guide_rod_link"
+        },
+        {
+          "object_id": "joint:right_jaw_joint",
+          "kind": "joint",
+          "native_name": "right_jaw_joint",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_pad",
+          "kind": "geom",
+          "native_name": "right_jaw_link_pad",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_shell_0",
+          "kind": "geom",
+          "native_name": "right_jaw_link_shell_0",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_shell_1",
+          "kind": "geom",
+          "native_name": "right_jaw_link_shell_1",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_shell_2",
+          "kind": "geom",
+          "native_name": "right_jaw_link_shell_2",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_shell_3",
+          "kind": "geom",
+          "native_name": "right_jaw_link_shell_3",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "geom:right_jaw_link/right_jaw_link_visual",
+          "kind": "geom",
+          "native_name": "right_jaw_link_visual",
+          "parent_object_id": "body:right_jaw_link"
+        },
+        {
+          "object_id": "body:end_effector_link",
+          "kind": "robot_link",
+          "native_name": "end_effector_link",
+          "parent_object_id": "body:link5"
+        },
+        {
+          "object_id": "body:camera_connect_link",
+          "kind": "robot_link",
+          "native_name": "camera_connect_link",
+          "parent_object_id": "body:link4"
+        },
+        {
+          "object_id": "geom:camera_connect_link/camera_connect_link_collision",
+          "kind": "geom",
+          "native_name": "camera_connect_link_collision",
+          "parent_object_id": "body:camera_connect_link"
+        },
+        {
+          "object_id": "geom:camera_connect_link/camera_connect_link_visual",
+          "kind": "geom",
+          "native_name": "camera_connect_link_visual",
+          "parent_object_id": "body:camera_connect_link"
+        },
+        {
+          "object_id": "body:depth_cam_link",
+          "kind": "robot_link",
+          "native_name": "depth_cam_link",
+          "parent_object_id": "body:camera_connect_link"
+        },
+        {
+          "object_id": "geom:depth_cam_link/depth_cam_link_collision",
+          "kind": "geom",
+          "native_name": "depth_cam_link_collision",
+          "parent_object_id": "body:depth_cam_link"
+        },
+        {
+          "object_id": "geom:depth_cam_link/depth_cam_link_visual",
+          "kind": "geom",
+          "native_name": "depth_cam_link_visual",
+          "parent_object_id": "body:depth_cam_link"
+        },
+        {
+          "object_id": "body:lidar_frame",
+          "kind": "robot_link",
+          "native_name": "lidar_frame",
+          "parent_object_id": "body:back_shell_middle_link"
+        },
+        {
+          "object_id": "geom:lidar_frame/lidar_frame_visual",
+          "kind": "geom",
+          "native_name": "lidar_frame_visual",
+          "parent_object_id": "body:lidar_frame"
+        },
+        {
+          "object_id": "body:world_static",
+          "kind": "world_link",
+          "native_name": "world_static",
+          "parent_object_id": null
+        },
+        {
+          "object_id": "geom:world_static/floor",
+          "kind": "geom",
+          "native_name": "floor",
+          "parent_object_id": "body:world_static"
+        },
+        {
+          "object_id": "geom:world_static/pick_platform",
+          "kind": "geom",
+          "native_name": "pick_platform",
+          "parent_object_id": "body:world_static"
+        },
+        {
+          "object_id": "body:target_cube",
+          "kind": "world_link",
+          "native_name": "target_cube",
+          "parent_object_id": null
+        },
+        {
+          "object_id": "joint:target_cube_free",
+          "kind": "joint",
+          "native_name": "target_cube_free",
+          "parent_object_id": "body:target_cube"
+        },
+        {
+          "object_id": "geom:target_cube/target_cube_contact",
+          "kind": "geom",
+          "native_name": "target_cube_contact",
+          "parent_object_id": "body:target_cube"
+        }
+      ],
+      "worldPoseSemantics": "compiled_initial_layout_not_live_object_state",
+      "kinematicProfile": "landerpi-3ca3d6d0-local-kinematics-v1",
+      "retrievedAt": "2026-10-23T18:09:17+00:00",
+      "feedbackTimeS": 952021.914544478,
+      "target": {
+        "base_velocity": {
+          "frame_id": "base_link",
+          "vx_m_s": 0,
+          "vy_m_s": 0,
+          "wz_rad_s": 0
+        },
+        "user_joint_positions_rad": [
+          -2.1849604256104818e-12,
+          3.344156860706527e-14,
+          2.2578702971480356e-14,
+          -4.6629367034256575e-15,
+          -1.0156417584983402e-12
+        ],
+        "model_joint_positions_rad": [
+          -2.1849604256104818e-12,
+          3.344156860706527e-14,
+          2.2578702971480356e-14,
+          -1.5707963267949012,
+          -1.0156417584983402e-12
+        ],
+        "gripper_width_m": 0.024999991920466903,
+        "gripper_model_drive_position_rad": -1.0776330048507736,
+        "command_id": null,
+        "tcp": null
+      },
+      "authority": {
+        "base_owner_session_id": null,
+        "arm_owner_session_id": null,
+        "active_session_id": null,
+        "active_operator_kind": null,
+        "authorizes_caller": false,
+        "lease_status": "not_exposed"
+      },
+      "recording": {
+        "status": "IDLE",
+        "command_capture_ready": false,
+        "recording_segment_id": null,
+        "episode_id": null,
+        "queued_events": 0,
+        "dropped_events": 0,
+        "error": null
+      },
+      "sensors": [
+        {
+          "kind": "rgb",
+          "available": true,
+          "fresh": true,
+          "sample_id": "rgbd_da674e105b414dde9c0730add7cba0e4",
+          "stream_id": "rgbd",
+          "measurement_time_s": 952021.696774124,
+          "arrival_time_s": 952021.706751873,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": 0.35639322916666666,
+          "quality": "simulated_nominal_preview",
+          "capture_sim_time_s": 393648.6073332029,
+          "capture_backend_monotonic_s": 952021.696774124,
+          "capture_control_tick_id": "tick_039364861",
+          "feedback_sample_id": "joint_feedback_039364861",
+          "observation_age_s": 0.009977748966775835,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "depth",
+          "available": true,
+          "fresh": true,
+          "sample_id": "rgbd_da674e105b414dde9c0730add7cba0e4",
+          "stream_id": "rgbd",
+          "measurement_time_s": 952021.696774124,
+          "arrival_time_s": 952021.706751873,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": 0.35639322916666666,
+          "quality": "simulated_nominal_preview",
+          "capture_sim_time_s": 393648.6073332029,
+          "capture_backend_monotonic_s": 952021.696774124,
+          "capture_control_tick_id": "tick_039364861",
+          "feedback_sample_id": "joint_feedback_039364861",
+          "observation_age_s": 0.009977748966775835,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "lidar",
+          "available": true,
+          "fresh": true,
+          "sample_id": "laser_039364880",
+          "stream_id": "lidar",
+          "measurement_time_s": 952021.883127204,
+          "arrival_time_s": 952021.883127204,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": null,
+          "quality": "simulated_raycast",
+          "capture_sim_time_s": 393648.79733320087,
+          "capture_backend_monotonic_s": 952021.883127204,
+          "capture_control_tick_id": "tick_039364880",
+          "feedback_sample_id": null,
+          "observation_age_s": 0,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "imu",
+          "available": true,
+          "fresh": true,
+          "sample_id": "imu_039364883",
+          "stream_id": "imu",
+          "measurement_time_s": 952021.914546784,
+          "arrival_time_s": 952021.914546784,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": null,
+          "quality": "simulated_nominal",
+          "capture_sim_time_s": 393648.82733320055,
+          "capture_backend_monotonic_s": 952021.914546784,
+          "capture_control_tick_id": "tick_039364883",
+          "feedback_sample_id": null,
+          "observation_age_s": 0,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "encoders",
+          "available": true,
+          "fresh": true,
+          "sample_id": "encoders_039364883",
+          "stream_id": "encoders",
+          "measurement_time_s": 952021.914546784,
+          "arrival_time_s": 952021.914546784,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": null,
+          "quality": "simulated_nominal",
+          "capture_sim_time_s": 393648.82733320055,
+          "capture_backend_monotonic_s": 952021.914546784,
+          "capture_control_tick_id": "tick_039364883",
+          "feedback_sample_id": null,
+          "observation_age_s": 0,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "joint_feedback",
+          "available": true,
+          "fresh": true,
+          "sample_id": "joint_feedback_039364883",
+          "stream_id": "joint_feedback",
+          "measurement_time_s": 952021.914546784,
+          "arrival_time_s": 952021.914546784,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": null,
+          "quality": "simulated_nominal",
+          "capture_sim_time_s": 393648.82733320055,
+          "capture_backend_monotonic_s": 952021.914546784,
+          "capture_control_tick_id": "tick_039364883",
+          "feedback_sample_id": null,
+          "observation_age_s": 0,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        },
+        {
+          "kind": "image_transforms",
+          "available": true,
+          "fresh": true,
+          "sample_id": "rgbd_da674e105b414dde9c0730add7cba0e4",
+          "stream_id": "rgbd",
+          "measurement_time_s": 952021.696774124,
+          "arrival_time_s": 952021.706751873,
+          "clock_id": "backend_monotonic",
+          "valid_fraction": 0.35639322916666666,
+          "quality": "simulated_nominal_preview",
+          "capture_sim_time_s": 393648.6073332029,
+          "capture_backend_monotonic_s": 952021.696774124,
+          "capture_control_tick_id": "tick_039364861",
+          "feedback_sample_id": "joint_feedback_039364861",
+          "observation_age_s": 0.009977748966775835,
+          "profile_id": "g4a1-link4-rgbd-proprio-v1",
+          "native_asset_uri": null,
+          "frame_id": null
+        }
+      ]
+    },
+    "monitor": {
+      "state": "current",
+      "message": "真实只读监控",
+      "receivedAt": 1792778957421,
+      "requestMs": 56.60000002384186,
+      "snapshots": 8,
+      "intervalMs": 1000
+    },
+    "assetError": ""
+  },
+  "status": "passed"
+}

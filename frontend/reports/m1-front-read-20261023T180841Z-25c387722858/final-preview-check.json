@@ -1,0 +1,693 @@
+{
+  "checks": [
+    "settled initial fit contains all robot link centers",
+    "TCP pointer drag starts on real-source local target",
+    "Actual polling keeps active drag and camera stable",
+    "dragged local target survives two Actual snapshots",
+    "cancel leaves real Actual and no local Ghost",
+    "supplemental browser requests remain GET-only"
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/?inspect=1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/assets/index-m3ZscVDx.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/assets/index-DVDl73CB.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/capabilities"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/base_link?sha256=9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_front_link?sha256=2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_left_back_link?sha256=22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_front_link?sha256=9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/wheel_right_back_link?sha256=68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_middle_link?sha256=b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/back_shell_black_link?sha256=a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link1?sha256=7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link2?sha256=553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link3?sha256=cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link4?sha256=158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/link5?sha256=c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_link?sha256=31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_base_link?sha256=46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_left_link?sha256=9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/gripper_right_link?sha256=5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/guide_rod_link?sha256=d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/left_jaw_link?sha256=47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/right_jaw_link?sha256=37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/camera_connect_link?sha256=1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/depth_cam_link?sha256=4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/scene/assets/lidar_frame?sha256=94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18932/api/v1/mobilecar/snapshot"
+    }
+  ],
+  "script_sha256": "f314c5949858929a14fc82c54eb9b39e357113f1d0a9e8537983e7e244e4e9f2",
+  "drag": {
+    "before": {
+      "mode": "tcp",
+      "revision": 1,
+      "jointModelRad": {
+        "front_left_joint": -0.2617848318544795,
+        "front_left_roller_0_joint": 1.6947772476279413e-07,
+        "front_left_roller_1_joint": 1.2476404285623256e-07,
+        "front_left_roller_2_joint": 1.0100102682317267e-07,
+        "front_left_roller_3_joint": 1.0467208613110189e-07,
+        "front_left_roller_4_joint": 1.3468296503063797e-07,
+        "front_left_roller_5_joint": 1.8316373702746095e-07,
+        "front_left_roller_6_joint": 0.006693181136425801,
+        "front_left_roller_7_joint": -0.08367698679113203,
+        "front_left_roller_8_joint": 3.051299343427924e-07,
+        "front_left_roller_9_joint": 3.014395328203326e-07,
+        "front_left_roller_10_joint": 2.7153028700891585e-07,
+        "front_left_roller_11_joint": 2.2322259537221688e-07,
+        "rear_left_joint": -0.261967603517759,
+        "rear_left_roller_0_joint": -3.015660487891887e-07,
+        "rear_left_roller_1_joint": -3.1402562741467216e-07,
+        "rear_left_roller_2_joint": -2.9690180750711276e-07,
+        "rear_left_roller_3_joint": -2.5472807973617664e-07,
+        "rear_left_roller_4_joint": -1.988990116906409e-07,
+        "rear_left_roller_5_joint": -1.446383154788601e-07,
+        "rear_left_roller_6_joint": 0.012002664696087122,
+        "rear_left_roller_7_joint": 0.06869814532911468,
+        "rear_left_roller_8_joint": -1.1000692646772765e-07,
+        "rear_left_roller_9_joint": -1.518364530979817e-07,
+        "rear_left_roller_10_joint": -2.0801768321557374e-07,
+        "rear_left_roller_11_joint": -2.628148528277944e-07,
+        "front_right_joint": -0.26177952766793394,
+        "front_right_roller_0_joint": -3.1014210728735547e-07,
+        "front_right_roller_1_joint": -3.092153107428233e-07,
+        "front_right_roller_2_joint": -2.798864821369227e-07,
+        "front_right_roller_3_joint": -2.2988114865589763e-07,
+        "front_right_roller_4_joint": -1.728717720212077e-07,
+        "front_right_roller_5_joint": -1.2356760859687356e-07,
+        "front_right_roller_6_joint": -0.019342550980412734,
+        "front_right_roller_7_joint": -0.04256233043189636,
+        "front_right_roller_8_joint": -1.2622012273087227e-07,
+        "front_right_roller_9_joint": -1.7621524141357323e-07,
+        "front_right_roller_10_joint": -2.3331248382050636e-07,
+        "front_right_roller_11_joint": -2.823711108195771e-07,
+        "rear_right_joint": -0.26197294911062613,
+        "rear_right_roller_0_joint": 1.6782984763529262e-07,
+        "rear_right_roller_1_joint": 1.0470174581794797e-07,
+        "rear_right_roller_2_joint": 6.782958597631736e-08,
+        "rear_right_roller_3_joint": 6.752346801301739e-08,
+        "rear_right_roller_4_joint": 1.0379404034133606e-07,
+        "rear_right_roller_5_joint": 1.664953173954094e-07,
+        "rear_right_roller_6_joint": -0.004805689685807869,
+        "rear_right_roller_7_joint": 0.004489520205760133,
+        "rear_right_roller_8_joint": 3.3943183205006864e-07,
+        "rear_right_roller_9_joint": 3.398362723350069e-07,
+        "rear_right_roller_10_joint": 3.03618277161997e-07,
+        "rear_right_roller_11_joint": 2.4078079170218176e-07,
+        "joint1": -4.536145951864727e-05,
+        "joint2": -0.06608750578176636,
+        "joint3": 0.00033956116154879203,
+        "joint4": -1.5044659226444996,
+        "joint5": -6.224279803630559e-07,
+        "gripper_base_joint": -1.0776330776100003,
+        "gripper_left_join": 1.6164555010235442,
+        "gripper_right_joint": 1.6164437321936282,
+        "left_jaw_joint": 0.012484051952558441,
+        "right_jaw_joint": -0.012515957816161872
+      },
+      "tcpWorldM": [
+        0.32675496511988533,
+        0.0024434952466875605,
+        0.3009214429907375
+      ],
+      "frame": "world_sim",
+      "preview": "local-position-ik",
+      "residualM": 0.0005079788307652942
+    },
+    "after": {
+      "mode": "tcp",
+      "revision": 13,
+      "jointModelRad": {
+        "front_left_joint": -0.2617848318544795,
+        "front_left_roller_0_joint": 1.6947772476279413e-07,
+        "front_left_roller_1_joint": 1.2476404285623256e-07,
+        "front_left_roller_2_joint": 1.0100102682317267e-07,
+        "front_left_roller_3_joint": 1.0467208613110189e-07,
+        "front_left_roller_4_joint": 1.3468296503063797e-07,
+        "front_left_roller_5_joint": 1.8316373702746095e-07,
+        "front_left_roller_6_joint": 0.006693181136425801,
+        "front_left_roller_7_joint": -0.08367698679113203,
+        "front_left_roller_8_joint": 3.051299343427924e-07,
+        "front_left_roller_9_joint": 3.014395328203326e-07,
+        "front_left_roller_10_joint": 2.7153028700891585e-07,
+        "front_left_roller_11_joint": 2.2322259537221688e-07,
+        "rear_left_joint": -0.261967603517759,
+        "rear_left_roller_0_joint": -3.015660487891887e-07,
+        "rear_left_roller_1_joint": -3.1402562741467216e-07,
+        "rear_left_roller_2_joint": -2.9690180750711276e-07,
+        "rear_left_roller_3_joint": -2.5472807973617664e-07,
+        "rear_left_roller_4_joint": -1.988990116906409e-07,
+        "rear_left_roller_5_joint": -1.446383154788601e-07,
+        "rear_left_roller_6_joint": 0.012002664696087122,
+        "rear_left_roller_7_joint": 0.06869814532911468,
+        "rear_left_roller_8_joint": -1.1000692646772765e-07,
+        "rear_left_roller_9_joint": -1.518364530979817e-07,
+        "rear_left_roller_10_joint": -2.0801768321557374e-07,
+        "rear_left_roller_11_joint": -2.628148528277944e-07,
+        "front_right_joint": -0.26177952766793394,
+        "front_right_roller_0_joint": -3.1014210728735547e-07,
+        "front_right_roller_1_joint": -3.092153107428233e-07,
+        "front_right_roller_2_joint": -2.798864821369227e-07,
+        "front_right_roller_3_joint": -2.2988114865589763e-07,
+        "front_right_roller_4_joint": -1.728717720212077e-07,
+        "front_right_roller_5_joint": -1.2356760859687356e-07,
+        "front_right_roller_6_joint": -0.019342550980412734,
+        "front_right_roller_7_joint": -0.04256233043189636,
+        "front_right_roller_8_joint": -1.2622012273087227e-07,
+        "front_right_roller_9_joint": -1.7621524141357323e-07,
+        "front_right_roller_10_joint": -2.3331248382050636e-07,
+        "front_right_roller_11_joint": -2.823711108195771e-07,
+        "rear_right_joint": -0.26197294911062613,
+        "rear_right_roller_0_joint": 1.6782984763529262e-07,
+        "rear_right_roller_1_joint": 1.0470174581794797e-07,
+        "rear_right_roller_2_joint": 6.782958597631736e-08,
+        "rear_right_roller_3_joint": 6.752346801301739e-08,
+        "rear_right_roller_4_joint": 1.0379404034133606e-07,
+        "rear_right_roller_5_joint": 1.664953173954094e-07,
+        "rear_right_roller_6_joint": -0.004805689685807869,
+        "rear_right_roller_7_joint": 0.004489520205760133,
+        "rear_right_roller_8_joint": 3.3943183205006864e-07,
+        "rear_right_roller_9_joint": 3.398362723350069e-07,
+        "rear_right_roller_10_joint": 3.03618277161997e-07,
+        "rear_right_roller_11_joint": 2.4078079170218176e-07,
+        "joint1": -4.263907372719436e-05,
+        "joint2": -0.27941677330149545,
+        "joint3": 0.016200166324889798,
+        "joint4": -1.2602075924898555,
+        "joint5": -3.082130383151958e-06,
+        "gripper_base_joint": -1.0776330776100003,
+        "gripper_left_join": 1.6164555010235442,
+        "gripper_right_joint": 1.6164437321936282,
+        "left_jaw_joint": 0.012484051952558441,
+        "right_jaw_joint": -0.012515957816161872
+      },
+      "tcpWorldM": [
+        0.3563653720603763,
+        0.0024434952466875605,
+        0.3009214429907375
+      ],
+      "frame": "world_sim",
+      "preview": "local-position-ik",
+      "residualM": 0.00010988153575906812
+    },
+    "snapshot_count_before": 3,
+    "snapshot_count_after": 5,
+    "camera_before": [
+      0.6605718504185081,
+      0.47705992631316074,
+      0.47742687250539784
+    ],
+    "camera_after": [
+      0.6605718504185081,
+      0.47705992631316074,
+      0.47742687250539784
+    ]
+  },
+  "status": "passed",
+  "final_source": {
+    "kind": "live",
+    "label": "真实只读监控",
+    "captured_at_utc": "2026-10-23T18:14:02.156889Z",
+    "identity": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+    },
+    "interface_profile": "g4a1-1.0",
+    "is_platform_session": false,
+    "is_episode_replay": false
+  },
+  "final_scene": {
+    "gizmoAxis": null,
+    "pendingLoads": 0,
+    "failedAssets": [],
+    "renderCount": 60,
+    "lastFrameCostMs": 2.5,
+    "selected": "arm",
+    "tool": "tcp",
+    "ghost": false,
+    "dragging": false,
+    "orbitEnabled": true,
+    "linkPoints": {
+      "base_link": {
+        "x": 831,
+        "y": 507.49999999999994
+      },
+      "front_left_wheel": {
+        "x": 868.6734150547288,
+        "y": 559.9951092453849
+      },
+      "front_left_roller_0": {
+        "x": 866.961384400839,
+        "y": 544.5249714909593
+      },
+      "front_left_roller_1": {
+        "x": 873.0291184917551,
+        "y": 547.4007087117319
+      },
+      "front_left_roller_2": {
+        "x": 878.2138685320265,
+        "y": 553.4173092853962
+      },
+      "front_left_roller_3": {
+        "x": 881.0171898253914,
+        "y": 560.90103157801
+      },
+      "front_left_roller_4": {
+        "x": 880.6453418459688,
+        "y": 567.7114275884369
+      },
+      "front_left_roller_5": {
+        "x": 877.2660195681538,
+        "y": 571.9557438536904
+      },
+      "front_left_roller_6": {
+        "x": 871.8909640810743,
+        "y": 572.5635832687894
+      },
+      "front_left_roller_7": {
+        "x": 865.9973673240711,
+        "y": 569.5013421547108
+      },
+      "front_left_roller_8": {
+        "x": 861.0993452637013,
+        "y": 563.6524558407395
+      },
+      "front_left_roller_9": {
+        "x": 858.4085026525407,
+        "y": 556.5230264364187
+      },
+      "front_left_roller_10": {
+        "x": 858.6060632292356,
+        "y": 549.8990190687538
+      },
+      "front_left_roller_11": {
+        "x": 861.6987694948677,
+        "y": 545.4869138582352
+      },
+      "rear_left_wheel": {
+        "x": 815.8636969586191,
+        "y": 532.8077939730898
+      },
+      "rear_left_roller_0": {
+        "x": 814.6128614040831,
+        "y": 519.7164217298391
+      },
+      "rear_left_roller_1": {
+        "x": 819.5906336208732,
+        "y": 522.0744265693116
+      },
+      "rear_left_roller_2": {
+        "x": 824.0052735763878,
+        "y": 527.3861478766972
+      },
+      "rear_left_roller_3": {
+        "x": 826.5924184931591,
+        "y": 534.1816819048024
+      },
+      "rear_left_roller_4": {
+        "x": 826.6223162322281,
+        "y": 540.5286348457308
+      },
+      "rear_left_roller_5": {
+        "x": 824.133064263392,
+        "y": 544.6657035288233
+      },
+      "rear_left_roller_6": {
+        "x": 819.8714012913906,
+        "y": 545.5351483846952
+      },
+      "rear_left_roller_7": {
+        "x": 815.0118309841492,
+        "y": 543.0112752280392
+      },
+      "rear_left_roller_8": {
+        "x": 810.8121195125639,
+        "y": 537.8270237697274
+      },
+      "rear_left_roller_9": {
+        "x": 808.3216371048215,
+        "y": 531.3248843106205
+      },
+      "rear_left_roller_10": {
+        "x": 808.1734439618593,
+        "y": 525.1437257966558
+      },
+      "rear_left_roller_11": {
+        "x": 810.4478315155008,
+        "y": 520.8791308899986
+      },
+      "front_right_wheel": {
+        "x": 809.0079292006192,
+        "y": 592.5014806936517
+      },
+      "front_right_roller_0": {
+        "x": 804.7113919291887,
+        "y": 578.3823079067224
+      },
+      "front_right_roller_1": {
+        "x": 810.801141217759,
+        "y": 582.0466438456358
+      },
+      "front_right_roller_2": {
+        "x": 816.2593656533479,
+        "y": 589.0725228979834
+      },
+      "front_right_roller_3": {
+        "x": 819.4988698767127,
+        "y": 597.4906504898936
+      },
+      "front_right_roller_4": {
+        "x": 819.5943982596733,
+        "y": 604.8744755741963
+      },
+      "front_right_roller_5": {
+        "x": 816.5900881306952,
+        "y": 609.169361998932
+      },
+      "front_right_roller_6": {
+        "x": 811.4124242339005,
+        "y": 609.3181628658244
+      },
+      "front_right_roller_7": {
+        "x": 805.4985169439262,
+        "y": 605.4430502689289
+      },
+      "front_right_roller_8": {
+        "x": 800.3665389581707,
+        "y": 598.6519707927023
+      },
+      "front_right_roller_9": {
+        "x": 797.2772911633682,
+        "y": 590.6795212280283
+      },
+      "front_right_roller_10": {
+        "x": 797.0057012605773,
+        "y": 583.5062739830396
+      },
+      "front_right_roller_11": {
+        "x": 799.6839129755199,
+        "y": 578.9764862879566
+      },
+      "rear_right_wheel": {
+        "x": 757.895487774927,
+        "y": 561.3408154854403
+      },
+      "rear_right_roller_0": {
+        "x": 752.8687464884919,
+        "y": 547.189342432726
+      },
+      "rear_right_roller_1": {
+        "x": 757.7453242302986,
+        "y": 550.1224211183255
+      },
+      "rear_right_roller_2": {
+        "x": 762.3166802510841,
+        "y": 556.2157797537222
+      },
+      "rear_right_roller_3": {
+        "x": 765.2681334107486,
+        "y": 563.7733799550232
+      },
+      "rear_right_roller_4": {
+        "x": 765.7610673562892,
+        "y": 570.6323002404483
+      },
+      "rear_right_roller_5": {
+        "x": 763.707187085945,
+        "y": 574.8860056431508
+      },
+      "rear_right_roller_6": {
+        "x": 759.7449786083257,
+        "y": 575.4634431817144
+      },
+      "rear_right_roller_7": {
+        "x": 754.9788860589495,
+        "y": 572.341633428779
+      },
+      "rear_right_roller_8": {
+        "x": 750.6439022950499,
+        "y": 566.4206324317393
+      },
+      "rear_right_roller_9": {
+        "x": 747.8182584826401,
+        "y": 559.2241979021343
+      },
+      "rear_right_roller_10": {
+        "x": 747.2147099172903,
+        "y": 552.5538881987522
+      },
+      "rear_right_roller_11": {
+        "x": 749.0322956570104,
+        "y": 548.1277482443787
+      },
+      "back_shell_middle_link": {
+        "x": 834.373297207648,
+        "y": 501.0531621634295
+      },
+      "back_shell_black_link": {
+        "x": 832.927398088797,
+        "y": 480.09098340835607
+      },
+      "link1": {
+        "x": 862.8244888384726,
+        "y": 462.90830372400137
+      },
+      "link2": {
+        "x": 866.0989349484295,
+        "y": 453.7692226168608
+      },
+      "link3": {
+        "x": 867.2773796412217,
+        "y": 428.19024760929415
+      },
+      "link4": {
+        "x": 869.190828485578,
+        "y": 418.1788191297185
+      },
+      "link5": {
+        "x": 882.1273649779871,
+        "y": 431.09840307279114
+      },
+      "gripper_link": {
+        "x": 882.1273649779871,
+        "y": 431.09840307279114
+      },
+      "gripper_base_link": {
+        "x": 884.3963853306564,
+        "y": 427.9784840670711
+      },
+      "gripper_left_link": {
+        "x": 890.5735020553404,
+        "y": 415.0298659564536
+      },
+      "gripper_right_link": {
+        "x": 878.0742705007528,
+        "y": 440.61760959347487
+      },
+      "guide_rod_link": {
+        "x": 899.0703335184589,
+        "y": 432.0268648370795
+      },
+      "left_jaw_link": {
+        "x": 906.2550348500998,
+        "y": 429.760024590591
+      },
+      "right_jaw_link": {
+        "x": 887.6456629902397,
+        "y": 435.6303198367407
+      },
+      "camera_connect_link": {
+        "x": 864.1168494541475,
+        "y": 396.6052585510637
+      },
+      "depth_cam_link": {
+        "x": 864.1210914796843,
+        "y": 396.46661934101917
+      },
+      "lidar_frame": {
+        "x": 846.0270211507806,
+        "y": 547.9724092571544
+      }
+    },
+    "handles": {
+      "x": {
+        "x": 941.9598001195651,
+        "y": 442.2803488096084
+      },
+      "y": {
+        "x": 930.1047850265783,
+        "y": 424.9542817029186
+      },
+      "z": {
+        "x": 909.2541645421092,
+        "y": 391.12402794402936
+      }
+    },
+    "rings": {},
+    "viewport": {
+      "width": 880,
+      "height": 399
+    },
+    "camera": [
+      0.660571850418508,
+      0.47705992631316074,
+      0.4774268725053977
+    ],
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "lifecycle": {
+      "created": 1,
+      "disposed": 0,
+      "active": 1
+    }
+  },
+  "native_after": {
+    "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+    "backend_generation": 1,
+    "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+    "recording_status": "IDLE"
+  },
+  "preserved_pids": [
+    941842,
+    1155600,
+    2614787,
+    293264
+  ]
+}

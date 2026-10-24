@@ -1,0 +1,289 @@
+{
+  "release_id": "m1-front-geometry-20261023T192903Z-58a156740be8",
+  "source_aggregate_sha256": "58a156740be83a2879e5a1d2145f77d552d51f6682b1e3d318d6a2b048044276",
+  "remote_root": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-front-geometry-20261023T192903Z-58a156740be8",
+  "backend_release": "m1-geometry-20261023T192202Z-cdfc7472e5de",
+  "result": "geometry assembly and read-only interaction checks passed; no M1 control/recording acceptance",
+  "artifacts": [
+    {
+      "path": "source-manifest.json",
+      "bytes": 10843,
+      "sha256": "f21e49e28550b58fd05fadf37e6b49d0b1346bbaa38b680fa5a7738b9da079db"
+    },
+    {
+      "path": "report/build.log",
+      "bytes": 733,
+      "sha256": "b5fd1c510e2d33ba0a688e7acedeb96302b24c76519f9af9d483a2fb7d40c62e"
+    },
+    {
+      "path": "report/unit.log",
+      "bytes": 824,
+      "sha256": "5a3508072eafecd8b8b60052f7f9112a64f7be0784ada15d9fe126085cf952d3"
+    },
+    {
+      "path": "report/unit.json",
+      "bytes": 8135,
+      "sha256": "9b87915fa114fcac07160343791bee6b0b233b620703bf44fc5923129262e600"
+    },
+    {
+      "path": "report/environment.json",
+      "bytes": 250,
+      "sha256": "dfc993625c2f2e860decdcdbd6c88918b7a565d54eb6a814cc285bc76dae2a74"
+    },
+    {
+      "path": "report/preview.json",
+      "bytes": 333,
+      "sha256": "9bbfc326e4474e398710ef5b870dff0b4459beca84edf3c3c662ff75e57b81af"
+    },
+    {
+      "path": "report/native-read-only.json",
+      "bytes": 466,
+      "sha256": "b11bda42535b9a13eb2e3397449f4f904c7c5cebd790c7e4a161bf6bcb8c3d4a"
+    },
+    {
+      "path": "report/listeners-before.txt",
+      "bytes": 3255,
+      "sha256": "dd3df2b39386f197c6b6827adaa8791cb61c360dff600195c4031679270f25e9"
+    },
+    {
+      "path": "report/listeners-after.txt",
+      "bytes": 3360,
+      "sha256": "c49382e6da267ddfa275865515e3aa24fb60f94241446be329b9ca6cc608891f"
+    },
+    {
+      "path": "report/integration-summary.json",
+      "bytes": 3287,
+      "sha256": "cc2231cff7742fe8b76c02eea406113812bc5e28dca21013b50ae8576a3893d0"
+    },
+    {
+      "path": "report/proxy-network.json",
+      "bytes": 55717,
+      "sha256": "33ce8c1b70357cccb8422a917381cbc6e9ad4f26383c1cd59f5e5648118d1a64"
+    },
+    {
+      "path": "report/browser.log",
+      "bytes": 50,
+      "sha256": "133a0a56fffd2c9f3c63b6a3d78eb5c07b1d6d17110e2fe50c68d8d413d0fdc4"
+    },
+    {
+      "path": "report/frozen-browser.log",
+      "bytes": 50,
+      "sha256": "e977659837e68e882b0feb9cbfc86a93739ac2a7494e85bf6e41492191dfbb83"
+    },
+    {
+      "path": "report/geometry-browser.log",
+      "bytes": 54,
+      "sha256": "a7cdcf844f03e6b75d47730a58bca10d11041d9ede6d26fdd4d6f9b7b5bf8137"
+    },
+    {
+      "path": "report/browser/browser.json",
+      "bytes": 158400,
+      "sha256": "f0939be07dd12f74fe3409fb817060496895955974b3946b9746aa74968f1d28"
+    },
+    {
+      "path": "report/frozen-browser/browser.json",
+      "bytes": 35729,
+      "sha256": "5c990258110fae891b9bf5494c36aaaa2b215b60743e5092fe66513bd14d51ee"
+    },
+    {
+      "path": "report/geometry/geometry.json",
+      "bytes": 40810,
+      "sha256": "4ed44e5c9e888b0340abdec7a7016326ce03ff51cce8459c3772fdcb5e4999fa"
+    },
+    {
+      "path": "report/geometry/scene.json",
+      "bytes": 187185,
+      "sha256": "71834f65e5d09fcd1f40b4a0752306bf0e9bb1a3a22aa473d14da0e633b69c80"
+    },
+    {
+      "path": "report/geometry/front.png",
+      "bytes": 264962,
+      "sha256": "11147bc75b3e12889ca3a4f8d06f8ba6ef46555acbc14e8f82fc2542d3c8da3c"
+    },
+    {
+      "path": "report/geometry/side.png",
+      "bytes": 258399,
+      "sha256": "8870247ac04d298900f7cc367791087a7e699bd0e2ede3604d68ed9a8ccb5cf7"
+    },
+    {
+      "path": "report/geometry/oblique.png",
+      "bytes": 306123,
+      "sha256": "a6ae46f8a06efc091df13862b79aef1da47a9d985f0a2aff7ebb71e970c878d0"
+    },
+    {
+      "path": "report/geometry/front-viewport.png",
+      "bytes": 62364,
+      "sha256": "40989f7414bc553e8ce825aa5b98d58f406d27facd3c0ea13aafec3080e6e4f3"
+    },
+    {
+      "path": "report/geometry/side-viewport.png",
+      "bytes": 56687,
+      "sha256": "21ccdee7bd70a64c5e6bcdd2d42560e4f35b74cc580317154cf80d7b3edd6e5e"
+    },
+    {
+      "path": "report/geometry/oblique-viewport.png",
+      "bytes": 96023,
+      "sha256": "b9f3d8a6ea131c25536ac16b5d4f1a8362d613ce2dd4cd5e715fe0c462fb896d"
+    },
+    {
+      "path": "report/geometry/tcp-local-preview.png",
+      "bytes": 322813,
+      "sha256": "f2553054a9aee17870be36c4d23e4dd2be7de9b7277ab77a11428da6888b56c9"
+    },
+    {
+      "path": "frontend/dist/assets/index-DVDl73CB.css",
+      "bytes": 160292,
+      "sha256": "bb69eeb4720f28e6bab2e6548a1418ac27c0b805fc8787398a0fbf18c67e4a88"
+    },
+    {
+      "path": "frontend/dist/assets/index-DjOdEZo4.js",
+      "bytes": 1213852,
+      "sha256": "6dce90e5d07d4cfb2b1a372b16aefc2fae3c40c6cdb9632306b74097fc87eaad"
+    },
+    {
+      "path": "frontend/dist/index.html",
+      "bytes": 419,
+      "sha256": "fdefc4ebf9f4a6ccad62e780152775c1a658718526230d293cb9f891674e458b"
+    },
+    {
+      "path": "frontend/dist/sample/arm-spec.json",
+      "bytes": 2886,
+      "sha256": "8d1dc917c7c76c58dcd96ab07525e247479d6295f427dd75c8ba3a13c0ecdfa9"
+    },
+    {
+      "path": "frontend/dist/sample/capabilities.json",
+      "bytes": 2206,
+      "sha256": "767312d2191e3e89c0d1c2319959f5abdbf2cc31daa4e172adf6ae3047c6e67d"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/back_shell_black_link.stl",
+      "bytes": 371284,
+      "sha256": "a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/back_shell_middle_link.stl",
+      "bytes": 293384,
+      "sha256": "b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/base_link.stl",
+      "bytes": 525884,
+      "sha256": "9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/camera_connect_link.stl",
+      "bytes": 41084,
+      "sha256": "1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/depth_cam_link.stl",
+      "bytes": 1169884,
+      "sha256": "4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/gripper_base_link.stl",
+      "bytes": 105284,
+      "sha256": "46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/gripper_left_link.stl",
+      "bytes": 19284,
+      "sha256": "9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/gripper_link.stl",
+      "bytes": 1041384,
+      "sha256": "31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/gripper_right_link.stl",
+      "bytes": 19284,
+      "sha256": "5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/guide_rod_link.stl",
+      "bytes": 12084,
+      "sha256": "d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/imu_link.stl",
+      "bytes": 293384,
+      "sha256": "2d3f2e16a2150d97c01ed0ff6101fb5815bfde44143871dc8368149cd024e222"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/left_jaw_link.stl",
+      "bytes": 46684,
+      "sha256": "47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/lidar_frame.stl",
+      "bytes": 191734,
+      "sha256": "94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/link1.stl",
+      "bytes": 1020984,
+      "sha256": "7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/link2.stl",
+      "bytes": 1215334,
+      "sha256": "553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/link3.stl",
+      "bytes": 1215634,
+      "sha256": "cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/link4.stl",
+      "bytes": 1174984,
+      "sha256": "158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/link5.stl",
+      "bytes": 94084,
+      "sha256": "c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/right_jaw_link.stl",
+      "bytes": 49584,
+      "sha256": "37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/wheel_left_back_link.stl",
+      "bytes": 3278784,
+      "sha256": "22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/wheel_left_front_link.stl",
+      "bytes": 3299084,
+      "sha256": "2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/wheel_right_back_link.stl",
+      "bytes": 4184384,
+      "sha256": "68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8"
+    },
+    {
+      "path": "frontend/dist/sample/meshes/wheel_right_front_link.stl",
+      "bytes": 3276484,
+      "sha256": "9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9"
+    },
+    {
+      "path": "frontend/dist/sample/provenance.json",
+      "bytes": 5757,
+      "sha256": "0bcdc534f6098e55323fceba41119bb2317a4fd9057b4436a718fc796fcd2be8"
+    },
+    {
+      "path": "frontend/dist/sample/scene.json",
+      "bytes": 116370,
+      "sha256": "4ae29235013ba992f723971e5e0870f2dd08f1161361f864b2009ebb774aee6e"
+    },
+    {
+      "path": "frontend/dist/sample/snapshot.json",
+      "bytes": 15741,
+      "sha256": "759aa9947c1241119d2946f05d18dbb09b67461012ce16af16f27f7c1418a05f"
+    }
+  ]
+}

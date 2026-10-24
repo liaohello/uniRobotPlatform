@@ -1,0 +1,8 @@
+{
+  "pid": 800217,
+  "port": 18933,
+  "upstream": "http://127.0.0.1:18942",
+  "release_id": "m1-front-geometry-20261023T192903Z-58a156740be8",
+  "directory": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-front-geometry-20261023T192903Z-58a156740be8/frontend/dist",
+  "started_at_utc": "2026-10-23T19:29:57.352307+00:00"
+}

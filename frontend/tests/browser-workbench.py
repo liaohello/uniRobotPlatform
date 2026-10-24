@@ -15,7 +15,7 @@ with sync_playwright() as pw:
  page.on('pageerror',lambda error:errors.append(str(error)))
  page.on('request',lambda req:requests.append({'method':req.method,'url':req.url}))
  try:
-  start=time.perf_counter();page.goto(a.url+'/?inspect=1',wait_until='networkidle');loaded(page)
+  start=time.perf_counter();page.goto(a.url+'/?inspect=1&source=frozen',wait_until='networkidle');loaded(page)
   report['initial_load_s']=time.perf_counter()-start;initial=state(page);before=json.dumps(initial['actual'],sort_keys=True)
   check('23 real STL assets loaded without failure',initial['scene']['pendingLoads']==0 and initial['scene']['failedAssets']==[])
   check('offline source does not grant platform Session',initial['source']['kind']=='frozen' and not initial['source']['is_platform_session'])
@@ -80,10 +80,10 @@ with sync_playwright() as pw:
   page.set_viewport_size({'width':1600,'height':1000});page.get_by_role('button',name='恢复全景',exact=True).click();page.wait_for_timeout(300)
   report['final_scene']=state(page)['scene'];page.screenshot(path=str(a.output/'workbench-final.png'),full_page=True)
   # No silent simulated fallback when a real source is unavailable.
-  page.get_by_label('数据源',exact=True).select_option('platform');page.get_by_role('heading',name='数据源不可用').wait_for();check('unavailable platform source clears old view without silent fallback',page.locator('canvas').count()==0 and '尚未配置' in page.get_by_role('alert').inner_text())
+  page.route('**/api/v1/mobilecar/**',lambda route:route.fulfill(status=503,json={'detail':{'code':'fixture_offline','message':'synthetic offline source'}}));page.get_by_label('数据源',exact=True).select_option('platform');page.get_by_role('heading',name='数据源不可用').wait_for();check('unavailable platform source clears old view without silent fallback',page.locator('canvas').count()==0 and 'fixture_offline' in page.get_by_role('alert').inner_text())
   page.get_by_role('button',name='使用冻结原生样本',exact=True).click();loaded(page);check('explicit source switch recreates a single renderer',state(page)['scene']['lifecycle']['active']==1 and state(page)['target'] is None)
   check('browser issued GET requests only',all(r['method']=='GET' for r in requests))
-  check('browser made no native command/runtime calls',all('/api/v1/' not in r['url'] for r in requests))
+  check('browser made no native command/runtime calls',all('/api/v1/' not in r['url'] or r['url'].split('?')[0].endswith(('/mobilecar/scene','/mobilecar/capabilities','/mobilecar/snapshot')) for r in requests))
   check('no uncaught browser errors',not errors)
   report['status']='passed';report['request_count']=len(requests);report['actual_sha256']=hashlib.sha256(before.encode()).hexdigest()
  except Exception as exc:

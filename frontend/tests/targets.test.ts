@@ -10,7 +10,7 @@ import {PreviewKinematics} from '../src/viewport/kinematics';
 const sample={scene,actual,capabilities,armSpec,source:{...source,kind:'frozen',label:'frozen test'}} as unknown as ViewSample;
 describe('frozen native geometry and local target boundary',()=>{
  it('matches native frozen TCP with model joints and Z-up FK',()=>{
-  const p=new PreviewKinematics(sample.scene,sample.actual,sample.armSpec).forward(sample.actual.model_joint_positions_rad);
+  const p=new PreviewKinematics(sample.scene,sample.actual,sample.armSpec!).forward(sample.actual.model_joint_positions_rad);
   expect(Math.hypot(...p.map((v,i)=>v-sample.actual.tcp.position_m[i]))).toBeLessThan(0.00001);
  });
  it('edits one joint while preserving prior other targets and immutable Actual',()=>{

@@ -1,59 +1,20 @@
-# M1.2a 前端与后端交接：最小缺口
+# 真实只读工作台：已接入与最小差距
 
-主责仍为 `docs/specs/30-contracts`；此页仅记录前端投影和待对齐样例，不定义第二套公共 API，也不要求后端返回某个自创聚合端点。
+此文件是前端交接记录，不定义第二套公共接口。权威语义仍在后端维护的 `docs/specs/30-contracts`，wire 以 backend `mobilecar_read.py` / `unirobot-mobilecar-read-1` 为准。
 
-目前平台 `GET /api/v1/mobilecar/preflight` 只返回指定字段的兼容诊断。草案 API 只开放固定 recipe 元数据；验证 failed，Session 创建 unsupported。通用 `/ws` 不是机器人状态流，旧 RunRecord 不是本工作台的 Session。前端不会把这些结果转成 Ready/Owner/执行成功。
+已接入 `GET /api/v1/mobilecar/scene`、`capabilities`、`snapshot`、`scene/assets/{id}?sha256=…`。适配层解 envelope/data 并比较 adapter/robot/runtime/resource/profile 身份；面板使用内部投影，后端无需返回 ViewSample。Actual、后端已有 Target、本地 Target/Ghost 分开；Owner 只读，所有执行资格仍为 false。world_links 是编译初态，无实时物体姿态。接口中的 media reference 不用于下载媒体。
 
-| 所需能力 | 最小输入/输出建议（待后端对话按现有契约维护） | 前端当前行为 |
+| 仍需对齐的最小能力 | 输入/输出或语义建议 | 当前前端边界 |
 |---|---|---|
-| Scene / assets / capabilities | native SceneManifest 几何层级、stable link/object IDs、mesh URI/hash；joint ID、axis、模型/用户零位映射、限位/单位、TCP site/父体 | 使用冻结真实样本；资产 URL 只在服务层解析；G1 任意初态编辑不开放 |
-| Actual 与传感器 | run/generation/episode 与 platform Session 绑定、seq/tick、clock_id/source/sim 时间、Frame/单位、base/joints/TCP、相机媒体及时间/失效原因 | 显示冻结采样时刻，媒体缺失；没有伪造连续流或“最新年龄” |
-| Target / preview | target revision、Frame/自由度、joint/TCP 输入；IK 状态/残差、候选终点/完整 q(t) 的分别声明、检查级别、有效期、plan_id | 只有本地 Target / FK / position-only IK；没有后端计划，辅助线不叫轨迹 |
-| Authority / command | execution scope、source、后端认可的 owner/lease；command ID/seq/TTL/targetRevision/plan_id；Accepted/Rejected/执行终态与原因 | 控制组展示未接入，所有提交/接管禁用；不发 native POST |
-| Session / recording | 已验证快照、无副作用 prepared 绑定、显式 Start；录制 RESET 应用身份与实际初态确认、可靠开录、停车与 finalize 独立反馈 | 全部未接入；不将抓取到的原生健康字段映射成平台 Session 或录制成功 |
-| Read-only replay | Episode/segment 复合身份、历史 samples/media/events 的 source clock 与统一 cursor；缺失/完整性说明 | 单帧冻结观察不冒称 Episode；连续历史回放在 M1.5 接入且不注入执行服务 |
+| 版本化用户角映射 / TCP 几何 | 能力元数据中保留按 joint name 的 zero_model_rad、direction 和 TCP parent/local offset，并附配置/内容版本；例：joint4 `{zero_model_rad:-1.5707963267948966,direction:1}`，TCP `{body:"guide_rod_link",position_m:[-0.0030427614580541846,-0.0007270026737451543,0.01995871637761593]}`。具体路由与字段由后端维护，不要求新增聚合端点 | Actual 直接用 named model angles；本地预览暂用已固定参考 profile，只按已知模型匹配，不证明远端完整部署配置，未知模型禁用候选 |
+| prepared Session / Start | 已验证快照、无运动绑定、显式Start、应用身份/初态确认 | Session不就绪；不用health、原生session或recording ready替代 |
+| Target/plan/命令闭环 | 目标版本、Frame/自由度、有效计划身份、命令关联与Accepted/Rejected/执行终态 | native已有Target不视为本方回执；`command_id=null/tcp=null/preview=null`保留，本地线段不是轨迹 |
+| Authority | 后端认可的owner/lease/scope和接管结果、过期/安全停止 | 原生owner仅观察，authorizes_caller=false；接管/执行禁用 |
+| 相机媒体与真实观测 | frame/标定、source/capture/arrival时间、media reader与失效语义 | 只显示SensorState引用/quality，不把观察相机当RGB，不加载native_asset_uri |
+| 录制/只读回放 | RESET应用身份、可靠开录、停车与finalize独立结果；Episode/segment复合身份和时间/媒体reader | 录制与播放禁用；监控时间不是采集轨迹或Episode回放 |
 
-## 已有 native 样例（不宣称平台已有端点）
+本轮不改 backend、公共契约或 native。上述元数据例子来自已固定参考配置，仅作为最小输入输出建议，未宣称后端已提供或完整配置已核验；控制/录制仍需后续授权与运行门控。
 
-以下片段来自真实已冻结样本的同一组身份/单位；完整记录保存在 public/sample。采样不是平台 G1 初始化/验收。
+## 本轮几何候选协作
 
-```json
-{
-  "contract_version": "mobilecar-1.0",
-  "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
-  "scene_id": "mobile_pick",
-  "links": [{
-    "name": "link1", "parent_name": "back_shell_black_link",
-    "joint_name": "joint1", "joint_type": "hinge", "joint_axis": [0, 0, 1]
-  }],
-  "tcp_site": "grasp_tcp"
-}
-```
-
-上例只节选身份/层级字段；完整几何还必须保留 `local_transform`（m / xyzw）、geoms、mesh_assets。Actual 读取保留 native `run_id/backend_generation/episode_id/sim_time_s/backend_monotonic_s/wall_utc/clock_id/control_tick_id`；TCP 保留 `frame_id/position_m/orientation_xyzw`。模型关节角 rad 与用户角 rad 不是同一个零位。
-
-待服务端支持后的 TCP 输入/反馈最小语义建议：
-
-```json
-{
-  "intent": "TCP Target",
-  "context": {"session_id": "<bound-session>", "source": "human", "control_scope": "arm"},
-  "target": {"revision": 7, "frame_id": "world_sim", "position_m": [0.33, 0.0, 0.30]},
-  "constraints": {"position_only": true},
-  "mode": "Preview-Confirm"
-}
-```
-
-```json
-{
-  "target_revision": 7,
-  "preview": {"kind": "endpoint_only", "joint_positions_rad": [0, 0, 0, 0, 0]},
-  "frame_id": "world_sim",
-  "checks": {"collision": "not_checked", "dynamics": "not_checked"},
-  "execution": {"status": "not_submitted"}
-}
-```
-
-这些是 CT-COMMAND / CT-TIME-FRAMES 的对齐示例，不是已实现的请求 Schema，零向量也不是有效计划证据。后端选择具体路由、单位/零位定义、响应字段和错误码后，仅调整 `src/adapters/` 的映射。当前 `ViewSample` 是内部面板投影；`PlatformService` 没有配置或猜测上述端点，明确报未接入。
-
-待对齐前不增加假 Owner、假 plan_id、静默 fallback 或模拟 Accepted。后端能提供只读 Scene+Actual 时即可先替换冻结源，无需等录制和全部控制接口完成。
+后端对话负责 `unirobot-mobilecar-geometry-1` scene 与编译资产，使用独立候选服务，旧read-1保持稳定；新增字段由其公共契约与类型维护。前端 `mobilecar-read.ts` 明确消费编译坐标标识、原资产身份和 geometry_provenance，拒绝缺失/歧义信息；mesh `size_m=[1,1,1]` 且不重复scale。contype/conaffinity/group/collision保留为后端原义，显隐仅消费RGBA。服务是否已通过本轮真实验证，以本方development记录和后端geometry交付记录为准。

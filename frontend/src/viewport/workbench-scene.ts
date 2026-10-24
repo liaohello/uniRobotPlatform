@@ -5,7 +5,7 @@ import type { LocalTarget, Vec3, ViewSample } from '../adapters/types';
 export type Tool = 'select' | 'joint' | 'tcp';
 export interface SceneCallbacks {
  select(id: string | null): void; joint(name: string, userRad: number): void;
- tcp(position: Vec3): void; notice(message: string): void; interaction(active: boolean): void;
+ tcp(position: Vec3): void; notice(message: string): void; interaction(active: boolean): void; assetError(message:string):void;
 }
 export const rendererLifecycle = { created: 0, disposed: 0, active: 0 };
 export class WorkbenchScene extends SceneView {
@@ -22,7 +22,7 @@ export class WorkbenchScene extends SceneView {
  private jointDrag: { name: string; value: number; start: THREE.Quaternion; axis: THREE.Vector3 } | null = null;
  private hovered: string | null = null;
  constructor(container: HTMLElement, sample: ViewSample, callbacks: SceneCallbacks) {
-   super(container,{ onNotice: callbacks.notice });
+   super(container,{ onNotice: callbacks.notice, onAssetError: callbacks.assetError });
    this.sample=sample; this.callbacks=callbacks;
    rendererLifecycle.created++;rendererLifecycle.active++;
    this.scene.background=new THREE.Color('#14202b');this.scene.fog=null;
@@ -117,6 +117,9 @@ export class WorkbenchScene extends SceneView {
    if(entry)this.selectionBox.box.setFromObject(entry.group);
    this._requestRender(true);
  }
+ updateActual(sample:ViewSample){
+   this.sample=sample;this.updateSnapshot(sample.actual);this.syncTarget(this.target);this.highlight();
+ }
  setSelection(id:string|null) {this.selected=id;this.highlight();this.updateGizmo();}
  setTool(tool:Tool){this.cancelGesture();this.tool=tool;this.updateGizmo();}
  syncTarget(target:LocalTarget|null){
@@ -130,7 +133,7 @@ export class WorkbenchScene extends SceneView {
        this.ghostRoot.traverse(node=>{if(node instanceof THREE.Mesh){
          let parent:THREE.Object3D|null=node;let linkName='';
          while(parent){if(parent.userData.sceneLink){linkName=parent.userData.sceneLink.name;break;}parent=parent.parent;}
-         node.visible=this.isArmLink(linkName);const m=node.material as THREE.MeshStandardMaterial;m.color.set('#58c5fa');m.opacity=0.30;
+         node.visible=this.isArmLink(linkName);const m=node.material as THREE.MeshStandardMaterial;m.color.set('#58c5fa');m.opacity=0.30*(node.userData.geom?.rgba?.[3]??1);
        }});
      }
      const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...this.sample.actual.tcp.position_m),new THREE.Vector3(...target.tcpWorldM)]),new THREE.LineDashedMaterial({color:0xf4bc60,dashSize:0.009,gapSize:0.006,transparent:true,opacity:0.8}));
@@ -139,11 +142,11 @@ export class WorkbenchScene extends SceneView {
    if(!this.gizmo.dragging)this.updateGizmo();
    this._requestRender(true);
  }
- private userJointValue(name:string){const i=this.sample.capabilities.arm_joint_names.indexOf(name);return this.target?(this.target.jointModelRad[name]-this.sample.armSpec.user_coordinates.zero_model_rad[i])/this.sample.armSpec.user_coordinates.direction[i]:this.sample.actual.arm.user_joint_positions_rad[i];}
+ private userJointValue(name:string){const i=this.sample.capabilities.arm_joint_names.indexOf(name);return this.target?(this.target.jointModelRad[name]-this.sample.armSpec!.user_coordinates.zero_model_rad[i])/this.sample.armSpec!.user_coordinates.direction[i]:this.sample.actual.arm.user_joint_positions_rad[i];}
  private updateGizmo(){
    if(!this.gizmo)return;
    this.gizmo.detach();this.gizmo.enabled=false;
-   if(this.tool==='select')return;
+   if(this.tool==='select'||!this.sample.armSpec)return;
    this.proxy.quaternion.identity();
    this.gizmo.showX=true;this.gizmo.showY=true;this.gizmo.showZ=true;
    if(this.tool==='tcp'){
@@ -168,7 +171,7 @@ export class WorkbenchScene extends SceneView {
      let angle=2*Math.atan2(new THREE.Vector3(relative.x,relative.y,relative.z).dot(d.axis),relative.w);
      if(angle>Math.PI)angle-=2*Math.PI;if(angle< -Math.PI)angle+=2*Math.PI;
      const i=this.sample.capabilities.arm_joint_names.indexOf(d.name);const [min,max]=this.sample.capabilities.arm_user_limits_rad[i];
-     this.callbacks.joint(d.name,Math.max(min,Math.min(max,d.value+angle/this.sample.armSpec.user_coordinates.direction[i])));
+     this.callbacks.joint(d.name,Math.max(min,Math.min(max,d.value+angle/this.sample.armSpec!.user_coordinates.direction[i])));
    }
  }
  cancelGesture(){
@@ -219,7 +222,29 @@ export class WorkbenchScene extends SceneView {
    });
    const gl=this.renderer.getContext();
    const debug=gl.getExtension('WEBGL_debug_renderer_info');
-   return {gizmoAxis:this.gizmo.axis,pendingLoads:this.pendingLoads,failedAssets:[...this.failedAssets],renderCount:this.renderCount,lastFrameCostMs:this.lastFrameCostMs,selected:this.selected,tool:this.tool,ghost:this.ghostRoot.visible,dragging:this.gizmo.dragging,orbitEnabled:this.controls.enabled,linkPoints,handles,rings,viewport:{width:rect.width,height:rect.height},camera:this.camera.position.toArray(),renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),lifecycle:{...rendererLifecycle}};
+   // Read-only diagnostics, only exposed by the host with ?inspect. Local AABBs
+   // describe the loaded vertices; world bounds are transformed local AABBs.
+   const inverseRoot=this.mujocoRoot.matrixWorld.clone().invert();
+   const geoms:Record<string,unknown>={};
+   this.actualRoot.traverse(node=>{
+     if(!(node instanceof THREE.Mesh)||node.userData.meshPending||!node.userData.geom)return;
+     let link:THREE.Object3D|null=node;
+     while(link&&!link.userData.sceneLink)link=link.parent;
+     if(!link)return;
+     node.geometry.computeBoundingBox();const local=node.geometry.boundingBox!;
+     const worldSim=inverseRoot.clone().multiply(node.matrixWorld);const bounds=local.clone().applyMatrix4(worldSim);
+     const material=node.material as THREE.MeshStandardMaterial;const geom=node.userData.geom;
+     geoms[`${link.name}/${geom.name}`]={link:link.name,name:geom.name,asset:node.userData.assetId??null,
+       localBounds:{min:local.min.toArray(),max:local.max.toArray()},worldSimBounds:{min:bounds.min.toArray(),max:bounds.max.toArray()},
+       matrixWorldSim:worldSim.elements,visible:visible(node),alpha:material.opacity,transparent:material.transparent,depthWrite:material.depthWrite,
+       vertices:node.geometry.getAttribute('position').count};
+   });
+   const marker=this.actualTcp.getWorldPosition(new THREE.Vector3()).applyMatrix4(inverseRoot);
+   const tip=this.sample.armSpec&&this.linkGroups.get(this.sample.armSpec.tcp.body)?.group;
+   const fk=tip&&tip.localToWorld(new THREE.Vector3(...this.sample.armSpec!.tcp.position)).applyMatrix4(inverseRoot);
+   return {gizmoAxis:this.gizmo.axis,pendingLoads:this.pendingLoads,failedAssets:[...this.failedAssets],renderCount:this.renderCount,lastFrameCostMs:this.lastFrameCostMs,selected:this.selected,tool:this.tool,ghost:this.ghostRoot.visible,dragging:this.gizmo.dragging,orbitEnabled:this.controls.enabled,linkPoints,handles,rings,geoms,
+     tcp:{markerWorldSim:marker.toArray(),fkWorldSim:fk?fk.toArray():null,errorM:fk?fk.distanceTo(marker):null},
+     viewport:{width:rect.width,height:rect.height},camera:this.camera.position.toArray(),cameraTarget:this.controls.target.toArray(),renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),lifecycle:{...rendererLifecycle}};
  }
  override dispose(){
    if(this.disposed)return;

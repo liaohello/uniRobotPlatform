@@ -1,0 +1,30 @@
+State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                                       
+LISTEN 0      4096       127.0.0.1:9090       0.0.0.0:*                                                 
+LISTEN 0      2048       127.0.0.1:8765       0.0.0.0:*    users:(("video-object-re",pid=2156114,fd=12))
+LISTEN 0      2048       127.0.0.1:8770       0.0.0.0:*    users:(("python",pid=1666649,fd=31))         
+LISTEN 0      100        127.0.0.1:8797       0.0.0.0:*    users:(("python",pid=3652253,fd=9))          
+LISTEN 0      128        127.0.0.1:8798       0.0.0.0:*    users:(("python",pid=3652253,fd=10))         
+LISTEN 0      2048       127.0.0.1:8792       0.0.0.0:*    users:(("python",pid=941842,fd=41))          
+LISTEN 0      2048       127.0.0.1:8794       0.0.0.0:*    users:(("python",pid=2913985,fd=6))          
+LISTEN 0      128        127.0.0.1:16067      0.0.0.0:*                                                 
+LISTEN 0      128        127.0.0.1:631        0.0.0.0:*                                                 
+LISTEN 0      100        127.0.0.1:8080       0.0.0.0:*    users:(("mjcreate",pid=1428509,fd=6))        
+LISTEN 0      4096       127.0.0.1:7891       0.0.0.0:*                                                 
+LISTEN 0      4096       127.0.0.1:7890       0.0.0.0:*                                                 
+LISTEN 0      2048       127.0.0.1:29012      0.0.0.0:*    users:(("python",pid=513849,fd=12))          
+LISTEN 0      5          127.0.0.1:18895      0.0.0.0:*    users:(("python",pid=3693681,fd=7))          
+LISTEN 0      5          127.0.0.1:18905      0.0.0.0:*    users:(("python",pid=3587033,fd=7))          
+LISTEN 0      5          127.0.0.1:18932      0.0.0.0:*    users:(("python3",pid=293264,fd=3))          
+LISTEN 0      5          127.0.0.1:18931      0.0.0.0:*    users:(("python3",pid=2614787,fd=3))         
+LISTEN 0      2048       127.0.0.1:18941      0.0.0.0:*    users:(("python",pid=1155600,fd=6))          
+LISTEN 0      2048       127.0.0.1:18765      0.0.0.0:*    users:(("python",pid=2381456,fd=15))         
+LISTEN 0      2048       127.0.0.1:18014      0.0.0.0:*    users:(("python",pid=513897,fd=22))          
+LISTEN 0      128        127.0.0.1:43039      0.0.0.0:*    users:(("codex",pid=168923,fd=40))           
+LISTEN 0      128        127.0.0.1:45961      0.0.0.0:*                                                 
+LISTEN 0      4096         0.0.0.0:19055      0.0.0.0:*                                                 
+LISTEN 0      128        127.0.0.1:34945      0.0.0.0:*    users:(("codex",pid=1384785,fd=40))          
+LISTEN 0      4096   127.0.0.53%lo:53         0.0.0.0:*                                                 
+LISTEN 0      128          0.0.0.0:22         0.0.0.0:*                                                 
+LISTEN 0      128            [::1]:631           [::]:*                                                 
+LISTEN 0      4096            [::]:19055         [::]:*                                                 
+LISTEN 0      128             [::]:22            [::]:*                                                 
