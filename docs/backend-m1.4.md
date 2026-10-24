@@ -137,7 +137,7 @@ test-only recipe（`mobilecar.g1.teleop.mock-testonly`，`recipe_revision: 2`，
 
 ## 十三、冻结状态与边界
 
-- 平台改动：`backend/src/unirobot/prepare.py`、`backend/src/unirobot/api.py`、`backend/tests/native_fixtures.py`、`backend/tests/test_stop_end.py`（新）、`backend/tools/mock_native_protocol_app.py`、`backend/tools/cross_http_stop_end_check.py`（新）；服务器冻结 release `m1i-20261024T163746Z-platform`，源码清单 42 文件、sha256 `789e8072e07337e98982f366acefa7c729172e783af51e8e74a53767ee5af81e`。本轮交付在平台仓库本地提交，**不推送**。
+- 平台改动：`backend/src/unirobot/prepare.py`、`backend/src/unirobot/api.py`、`backend/tests/native_fixtures.py`、`backend/tests/test_stop_end.py`（新）、`backend/tools/mock_native_protocol_app.py`、`backend/tools/cross_http_stop_end_check.py`（新）；服务器冻结 release `m1i-20261024T163746Z-platform`，源码清单 42 文件、sha256 `789e8072e07337e98982f366acefa7c729172e783af51e8e74a53767ee5af81e`。本轮交付已在平台仓库本地提交 `ddc56a3`（分支 `codex/backend-m1-services`），**不推送**。
 - native：补丁保持未提交、未推送、未部署；既有未提交补丁与 git 索引未改动；不产出新生产 pin。
 - 规范更新：Session 生命周期（`m1-stop-1`/`m1-end-1` 端点与"七个路径"白名单、可用性字段）、Episode 采集生命周期（end/finalize 分层替换 legacy 描述）、控制命令契约（STOP 意图行与回执分层）、运行状态域（`closed` 判据）、决策与变更日志。
 - 本 Goal 完成只代表"停止与录制收尾候选"完成：不代表 8792 已部署、不代表真实停车已验证、不代表 M1 闭环通过。

@@ -103,7 +103,7 @@ native 接口静态核对和当前服务的只读诊断已完成。最新平台�
 
 这个交接文件和消息存档会在其后另建提交。继续工作时以 `git log` 和远端实际 HEAD 为准，不把表中的存档前 SHA 当永久最新版本。
 
-M1.2b/M1.2c 平台成果已在本地 `codex/backend-m1-services` 分支提交（代码基线 `018e8a9`，后续文档/证据修订见 `git log`）。M1.2d 平台成果本地提交为 `3eebc7d`，最终状态新鲜度/证据修订为 `d29e66b`。M1.3 地图/Route 源码、契约、服务器证据与文档本地提交为 `8627a4c`；M1.4 STOP/录制收尾的平台源码、测试、契约与证据本地提交见 `git log`（SHA 记录在提交后的下一次文档小提交），**均未推送**。原生 mobileCar 仓库的补丁保持未提交、未推送；M1.2d 补丁与摘要见 [native-m1e.patch](evidence/m1.2d/m1e-20261024T090448Z-platform/native/native-m1e.patch)，M1.4 补丁、冻结清单与候选摘要见 [native-m1h.patch](evidence/m1.4-stop-end/m1i-20261024T163746Z-platform/native-m1h.patch)。不要把本地提交当作已发布或已部署。
+M1.2b/M1.2c 平台成果已在本地 `codex/backend-m1-services` 分支提交（代码基线 `018e8a9`，后续文档/证据修订见 `git log`）。M1.2d 平台成果本地提交为 `3eebc7d`，最终状态新鲜度/证据修订为 `d29e66b`。M1.3 地图/Route 源码、契约、服务器证据与文档本地提交为 `8627a4c`；M1.4 STOP/录制收尾的平台源码、测试、契约与证据本地提交为 `ddc56a3`（源码、测试、契约、证据与文档同一提交；本段 SHA 的补记为随后的小提交），**均未推送**。原生 mobileCar 仓库的补丁保持未提交、未推送；M1.2d 补丁与摘要见 [native-m1e.patch](evidence/m1.2d/m1e-20261024T090448Z-platform/native/native-m1e.patch)，M1.4 补丁、冻结清单与候选摘要见 [native-m1h.patch](evidence/m1.4-stop-end/m1i-20261024T163746Z-platform/native-m1h.patch)。不要把本地提交当作已发布或已部署。
 
 Git 追踪项目源码、测试、无秘密公共配置、AGENTS 和文档/参考素材。忽略虚拟环境、缓存、node_modules、运行输出、私人 catalog/.env、本机工具状态及 AGENTS 备份。密钥没有进入仓库。
 
