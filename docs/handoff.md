@@ -89,7 +89,7 @@ native 接口静态核对和当前服务的只读诊断已完成。最新平台�
 
 这个交接文件和消息存档会在其后另建提交。继续工作时以 `git log` 和远端实际 HEAD 为准，不把表中的存档前 SHA 当永久最新版本。
 
-本轮（M1.2b/M1.2c）平台成果已在本地 `codex/backend-m1-services` 分支提交为 `018e8a9`，**没有推送**。原生 mobileCar 仓库的补丁保持未提交、未推送，补丁与摘要见 [M1.2c 证据](evidence/m1.2c/m1c-20261024T065943Z-platform/native/native-m1binding.patch)。不要把本地提交当作已发布或已部署。
+本轮（M1.2b/M1.2c）平台成果已在本地 `codex/backend-m1-services` 分支提交（代码基线 `018e8a9`，后续 `2a421a3`、`0f77b21` 为交付文档/证据修订），**没有推送**。原生 mobileCar 仓库的补丁保持未提交、未推送，补丁与摘要见 [M1.2c 证据](evidence/m1.2c/m1c-20261024T065943Z-platform/native/native-m1binding.patch)。不要把本地提交当作已发布或已部署。
 
 Git 追踪项目源码、测试、无秘密公共配置、AGENTS 和文档/参考素材。忽略虚拟环境、缓存、node_modules、运行输出、私人 catalog/.env、本机工具状态及 AGENTS 备份。密钥没有进入仓库。
 
