@@ -68,7 +68,7 @@ native 对自身实际返回的 `/api/v1/scene` 规范 JSON 求 SHA-256；平台
 
 ## 三、原生绑定协议 `m1-binding-1`（候选）
 
-候选补丁位于 [native-m1binding.patch](evidence/m1.2c/m1c-20261024T065943Z-platform/native/native-m1binding.patch)，基线 native commit `a5cef52`，SHA-256 `9f9a7b0c…ebe1`。应用补丁后的候选源码身份见 [native-candidate-manifest.json](evidence/m1.2c/m1c-20261024T065943Z-platform/native/var/reports/native-candidate-manifest.json)。
+候选补丁位于 [native-m1binding.patch](evidence/m1.2c/m1c-20261024T065943Z-platform/native/native-m1binding.patch)，基线 native commit `a5cef52`，SHA-256 `9f9a7b0c…ebe1`。应用补丁后的候选源码身份见 [native-candidate-manifest.json](evidence/m1.2c/m1c-20261024T065943Z-platform/native/reports/native-candidate-manifest.json)。
 
 | 端点 | 行为 |
 |---|---|
@@ -191,7 +191,7 @@ PYTHONPATH=src ~/Desktop/mobileCar/envs/g2a-py310-mujoco316/bin/python \
   --out var/reports/native-identity.json
 ```
 
-源码身份：平台 `backend` 44 个非缓存文件，清单 SHA-256 `46a12f5b…68b1`（按 release 根相对路径）；原生冻结清单见 `native/var/reports/frozen-source-listing.txt`，清单摘要 `6e67d96e…120d`。这些是测试 release 身份，不是已部署生产身份。
+源码身份：平台 `backend` 44 个非缓存文件，清单 SHA-256 `46a12f5b…68b1`（按 release 根相对路径）；原生冻结清单见 `native/reports/frozen-source-listing.txt`，清单摘要 `6e67d96e…120d`。这些是测试 release 身份，不是已部署生产身份。
 
 ## 十、仍未完成
 

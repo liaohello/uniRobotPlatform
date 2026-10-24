@@ -1,0 +1,50 @@
+{
+  "schema_version": "mobilecar-native-candidate-1",
+  "patch_base_native_commit": "a5cef52d932ba41424b4bcc134539914031fda39",
+  "test_release": "m1binding-20261024T065822Z-native",
+  "deployed_base_release": "drvfix-20261019T044549Z-0a80415b2577",
+  "note": "Patch base is a5cef52. The test release was assembled from the deployed drvfix content plus the patch. Among the source modules checked here, only src/mobilecar/backends/mujoco/backend.py differs between drvfix and a5cef52, and the patch does not touch it. UI/docs/assets differences between the releases were not audited.",
+  "changed_files": [
+    {
+      "path": "src/mobilecar/app.py",
+      "candidate_sha256": "7eb77faa604d47c4fbbf639308250598771fc4e2b6faec59e525c71e276e849e",
+      "deployed_base_sha256": "bd29d0655558fc37bd2af11488372855ee25c5fca5209ecb0d96b1b196c80ae1"
+    },
+    {
+      "path": "src/mobilecar/cli.py",
+      "candidate_sha256": "f90d689ab8dbe1c72f5d0e22afcecf02cd6e854024f1192515ad9936c3cc1f60",
+      "deployed_base_sha256": "eba88a3948df2c5e9013c1603f45f86d5dd1e11f285f7b6a3a0081efbecb6120"
+    },
+    {
+      "path": "src/mobilecar/config.py",
+      "candidate_sha256": "091d4d2c987a8194d57f59734bf2b2c2e945bf522b73a2bc0e710f7275a0ea76",
+      "deployed_base_sha256": "38350ef7c46c235e550fec24af29751dc0958378fecb6aaa3c8db401f21df1ea"
+    },
+    {
+      "path": "src/mobilecar/contracts/models.py",
+      "candidate_sha256": "84d715610ff82accfd2df9860d3ea85e00ac875f88ae213fd875902a30d69184",
+      "deployed_base_sha256": "40279a8b2f9f026819785eb1c18756e691b812b9099971b924ec04e9642beac0"
+    },
+    {
+      "path": "src/mobilecar/data/recorder.py",
+      "candidate_sha256": "688b57e1725dc560ba22b0208519276baec7bf396da32afd339e5938d58588d0",
+      "deployed_base_sha256": "3bffa65614a03edd5af970d3dd9748c6572fcade89c2810199ca25a0689a8bbf"
+    },
+    {
+      "path": "src/mobilecar/attestation.py",
+      "candidate_sha256": "389458148be673c50d0c915c7ad9da453502998108260c4b2728d649405e9c4e",
+      "deployed_base_sha256": null
+    },
+    {
+      "path": "src/mobilecar/session_binding.py",
+      "candidate_sha256": "ac43b960bcc8a7cf7f72aa4d9b1b29fb5024e5d7b3d64fe558f4ef136bcd117d",
+      "deployed_base_sha256": null
+    },
+    {
+      "path": "tests/integration/test_session_binding.py",
+      "candidate_sha256": "87792d7d1dbd5733c26bf16251b82081fb29c7795ff615eeb7044e620985522e",
+      "deployed_base_sha256": null
+    }
+  ],
+  "source_listing_sha256": "6e67d96ed268e58c1165df649287cfba309673113011eba97f84e4aba2ef120d"
+}

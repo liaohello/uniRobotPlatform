@@ -1,0 +1,140 @@
+{
+  "config_manifest": {
+    "config_files": [
+      {
+        "path": "configs/default.yaml",
+        "role": "config",
+        "sha256": "2304ef9f231c06133a2318e19f2ef1ef8bb2fc1dc9e1cf9b520ede61759191c8",
+        "size_bytes": 2013
+      }
+    ],
+    "effective_config": {
+      "acceptance": {
+        "lift_height_m": 0.05,
+        "lift_hold_s": 2.0,
+        "max_episode_seconds": 300.0,
+        "max_move_seconds": 30.0,
+        "settle_duration_s": 0.5
+      },
+      "backend": {
+        "capture_scheduler": "deadline",
+        "control_period_s": 0.01,
+        "fast_stream_publish_interval_ticks": 10,
+        "generation": 1,
+        "kind": "mujoco",
+        "lrf_interval_s": 0.1,
+        "model_path": "assets/landerpi/model/robot.xml",
+        "observation_profile_path": "configs/profiles/g2a_rgbd_5hz.yaml",
+        "physics_timestep_s": 0.001,
+        "realtime": true,
+        "render_rgbd": true,
+        "rgbd_interval_s": 0.2,
+        "scene_path": "assets/landerpi/scenes/mobile_pick.xml"
+      },
+      "contract_version": "mobilecar-1.0",
+      "g3b": {
+        "enabled": false,
+        "map_root": "var/maps",
+        "profile_path": "configs/profiles/g3b_navigation_v1.yaml"
+      },
+      "navigation": {
+        "enabled": false,
+        "profile_path": "configs/profiles/g3a_navigation_v1.yaml",
+        "queue_capacity": 16,
+        "socket_path": "var/ipc/g3a_navigation.sock"
+      },
+      "profile": "g1_development",
+      "quality": {
+        "action_profile_path": "configs/profiles/g2a_action_teleop_v1.yaml",
+        "profile_path": "configs/profiles/g2a_rgbd_5hz.yaml",
+        "report_root": "runs",
+        "report_version": "g2a-quality-1.0"
+      },
+      "recording": {
+        "close_drain_timeout_s": 10.0,
+        "flush_interval_s": 0.05,
+        "queue_capacity": 4096,
+        "required_for_motion": true,
+        "root": "runs"
+      },
+      "safety": {
+        "command_ttl_s": 0.5,
+        "episode_timeout_s": 300.0,
+        "feedback_max_age_s": 0.05,
+        "heartbeat_interval_s": 0.15,
+        "lease_timeout_s": 0.5,
+        "parking_confirm_timeout_s": 5.0,
+        "q1_software_limit_rad": null,
+        "single_action_timeout_s": 30.0,
+        "stop_settle_duration_s": 0.5,
+        "stop_settle_linear_m_s": 0.005,
+        "stop_settle_yaw_rad_s": 0.02,
+        "stop_start_deadline_s": 0.05,
+        "tcp_hold_duration_s": 0.5,
+        "tcp_position_tolerance_m": 0.005,
+        "tcp_speed_scale": 0.5,
+        "translation_acceleration_m_s2": 0.3,
+        "translation_norm_m_s": 0.05,
+        "yaw_acceleration_rad_s2": 1.0,
+        "yaw_rate_rad_s": 0.3
+      },
+      "ui": {
+        "adaptive_rendering": true,
+        "host": "127.0.0.1",
+        "keyboard_refresh_s": 0.15,
+        "keyboard_translation_m_s": 0.05,
+        "keyboard_yaw_rad_s": 0.3,
+        "max_pixel_ratio": 1.5,
+        "port": 8787,
+        "preferred_pixel_ratio": 1.0,
+        "shadow_map_size": 512,
+        "snapshot_hz": 15,
+        "static_render_interval_s": 0.1
+      }
+    },
+    "launch_overrides": {
+      "backend_kind": "mujoco",
+      "require_recording": true
+    },
+    "runtime_files": [
+      {
+        "path": "assets/landerpi/model/arm_spec.json",
+        "role": "arm_spec",
+        "sha256": "8d1dc917c7c76c58dcd96ab07525e247479d6295f427dd75c8ba3a13c0ecdfa9",
+        "size_bytes": 2886
+      },
+      {
+        "path": "configs/profiles/g2a_action_teleop_v1.yaml",
+        "role": "quality_action_profile",
+        "sha256": "4b037ff671fb766452630b234d5680383381a2e6597b5855a5d92131a5c9f7dc",
+        "size_bytes": 1298
+      },
+      {
+        "path": "configs/profiles/g2a_rgbd_5hz.yaml",
+        "role": "observation_profile,quality_profile",
+        "sha256": "9473171d7460ba968813b40ad1cae2f392bbc168e85ef4524eced6f38b5e3042",
+        "size_bytes": 1245
+      }
+    ],
+    "schema_version": "mobilecar-config-manifest-1"
+  },
+  "config_manifest_sha256": "02351b71962a5bc95640ed5b2eda5543cb393438d5b541d27bc5de2f533a9af0",
+  "physics_state_calls": 0,
+  "runtime_environment": {
+    "implementation": "CPython",
+    "missing_packages": [],
+    "packages": {
+      "PyYAML": "6.0.3",
+      "fastapi": "0.136.3",
+      "httpx": "0.28.1",
+      "mujoco": "3.1.6",
+      "numpy": "2.2.4",
+      "pillow": "11.3.0",
+      "pydantic": "2.13.5",
+      "uvicorn": "0.37.0"
+    },
+    "python": "3.10.12"
+  },
+  "scene_manifest_sha256": "5969e260b5ca87849387e8827b3e83c332f845281d0d69c0f7b141a8c3f1bf2d",
+  "schema_version": "mobilecar-recipe-identity-1"
+}
