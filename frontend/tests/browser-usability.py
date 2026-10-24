@@ -392,8 +392,10 @@ with sync_playwright() as pw:
             check('Esc leaves Orbit usable', post_esc['scene']['orbitEnabled'] is True)
             if after_esc:
                 exit_fullscreen(page)
+            docked_limit = fs_state['scene']['viewport']['height']
+            page.wait_for_function("(top)=>window.__workbenchInspect().scene.viewport.height<top", arg=docked_limit, timeout=8000)
             check('exit fullscreen restores the docked viewport',
-                  state(page)['scene']['viewport']['height'] < fs_state['scene']['viewport']['height'])
+                  state(page)['scene']['viewport']['height'] < docked_limit)
             check('exit fullscreen keeps the local target',
                   state(page)['target'] is not None and state(page)['target']['revision'] == revision)
         else:

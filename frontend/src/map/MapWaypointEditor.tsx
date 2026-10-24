@@ -28,6 +28,8 @@ export function MapWaypointEditor({ map, waypoints, selectedId, readOnly = false
   const gesture = useRef<Gesture | null>(null);
   const [view, setView] = useState<ViewState>({ zoom: 1, panX: 0, panY: 0, rotationDeg: 0 });
   const W = map.widthPx, H = map.heightPx;
+  // Marker geometry is expressed relative to a 600-unit view so a 59x47 occupancy grid and an 800x600 fixture look the same.
+  const k = Math.max(W, H) / 600;
   const pointToPixel = (xM: number, yM: number) => pixelFromMap(map, xM, yM);
   const eventToMap = (event: ReactPointerEvent) => {
     const svg = svgRef.current, group = groupRef.current;
@@ -123,27 +125,27 @@ export function MapWaypointEditor({ map, waypoints, selectedId, readOnly = false
       onWheel={(event) => { event.preventDefault(); zoom(event.deltaY < 0 ? 1.1 : 1 / 1.1); }}>
       <g ref={groupRef} transform={`translate(${view.panX} ${view.panY}) rotate(${view.rotationDeg} ${W / 2} ${H / 2}) scale(${view.zoom})`}>
         <image href={map.imageUrl} x={0} y={0} width={W} height={H} preserveAspectRatio="none" style={{ pointerEvents: 'none' }} />
-        {waypoints.length > 1 && <polyline points={polyline} fill="none" stroke="#e4b562" strokeWidth={2} strokeDasharray="7 6" opacity={0.85} pointerEvents="none"/>}
+        {waypoints.length > 1 && <polyline points={polyline} fill="none" stroke="#e4b562" strokeWidth={2 * k} strokeDasharray={`${7 * k} ${6 * k}`} opacity={0.85} pointerEvents="none"/>}
         {waypoints.map((point, index) => {
           const p = pointToPixel(point.xM, point.yM);
           const selected = point.id === selectedId;
           const yaw = point.yawRad;
-          const direction = yaw !== null ? pixelFromMap(map, point.xM + Math.cos(yaw) * 0.9, point.yM + Math.sin(yaw) * 0.9) : null;
-          const handle = direction ?? { u: p.u, v: p.v - 46 };
-          const angle = yaw !== null ? directionPixelAngle(map, yaw) : 0;
-          const tip = direction ? { u: direction.u + Math.cos(angle) * 13, v: direction.v + Math.sin(angle) * 13 } : null;
-          const base = direction ? { u: direction.u - Math.cos(angle) * 11, v: direction.v - Math.sin(angle) * 11 } : null;
+          const angle = yaw !== null ? directionPixelAngle(map, yaw) : -Math.PI / 2;
+          const arrow = 46 * k;
+          const handle = { u: p.u + Math.cos(angle) * arrow, v: p.v + Math.sin(angle) * arrow };
+          const tip = { u: handle.u + Math.cos(angle) * 13 * k, v: handle.v + Math.sin(angle) * 13 * k };
+          const base = { u: handle.u - Math.cos(angle) * 11 * k, v: handle.v - Math.sin(angle) * 11 * k };
           return <g key={point.id} data-waypoint-id={point.id} data-waypoint-order={point.order} data-map-x={point.xM} data-map-y={point.yM}
             data-yaw-rad={point.yawRad ?? ''} className={`map-waypoint ${selected ? 'selected' : ''}`}
             onPointerDown={(event) => onWaypointPointerDown(event, point.id)}>
             <title>{`PointGoal ${index + 1} · ${point.xM.toFixed(2)}, ${point.yM.toFixed(2)} m · yaw ${point.yawRad === null ? '未设置' : `${(point.yawRad * 180 / Math.PI).toFixed(1)}°`}`}</title>
-            {direction && <line x1={p.u} y1={p.v} x2={direction.u} y2={direction.v} stroke="#7de0c5" strokeWidth={3} pointerEvents="none"/>}
-            {direction && tip && base && <polygon points={`${tip.u},${tip.v} ${base.u + Math.sin(angle) * 5},${base.v - Math.cos(angle) * 5} ${base.u - Math.sin(angle) * 5},${base.v + Math.cos(angle) * 5}`} fill="#7de0c5" pointerEvents="none"/>}
-            {yaw === null && <><line x1={p.u} y1={p.v} x2={handle.u} y2={handle.v} stroke="#8b9a86" strokeWidth={1.5} strokeDasharray="4 4" pointerEvents="none"/><text x={handle.u + 4} y={handle.v - 3} fill="#b4b48a" fontSize={12} pointerEvents="none">?</text></>}
-            <circle cx={p.u} cy={p.v} r={15} fill="transparent"/>
-            <circle cx={p.u} cy={p.v} r={selected ? 8 : 6} className="waypoint-dot"/>
-            <text x={p.u + 11} y={p.v - 9} fill="#d9edf2" fontSize={13} pointerEvents="none">{index + 1}</text>
-            {!readOnly && <circle cx={handle.u} cy={handle.v} r={10} fill="#1c333b" stroke="#9bd8c5" strokeWidth={2} className="yaw-handle" data-yaw-handle={point.id}
+            {yaw !== null && <line x1={p.u} y1={p.v} x2={handle.u} y2={handle.v} stroke="#7de0c5" strokeWidth={3 * k} pointerEvents="none"/>}
+            {yaw !== null && <polygon points={`${tip.u},${tip.v} ${base.u + Math.sin(angle) * 5 * k},${base.v - Math.cos(angle) * 5 * k} ${base.u - Math.sin(angle) * 5 * k},${base.v + Math.cos(angle) * 5 * k}`} fill="#7de0c5" pointerEvents="none"/>}
+            {yaw === null && <><line x1={p.u} y1={p.v} x2={handle.u} y2={handle.v} stroke="#8b9a86" strokeWidth={1.5 * k} strokeDasharray={`${4 * k} ${4 * k}`} pointerEvents="none"/><text x={handle.u + 4 * k} y={handle.v - 3 * k} fill="#b4b48a" fontSize={12 * k} pointerEvents="none">?</text></>}
+            <circle cx={p.u} cy={p.v} r={15 * k} fill="transparent"/>
+            <circle cx={p.u} cy={p.v} r={(selected ? 8 : 6) * k} className="waypoint-dot"/>
+            <text x={p.u + 11 * k} y={p.v - 9 * k} fill="#d9edf2" fontSize={13 * k} pointerEvents="none">{index + 1}</text>
+            {!readOnly && <circle cx={handle.u} cy={handle.v} r={10 * k} fill="#1c333b" stroke="#9bd8c5" strokeWidth={2 * k} className="yaw-handle" data-yaw-handle={point.id}
               onPointerDown={(event) => onYawPointerDown(event, point.id)}><title>拖动设置朝向；零长度拖动不会确认</title></circle>}
           </g>;
         })}

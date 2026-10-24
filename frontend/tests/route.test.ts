@@ -2,11 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   OFFLINE_MAP, appendWaypoint, createOfflineDraft, degToRad, directionPixelAngle, loadOfflineSample,
   mapFromPixel, MIN_YAW_DRAG_M, moveWaypoint, normalizeRad, pixelFromMap, radToDeg,
-  removeWaypoint, routeErrors, updateWaypoint, withOrder,
+  removeWaypoint, routeContentEqual, routeErrors, updateWaypoint, withOrder,
 } from '../src/map/route';
-import {
-  RouteConflict, contentDigest, emptyStore, publishVersion, reloadDraft, saveDraft, versionsOf,
-} from '../src/map/route-store';
 
 const near = (a: number, b: number) => expect(a).toBeCloseTo(b, 9);
 
@@ -104,43 +101,12 @@ describe('waypoint editing', () => {
   });
 });
 
-describe('local route store', () => {
-  const valid = loadOfflineSample(createOfflineDraft());
-  const empty = emptyStore();
-
-  it('saves with a revision condition and refuses a stale base revision', () => {
-    const first = saveDraft(empty, valid, 0);
-    expect(first.saved).toMatchObject({ draftRevision: 1, authority: 'local_session_only' });
-    expect(() => saveDraft(first.state, valid, 0)).toThrow(RouteConflict);
-    try {
-      saveDraft(first.state, valid, 0);
-    } catch (error) {
-      expect((error as RouteConflict).current.draftRevision).toBe(1);
-    }
-    const second = saveDraft(first.state, { ...valid, draftRevision: 1 }, 1);
-    expect(second.saved.draftRevision).toBe(2);
-  });
-  it('publishes immutable versions without rewriting older ones', () => {
-    const saved = saveDraft(empty, valid, 0).state;
-    const v1 = publishVersion(saved, valid.routeId);
-    const moved = moveWaypoint(valid, valid.waypoints[1].id, 1);
-    const saved2 = saveDraft(v1.state, { ...moved, draftRevision: 1 }, 1).state;
-    const v2 = publishVersion(saved2, valid.routeId);
-    const versions = versionsOf(v2.state, valid.routeId);
-    expect(versions.map((item) => item.version)).toEqual([1, 2]);
-    expect(versions[0].waypoints.map((point) => point.id)).toEqual(valid.waypoints.map((point) => point.id));
-    expect(versions[0].contentDigest).not.toBe(versions[1].contentDigest);
-    expect(v2.state.adoptedRef).toBeNull();
-    expect(reloadDraft(v2.state, valid.routeId)?.draftRevision).toBe(2);
-  });
-  it('treats a yaw edit as a content change', () => {
-    const base = valid.waypoints;
-    const yawed = updateWaypoint(valid, base[0].id, { yawRad: degToRad(90) }).waypoints;
-    expect(contentDigest(base)).not.toBe(contentDigest(yawed));
-    expect(contentDigest(base)).toBe(contentDigest(withOrder(base)));
-    expect(contentDigest(base)).toBe(contentDigest(base.map((point) => ({ ...point, yawRad: normalizeRad(point.yawRad ?? 0) + 2 * Math.PI }))));
-  });
-  it('refuses to publish an unsaved draft', () => {
-    expect(() => publishVersion(empty, valid.routeId)).toThrow('尚未保存');
+describe('route content identity', () => {
+  it('compares content only, ignoring map binding labels carried per point', () => {
+    const base = loadOfflineSample(createOfflineDraft()).waypoints;
+    expect(routeContentEqual(base, base.map((point) => ({ ...point })))).toBe(true);
+    expect(routeContentEqual(base, base.map((point, index) => index === 0 ? { ...point, yawRad: 0 } : point))).toBe(false);
+    expect(routeContentEqual(base, base.map((point) => ({ ...point, yawRad: point.yawRad === null ? null : normalizeRad(point.yawRad + 4 * Math.PI) })))).toBe(true);
+    expect(routeContentEqual(base, [...base].reverse())).toBe(false);
   });
 });

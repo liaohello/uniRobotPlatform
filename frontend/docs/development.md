@@ -1,3 +1,64 @@
+# M1.3 真实地图与带朝向 Route Draft/Version 端到端接线（2026-10-24）
+
+本轮把 Scene Setup 从“会话内本地存储”接到后端候选 18953（`m1g-20261024T113913Z-platform`）真实交付的 Map/Route 资源：地图目录、固定版本、按摘要读取的 PGM 栅格，以及 Route Draft 创建/读取/条件保存/发布与不可变版本读取。DTO 全部按 18953 实际 OpenAPI 与 `CT-NAVIGATION-ROUTE` V0.6 映射，未自造 wire；导航采用与执行仍按后端 `navigation_eligible/adoption_supported/execution_supported=false` 禁用。只修改 `frontend/`，未推送。
+
+## 冻结版本与入口
+
+| 项 | 值 |
+|---|---|
+| 前端 release | `m1-front-geometry-20261024T160252Z-298deb4a4650` |
+| 输入 / 聚合 SHA-256 | 86 个输入；`298deb4a4650322f097d66bcb1232815744f1b5c903cbfeac3b8bc1d08d655ab` |
+| 地图/路线上游 | 18953 = `m1g-20261024T113913Z-platform`（真实 map/route，`read_contract_compatible=false`） |
+| 3D/Session 上游 | 18949 = `m1e-20261024T090448Z-platform`（geometry-2 只读 envelope） |
+| 本轮预览 | 18958 → 18953（PID 3122409，地图/路线实况）与 18957 → 18949（PID 2812567，3D/Session 回归），同一冻结 dist |
+| 保留服务 | 18951 → 18949、18950 → 18944、18946 → 18943 与 18943/18944/18949/18953 后端全部未停止、未重启 |
+| 真实 native | 8792 仍 `drvfix`/G4A2/PID 941842；两轮 pass 前后 `run_9c88e3e…` / generation 1 / `episode_43c22f…` / recording=IDLE 一致，`native_mutations_sent=false` |
+| 环境 | cec-sim，Node 20.20.2 / npm 10.8.2，锁摘要 `1bb055b6e003c960…`，Chromium ANGLE SwiftShader |
+| 证据 | `reports/m1-front-geometry-20261024T160252Z-298deb4a4650/`（18949 回归）与 `…-298deb4a4650-18953/`（真实地图/路线），含 build/unit/environment/preview/native-read-only/listeners 与各套件目录、截图 |
+
+## 实现一：真实 wire 与 DTO 映射
+
+- 新增 `src/adapters/platform-navigation.ts`：`MapListDto`、`MapVersionDto`、`MapAssetRefDto`、`RouteDraftDto`、`RouteVersionDto`、`RouteVersionSummaryDto`、`RouteVersionListDto`、`PublishResultDto` 与 `PlatformNavigationApi`（`listMaps`、`getMapVersion`、`mapImage`、`createDraft`、`getDraft`、`saveDraft`、`publishDraft`、`listVersions`、`getVersion`），路径、查询参数与请求体逐一对应 18953 OpenAPI。
+- snake_case DTO 与 camelCase ViewModel 的转换集中在此：`map_ref.map_id/version/frame → mapRef`、`x_m/y_m/yaw_rad → xM/yM/yawRad`（`[-π, π)` 归一化）、`resolution_m/width_px/height_px/origin{x_m,y_m,yaw_rad}`、`coordinate_convention`、`compatibility`。`frame!=map` 或 `image_row!='-Y'` 直接抛 `MapContractError`，不猜坐标系。
+- 版本标识与摘要以后端为权威：界面显示 `v1/v2` 字符串与后端 `content_digest`；本地 `route-store`（`local_session_only`、数字版本、`local-` 前缀摘要）整体删除，不再有任何本地摘要冒充服务端确认。
+- 实测 wire 细节：`GET /routes/{id}/versions` 返回 `{route_id, versions[]}` 信封；无已发布版本时返回 404 `route_version_not_found`，前端按“空列表”处理而不是错误；`POST .../publish` 返回 `{route_version, reused}`，`reused=true` 明确显示为“内容与已发布版本相同，未新建版本”。
+
+## 实现二：真实 PGM 与坐标约定
+
+- `src/map/pgm.ts` 只接受 P2/P5；解析头、注释与像素后校验：声明摘要与实际字节 SHA-256 必须一致（`digest_mismatch`）、解码尺寸与声明 `width_px/height_px` 必须一致（`dims_mismatch`）、其它 magic/位深/截断/越界值显式失败。浏览器端把校验后的栅格画进 canvas 再作为 PNG 图层，CSS 使用 `image-rendering:pixelated`。
+- 任何校验失败都保留该地图为“不可用”并禁用写入，不静默回退离线测试地图；离线 `offline-test-map` 仍在，但标记为 `offline_test_fixture` 且禁止创建后端路线。
+- 保留既有几何：origin 为图像左下角在 map frame 的位姿、列随 +X、行随 −Y、格中心 `col+0.5,row+0.5`、yaw 逆时针从 +X 起；视图旋转/缩放/平移仍经 `getScreenCTM()` 逆变换，map 坐标不变。标记几何改为按栅格尺寸比例缩放，59×47 的真实栅格与 800×600 的离线夹具视觉一致。
+
+## 实现三：Draft、版本与运行隔离
+
+- 创建（POST）、读取（GET）、条件保存（PUT `base_revision`）、发布（POST `publish` `base_revision`）与固定版本读取全部走真实后端；`data-route-dirty` 区分本地未保存编辑，服务端 Draft 与不可变 Version 分区显示，`data-content-digest` 只显示后端值。
+- 真实 409：`code=route_draft_revision_conflict` 与 `current_revision` 原样显示，本地编辑保留、服务器内容未被覆盖；提供“重载服务器草案（放弃本地编辑）”和“以服务器修订重试（用本地内容写入）”两条显式路径。旧的“服务端为 rN”本地推断文案随 `route-store` 一并删除。
+- 后端没有路线目录 GET：新增“按 route_id 打开”入口，创建/打开后把 `?route=` 写入地址栏，刷新即重新读取服务端草案与版本列表；未虚构任何列表路由。
+- 切换地图或路线使用串行序号 + AbortController：晚到结果不能覆盖当前对象；打开路线时若 `map_ref` 与当前地图不同则读取该路线绑定的地图，失败即显式报错，不回退。旧地图的 PointGoal 在新地图上以 `地图绑定不一致` 显式标记并禁用写入，需用户点“清空 PointGoal 以改用此地图”。
+- 采用与执行保持禁用并给出后端理由（`adoption_supported=false`、`execution_supported=false`、`arrival_acceptance=not_checked`）；Simulation 导航小窗可切到“明确选中的固定版本”，标注“查看不等于采用”，并保留只读、非规划安全路径与“执行反馈：无”。
+- 兼容性发现与解耦：18953 的 mobilecar 读取仍是 `unirobot-mobilecar-read-1`（无 `geometry_binding/geometry_provenance`，`data_source=live_native_http`），前端 3D 工作台按既有严格判定拒绝该来源并显示“3D 数据源不可用 + 使用冻结原生样本”。地图/路线资源不依赖机器人场景，因此 Scene Setup 改为不要求 3D 样本挂载即可使用；Simulation 视图与 Session 抽屉的原有门控、错误恢复按钮保持不变（`browser-workbench` 29 项回归通过）。
+
+## 服务器结果（构建、类型检查、测试、浏览器全部在 cec-sim）
+
+| 套件 | Pass A（18949） | Pass B（18953） |
+|---|---|---|
+| `npm run build`（含 `tsc --noEmit`） | 通过 | 通过 |
+| `npm test` | 66 passed / 0 failed | 66 passed / 0 failed |
+| browser-readonly / frozen | 32 / 29 | 跳过（该候选无 geometry-2，见上） |
+| browser-geometry / usability | 23 / 100 | 跳过 |
+| browser-config | 51（真实 Draft/validate/快照/409/envelope） | 跳过 |
+| browser-session | 38（标注 synthetic 协议夹具） | 跳过 |
+| browser-map `--mode offline` | 15（无 map 端点显式失败 + 朝向规则 + 小窗回归） | — |
+| browser-map `--mode live` | — | 46（真实地图与路线端到端） |
+
+Pass B 实况：目录 `local_map_packages · live=false · supported=true`，Room A/B 两个固定版本；选择 `map_room_a_g3b_release_v1/v1` 后按声明摘要读取 2786 字节 P5 栅格，实际 SHA-256 `01dcdb387aed81b521cba6d31bb5d403d9db1de84b35546c4e34988191069d71` 与声明一致、解码 59×47 与声明一致；`g1_recipe_status=failed`、`navigation_eligible=false`、`current_runtime_status=not_checked` 原样显示。专用测试路线 `route-db64648d23f84396a4c957d38643b5e5`：创建 r1 → 仅改 yaw 保存 r2（后端摘要变化）→ 发布 v1 `9b51b34d…` → 重排（ID 不变）保存 r3 → 发布 v2 `31b39ea1…`，v1 摘要不变、列表 `[v2, v1]`；外部 PUT 后 UI 用旧修订保存得到真实 409 `route_draft_revision_conflict · current_revision=4`，本地编辑保留并显式重载 r4；刷新页面凭 `?route=` 重新打开草案与两个版本；40 个请求中写请求仅为该路线的 route-drafts POST/PUT/publish。交付样本路线 `route-9e55257f…` 的 v1/v2 摘要在测试前后与交付记录完全一致，未被改写。
+
+Pass A 实况：`GET /sessions` 仍为 `{source:"stored", live:false, sessions:[]}`，preflight `read_contract_compatible=false`；真实校验仍 `failed`、`execution_eligible=false`、快照 `cs-cf2a57a1482a90a86dc6ebac0e55de2409e5b724`（sha256 `2e1e9fc5…1e5490`，recipe `4c3e5f42…5e9e`）。
+
+## 仍未执行
+
+18953 未部署 geometry-2 读取与 native binding 补丁，因此该候选上没有可用 3D 场景、真实 prepared/Start、运动、录制或回放；地图为 G3B 历史离线包，不是 live SLAM，`assets_verified` 只表示 manifest 声明资产的逐字节摘要核验（历史包 `manifest.sha256` 自校验遗留不一致仍由后端如实标注）；配置采用、导航执行、目标下发、热重规划与速度发布全部未实现；本轮新增的测试路线只是资源写入证据，不代表任何到点或朝向验收。
+
 # M1.2e 18949 current 迁移与带朝向 Waypoint 路线切片（2026-10-24）
 
 本轮把 Session 抽屉迁到后端 M1.2d 候选 18949（`SessionList` envelope + 单 Session `current` 只读观测），并在同一 React/TS 工作台内交付 Scene Setup 的“位置＋朝向”地图/Waypoint 路线编辑与本地保存隔离切片。3D 工作台、相机、布局与只读监控保持不变；未开放运动、RESET、录制、导航执行或速度发布。仅写 `frontend/`，未修改 backend、公共契约、native 或根配置，未推送。

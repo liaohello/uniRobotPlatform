@@ -1,9 +1,12 @@
 """Frontend-owned static preview + allowlisted same-origin API proxy.
 
 GET is exposed for the existing read surface plus preflight, execution-recipe,
-kinematics, config snapshots and Sessions. Platform Draft create/save/validate
-and Session prepare/start are the only writes. Motion, STOP, RESET, recording
-begin/finalize and native command endpoints stay unproxied. Method, path, status,
+kinematics, config snapshots, Sessions, the map catalog with fixed map versions and
+map raster images, and route drafts with immutable route versions. Platform Draft
+create/save/validate, Session prepare/start, route-draft create/save/publish are the
+only writes. Navigation execution, motion, STOP, RESET, recording begin/finalize and
+native command endpoints stay unproxied. There is no route collection GET upstream, so
+none is exposed here. Method, path, status,
 error body and query string are preserved; no request body is invented.
 """
 import argparse,functools,http.server,json,re,time,urllib.request,urllib.error
@@ -20,8 +23,17 @@ ROUTES=[
  (re.compile(r'^/api/v1/config-snapshots/'+ID+r'$'),{'GET'}),
  (re.compile(r'^/api/v1/sessions$'),{'GET','POST'}),
  (re.compile(r'^/api/v1/sessions/'+ID+r'$'),{'GET'}),
+ (re.compile(r'^/api/v1/maps$'),{'GET'}),
+ (re.compile(r'^/api/v1/maps/'+ID+r'/versions/'+ID+r'$'),{'GET'}),
+ (re.compile(r'^/api/v1/maps/'+ID+r'/versions/'+ID+r'/image$'),{'GET'}),
+ (re.compile(r'^/api/v1/route-drafts$'),{'POST'}),
+ (re.compile(r'^/api/v1/route-drafts/'+ID+r'$'),{'GET','PUT'}),
+ (re.compile(r'^/api/v1/route-drafts/'+ID+r'/publish$'),{'POST'}),
  (re.compile(r'^/api/v1/sessions/'+ID+r'/start$'),{'POST'}),
+ (re.compile(r'^/api/v1/routes/'+ID+r'/versions$'),{'GET'}),
+ (re.compile(r'^/api/v1/routes/'+ID+r'/versions/'+ID+r'$'),{'GET'}),
 ]
+
 MAX_BODY=65536
 class Preview(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):

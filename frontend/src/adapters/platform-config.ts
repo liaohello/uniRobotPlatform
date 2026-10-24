@@ -122,7 +122,7 @@ export interface ExecutionRecipe {
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public detail: unknown) { super(message); }
 }
-function parseError(status: number, statusText: string, body: unknown): ApiError {
+export function parseError(status: number, statusText: string, body: unknown): ApiError {
   const detail = (body as { detail?: unknown } | null)?.detail;
   if (detail && typeof detail === 'object' && !Array.isArray(detail)) {
     const value = detail as Record<string, unknown>;

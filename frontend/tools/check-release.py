@@ -1,7 +1,7 @@
 """Run only on the authorized server, inside an already hash-frozen frontend release."""
 from pathlib import Path
 import argparse,datetime,functools,hashlib,http.server,json,os,socket,subprocess,sys,urllib.request
-p=argparse.ArgumentParser();p.add_argument('release',type=Path);p.add_argument('--environment',type=Path,required=True);p.add_argument('--node-bin',type=Path,required=True);p.add_argument('--browser-python',type=Path,required=True);p.add_argument('--reports',type=Path,required=True);p.add_argument('--port',type=int,required=True);p.add_argument('--read-only',action='store_true');p.add_argument('--upstream',default='http://127.0.0.1:18941');p.add_argument('--geometry',action='store_true');p.add_argument('--usability',action='store_true');p.add_argument('--config',action='store_true');p.add_argument('--session',action='store_true');p.add_argument('--map',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('release',type=Path);p.add_argument('--environment',type=Path,required=True);p.add_argument('--node-bin',type=Path,required=True);p.add_argument('--browser-python',type=Path,required=True);p.add_argument('--reports',type=Path,required=True);p.add_argument('--port',type=int,required=True);p.add_argument('--read-only',action='store_true');p.add_argument('--upstream',default='http://127.0.0.1:18941');p.add_argument('--geometry',action='store_true');p.add_argument('--usability',action='store_true');p.add_argument('--config',action='store_true');p.add_argument('--session',action='store_true');p.add_argument('--map',action='store_true');p.add_argument('--map-mode',default='live',choices=('live','offline'));p.add_argument('--skip-readonly',action='store_true');a=p.parse_args()
 r=a.release.resolve();front=r/'frontend';a.reports.mkdir(parents=True,exist_ok=False)
 def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 manifest=json.loads((r/'source-manifest.json').read_text())
@@ -31,12 +31,12 @@ with (a.reports/'preview.log').open('w') as log:
 server={'pid':preview.pid,'port':a.port,'upstream':a.upstream,'release_id':manifest['release_id'],'directory':str(front/'dist'),'started_at_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
 (a.reports/'preview.json').write_text(json.dumps(server,indent=2)+'\n')
 try:
- run('browser.log',[str(a.browser_python),str(front/('tests/browser-readonly.py' if a.read_only else 'tests/browser-workbench.py')),'http://127.0.0.1:'+str(a.port),str(a.reports/'browser')])
- if a.read_only:run('frozen-browser.log',[str(a.browser_python),str(front/'tests/browser-workbench.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'frozen-browser')])
+ if not a.skip_readonly: run('browser.log',[str(a.browser_python),str(front/('tests/browser-readonly.py' if a.read_only else 'tests/browser-workbench.py')),'http://127.0.0.1:'+str(a.port),str(a.reports/'browser')])
+ if a.read_only and not a.skip_readonly:run('frozen-browser.log',[str(a.browser_python),str(front/'tests/browser-workbench.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'frozen-browser')])
  if a.geometry:run('geometry-browser.log',[str(a.browser_python),str(front/'tests/browser-geometry.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'geometry'),manifest['release_id']])
  if a.usability:run('usability-browser.log',[str(a.browser_python),str(front/'tests/browser-usability.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'usability'),'--release',manifest['release_id']])
  if a.config:run('config-browser.log',[str(a.browser_python),str(front/'tests/browser-config.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'config')])
- if a.map:run('map-browser.log',[str(a.browser_python),str(front/'tests/browser-map.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'map')])
+ if a.map:run('map-browser.log',[str(a.browser_python),str(front/'tests/browser-map.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'map'),'--mode',a.map_mode])
  if a.session:run('session-browser.log',[str(a.browser_python),str(front/'tests/browser-session.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'session')])
 finally:
  after=native();(a.reports/'listeners-after.txt').write_text(subprocess.check_output(['ss','-ltnp'],text=True));keys=('run_id','backend_generation','episode_id','recording_status')

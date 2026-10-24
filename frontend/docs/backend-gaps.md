@@ -2,6 +2,19 @@
 
 此文件是前端交接记录，不定义第二套公共接口。权威语义仍在后端维护的 `docs/specs/30-contracts`，wire 以 backend 的 mobilecar / drafts / prepare 实现和实际 OpenAPI 为准。
 
+## 已接入（M1.3 候选 18953 · 真实地图与路线资源）
+
+- `GET /api/v1/maps` → `{schema_version:"unirobot-map-catalog-1", source:"local_map_packages", live:false, supported, reason, maps:MapVersionView[]}`；Room A/B 为 `g3b_historical_offline` 固定版本，`live=false`、`test_only=false`、`assets_verified=true`、`compatibility.g1_recipe_status=failed`、`navigation_eligible=false`、`current_runtime_status=not_checked`。
+- `GET /api/v1/maps/{map_id}/versions/{version}?frame=map`；`GET /api/v1/maps/{map_id}/versions/{version}/image?sha256=<64hex>` 返回 `image/x-portable-graymap` 字节（实测 Room A 为 P5、59×47、maxval 255、2786 B、sha256 `01dcdb38…069d71`）；摘要不符 409 `map_asset_revision_changed`，缺图 404 `map_image_missing`。
+- `POST /api/v1/route-drafts`、`GET/PUT /api/v1/route-drafts/{route_id}`（PUT 需 `base_revision`）、`POST /api/v1/route-drafts/{route_id}/publish`（body 仅 `base_revision`）、`GET /api/v1/routes/{route_id}/versions`、`GET /api/v1/routes/{route_id}/versions/{version}`。**没有路线目录/列表 GET**，因此前端只提供按 `route_id` 显式打开的入口。
+- 实测响应形状：versions 列表是 `{route_id, versions[]}` 信封；无已发布版本时 404 `route_version_not_found`（前端按空列表处理）；publish 返回 `{route_version, reused}`；保存冲突 409 `{code:"route_draft_revision_conflict", message, current_revision}`；缺 `yaw_rad`/显式 null 为 422；越界/占用为 422 `waypoint_out_of_bounds|waypoint_occupied`；错误帧 409 `map_frame_mismatch`。
+- DTO 为 snake_case（`map_ref.map_id`、`x_m/y_m/yaw_rad`、`draft_revision`、`content_digest`、`coordinate_convention.*`、`compatibility.*`、`assets_verified`、`manifest_sha256`）；前端在 `src/adapters/platform-navigation.ts` 单向转换为 camelCase ViewModel，版本 `v1/v2` 字符串与 `content_digest` 全部以后端为准，本地不再生成任何摘要或数字版本。
+- 代理白名单只新增上述真实存在的路径（maps 集合/固定版本/image、route-drafts 集合 POST 与单资源 GET/PUT/publish、routes versions 与固定版本 GET）；`GET /api/v1/route-drafts` 这类不存在的集合读方法被显式拒绝，运动、STOP/RESET、`recording/*`、`/runs/{id}/stop`、commands/episodes 与 native 透传继续不代理。
+
+## 候选之间的读取契约差异（本轮实测）
+
+18953 的 `GET /api/v1/mobilecar/scene` 仍是 `unirobot-mobilecar-read-1`（`data_source=live_native_http`，无 `geometry_binding`/`geometry_provenance`），而 18949 已是 `unirobot-mobilecar-geometry-2`。前端严格判定因此拒绝在 18953 上挂载 3D 工作台，并显示“3D 数据源不可用 / 使用冻结原生样本”。地图与路线资源不依赖机器人场景，所以 Scene Setup 已与该门控解耦；3D、Session 与可用性回归改在 18949 上游执行，两者共用同一冻结 dist。
+
 ## 已接入（M1.2d 候选 18949）
 
 - `GET /api/v1/sessions` 返回 M1.2d envelope `{source:"stored", live:false, retrieved_at, sessions[]}`；前端解包 `.sessions` 并显示存档来源。
@@ -41,9 +54,10 @@
 | 控制权 / 命令回执 | 尚无平台认可的 owner/lease、目标版本、命令受理/执行终态和 STOP | 不把原生 Owner 观察值当授权；提交执行、接管、停止保持禁用 |
 | 录制 / 回放 / 媒体 | 无 begin-without-RESET、可靠收尾、媒体 reader、连续 Episode | 录制、RESET、播放、媒体下载保持禁用；时间条只显示单帧/只读快照 |
 | 部署内容核验 | pin 的场景 XML 摘要和部署配置无法经 native HTTP 独立核验 | 快照的 unsupported 项按原义显示；不把 `resource_matches_pin` 或 health 在线提升为 Passed |
-| 地图来源（SLAM / 导航栅格） | 18949 无 map 端点，也没有地图身份、版本、frame、分辨率、原点位姿与场景兼容性的可读来源 | 编辑器只用清楚标注的 `offline-test-map`（图内与元数据写明“非 SLAM、非导航地图”，`sceneCompatibility=not_applicable`）；没有真实地图时显示不可用，不拿 3D 地面或 world_sim 真值冒充 |
-| Route Draft / Route Version / 采用 | 后端未交付路线草案修订、不可变版本发布、`routeRef/mapRef` 绑定与配置采用的 wire | 保存/发布只写入标注 `local_session_only` 的会话内存储（含 `draftRevision` 条件写与冲突保留本地编辑），采用按钮禁用；刷新即丢失；后端契约就绪后由真实客户端替换该存储 |
-| 导航执行 / 目标下发 / 热重规划 | 无 owner/lease、目标代数、规划与安全校验 | 点间连线标为“编辑连线，非规划安全路径”；运行中改目标、重规划、速度发布与导航执行保持禁用，路线保存成功不等于导航 Ready |
+| 地图来源（live SLAM / 导航栅格） | 18953 提供 G3B **历史离线**地图（`live=false`），没有 live SLAM 地图端点 | 只读取与显示固定历史版本；界面写明历史包不等于 live SLAM，摘要或尺寸不符即失败，不静默回退离线夹具 |
+| Route Draft / Route Version / 采用 | 草案与不可变版本 API 已可用；仍没有“采用此版本到配置”的端点，也没有路线目录列表 | 创建/读取/条件保存/发布/固定版本读取全部走后端；采用按钮禁用并说明原因；路线只能凭 `route_id` 打开 |
+| 本地存储冒充服务端 | 上一轮的 `local_session_only` 存储与 `local-` 摘要已删除 | 版本 `vN` 与 `content_digest` 只来自后端；冲突文案改为显示真实 `code` 与 `current_revision` |
+| 导航执行 / 目标下发 / 热重规划 | 无 owner/lease、目标代数、规划与安全校验；后端 validation 固定 `execution_supported=false` | 点间连线标为“编辑连线，非规划安全路径”；执行按钮禁用；运行中改目标、重规划、速度发布与导航执行未实现 |
 
 ## 当前真实环境结果（18944 / 2026-10-24 服务器验证）
 

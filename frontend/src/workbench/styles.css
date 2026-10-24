@@ -447,3 +447,10 @@ button.primary{border-color:#3f6b78;background:#254652;color:#b8eef2}
   .viewport-bottom{display:none}
   .viewport-legend{bottom:6px}
 }
+
+/* M1.3 real map raster and route workspace */
+.map-canvas image{image-rendering:pixelated}
+.scene-setup-actions label.grow{display:flex;flex-direction:column;gap:4px;flex:1 1 140px;font-size:11px;color:#8fa6a2}
+.scene-setup-actions label.grow input{min-width:0;padding:5px 7px;border-radius:6px;border:1px solid #2c4650;background:#12242c;color:#e7f2f2;font:inherit;font-size:12px}
+.session-inline input{padding:5px 7px;border-radius:6px;border:1px solid #2c4650;background:#12242c;color:#e7f2f2;font:inherit;font-size:12px;min-width:0}
+.scene-setup dl.session-fields dd[data-image-verified="false"],.scene-setup dl.session-fields dd[data-map-navigation-eligible="false"]{color:#e2a3a3}

@@ -50,7 +50,7 @@ export function ViewportPanel(){
      <span className="tool-sep"/>
      <div className="tool-group view-group" role="group" aria-label="标准视角">{(['front','side','top'] as const).map((preset,i)=><button key={preset} title={['车头视图：world_sim +X，从车前方看','车侧视图：world_sim −Y，从车右方看','顶视图：world_sim +Z'][i]} onClick={()=>w.view.current?.standardView(preset)}>{['车头','车侧','顶视'][i]}</button>)}</div>
      <span className="toolbar-spacer"/>
-     <button className={navOpen?'active':''} aria-expanded={navOpen} aria-label="导航小窗" title="导航小窗：本地路线草案、PointGoal 朝向与编辑连线" onClick={()=>setNavOpen(!navOpen)}>导航</button>
+     <button className={navOpen?'active':''} aria-expanded={navOpen} aria-label="导航小窗" title="导航小窗：当前草案或明确选中的固定版本；查看不等于采用或执行" onClick={()=>setNavOpen(!navOpen)}>导航</button>
      <button className={layers?'active':''} aria-expanded={layers} aria-label="图层选项" title="图层选项：Ghost 候选与场景对象" onClick={()=>setLayers(!layers)}><Icon name="layers" size={15}/></button>
    </div>
    <div className="canvas-area">
@@ -60,10 +60,10 @@ export function ViewportPanel(){
        {w.target&&<span className="hud-chip target"><i className="target-color"/>本地 Target r{w.target.revision}<button aria-label="取消本地目标" title="取消本地目标（Esc）" onClick={w.cancelTarget}><Icon name="close" size={11}/></button></span>}
        {w.interacting&&<span className="hud-chip gesture">拖动中 · Orbit 已锁定</span>}
      </div>
-     {navOpen&&<div className="navigation-mini" data-nav-mini>
-       <div className="navigation-mini-head"><b>导航路线</b><span>本地草案 · 未保存 · 保存版本不可用</span><button aria-label="关闭导航小窗" onClick={()=>setNavOpen(false)}><Icon name="close" size={12}/></button></div>
-       <MapWaypointEditor map={w.routeDraft.map} waypoints={w.routeDraft.waypoints} selectedId={null} readOnly compact/>
-       <div className="navigation-mini-meta"><span>PointGoal {w.routeDraft.waypoints.length} 个 · 目标箭头来自本地草案</span><span>执行反馈：无（本轮不导航）</span><span>编辑连线，非规划安全路径 · 后端未提供路线 API</span></div>
+     {navOpen&&<div className="navigation-mini" data-nav-mini data-nav-source={w.route.viewed?`version-${w.route.viewed.version}`:w.route.serverDraft?'server-draft':'local-unbound'} data-nav-map-mode={w.route.offlineMode?'offline-test':'backend'}>
+       <div className="navigation-mini-head"><b>导航路线</b><span>{w.route.viewed?`固定版本 ${w.route.viewed.version} · ${w.route.viewed.contentDigest.slice(0,12)} · 查看不等于采用`:w.route.serverDraft?`服务端草案 r${w.route.serverDraft.draftRevision} · ${w.route.dirty?'本地有未保存编辑':'与服务端一致'}`:'本地草案 · 未绑定服务端'}</span><button aria-label="关闭导航小窗" onClick={()=>setNavOpen(false)}><Icon name="close" size={12}/></button></div>
+       <MapWaypointEditor map={w.route.viewed?w.route.selectedMap??w.route.working.map:w.route.working.map} waypoints={w.route.viewed?w.route.viewed.waypoints:w.route.working.waypoints} selectedId={null} readOnly compact/>
+       <div className="navigation-mini-meta"><span>PointGoal {(w.route.viewed?w.route.viewed.waypoints:w.route.working.waypoints).length} 个 · 箭头来自{w.route.viewed?'该固定版本':'当前草案'}</span><span>执行反馈：无（本轮不导航）</span><span>编辑连线，非规划安全路径 · navigation_eligible={String(w.route.viewed?w.route.viewed.navigationEligible:w.route.serverDraft?w.route.serverDraft.validation.navigationEligible:false)} · execution_supported={String(w.route.viewed?w.route.viewed.executionSupported:w.route.serverDraft?w.route.serverDraft.validation.executionSupported:false)}</span></div>
      </div>}
      {layers&&<div className="layer-menu"><label><input type="checkbox" checked={w.ghost} onChange={e=>w.setGhost(e.target.checked)}/>显示 Ghost 候选</label><label><input type="checkbox" checked={w.world} onChange={e=>w.setWorld(e.target.checked)}/>显示场景对象</label><small>虚线仅连接 Actual 与 Target，未规划。</small></div>}
      <div className="viewport-legend"><span><i className="actual-color"/>Actual · {w.sample.live?(w.monitor.state==='stale'?'陈旧':'后端反馈'):'冻结实测'}</span><span><i className="target-color"/>Target · 本地草案</span><span><i className="ghost-color"/>Ghost · 未校验候选</span></div>
