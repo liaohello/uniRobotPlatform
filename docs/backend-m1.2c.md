@@ -191,7 +191,7 @@ PYTHONPATH=src ~/Desktop/mobileCar/envs/g2a-py310-mujoco316/bin/python \
   --out var/reports/native-identity.json
 ```
 
-源码身份：平台 `backend` 44 个非缓存文件，清单 SHA-256 `d07d6410…a85b`（按 release 根相对路径）；原生冻结清单见 `native/var/reports/frozen-source-listing.txt`，清单摘要 `6e67d96e…120d`。这些是测试 release 身份，不是已部署生产身份。
+源码身份：平台 `backend` 44 个非缓存文件，清单 SHA-256 `46a12f5b…68b1`（按 release 根相对路径）；原生冻结清单见 `native/var/reports/frozen-source-listing.txt`，清单摘要 `6e67d96e…120d`。这些是测试 release 身份，不是已部署生产身份。
 
 ## 十、仍未完成
 
