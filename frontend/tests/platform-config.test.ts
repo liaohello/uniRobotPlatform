@@ -12,11 +12,13 @@ function reply(status:number,body:unknown,statusText='fixture'):Call[]{
 }
 afterEach(()=>vi.unstubAllGlobals());
 describe('platform configuration wire client',()=>{
- it('reads drafts and Sessions without inventing readiness',async()=>{
-  const calls=reply(200,[]);const api=new PlatformConfigApi();
-  await expect(api.listDrafts(signal)).resolves.toEqual([]);await expect(api.listSessions(signal)).resolves.toEqual([]);
-  expect(calls[0].url).toBe('/api/v1/experiment-drafts');expect(calls[0].init.method).toBe('GET');
-  expect(calls[1].url).toBe('/api/v1/sessions');
+ it('reads drafts and the stored Session envelope without inventing readiness',async()=>{
+  const drafts=reply(200,[]);const api=new PlatformConfigApi();
+  await expect(api.listDrafts(signal)).resolves.toEqual([]);
+  expect(drafts[0].url).toBe('/api/v1/experiment-drafts');expect(drafts[0].init.method).toBe('GET');
+  const sessions=reply(200,{source:'stored',live:false,retrieved_at:'fixture',sessions:[]});
+  await expect(api.listSessions(signal)).resolves.toEqual({source:'stored',live:false,retrieved_at:'fixture',sessions:[]});
+  expect(sessions[0].url).toBe('/api/v1/sessions');
  });
  it('saves with base_revision and validates with the exact execution revision and fingerprint',async()=>{
   const draft={draft_id:'draft-1',draft_revision:3,execution_revision:2,fingerprint:'a'.repeat(64)};

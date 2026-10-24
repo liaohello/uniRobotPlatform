@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#111b22"/>
+  <g stroke="#253743" stroke-width="1">
+    <path d="M0 50H800M0 100H800M0 150H800M0 200H800M0 250H800M0 300H800M0 350H800M0 400H800M0 450H800M0 500H800M0 550H800"/>
+    <path d="M50 0V600M100 0V600M150 0V600M200 0V600M250 0V600M300 0V600M350 0V600M400 0V600M450 0V600M500 0V600M550 0V600M600 0V600M650 0V600M700 0V600M750 0V600"/>
+  </g>
+  <g fill="#263c47" stroke="#3b5866" stroke-width="2">
+    <rect x="120" y="110" width="130" height="90" rx="8"/>
+    <rect x="520" y="330" width="150" height="110" rx="8"/>
+    <rect x="330" y="220" width="70" height="160" rx="8"/>
+  </g>
+  <g fill="#2d4a42" stroke="#4a7466" stroke-width="2">
+    <circle cx="250" cy="470" r="52"/>
+    <rect x="620" y="90" width="80" height="80" rx="40"/>
+  </g>
+  <g fill="#6f8d7d" font-family="monospace" font-size="13">
+    <text x="24" y="32">OFFLINE TEST MAP · NOT SLAM · NOT A NAVIGATION MAP</text>
+    <text x="24" y="584">map frame: x right, y up · image y down · resolution 0.05 m/px · origin (-20,-15) 0rad</text>
+  </g>
+  <g stroke="#c9a45c" stroke-width="2" fill="none">
+    <path d="M34 552H114"/>
+    <path d="M34 552V512"/>
+  </g>
+  <g fill="#c9a45c" font-family="monospace" font-size="12">
+    <text x="120" y="556">x</text>
+    <text x="38" y="506">y</text>
+  </g>
+</svg>

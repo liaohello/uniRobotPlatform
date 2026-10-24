@@ -2,6 +2,13 @@
 
 此文件是前端交接记录，不定义第二套公共接口。权威语义仍在后端维护的 `docs/specs/30-contracts`，wire 以 backend 的 mobilecar / drafts / prepare 实现和实际 OpenAPI 为准。
 
+## 已接入（M1.2d 候选 18949）
+
+- `GET /api/v1/sessions` 返回 M1.2d envelope `{source:"stored", live:false, retrieved_at, sessions[]}`；前端解包 `.sessions` 并显示存档来源。
+- `GET /api/v1/sessions/{id}` 在存档文档之外新增只读 `current` 观测：`source=live_native_read_only`、`observed_at`、`valid`、`status`、`error`、`runtime_identity(_matches)`、`binding{binding_id,state,matches,readback_sha256,error}`、`snapshot_id/snapshot_eligible/recipe_fingerprint_matches`、`control_scope_granted`、`recording_*`、`owner{state,session_id,lease_expires_at_backend_monotonic_s,lease_exposed}`、`safety_latched`、`recording_ready/motion_ready/start_available/recording_begin_available`、`blockers[]`。
+- Session 资格判断只取 `current`；`preflight` 保留为全局 native 诊断。`current.status` 由后端区分 prepared / started / expired / invalidated / released / offline / identity_changed / snapshot_ineligible / unverified，前端不按浏览器时钟推断 backend 单调到期时间。
+- 18949 的 `/openapi.json` 路径清单实测不含 map / route / waypoint 端点，因此代理未新增任何路线转发，前端也没有自造 wire（浏览器测试断言无 `/maps|/route|/waypoint` 请求）。
+
 ## 已接入（M1.2c 候选 18944）
 
 - `GET /api/v1/mobilecar/scene`（geometry-1 / geometry-2）、`capabilities`、`snapshot`、`scene/assets/{id}?sha256=…`、`kinematics`、`execution-recipe`、`preflight`。
@@ -34,6 +41,9 @@
 | 控制权 / 命令回执 | 尚无平台认可的 owner/lease、目标版本、命令受理/执行终态和 STOP | 不把原生 Owner 观察值当授权；提交执行、接管、停止保持禁用 |
 | 录制 / 回放 / 媒体 | 无 begin-without-RESET、可靠收尾、媒体 reader、连续 Episode | 录制、RESET、播放、媒体下载保持禁用；时间条只显示单帧/只读快照 |
 | 部署内容核验 | pin 的场景 XML 摘要和部署配置无法经 native HTTP 独立核验 | 快照的 unsupported 项按原义显示；不把 `resource_matches_pin` 或 health 在线提升为 Passed |
+| 地图来源（SLAM / 导航栅格） | 18949 无 map 端点，也没有地图身份、版本、frame、分辨率、原点位姿与场景兼容性的可读来源 | 编辑器只用清楚标注的 `offline-test-map`（图内与元数据写明“非 SLAM、非导航地图”，`sceneCompatibility=not_applicable`）；没有真实地图时显示不可用，不拿 3D 地面或 world_sim 真值冒充 |
+| Route Draft / Route Version / 采用 | 后端未交付路线草案修订、不可变版本发布、`routeRef/mapRef` 绑定与配置采用的 wire | 保存/发布只写入标注 `local_session_only` 的会话内存储（含 `draftRevision` 条件写与冲突保留本地编辑），采用按钮禁用；刷新即丢失；后端契约就绪后由真实客户端替换该存储 |
+| 导航执行 / 目标下发 / 热重规划 | 无 owner/lease、目标代数、规划与安全校验 | 点间连线标为“编辑连线，非规划安全路径”；运行中改目标、重规划、速度发布与导航执行保持禁用，路线保存成功不等于导航 Ready |
 
 ## 当前真实环境结果（18944 / 2026-10-24 服务器验证）
 

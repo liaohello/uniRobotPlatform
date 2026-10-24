@@ -4,9 +4,8 @@ import { Icon } from './Icon';
 import {
   PlatformConfigApi, ApiError, blockingReasonsOf, describeApiError, isAbort, isTimeout,
   type BlockingReason, type Check, type DraftRecord, type ExecutionRecipe,
-  type PreflightRecord, type SessionRecord, type SnapshotRecord,
+  type PreflightRecord, type SessionList, type SessionRecord, type SnapshotRecord,
 } from '../adapters/platform-config';
-import { runtimeIdentityKey } from '../adapters/mobilecar-read';
 
 type Busy = '' | 'load' | 'create' | 'save' | 'validate' | 'snapshot' | 'session-create' | 'session-start';
 type CreateIntent = { key: string; snapshotId: string; executionRevision: number; fingerprint: string };
@@ -91,9 +90,13 @@ export function SessionPanel() {
   const [snapshotChoice, setSnapshotChoice] = useState('');
   const [snapshotError, setSnapshotError] = useState('');
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
+  const [sessionsSource, setSessionsSource] = useState<'stored' | ''>('');
+  const [sessionsLive, setSessionsLive] = useState<boolean | null>(null);
   const [sessionsError, setSessionsError] = useState('');
   const [sessionsFetchedAt, setSessionsFetchedAt] = useState('');
   const [sessionRefreshing, setSessionRefreshing] = useState(false);
+  const [currentBusy, setCurrentBusy] = useState(false);
+  const [currentError, setCurrentError] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [sessionUnknown, setSessionUnknown] = useState<{ kind: 'create' | 'start'; message: string } | null>(null);
   const [needsRevalidate, setNeedsRevalidate] = useState(false);
@@ -107,6 +110,7 @@ export function SessionPanel() {
   const [conflict, setConflict] = useState(false);
   const serial = useRef(0); const controller = useRef<AbortController | null>(null);
   const sessionSerial = useRef(0); const sessionController = useRef<AbortController | null>(null);
+  const currentSerial = useRef(0); const currentController = useRef<AbortController | null>(null);
   const preflightSerial = useRef(0); const preflightController = useRef<AbortController | null>(null);
   const selectedRef = useRef<string | null>(null); selectedRef.current = selectedId;
   const editorRef = useRef({ name, description }); editorRef.current = { name, description };
@@ -118,10 +122,11 @@ export function SessionPanel() {
   const reasons = snapshot?.blocking_reasons ?? result?.blocking_reasons ?? [];
   const recipeFingerprint = snapshot?.recipe_fingerprint ?? draft?.recipe_fingerprint ?? recipe?.recipe_fingerprint ?? '';
   const selectedSession = sessions.find((item) => item.session_id === selectedSessionId) ?? null;
+  const selectedCurrent = selectedSession?.current ?? null;
   const existingForSnapshot = snapshot ? sessions.find((item) => item.snapshot_id === snapshot.snapshot_id && (item.state === 'prepared' || item.state === 'active')) : undefined;
-  const sampleMismatch = Boolean(selectedSession && runtimeIdentityKey(selectedSession.native_identity) !== runtimeIdentityKey(w.sample.source.identity));
-  const preflightMismatch = Boolean(selectedSession && preflight && runtimeIdentityKey(selectedSession.native_identity) !== runtimeIdentityKey(preflight.runtime_identity));
-  const bindingInvalid = Boolean(selectedSession && (sampleMismatch || preflightMismatch || selectedSession.native_binding.status !== 'verified'));
+  const currentInvalid = Boolean(selectedSession && selectedCurrent && (!selectedCurrent.valid
+    || !selectedCurrent.runtime_identity_matches || !selectedCurrent.binding.matches
+    || (selectedCurrent.status !== 'prepared' && selectedCurrent.status !== 'started')));
   const snapshotValidated = Boolean(snapshot?.execution_eligible && snapshot.validated_snapshot_id);
   const createBlockedReason = !live ? '冻结来源不连接平台'
     : !snapshot ? '尚未读取配置快照'
@@ -132,18 +137,19 @@ export function SessionPanel() {
               : '';
   const createReady = Boolean(live && snapshotValidated && !needsRevalidate && !existingForSnapshot);
   const canCreate = createReady && busy === '';
-  const startable = Boolean(selectedSession && selectedSession.state === 'prepared' && selectedSession.start_available
-    && !bindingInvalid && w.monitor.state !== 'stale');
+  const startable = Boolean(selectedSession && selectedCurrent?.valid && selectedCurrent.status === 'prepared'
+    && selectedCurrent.start_available && !currentError && w.monitor.state !== 'stale');
   const canStart = startable && busy === '';
   const startBlockedReason = !selectedSession ? '未选择 Session'
-    : selectedSession.state === 'active' ? 'Session 已 active；再次 Start 不会改变 owner 或录制状态'
-      : selectedSession.state !== 'prepared' ? `Session 状态为 ${selectedSession.state}`
-        : !selectedSession.start_available ? '后端 start_available=false'
-          : bindingInvalid ? '运行身份或 binding 已失效'
-            : w.monitor.state === 'stale' ? 'Actual 已陈旧，不能确认运行身份'
-              : '';
+    : !selectedCurrent ? '正在读取 Session current；不能使用存档 ready 判断'
+      : !selectedCurrent.valid ? `current invalid：${selectedCurrent.status}${selectedCurrent.error ? ` · ${selectedCurrent.error}` : ''}`
+        : selectedCurrent.status === 'started' ? 'Session 已 started；close/end 未定义，Start 不可用'
+          : selectedCurrent.status !== 'prepared' ? `current 状态为 ${selectedCurrent.status}`
+            : !selectedCurrent.start_available ? 'current.start_available=false'
+              : currentInvalid ? '运行身份或 binding 失效'
+                : currentError ? 'current 读取失败，已暂停 Start' : '';
   const selectedExecution = selectedSession?.execution;
-  const ownerState = selectedExecution?.owner.state ?? 'unknown';
+  const ownerState = selectedCurrent?.owner.state ?? 'unknown';
 
   function begin() {
     controller.current?.abort(); const next = new AbortController(); controller.current = next;
@@ -153,28 +159,51 @@ export function SessionPanel() {
     sessionController.current?.abort(); const next = new AbortController(); sessionController.current = next;
     return { id: ++sessionSerial.current, signal: next.signal };
   }
+  function beginCurrent() {
+    currentController.current?.abort(); const next = new AbortController(); currentController.current = next;
+    return { id: ++currentSerial.current, signal: next.signal };
+  }
   function beginPreflight() {
     preflightController.current?.abort(); const next = new AbortController(); preflightController.current = next;
     return { id: ++preflightSerial.current, signal: next.signal };
   }
   function current(id: number) { return id === serial.current; }
-  function applySessionList(list: SessionRecord[]) {
-    setSessions(list);
-    setSelectedSessionId((previous) => previous && list.some((item) => item.session_id === previous)
-      ? previous : list.find((item) => item.state === 'prepared' || item.state === 'active')?.session_id ?? list[0]?.session_id ?? null);
-    setSessionsFetchedAt(new Date().toISOString());
+  function applySessionList(envelope: SessionList) {
+    setSessions((previous) => {
+      const byId = new Map(previous.map((item) => [item.session_id, item]));
+      return envelope.sessions.map((item) => ({ ...item, current: item.current ?? byId.get(item.session_id)?.current ?? null }));
+    });
+    setSessionsSource(envelope.source); setSessionsLive(envelope.live); setSessionsFetchedAt(envelope.retrieved_at);
+    setSelectedSessionId((previous) => previous && envelope.sessions.some((item) => item.session_id === previous)
+      ? previous : envelope.sessions.find((item) => item.state === 'prepared' || item.state === 'active')?.session_id ?? envelope.sessions[0]?.session_id ?? null);
   }
   function applySession(next: SessionRecord) {
     setSessions((list) => upsertSession(list, next));
     setSelectedSessionId(next.session_id);
   }
+  async function refreshCurrent(sessionId: string) {
+    if (!live) return;
+    const task = beginCurrent(); setCurrentBusy(true); setCurrentError('');
+    try {
+      const value = await api.getSession(sessionId, task.signal);
+      if (task.id !== currentSerial.current) return;
+      applySession(value);
+    } catch (cause) {
+      if (isAbort(cause) || task.id !== currentSerial.current) return;
+      setCurrentError(describeApiError(cause));
+    } finally {
+      if (task.id === currentSerial.current) setCurrentBusy(false);
+    }
+  }
   async function refreshSessions() {
     if (!live) return;
     const task = beginSessions(); setSessionRefreshing(true);
     try {
-      const list = await api.listSessions(task.signal);
+      const envelope = await api.listSessions(task.signal);
       if (task.id !== sessionSerial.current) return;
-      applySessionList(list); setSessionsError('');
+      applySessionList(envelope); setSessionsError('');
+      const selected = selectedRef.current;
+      if (selected && envelope.sessions.some((item) => item.session_id === selected)) void refreshCurrent(selected);
     } catch (cause) {
       if (isAbort(cause) || task.id !== sessionSerial.current) return;
       setSessionsError(describeApiError(cause));
@@ -225,6 +254,7 @@ export function SessionPanel() {
       }, actionSignal);
       if (!current(task.id)) return;
       applySession(envelope.session);
+      await refreshCurrent(envelope.session.session_id);
       setNotice(`prepared Session 已${envelope.replayed ? '通过幂等重放恢复' : '创建'}；不会自动 Start。`);
     } catch (cause) {
       if (task.signal.aborted) return;
@@ -234,7 +264,7 @@ export function SessionPanel() {
           const list = await api.listSessions(task.signal);
           if (!current(task.id)) return;
           applySessionList(list);
-          const found = list.find((item) => item.snapshot_id === intent.snapshotId && item.fingerprint === intent.fingerprint && item.execution_revision === intent.executionRevision);
+          const found = list.sessions.find((item) => item.snapshot_id === intent.snapshotId && item.fingerprint === intent.fingerprint && item.execution_revision === intent.executionRevision);
           if (found) {
             setSelectedSessionId(found.session_id); setSessionUnknown(null);
             setNotice('创建超时后通过存档回读恢复；未自动 Start。');
@@ -271,7 +301,8 @@ export function SessionPanel() {
       const next = await api.startSession(target.session_id, actionSignal);
       if (!current(task.id)) return;
       applySession(next);
-      setNotice(`Start 已确认（${next.state}）；active 不代表取得 owner、正在录制或 motion_ready。`);
+      await refreshCurrent(next.session_id);
+      setNotice(`Start 已确认（${next.state}）；active/started 不代表取得 owner、正在录制或 motion_ready。`);
     } catch (cause) {
       if (task.signal.aborted) return;
       if (isTimeout(cause) || isAbort(cause)) {
@@ -295,17 +326,23 @@ export function SessionPanel() {
     }
   }
   useEffect(() => {
+    if (!live || !selectedSessionId) return;
+    void refreshCurrent(selectedSessionId);
+    return () => { currentController.current?.abort(); };
+    // Selection drives a single current read; archive list refreshes do not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live, selectedSessionId]);
+  useEffect(() => {
     if (!selectedSession) { invalidatedRef.current = null; return; }
-    const key = `${selectedSession.session_id}:${runtimeIdentityKey(selectedSession.native_identity)}:${selectedSession.native_binding.status}`;
-    if (bindingInvalid && invalidatedRef.current !== key) {
+    const key = `${selectedSession.session_id}:${selectedCurrent?.status ?? 'none'}:${selectedCurrent?.binding.state ?? 'none'}:${String(selectedCurrent?.valid)}`;
+    if (currentInvalid && invalidatedRef.current !== key) {
       invalidatedRef.current = key;
       if (w.target || w.interacting) w.cancelTarget();
-      else w.view.current?.cancelGesture('session-binding');
-      w.setNotice('Session 运行身份或 binding 已失效；旧本地目标与手势已取消，网格、相机与布局保留。');
-    } else if (!bindingInvalid && invalidatedRef.current === key) invalidatedRef.current = null;
+      else w.view.current?.cancelGesture('session-current-invalid');
+      w.setNotice('Session current 无效或 binding 失效；旧本地目标与手势已取消，模型、相机与布局保留。');
+    } else if (!currentInvalid && invalidatedRef.current === key) invalidatedRef.current = null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSession?.session_id, selectedSession?.native_identity.run_id, selectedSession?.native_identity.backend_generation,
-    selectedSession?.native_identity.episode_id, selectedSession?.native_binding.status, bindingInvalid]);
+  }, [selectedSession?.session_id, selectedCurrent?.status, selectedCurrent?.binding.state, selectedCurrent?.valid, currentInvalid]);
   async function openDraft(id: string, explicit = false) {
     const task = begin(); setBusy('load'); setError(''); setConflict(false); setSnapshotError('');
     setNeedsRevalidate(false); setSessionUnknown(null);
@@ -391,7 +428,7 @@ export function SessionPanel() {
   useEffect(() => {
     if (!live) return;
     void bootstrap();
-    return () => { controller.current?.abort(); sessionController.current?.abort(); preflightController.current?.abort(); };
+    return () => { controller.current?.abort(); sessionController.current?.abort(); currentController.current?.abort(); preflightController.current?.abort(); };
     // The drawer is mounted per open; the polling sample must not restart the
     // configuration requests on every Actual tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -597,7 +634,7 @@ export function SessionPanel() {
                 <Icon name={item.status === 'passed' ? 'check' : 'info'} size={12}/><div><b>{item.key}</b><small className="check-detail">{item.detail}</small></div><span>{statusText[item.status] ?? item.status}</span>
               </li>)}</ul>
             </details>
-            <p className="session-note">这是 {preflight.checked_at} 的 native 当前观测，不是 Session execution 的刷新；Session 存档仍以下方 execution.observed_at 为准。</p>
+            <p className="session-note">这是 {preflight.checked_at} 的全局 native 诊断，不是 Session current 的刷新；Session 是否可 Start 只以下方单 Session current 为准。</p>
           </> : <p className="session-note">尚未读取 preflight。GET /sessions 只返回上次平台动作的存档视图，不能当作持续实时状态。</p>}
         </section>
 
@@ -611,46 +648,69 @@ export function SessionPanel() {
             </select>
             <button disabled={sessionRefreshing} onClick={() => void refreshSessions()}>{sessionRefreshing ? '读取中…' : '刷新存档（不调用 native）'}</button>
           </div>
-          <p className="session-note">GET /sessions 只读最近平台动作的存档（最近读取 {sessionsFetchedAt || '—'}）；它不会刷新 native，也不能替代 preflight。</p>
+          <p className="session-note" data-sessions-source={sessionsSource} data-sessions-live={String(sessionsLive)}>列表 source={sessionsSource || '—'} · live={String(sessionsLive)} · retrieved_at={sessionsFetchedAt || '—'}。它是存档列表，不是 current；选中 Session 后单独读取 current。</p>
           <div className="session-inline">
             <button className="primary" data-session-create={createReady ? 'ready' : 'blocked'} disabled={busy !== '' || !canCreate} title={createBlockedReason || '创建 prepared Session；不会自动 Start'} onClick={() => void createPreparedSession()}>{busy === 'session-create' ? '创建中…' : '创建 prepared Session'}</button>
             <span className="session-inline-note">{createBlockedReason || '只创建 prepared；不会因 validate 成功或创建成功自动 Start'}</span>
           </div>
           {sessionUnknown && <div className="session-unknown" role="status" data-session-unknown={sessionUnknown.kind}><b>结果未知</b><p>{sessionUnknown.message}</p></div>}
           {needsRevalidate && <div className="session-blocked" role="alert" data-needs-revalidate="true"><Icon name="info" size={15}/><div><b>请重新校验或新建草案</b><p>当前草案/快照可能不在这个后端数据库、已被配方变更或未签发；不要复用旧 Draft / 快照 ID。{draft && <button disabled={busy !== ''} onClick={() => void validateDraft()}>重新校验当前草案</button>}</p></div></div>}
-          {sessions.length === 0 ? <div className="session-blocked neutral"><Icon name="info" size={15}/><div><b>空 Session 列表</b><p>GET /api/v1/sessions 返回空数组。这不是 Ready，也不代表 Start 可用。当前真实环境没有 prepared/active/failed Session；Start、运动、RESET、录制继续禁用。</p></div></div>
+          {sessions.length === 0 ? <div className="session-blocked neutral"><Icon name="info" size={15}/><div><b>空 Session 列表</b><p>GET /api/v1/sessions 返回 <code>source=stored, live=false, sessions=[]</code>。这不是 Ready，也不代表 Start 可用。当前真实环境没有 prepared/started Session；Start、运动、RESET、录制继续禁用。</p></div></div>
             : <>
               <div className="session-state-list">{sessions.map((item) => <button key={item.session_id} aria-pressed={item.session_id === selectedSessionId} data-session-id={item.session_id} data-session-state={item.state} onClick={() => setSelectedSessionId(item.session_id)}><b>{item.state}</b><span>{short(item.session_id, 10)}</span></button>)}</div>
-              {selectedSession ? <article className="session-card" data-session-id={selectedSession.session_id} data-session-state={selectedSession.state} data-session-invalidated={String(bindingInvalid)} data-session-startable={String(startable)} data-session-owner={ownerState} data-session-recording-ready={String(selectedExecution?.recording_ready ?? false)} data-session-motion-ready={String(selectedExecution?.motion_ready ?? false)} data-session-execution-source={selectedExecution?.source ?? ''} data-session-observed-at={selectedExecution?.observed_at ?? ''}>
+              {selectedSession ? <article className="session-card" data-session-id={selectedSession.session_id} data-session-state={selectedSession.state} data-session-current-valid={String(selectedCurrent?.valid ?? false)} data-session-current-status={selectedCurrent?.status ?? 'unread'} data-session-current-error={selectedCurrent?.error ?? ''} data-session-invalidated={String(currentInvalid)} data-session-startable={String(startable)} data-session-owner={ownerState} data-session-recording-ready={String(selectedCurrent?.recording_ready ?? false)} data-session-motion-ready={String(selectedCurrent?.motion_ready ?? false)} data-session-execution-source={selectedCurrent?.source ?? ''} data-session-observed-at={selectedCurrent?.observed_at ?? ''} data-session-current-blockers={String(selectedCurrent?.blockers.length ?? 0)}>
                 <div className="session-card-head"><b>{selectedSession.state}</b><span>{short(selectedSession.session_id, 16)}</span></div>
                 <div className="session-lifecycle">
-                  <span className={selectedSession.execution_eligible ? 'ok' : 'bad'}>配置/执行合格 {String(selectedSession.execution_eligible)}</span>
-                  <span className={selectedSession.state === 'prepared' ? 'ok' : 'unknown'}>prepared {String(selectedSession.state === 'prepared')}</span>
+                  <span className={selectedCurrent?.snapshot_eligible && selectedCurrent?.recipe_fingerprint_matches ? 'ok' : 'bad'}>配置合格 {String(Boolean(selectedCurrent?.snapshot_eligible && selectedCurrent?.recipe_fingerprint_matches))}</span>
+                  <span className={selectedCurrent?.status === 'prepared' ? 'ok' : 'unknown'}>prepared {String(selectedCurrent?.status === 'prepared')}</span>
                   <span className={startable ? 'ok' : 'bad'}>可Start {String(startable)}</span>
-                  <span className={selectedSession.state === 'active' ? 'ok' : 'unknown'}>active {String(selectedSession.state === 'active')}</span>
+                  <span className={selectedCurrent?.status === 'started' ? 'ok' : 'unknown'}>started/active {String(selectedCurrent?.status === 'started')}</span>
                   <span className={ownerState === 'held' ? 'ok' : 'bad'}>Owner {ownerState}</span>
-                  <span className={selectedExecution?.recording_ready ? 'ok' : 'bad'}>Recording {String(selectedExecution?.recording_ready ?? false)}</span>
-                  <span className={selectedExecution?.motion_ready ? 'ok' : 'bad'}>Motion {String(selectedExecution?.motion_ready ?? false)}</span>
+                  <span className={selectedCurrent?.recording_ready ? 'ok' : 'bad'}>Recording {String(selectedCurrent?.recording_ready ?? false)}</span>
+                  <span className={selectedCurrent?.motion_ready ? 'ok' : 'bad'}>Motion {String(selectedCurrent?.motion_ready ?? false)}</span>
                 </div>
-                {bindingInvalid && <div className="session-blocked" data-session-binding-invalid="true"><Icon name="info" size={15}/><div><b>运行身份或 binding 已失效</b><p>{sampleMismatch ? '当前 Actual 的 run / generation / episode 与 Session 记录不一致' : preflightMismatch ? '当前 native 观测身份与 Session 记录不一致' : `native_binding.status=${selectedSession.native_binding.status}`}。Start 已禁用；旧手势和待提交目标已取消；同内容网格、相机与布局保留。不会自动重绑或重发。</p></div></div>}
-                <dl className="session-fields">
-                  <div><dt>身份</dt><dd title={`${selectedSession.native_identity.run_id} / ${selectedSession.native_identity.episode_id}`}>{short(selectedSession.native_identity.run_id, 16)} · gen {selectedSession.native_identity.backend_generation} · {short(selectedSession.native_identity.episode_id, 14)}</dd></div>
-                  <div><dt>binding</dt><dd>{selectedSession.native_binding.status} · {selectedSession.native_binding.protocol ?? 'no protocol'} · {selectedSession.native_binding.binding_id ?? 'binding_id=null'}</dd></div>
-                  <div><dt>binding 身份</dt><dd>native_session={selectedSession.native_binding.native_session_id ?? 'null'} · config={short(selectedSession.native_binding.config_fingerprint, 16)}</dd></div>
-                  <div><dt>binding 时间</dt><dd>verified_at={selectedSession.native_binding.verified_at ?? 'null'} · expires_native_monotonic_s={String(selectedSession.native_binding.expires_at_backend_monotonic_s)}</dd></div>
-                  <div><dt>readback</dt><dd title={selectedSession.native_binding.readback_sha256 ?? ''}>{short(selectedSession.native_binding.readback_sha256, 18)} {selectedSession.native_binding.reason ? `· ${selectedSession.native_binding.reason}` : ''}</dd></div>
-                  <div><dt>授权范围</dt><dd>{selectedExecution?.control_scope_granted?.length ? selectedExecution.control_scope_granted.join(', ') : '[]'}</dd></div>
-                  <div><dt>Owner / lease</dt><dd>{ownerState} · session={selectedExecution?.owner.session_id ?? 'null'} · lease_native_monotonic_s={String(selectedExecution?.owner.lease_expires_at_backend_monotonic_s ?? null)}</dd></div>
-                  <div><dt>录制</dt><dd>required_for_motion={String(selectedExecution?.recording_required_for_motion ?? false)} · begin_required={String(selectedExecution?.recording_begin_required ?? false)} · ready={String(selectedExecution?.recording_ready ?? false)}</dd></div>
-                  <div><dt>motion</dt><dd>ready={String(selectedExecution?.motion_ready ?? false)} · blockers={selectedExecution?.motion_blockers?.length ? selectedExecution.motion_blockers.join(', ') : '[]'}</dd></div>
-                  <div><dt>execution</dt><dd data-session-execution-source={selectedExecution?.source ?? ''} data-session-observed-at={selectedExecution?.observed_at ?? ''}>{selectedExecution ? `${executionSourceText[selectedExecution.source] ?? selectedExecution.source} · observed_at=${selectedExecution.observed_at}` : '旧 Session 文档缺少 execution；请重建'}</dd></div>
-                  <div><dt>快照</dt><dd title={selectedSession.snapshot_id}>{short(selectedSession.snapshot_id, 18)} · execution_revision {selectedSession.execution_revision} · fingerprint {short(selectedSession.fingerprint, 12)}</dd></div>
-                </dl>
+                {currentInvalid && <div className="session-blocked" data-session-binding-invalid="true"><Icon name="info" size={15}/><div><b>current 无效或 binding 失效</b><p>current.status={selectedCurrent?.status}; valid={String(selectedCurrent?.valid)}; binding={selectedCurrent?.binding.state}; binding_matches={String(selectedCurrent?.binding.matches)}; runtime_matches={String(selectedCurrent?.runtime_identity_matches)}。Start 已禁用；旧手势和待提交目标已取消；同内容模型、相机与布局保留。不会自动重绑或重发。</p></div></div>}
+                <div className="session-current" data-session-current-valid={String(selectedCurrent?.valid ?? false)} data-session-current-status={selectedCurrent?.status ?? 'unread'} data-current-error={currentError}>
+                  <div className="session-current-head"><b>current 观测</b><span>{currentBusy ? '读取中…' : currentError ? `读取失败：${currentError}` : selectedCurrent ? `${selectedCurrent.source} · ${selectedCurrent.observed_at}` : '未读取'}</span><button disabled={currentBusy} onClick={() => void refreshCurrent(selectedSession.session_id)}>刷新 current（只读）</button></div>
+                  {selectedCurrent ? <>
+                    <dl className="session-fields">
+                      <div><dt>valid / status</dt><dd>valid={String(selectedCurrent.valid)} · status={selectedCurrent.status} · error={selectedCurrent.error ?? 'null'}</dd></div>
+                      <div><dt>runtime</dt><dd>{short(selectedCurrent.runtime_identity.run_id, 16)} · gen {selectedCurrent.runtime_identity.backend_generation} · matches={String(selectedCurrent.runtime_identity_matches)}</dd></div>
+                      <div><dt>binding</dt><dd>state={selectedCurrent.binding.state} · matches={String(selectedCurrent.binding.matches)} · id={selectedCurrent.binding.binding_id ?? 'null'}</dd></div>
+                      <div><dt>binding 校验</dt><dd>readback={short(selectedCurrent.binding.readback_sha256, 16)} · error={selectedCurrent.binding.error ?? 'null'}</dd></div>
+                      <div><dt>snapshot</dt><dd title={selectedCurrent.snapshot_id}>{short(selectedCurrent.snapshot_id, 18)} · eligible={String(selectedCurrent.snapshot_eligible)} · recipe_match={String(selectedCurrent.recipe_fingerprint_matches)}</dd></div>
+                      <div><dt>授权范围</dt><dd>{selectedCurrent.control_scope_granted.length ? selectedCurrent.control_scope_granted.join(', ') : '[]'}</dd></div>
+                      <div><dt>录制</dt><dd>required={String(selectedCurrent.recording_required_for_motion)} · begin_required={String(selectedCurrent.recording_begin_required)} · status={selectedCurrent.recording.status} · capture_ready={String(selectedCurrent.recording.command_capture_ready)} · ready={String(selectedCurrent.recording_ready)}</dd></div>
+                      <div><dt>recording 细节</dt><dd>episode={selectedCurrent.recording.episode_id ?? 'null'} · segment={selectedCurrent.recording.segment_id ?? 'null'} · error={selectedCurrent.recording.error ?? 'null'}</dd></div>
+                      <div><dt>Owner / lease</dt><dd>{selectedCurrent.owner.state} · session={selectedCurrent.owner.session_id ?? 'null'} · lease_native_monotonic_s={String(selectedCurrent.owner.lease_expires_at_backend_monotonic_s)} · lease_exposed={String(selectedCurrent.owner.lease_exposed)}</dd></div>
+                      <div><dt>safety</dt><dd>safety_latched={String(selectedCurrent.safety_latched)}</dd></div>
+                      <div><dt>ready/available</dt><dd>recording_ready={String(selectedCurrent.recording_ready)} · motion_ready={String(selectedCurrent.motion_ready)} · start_available={String(selectedCurrent.start_available)} · recording_begin_available={String(selectedCurrent.recording_begin_available)}</dd></div>
+                    </dl>
+                    <ReasonList reasons={selectedCurrent.blockers}/>
+                  </> : <p className="session-note">current 尚未读取。不能使用存档 execution、start_available 或 binding status 代替 current ready。</p>}
+                  <p className="session-note">current 只执行 native 只读 GET；不续租、不重绑、不 Start、不清锁、不启停录制。prepared TTL 与 started 生命周期由后端 current.status 判定，前端不按本地时钟计算。</p>
+                </div>
                 <div className="session-inline">
                   <button className="primary" data-session-start={startable ? 'ready' : 'blocked'} disabled={busy !== '' || !canStart} title={startBlockedReason || '显式 Start；不会自动获取 owner 或开始录制'} onClick={() => void startPreparedSession()}>{busy === 'session-start' ? 'Start 请求中…' : '显式 Start'}</button>
+                  <button disabled={currentBusy} onClick={() => void refreshCurrent(selectedSession.session_id)}>刷新 current</button>
                   <span className="session-inline-note">{startBlockedReason || 'Start 只建立 active 与授权范围；不获取 owner、不开始录制、不等于 motion_ready'}</span>
                 </div>
-                {selectedSession.blocking_reasons.length > 0 && <ReasonList reasons={selectedSession.blocking_reasons}/>}
+                <details className="session-details"><summary>历史 / 存档字段（不代表 current）</summary>
+                  <dl className="session-fields">
+                    <div><dt>存档身份</dt><dd title={`${selectedSession.native_identity.run_id} / ${selectedSession.native_identity.episode_id}`}>{short(selectedSession.native_identity.run_id, 16)} · gen {selectedSession.native_identity.backend_generation} · {short(selectedSession.native_identity.episode_id, 14)}</dd></div>
+                    <div><dt>存档 binding</dt><dd>{selectedSession.native_binding.status} · {selectedSession.native_binding.protocol ?? 'no protocol'} · {selectedSession.native_binding.binding_id ?? 'binding_id=null'}</dd></div>
+                    <div><dt>存档 binding 身份</dt><dd>native_session={selectedSession.native_binding.native_session_id ?? 'null'} · config={short(selectedSession.native_binding.config_fingerprint, 16)}</dd></div>
+                    <div><dt>存档 binding 时间</dt><dd>verified_at={selectedSession.native_binding.verified_at ?? 'null'} · expires_native_monotonic_s={String(selectedSession.native_binding.expires_at_backend_monotonic_s)}（仅 prepared TTL，当前以后端 current 为准）</dd></div>
+                    <div><dt>存档 readback</dt><dd title={selectedSession.native_binding.readback_sha256 ?? ''}>{short(selectedSession.native_binding.readback_sha256, 18)} {selectedSession.native_binding.reason ? `· ${selectedSession.native_binding.reason}` : ''}</dd></div>
+                    <div><dt>存档授权范围</dt><dd>{selectedExecution?.control_scope_granted?.length ? selectedExecution.control_scope_granted.join(', ') : '[]'}</dd></div>
+                    <div><dt>存档 Owner</dt><dd>{selectedExecution?.owner.state ?? 'unknown'} · session={selectedExecution?.owner.session_id ?? 'null'} · lease_native_monotonic_s={String(selectedExecution?.owner.lease_expires_at_backend_monotonic_s ?? null)}</dd></div>
+                    <div><dt>存档录制</dt><dd>required_for_motion={String(selectedExecution?.recording_required_for_motion ?? false)} · begin_required={String(selectedExecution?.recording_begin_required ?? false)} · ready={String(selectedExecution?.recording_ready ?? false)}</dd></div>
+                    <div><dt>存档 motion</dt><dd>ready={String(selectedExecution?.motion_ready ?? false)} · blockers={selectedExecution?.motion_blockers?.length ? selectedExecution.motion_blockers.join(', ') : '[]'}</dd></div>
+                    <div><dt>存档 execution</dt><dd>{selectedExecution ? `${executionSourceText[selectedExecution.source] ?? selectedExecution.source} · observed_at=${selectedExecution.observed_at}` : '旧 Session 文档缺少 execution；请重建'}</dd></div>
+                    <div><dt>快照</dt><dd title={selectedSession.snapshot_id}>{short(selectedSession.snapshot_id, 18)} · execution_revision {selectedSession.execution_revision} · fingerprint {short(selectedSession.fingerprint, 12)}</dd></div>
+                  </dl>
+                  {selectedSession.blocking_reasons.length > 0 && <ReasonList reasons={selectedSession.blocking_reasons}/>}
+                </details>
                 <details className="session-details"><summary>生命周期、回执与尝试</summary>
                   <dl className="session-fields">
                     <div><dt>created</dt><dd>{selectedSession.created_at} · updated {selectedSession.updated_at}</dd></div>

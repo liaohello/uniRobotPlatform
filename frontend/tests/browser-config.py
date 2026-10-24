@@ -64,15 +64,22 @@ async def main():
             check('Start stays disabled before and after config work', await page.get_by_role('button', name='Start', exact=True).is_disabled())
             real_sessions = await page.request.get(a.url + '/api/v1/sessions')
             check('real GET /sessions is readable', real_sessions.status == 200)
-            sessions_before = await real_sessions.json()
-            report['real']['sessions_before'] = sessions_before
-            check('empty real Session list is rendered as empty, not Ready', ('空 Session 列表' in text) if not sessions_before else True)
+            envelope = await real_sessions.json()
+            report['real']['sessions_before'] = envelope
+            check('real list is the M1.2d stored envelope, not a bare array',
+                  envelope.get('source') == 'stored' and envelope.get('live') is False and isinstance(envelope.get('sessions'), list))
+            check('empty real Session list is rendered as empty, not Ready', ('空 Session 列表' in text) if not envelope['sessions'] else True)
+            check('drawer unpacks the envelope as stored and non-live',
+                  await page.locator('.session-drawer [data-sessions-source]').get_attribute('data-sessions-source') == 'stored'
+                  and await page.locator('.session-drawer [data-sessions-live]').get_attribute('data-sessions-live') == 'false')
+            check('empty Session list states that current Start is not implied', 'source=stored, live=false, sessions=[]' in text)
             preflight_checked = await page.locator('.session-drawer [data-preflight-checked-at]').get_attribute('data-preflight-checked-at')
             preflight_compatible = await page.locator('.session-drawer [data-preflight-compatible]').get_attribute('data-preflight-compatible')
             report['real']['preflight'] = {'checked_at': preflight_checked, 'read_contract_compatible': preflight_compatible}
-            check('18944 preflight is displayed as a current native observation with checked_at', bool(preflight_checked))
-            check('18944 live preflight does not claim a compatible session contract', preflight_compatible == 'false')
+            check('live preflight is displayed as a current native observation with checked_at', bool(preflight_checked))
+            check('live preflight does not claim a compatible session contract', preflight_compatible == 'false')
             check('preflight renders the real interface_profile failure', await page.locator('.session-drawer [data-preflight-check="interface_profile"][data-preflight-check-status="failed"]').count() == 1)
+            check('preflight is labelled as a global diagnostic, not the Session current', '只以下方单 Session current 为准' in text)
             check('archive and current observation are labelled separately', '刷新存档（不调用 native）' in text and '刷新 native 观测（只读）' in text)
             check('archive GET is not described as refreshing native', '不会刷新 native' in text or '不调用 native' in text)
 
@@ -225,10 +232,12 @@ async def main():
 
             # ---- Session and method boundary ----
             await open_drawer(page)
-            final_sessions = await (await page.request.get(a.url + '/api/v1/sessions')).json()
-            report['real']['sessions_after'] = final_sessions
-            check('real environment still has no prepared/active Session', final_sessions == [])
+            final_envelope = await (await page.request.get(a.url + '/api/v1/sessions')).json()
+            report['real']['sessions_after'] = final_envelope
+            check('real environment still has no prepared/active Session', final_envelope['source'] == 'stored' and final_envelope['sessions'] == [])
             check('UI keeps the empty Session list and Start disabled', '空 Session 列表' in await drawer.inner_text() and await page.get_by_role('button', name='Start', exact=True).is_disabled())
+            check('no map/route wire was invented against the backend',
+                  not any(token in urlsplit(request['url']).path for request in report['requests'] for token in ('/maps', '/route', '/waypoint')), [r['url'] for r in report['requests'] if 'route' in r['url'] or 'map' in r['url']][:3])
             forbidden = [r for r in report['requests'] if r['method'] != 'GET' and not (
                 (r['method'] == 'POST' and urlsplit(r['url']).path == '/api/v1/experiment-drafts') or
                 (r['method'] == 'PUT' and urlsplit(r['url']).path == f'/api/v1/experiment-drafts/{draft_id}') or

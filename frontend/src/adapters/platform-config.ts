@@ -66,6 +66,27 @@ export interface RecordingBeginReceipt {
   command_capture_ready: boolean; recording_start_event_seq: number;
   initial_snapshot_sha256: string; durable_start_records: boolean; started_at_backend_monotonic_s: number;
 }
+export interface CurrentBinding {
+  binding_id: string | null; state: string; matches: boolean; readback_sha256: string | null; error: string | null;
+}
+export interface CurrentRecording {
+  status: string; episode_id: string | null; segment_id: string | null;
+  command_capture_ready: boolean; error: string | null; ready: boolean;
+}
+export interface CurrentOwner {
+  state: string; session_id: string | null;
+  lease_expires_at_backend_monotonic_s: number | null; lease_exposed: boolean;
+}
+export interface SessionCurrent {
+  source: 'live_native_read_only'; observed_at: string; valid: boolean; status: string; error: string | null;
+  runtime_identity: { run_id: string; backend_generation: number; episode_id: string };
+  runtime_identity_matches: boolean; binding: CurrentBinding;
+  snapshot_id: string; snapshot_eligible: boolean; recipe_fingerprint_matches: boolean;
+  control_scope_granted: string[]; recording_required_for_motion: boolean; recording_begin_required: boolean;
+  recording: CurrentRecording; owner: CurrentOwner; safety_latched: boolean;
+  recording_ready: boolean; motion_ready: boolean; start_available: boolean; recording_begin_available: boolean;
+  blockers: StartBlock[];
+}
 export interface SessionRecord {
   schema_version: string; session_id: string; state: 'prepared' | 'active' | 'closed' | 'failed';
   created_at: string; updated_at: string; snapshot_id: string;
@@ -76,7 +97,9 @@ export interface SessionRecord {
   blocking_reasons: BlockingReason[]; start_attempts?: StartAttempt[];
   started_at: string | null; start_receipt?: StartReceipt | null;
   recording_begin_attempts?: RecordingAttempt[]; recording_begin_receipt?: RecordingBeginReceipt | null;
+  current?: SessionCurrent | null;
 }
+export interface SessionList { source: 'stored'; live: false; retrieved_at: string; sessions: SessionRecord[] }
 export interface SessionEnvelope { session: SessionRecord; replayed: boolean }
 export interface CreateSessionRequest {
   execution_revision: number; fingerprint: string; validated_snapshot_id: string; idempotency_key: string;
@@ -134,7 +157,7 @@ export class PlatformConfigApi {
   }
   listSnapshots(signal: AbortSignal) { return request<SnapshotRecord[]>('/api/v1/config-snapshots', { method: 'GET' }, signal); }
   getSnapshot(snapshotId: string, signal: AbortSignal) { return request<SnapshotRecord>(`/api/v1/config-snapshots/${encodeURIComponent(snapshotId)}`, { method: 'GET' }, signal); }
-  listSessions(signal: AbortSignal) { return request<SessionRecord[]>('/api/v1/sessions', { method: 'GET' }, signal); }
+  listSessions(signal: AbortSignal) { return request<SessionList>('/api/v1/sessions', { method: 'GET' }, signal); }
   getSession(sessionId: string, signal: AbortSignal) { return request<SessionRecord>(`/api/v1/sessions/${encodeURIComponent(sessionId)}`, { method: 'GET' }, signal); }
   createSession(body: CreateSessionRequest, signal: AbortSignal) {
     return request<SessionEnvelope>('/api/v1/sessions', { method: 'POST', body: JSON.stringify(body) }, signal);

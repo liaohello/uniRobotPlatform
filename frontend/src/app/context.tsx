@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { LocalTarget, MonitorStatus, TimelineEvent, Vec3, ViewSample } from '../adapters/types';
 import type { Tool, WorkbenchScene } from '../viewport/workbench-scene';
+import type { RouteDraft } from '../map/route';
 export type LayoutPreset = 'standard' | 'focus3d';
 export interface FullscreenState { active: boolean; supported: boolean; reason: string }
 export interface Workspace {
@@ -16,6 +17,7 @@ export interface Workspace {
  maximized:boolean; setMaximized(value:boolean):void;
  fullscreen:FullscreenState; toggleFullscreen():void;
  drawer:'none'|'session'; setDrawer(drawer:'none'|'session'):void;
+ routeDraft: RouteDraft;
 }
 export const WorkbenchContext=createContext<Workspace|null>(null);
 export function useWorkbench(){const w=useContext(WorkbenchContext);if(!w)throw new Error('WorkbenchContext missing');return w;}

@@ -1,3 +1,65 @@
+# M1.2e 18949 current 迁移与带朝向 Waypoint 路线切片（2026-10-24）
+
+本轮把 Session 抽屉迁到后端 M1.2d 候选 18949（`SessionList` envelope + 单 Session `current` 只读观测），并在同一 React/TS 工作台内交付 Scene Setup 的“位置＋朝向”地图/Waypoint 路线编辑与本地保存隔离切片。3D 工作台、相机、布局与只读监控保持不变；未开放运动、RESET、录制、导航执行或速度发布。仅写 `frontend/`，未修改 backend、公共契约、native 或根配置，未推送。
+
+## 冻结版本与入口
+
+| 项 | 值 |
+|---|---|
+| 前端 release | `m1-front-geometry-20261024T132145Z-05cd4ef709d4` |
+| 输入 / 聚合 SHA-256 | 81 个输入；`05cd4ef709d43ca89e9a6419ff4e292242aa478c655601bdf3995385d8772ce0` |
+| 后端候选 / 上游 | `m1e-20261024T090448Z-platform`（18949，production recipe，`read_contract_compatible=false`） |
+| 本轮预览 | 服务器回环 18951 → 18949，PID 2066909（同一冻结 release，`--read-only` 白名单代理） |
+| 保留服务 | 18950 → 18944（M1.2c 预览，未停止）；18946 → 18943（M1.2b 预览，未停止）；18943/18944/18949 后端未重启 |
+| 真实 native | 8792 仍为 `drvfix` / G4A2 / PID 941842；本轮前后 `run_9c88e3e…` / generation 1 / `episode_43c22f…` / recording=IDLE 完全一致，`native_mutations_sent=false` |
+| 环境 | cec-sim，Node 20.20.2 / npm 10.8.2，锁摘要 `1bb055b6e003c960…`，Chromium ANGLE SwiftShader |
+| 证据 | 服务器 `reports/m1-front-geometry-20261024T132145Z-05cd4ef709d4/`（build/unit/environment/preview/native-read-only/listeners 与各套件目录） |
+
+## 实现一：18949 Session envelope 与 current
+
+- **类型与客户端**：新增 `SessionList`（`source/live/retrieved_at/sessions`）、`SessionCurrent`、`CurrentBinding`、`CurrentOwner`、`CurrentRecording`；`listSessions` 返回 envelope，`getSession` 返回带 `current` 的单文档。
+- **存档与当前分离**：列表解包后显示 `source=stored · live=false · retrieved_at=…`，并明确“它是存档列表，不是 current”。选中 Session 由独立串行 `refreshCurrent()` 走 `GET /sessions/{id}` 读取 `current`，显示 `source / observed_at / valid / status / error / blockers`、runtime、binding、snapshot 资格、授权范围、recording、owner/lease、safety 与四个 ready/available 字段；历史 receipt、attempt 与存档 binding 留在“历史 / 存档字段”折叠区。
+- **资格判定**：`可Start`、Owner、Recording、Motion 全部取 `current`，preflight 只作为全局 native 诊断（界面写明“Session 是否可 Start 只以下方单 Session current 为准”）。`current` 尚未读取或读取失败时提示“不能使用存档 execution / start_available / binding status 代替 current ready”，Start 保持禁用。
+- **不作存档兜底**：夹具用 HTTP 200 + `current.status=offline, valid=false, error=native_offline` 验证界面仍禁用 Start、仍显示 blockers；`current` 请求被中断（断连）时同样禁用并可显式重试恢复。
+- **切换与迟到响应**：切换 Session 触发新的 `current` 读取并作废在途结果；夹具把 `ps-fixture-b` 的 `current` 延迟 3 秒，切到 `ps-fixture-a` 后晚到响应没有覆盖当前选择。
+- **TTL 与生命周期**：`prepared` 与 `started` 分开显示，界面写明“prepared TTL 与 started 生命周期由后端 current.status 判定，前端不按本地时钟计算”，存档 `expires_at_backend_monotonic_s` 仅作历史字段展示。夹具分别验证 `prepared`、`started`、`expired`、`identity_changed`。
+- **失效处理**：`current` 身份/binding 不一致时 `data-session-invalidated=true`，取消旧手势与待提交目标（`__workbenchInspect().target===null`），保留同一 renderer 实例、相机与布局，Start 禁用且不自动重绑/重发。未取得 Owner、未开录与 binding 失效各自独立显示。
+
+## 实现二：位置＋朝向的 Waypoint 编辑
+
+- 新增共享 `MapWaypointEditor`（`src/map/MapWaypointEditor.tsx`）与坐标层 `src/map/route.ts`：`mapFromPixel / pixelFromMap` 处理原点位移与旋转、分辨率、图像 Y 轴向下；视图旋转/缩放/平移由 SVG 组变换与 `getScreenCTM().inverse()` 反算，因此 map 坐标不随视图变化。
+- 每个 PointGoal 携带稳定 ID、顺序、`mapId/mapVersion/frame` 与 `xM/yM/yawRad`；顺序重排不换 ID，删除后新增使用新 ID。朝向为必填：`routeErrors` 拒绝 `yawRad===null`，界面在朝向未设时显示虚线与 `?`，不把缺省值当 0°。
+- 手势互斥：空白拖动平移（>3px 不生成点）、点本体拖动移动位置、方向手柄拖拽设朝向；拖动距离小于 `MIN_YAW_DRAG_M`（0.12 m）不提交，因此零长度拖拽不会静默写入 0°。UI 输入角度用度，内部与 wire 用 rad 并归一化到 `[-π, π)`。
+- Scene Setup（侧栏“场景布置”）负责创建/编辑/保存并显示地图身份、版本、frame、分辨率、原点、来源与场景兼容状态；地图为独立离线测试来源（`offline-test-map`，图内与元数据都写明“非 SLAM、非导航地图”），未拿 3D 地面或 world_sim 真值冒充地图；Simulation 视口工具栏“导航”小窗以只读方式复用同一编辑器，标注“本地草案 · 未保存 · 保存版本不可用”“执行反馈：无（本轮不导航）”“编辑连线，非规划安全路径”。
+
+## 实现三：保存与运行隔离（后端契约缺口下的边界）
+
+- 18949 `/openapi.json` 实际路径清单没有 map/route/waypoint 端点，代理白名单因此未增加任何路线相关转发，也没有猜测 wire。`data-backend-route-api=unavailable` 与说明写明这一事实。
+- 新增 `src/map/route-store.ts` 作为明确标注 `local_session_only` 的会话内存储：保存是带 `draftRevision` 条件写（陈旧修订抛 `RouteConflict`，本地编辑保留并可显式重载存储草案），发布产生不可变 Route Version（内容摘要、来源草案修订、地图绑定、点集），发布不覆盖旧版本、不修改采用引用，采用仍禁用（需后端配置契约）。刷新后草案与版本全部丢失并如实显示“未保存到后端”。
+- 单元测试用该存储验证 409 语义、旧版本保留与“仅改朝向也是内容变更”；浏览器测试验证本地保存/发布/重载、采用禁用、`data-route-adopted=none` 以及地图切片零写请求。后端路线 API 就绪后，把该存储替换为真实客户端即可，不需要新增协议假设。
+
+## 服务器结果（全部构建/测试/浏览器在 cec-sim 执行）
+
+| 套件 | 结果 | 归类 |
+|---|---|---|
+| `npm run build`（含 `tsc --noEmit`） | 通过 | 真实 |
+| `npm test` | 54 passed / 0 failed（新增 `tests/route.test.ts` 17 项） | 真实 |
+| browser-readonly | 32 checks | 真实 18949 只读 |
+| frozen-browser（workbench） | 29 checks | 真实 |
+| browser-geometry | 23 checks | 真实 |
+| browser-usability | 100 checks | 真实（含最大化/全屏/紧凑布局回归） |
+| browser-config | 51 checks | 真实 18949 |
+| browser-session | 38 checks | 隔离 synthetic 协议夹具 |
+| browser-map | 35 checks | 本地编辑与 `local_session_only` 存储（另加真实 18949 只读页面回归） |
+
+真实 18949 关键事实：`GET /sessions` 返回 `{source:"stored", live:false, retrieved_at:"2026-10-24T13:26:14+00:00", sessions:[]}`；preflight `read_contract_compatible=false` 且 `interface_profile` failed；Draft 创建/保存 201/200（`draft-dbe119d3d3c84dca85101ec0ead74a0c`，draft_revision 2、execution_revision 1）；validate 200 但 `status=failed`、`execution_eligible=false`、`validated_snapshot_id=null`、19 项检查、6 条 blocking reasons；快照 `cs-aa52608a27c0f6d579d2ea29d163cf9effa6709d`，sha256 `46bb89ba5960ba268998a35d139849548a8fa332da777e8c362d468cd7e6f57`，recipe fingerprint `4c3e5f42…5e9e`；真实创建/Start 仍禁用，未发送真实 `POST /sessions`。地图套件共 95 个请求，全部为 GET，无 `/commands`、`/episodes`、`/reset`、`/recording`、`/start` 与任何自造 route 路径。
+
+同一冻结 release 的首轮官方运行在 `browser-usability` 的“退出全屏恢复停靠视口”检查处因等待窗口偏短而中断（未产生 native 影响，证据目录 `reports/m1-front-geometry-20261024T130141Z-5ab2bfba83bc`、`…-r2` 保留为中断记录）；本轮未改动任何产品代码，仅把 `browser-session` 中断后的错误显示改为等待 `data-current-error` 非空，随后对最终冻结输入 `05cd4ef709d4` 重跑全部套件通过。开发记录中此前指向 `091342Z` 的 20 个报告链接已改为服务器实际存在的 `m1-front-geometry-20261024T092102Z-eecb7395d87a`。
+
+## 仍未执行（不得当作已完成）
+
+真实 native binding/录制补丁未部署到 8792，因此没有真实 prepared/active Session、真实 Start、物理运动、录制与回放；SLAM/导航地图来源、后端 Route Draft/Version API 与配置采用契约仍缺；运行中改目标、热重规划、导航执行与速度发布本轮未实现也未开放。地图与路线结果只证明本地交互与保存隔离语义，不证明导航资格。
+
 # M1.2c Session 准备与显式 Start 交付（2026-10-24）
 
 本轮把 Session 抽屉接到 18944（M1.2c, recipe revision 3）：真实 Draft/validate/快照/409 成果保留，新增 `preflight` 当前观测、prepared Session 创建、独立显式 Start、binding/owner/recording/motion 分区展示和状态新鲜度。真实 native 仍未部署 binding 补丁，所以真实环境准确显示阻塞；成功交互只在隔离的有状态协议夹具中验证。仅写 `frontend/`，未修改 backend、公共契约、native 或根配置，未推送。
@@ -6,7 +68,7 @@
 
 | 项 | 值 |
 |---|---|
-| 前端 release | `m1-front-geometry-20261024T091342Z-eecb7395d87a` |
+| 前端 release | `m1-front-geometry-20261024T092102Z-eecb7395d87a` |
 | 输入 / 聚合 SHA-256 | 70 个输入；`eecb7395d87a8020da602f85cdc9460dccf23c27a4f4b66d3d22a2700b8444c1` |
 | 后端候选 / 上游 | `m1c-20261024T065943Z-platform`（recipe revision 3，fingerprint `4c3e5f42…5e9e`），服务器 18944 |
 | 预览 | 服务器回环 18950，代理 18944；PID 1253949（同一冻结 release）。18946→18943 旧预览保留；临时 18947/18948 已停止 |
@@ -65,9 +127,9 @@
 | 真实 18944 配置 | 46 passed：preflight、Draft 保存/重载/校验、动态 checks/reasons、快照、真实 409、迟到 validate、断连、创建按钮禁用、无 Session 写 |
 | 合成 Session 协议 | 24 passed（synthetic）：创建幂等、超时恢复、409、Start 拒绝/成功、freshness、binding 失效、3D 目标取消 |
 
-报告：[集成摘要](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/integration-summary.json)、[源码清单](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/source-manifest.json)、[构建](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/build.log)、[37 单元](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/unit.json)、[32 只读](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/browser/browser.json)、[29 冻结](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/frozen-browser/browser.json)、[23 几何](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/geometry/geometry.json)、[100 可用性](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/usability/usability.json)、[46 真实配置](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/config/browser.json)、[24 合成 Session](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/session/browser.json)、[native 前后](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/native-read-only.json)。
+报告：[集成摘要](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/integration-summary.json)、[源码清单](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/source-manifest.json)、[构建](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/build.log)、[37 单元](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/unit.json)、[32 只读](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/browser/browser.json)、[29 冻结](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/frozen-browser/browser.json)、[23 几何](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/geometry/geometry.json)、[100 可用性](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/usability/usability.json)、[46 真实配置](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/config/browser.json)、[24 合成 Session](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/session/browser.json)、[native 前后](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/native-read-only.json)。
 
-截图：[prepared](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/session/session-prepared.png)、[active 且 owner/recording/motion 分离](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/session/session-active.png)、[超时回读恢复](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/session/session-recovered.png)、[binding 失效并取消目标](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/session/session-invalidated.png)、[真实 18944 配置校验](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/config/config-validated.png)、[真实 409 错误态](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/config/config-conflict-actual-final.png)、[Session 抽屉真实空状态](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/usability/usability-session.png)、[真实只读](../reports/m1-front-geometry-20261024T091342Z-eecb7395d87a/browser/real-readonly.png)。
+截图：[prepared](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/session/session-prepared.png)、[active 且 owner/recording/motion 分离](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/session/session-active.png)、[超时回读恢复](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/session/session-recovered.png)、[binding 失效并取消目标](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/session/session-invalidated.png)、[真实 18944 配置校验](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/config/config-validated.png)、[真实 409 错误态](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/config/config-conflict-actual-final.png)、[Session 抽屉真实空状态](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/usability/usability-session.png)、[真实只读](../reports/m1-front-geometry-20261024T092102Z-eecb7395d87a/browser/real-readonly.png)。
 
 ## 验证中修掉的问题
 
