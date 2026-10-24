@@ -43,7 +43,12 @@ from .prepare import (
     SessionEnvelope, SessionList, Validator,
 )
 from .recipe import Recipe, load_recipe
-from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH
+from .maps import MapError, MapList, MapStore, MapVersionView
+from .routes import (
+    CreateRouteDraft, MapRef, PublishRouteDraft, PublishResult, RouteDraft, RouteError, RouteService,
+    RouteVersion, RouteVersionList, SaveRouteDraft,
+)
+from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH, MAP_CATALOG_PATH, MAPS_ROOT
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -59,7 +64,9 @@ def _catalog(request: Request) -> Catalog:
 def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | None = None,
                compiled_geometry_path: Path | None = None,
                mobilecar_integration: MobileCarIntegration | None = None,
-               recipe: Recipe | None = None) -> FastAPI:
+               recipe: Recipe | None = None,
+               map_catalog_path: Path | None = None,
+               maps_root: Path | None = None) -> FastAPI:
     path = Path(catalog_path) if catalog_path else CONFIG_PATH
 
     catalog = load_catalog(path)
@@ -98,6 +105,14 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     application.state.preparation = preparation
     application.state.drafts = DraftStore(draft_db_path or DRAFT_DB_PATH, application.state.mobilecar_integration,
                                           recipe=recipe, preparation=preparation)
+    map_store = MapStore(
+        map_catalog_path or MAP_CATALOG_PATH,
+        maps_root or MAPS_ROOT,
+        reference_scene_id=recipe.expected.get("scene_id"),
+        reference_model_sha256=recipe.expected.get("model_sha256"),
+    )
+    application.state.maps = map_store
+    application.state.routes = RouteService(draft_db_path or DRAFT_DB_PATH, map_store)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -148,7 +163,9 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     @application.middleware("http")
     async def no_stale_workbench_reads(request: Request, call_next):
         response = await call_next(request)
-        if request.url.path.startswith("/api/v1/mobilecar/") or request.url.path.startswith("/api/v1/sessions"):
+        if (request.url.path.startswith("/api/v1/mobilecar/") or request.url.path.startswith("/api/v1/sessions")
+            or request.url.path.startswith("/api/v1/maps") or request.url.path.startswith("/api/v1/routes")
+            or request.url.path.startswith("/api/v1/route-drafts")):
             response.headers["Cache-Control"] = "no-store"
         return response
 
@@ -164,6 +181,16 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
 
     @application.exception_handler(PreparationError)
     async def preparation_failure(request: Request, exc: PreparationError):
+        return JSONResponse(status_code=exc.status_code,
+                            content={"detail": {"code": exc.code, "message": str(exc), **exc.detail}})
+
+    @application.exception_handler(MapError)
+    async def map_failure(request: Request, exc: MapError):
+        return JSONResponse(status_code=exc.status_code,
+                            content={"detail": {"code": exc.code, "message": str(exc), **exc.detail}})
+
+    @application.exception_handler(RouteError)
+    async def route_failure(request: Request, exc: RouteError):
         return JSONResponse(status_code=exc.status_code,
                             content={"detail": {"code": exc.code, "message": str(exc), **exc.detail}})
 
@@ -247,6 +274,45 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
             "consistency": evidence.model_dump(exclude={"profile_id", "digest", "authority", "limitations"}),
             "limitations": preparation.recipe.kinematics["limitations"],
         }
+
+    @application.get("/api/v1/maps", response_model=MapList)
+    def list_maps(request: Request):
+        return request.app.state.maps.list_maps()
+
+    @application.get("/api/v1/maps/{map_id}/versions/{version}", response_model=MapVersionView)
+    def get_map_version(map_id: str, version: str, request: Request, frame: str | None = None):
+        return request.app.state.maps.get_version(map_id, version, frame)
+
+    @application.get("/api/v1/maps/{map_id}/versions/{version}/image")
+    def get_map_image(map_id: str, version: str, request: Request,
+                      sha256: str = Query(pattern=r"^[0-9a-f]{64}$")):
+        body, digest = request.app.state.maps.read_image(map_id, version, sha256)
+        return Response(body, media_type="image/x-portable-graymap",
+                        headers={"ETag": f'"{digest}"', "Cache-Control": "no-store"})
+
+    @application.post("/api/v1/route-drafts", response_model=RouteDraft, status_code=201)
+    def create_route_draft(spec: CreateRouteDraft, request: Request):
+        return request.app.state.routes.create(spec)
+
+    @application.get("/api/v1/route-drafts/{route_id}", response_model=RouteDraft)
+    def get_route_draft(route_id: str, request: Request):
+        return request.app.state.routes.get(route_id)
+
+    @application.put("/api/v1/route-drafts/{route_id}", response_model=RouteDraft)
+    def save_route_draft(route_id: str, spec: SaveRouteDraft, request: Request):
+        return request.app.state.routes.save(route_id, spec)
+
+    @application.post("/api/v1/route-drafts/{route_id}/publish", response_model=PublishResult)
+    def publish_route_draft(route_id: str, spec: PublishRouteDraft, request: Request):
+        return request.app.state.routes.publish(route_id, spec)
+
+    @application.get("/api/v1/routes/{route_id}/versions", response_model=RouteVersionList)
+    def list_route_versions(route_id: str, request: Request):
+        return request.app.state.routes.list_versions(route_id)
+
+    @application.get("/api/v1/routes/{route_id}/versions/{version}", response_model=RouteVersion)
+    def get_route_version(route_id: str, version: str, request: Request):
+        return request.app.state.routes.get_version(route_id, version)
 
     @application.get("/api/v1/platform", response_model=PlatformSummary)
     def platform(request: Request) -> PlatformSummary:

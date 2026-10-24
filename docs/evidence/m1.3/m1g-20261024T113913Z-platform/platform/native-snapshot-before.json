@@ -1,0 +1,461 @@
+{
+  "active_operator_id": null,
+  "active_operator_kind": null,
+  "active_session_id": null,
+  "arm": {
+    "coordinates_status": "user_defined_photo_pose_not_hardware_500",
+    "joint_margin_rad": [
+      2.089999999997815,
+      2.0899999999999666,
+      2.089999999999977,
+      0.5192036732050986,
+      2.0899999999989842
+    ],
+    "joint_torques_nm": [
+      0.0014711721051493517,
+      0.1685392734227608,
+      0.1654286359816221,
+      0.16056687327878194,
+      -1.6194806373858963e-05
+    ],
+    "joint_velocities_rad_s": [
+      -1.768741820928694e-15,
+      -2.2920566108461924e-15,
+      3.737490079134115e-15,
+      1.7808216938540012e-14,
+      -1.9572843431981633e-16
+    ],
+    "model_joint_positions_rad": [
+      -2.184963421641042e-12,
+      3.343275112020372e-14,
+      2.2574809471380916e-14,
+      -1.5707963267949012,
+      -1.0156421674204e-12
+    ],
+    "model_joint_targets_rad": [
+      -2.1849604256104818e-12,
+      3.344156860706527e-14,
+      2.2578702971480356e-14,
+      -1.5707963267949012,
+      -1.0156417584983402e-12
+    ],
+    "model_limits_rad": [
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ]
+    ],
+    "user_joint_positions_rad": [
+      -2.184963421641042e-12,
+      3.343275112020372e-14,
+      2.2574809471380916e-14,
+      -4.6629367034256575e-15,
+      -1.0156421674204e-12
+    ],
+    "user_joint_targets_rad": [
+      -2.1849604256104818e-12,
+      3.344156860706527e-14,
+      2.2578702971480356e-14,
+      -4.6629367034256575e-15,
+      -1.0156417584983402e-12
+    ]
+  },
+  "arm_owner_session_id": null,
+  "backend_generation": 1,
+  "backend_monotonic_s": 1016110.950942272,
+  "base": {
+    "frame_id": "base_link",
+    "orientation_world_sim_xyzw": [
+      -1.1200977680969415e-06,
+      5.4636909803847586e-05,
+      1.1716392150223991e-06,
+      0.9999999985060893
+    ],
+    "position_world_sim_m": [
+      0.1386513174901792,
+      -1.929293248024113e-05,
+      0.05321414659290786
+    ],
+    "requested_vx_m_s": 0.0,
+    "requested_vy_m_s": 0.0,
+    "requested_wz_rad_s": 0.0,
+    "stop_latched": true,
+    "stopped": true,
+    "vx_m_s": 3.619840537062238e-16,
+    "vy_m_s": 9.320800686720988e-17,
+    "wz_rad_s": -2.2112205048624559e-16
+  },
+  "base_owner_session_id": null,
+  "clock_id": "backend_monotonic",
+  "contact_summary": {
+    "bilateral_grasp": false,
+    "left_force_n": 0.0,
+    "right_force_n": 0.0,
+    "unexpected": [],
+    "unexpected_contact": false
+  },
+  "contract_version": "mobilecar-1.0",
+  "control_tick_id": "tick_045760275",
+  "diagnostics": {
+    "base_drive_gate": {
+      "action": "unlock_stop",
+      "blocked": true,
+      "code": "SOFTWARE_STOP_LATCHED",
+      "lease_remaining_s": 0.0,
+      "owner_session_id": null,
+      "reason": "软件停止已锁存：需先解除停止，或开始新的录制后再驾驶。",
+      "recording_required": true
+    },
+    "camera_body": "depth_cam_link",
+    "camera_branch_root": "link4",
+    "interface_profile": "g2a-1.0",
+    "mode": "GT_DEBUG",
+    "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+    "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "navigation": {
+      "active_faults": [],
+      "authorized_g3b_goal": null,
+      "backend_generation": 1,
+      "enabled": false,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "health_stop_latched_until_new_session": false,
+      "interface_profile": "g3a-1.0",
+      "last_g3b_goal_generation": 0,
+      "last_health": {
+        "status": "UNKNOWN",
+        "stop_required": false
+      },
+      "navigation_cancel_epoch": 5,
+      "navigation_epoch": 0,
+      "navigation_session_id": null,
+      "profile_id": null,
+      "profile_sha256": null,
+      "reference_ring_size": 0,
+      "revoked_session_count": 0
+    },
+    "object_pose_world_sim": {
+      "orientation_xyzw": [
+        2.3080104363299276e-17,
+        1.6590135331703912e-19,
+        4.242334795421112e-30,
+        1.0
+      ],
+      "position_m": [
+        0.4,
+        4.2648657006351836e-12,
+        0.10990787854182482
+      ],
+      "status": "AVAILABLE"
+    },
+    "observation_profile_id": "g4a1-link4-rgbd-proprio-v1",
+    "observation_profile_sha256": "f466a438374d52927bf582a3fe0fb03e837e6472041f04a3e119ec41d8252fdd",
+    "observation_profile_version": "1.0",
+    "planning_last": {},
+    "rgbd_schedule": {
+      "last_capture": {
+        "arrival_backend_monotonic_s": 1016110.738882554,
+        "capture_backend_monotonic_s": 1016110.721492273,
+        "capture_clocks": {
+          "backend_monotonic": "backend_monotonic",
+          "sim": "sim",
+          "wall_utc": "wall_utc"
+        },
+        "capture_control_tick_id": "tick_045760252",
+        "capture_sim_time_s": 457602.5166482431,
+        "capture_to_copy_ms": 25.94360592775047,
+        "capture_to_forward_ms": 1.0697980178520083,
+        "capture_to_publish_complete_ms": 21.487918915227056,
+        "capture_to_render_complete_ms": 14.214944909326732,
+        "encode_ms": 0.0,
+        "feedback_clock": "backend_monotonic",
+        "feedback_sample_id": "joint_feedback_045760252",
+        "feedback_time_s": 1016110.71885936,
+        "interface_profile": "g4a1-1.0",
+        "lock_acquire_ms": 24.37103900592774,
+        "lock_wait_ms": 24.37103900592774,
+        "observation_age_ms": 17.390280961990356,
+        "publish_backend_monotonic_s": 1016110.738882554,
+        "publish_ms": 4.097637953236699,
+        "render_complete_backend_monotonic_s": 1016110.735707218,
+        "render_complete_to_publish_ms": 3.1753360526636243,
+        "render_ms": 13.144568889401853,
+        "render_start_backend_monotonic_s": 1016110.722562649,
+        "schedule": {
+          "deadline_lateness_ms": 0.1266966573894024,
+          "missed_slots": 0,
+          "schedule_index": 2288720
+        },
+        "state_copy_ms": 0.07947091944515705,
+        "wall_utc": "2026-10-24T11:57:26.227912Z"
+      },
+      "period_s": 0.2,
+      "schedule_index": 2288721,
+      "skip_reasons": {
+        "deadline_overrun": 152
+      },
+      "skipped_slots": 152
+    },
+    "scene_id": "mobile_pick",
+    "sensor_error": null,
+    "transform_version": "g2a-transform-1"
+  },
+  "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+  "episode_started_backend_monotonic_s": 558366.667448889,
+  "feedback_time_s": 1016110.948452232,
+  "gripper": {
+    "bilateral_contact": false,
+    "left_contact_force_n": 0.0,
+    "model_drive_position_rad": -1.0776330776100003,
+    "model_drive_target_rad": -1.0776330048507736,
+    "right_contact_force_n": 0.0,
+    "target_width_m": 0.024999991920466903,
+    "width_m": 0.024999990231479703
+  },
+  "model_joint_positions_rad": {
+    "front_left_joint": -0.26178483185447887,
+    "front_left_roller_0_joint": 1.694969109080177e-07,
+    "front_left_roller_10_joint": 2.715232912454894e-07,
+    "front_left_roller_11_joint": 2.2324972204839964e-07,
+    "front_left_roller_1_joint": 1.2477922636331197e-07,
+    "front_left_roller_2_joint": 1.0098314876506311e-07,
+    "front_left_roller_3_joint": 1.046349691712566e-07,
+    "front_left_roller_4_joint": 1.3460383295755312e-07,
+    "front_left_roller_5_joint": 1.831032576873298e-07,
+    "front_left_roller_6_joint": 0.00669318110960487,
+    "front_left_roller_7_joint": -0.08367698681789207,
+    "front_left_roller_8_joint": 3.0507501655576876e-07,
+    "front_left_roller_9_joint": 3.013918624492384e-07,
+    "front_right_joint": -0.26177952766793533,
+    "front_right_roller_0_joint": -3.1015836622944245e-07,
+    "front_right_roller_10_joint": -2.3331033190318175e-07,
+    "front_right_roller_11_joint": -2.823996103475301e-07,
+    "front_right_roller_1_joint": -3.092266323674296e-07,
+    "front_right_roller_2_joint": -2.7987048830331895e-07,
+    "front_right_roller_3_joint": -2.2982124730049328e-07,
+    "front_right_roller_4_joint": -1.728033951821212e-07,
+    "front_right_roller_5_joint": -1.2343343024645775e-07,
+    "front_right_roller_6_joint": -0.01934255085945487,
+    "front_right_roller_7_joint": -0.04256233031318711,
+    "front_right_roller_8_joint": -1.2614366367064995e-07,
+    "front_right_roller_9_joint": -1.76187275522163e-07,
+    "gripper_base_joint": -1.0776330776100003,
+    "gripper_left_join": 1.6164555010235442,
+    "gripper_right_joint": 1.6164437321936282,
+    "joint1": -2.184963421641042e-12,
+    "joint2": 3.343275112020372e-14,
+    "joint3": 2.2574809471380916e-14,
+    "joint4": -1.5707963267949012,
+    "joint5": -1.0156421674204e-12,
+    "left_jaw_joint": 0.012484051952558441,
+    "rear_left_joint": -0.26196760351775855,
+    "rear_left_roller_0_joint": -3.0158728067261173e-07,
+    "rear_left_roller_10_joint": -2.0808518549048934e-07,
+    "rear_left_roller_11_joint": -2.6286564032385806e-07,
+    "rear_left_roller_1_joint": -3.1402748667713455e-07,
+    "rear_left_roller_2_joint": -2.969056749302242e-07,
+    "rear_left_roller_3_joint": -2.5475091322999047e-07,
+    "rear_left_roller_4_joint": -1.9897027196541397e-07,
+    "rear_left_roller_5_joint": -1.4481871560119203e-07,
+    "rear_left_roller_6_joint": 0.012002664675134382,
+    "rear_left_roller_7_joint": 0.06869814530896796,
+    "rear_left_roller_8_joint": -1.1015917196111472e-07,
+    "rear_left_roller_9_joint": -1.5190816019132347e-07,
+    "rear_right_joint": -0.26197294911062624,
+    "rear_right_roller_0_joint": 1.6781853070038798e-07,
+    "rear_right_roller_10_joint": 3.036758766854269e-07,
+    "rear_right_roller_11_joint": 2.408183141869629e-07,
+    "rear_right_roller_1_joint": 1.0470277991930065e-07,
+    "rear_right_roller_2_joint": 6.782008268004593e-08,
+    "rear_right_roller_3_joint": 6.754381574595103e-08,
+    "rear_right_roller_4_joint": 1.0386281768715885e-07,
+    "rear_right_roller_5_joint": 1.6655493806908124e-07,
+    "rear_right_roller_6_joint": -0.004805689548500783,
+    "rear_right_roller_7_joint": 0.004489520342259051,
+    "rear_right_roller_8_joint": 3.395297466496043e-07,
+    "rear_right_roller_9_joint": 3.3993218004651425e-07,
+    "right_jaw_joint": -0.012515957816161872
+  },
+  "plan": null,
+  "recording": {
+    "command_capture_ready": false,
+    "dropped_events": 0,
+    "episode_id": null,
+    "error": null,
+    "queued_events": 0,
+    "recording_segment_id": null,
+    "status": "IDLE"
+  },
+  "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+  "safety_latched": true,
+  "sensors": [
+    {
+      "arrival_time_s": 1016110.738882554,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": 1016110.721492273,
+      "capture_control_tick_id": "tick_045760252",
+      "capture_sim_time_s": 457602.5166482431,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": "joint_feedback_045760252",
+      "fresh": true,
+      "kind": "rgb",
+      "measurement_time_s": 1016110.721492273,
+      "observation_age_s": 0.017390280961990356,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1",
+      "quality": "simulated_nominal_preview",
+      "sample_id": "rgbd_fc60ce2b9dd7439fa89c78aa33af6edd",
+      "stream_id": "rgbd",
+      "valid_fraction": 0.35639322916666666
+    },
+    {
+      "arrival_time_s": 1016110.738882554,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": 1016110.721492273,
+      "capture_control_tick_id": "tick_045760252",
+      "capture_sim_time_s": 457602.5166482431,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": "joint_feedback_045760252",
+      "fresh": true,
+      "kind": "depth",
+      "measurement_time_s": 1016110.721492273,
+      "observation_age_s": 0.017390280961990356,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1",
+      "quality": "simulated_nominal_preview",
+      "sample_id": "rgbd_fc60ce2b9dd7439fa89c78aa33af6edd",
+      "stream_id": "rgbd",
+      "valid_fraction": 0.35639322916666666
+    },
+    {
+      "arrival_time_s": 1016110.900033973,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": 1016110.900033973,
+      "capture_control_tick_id": "tick_045760270",
+      "capture_sim_time_s": 457602.6966482412,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": null,
+      "fresh": true,
+      "kind": "lidar",
+      "measurement_time_s": 1016110.900033973,
+      "observation_age_s": 0.0,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1",
+      "quality": "simulated_raycast",
+      "sample_id": "laser_045760270",
+      "stream_id": "lidar",
+      "valid_fraction": null
+    },
+    {
+      "arrival_time_s": 1016110.9484556,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": 1016110.9484556,
+      "capture_control_tick_id": "tick_045760275",
+      "capture_sim_time_s": 457602.74664824066,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": null,
+      "fresh": true,
+      "kind": "imu",
+      "measurement_time_s": 1016110.9484556,
+      "observation_age_s": 0.0,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1",
+      "quality": "simulated_nominal",
+      "sample_id": "imu_045760275",
+      "stream_id": "imu",
+      "valid_fraction": null
+    },
+    {
+      "arrival_time_s": 1016110.9484556,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": 1016110.9484556,
+      "capture_control_tick_id": "tick_045760275",
+      "capture_sim_time_s": 457602.74664824066,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": null,
+      "fresh": true,
+      "kind": "encoders",
+      "measurement_time_s": 1016110.9484556,
+      "observation_age_s": 0.0,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1",
+      "quality": "simulated_nominal",
+      "sample_id": "encoders_045760275",
+      "stream_id": "encoders",
+      "valid_fraction": null
+    },
+    {
+      "arrival_time_s": 1016110.9484556,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": 1016110.9484556,
+      "capture_control_tick_id": "tick_045760275",
+      "capture_sim_time_s": 457602.74664824066,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": null,
+      "fresh": true,
+      "kind": "joint_feedback",
+      "measurement_time_s": 1016110.9484556,
+      "observation_age_s": 0.0,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1",
+      "quality": "simulated_nominal",
+      "sample_id": "joint_feedback_045760275",
+      "stream_id": "joint_feedback",
+      "valid_fraction": null
+    },
+    {
+      "arrival_time_s": 1016110.738882554,
+      "asset_uri": null,
+      "available": true,
+      "capture_backend_monotonic_s": 1016110.721492273,
+      "capture_control_tick_id": "tick_045760252",
+      "capture_sim_time_s": 457602.5166482431,
+      "clock_id": "backend_monotonic",
+      "feedback_sample_id": "joint_feedback_045760252",
+      "fresh": true,
+      "kind": "image_transforms",
+      "measurement_time_s": 1016110.721492273,
+      "observation_age_s": 0.017390280961990356,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1",
+      "quality": "simulated_nominal_preview",
+      "sample_id": "rgbd_fc60ce2b9dd7439fa89c78aa33af6edd",
+      "stream_id": "rgbd",
+      "valid_fraction": 0.35639322916666666
+    }
+  ],
+  "sim_time_s": 457602.74664824066,
+  "task_phase": "OBSERVE",
+  "tcp": {
+    "frame_id": "world_sim",
+    "held": false,
+    "orientation_error_rad": null,
+    "orientation_xyzw": [
+      -0.00298088105193137,
+      0.7097262160226534,
+      -0.0031127639700936783,
+      0.7044644230468896
+    ],
+    "position_error_m": null,
+    "position_m": [
+      0.3167549651198871,
+      0.0024434952476144185,
+      0.3009214429907378
+    ]
+  },
+  "wall_utc": "2026-10-24T11:57:26.436700Z"
+}

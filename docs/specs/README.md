@@ -1,6 +1,6 @@
 # uniRobotPlatform Specification 总索引
 
-组织版本：V0.7 · 2026-10-23（America/Chicago）。状态：**Specification 文档体系；本轮为前端计划复评，非工作台实现/验收声明。** 未修改节点保留各自版本。
+组织版本：V0.8 · 2026-10-24（America/Chicago）。状态：**Specification 文档体系；M1.3 地图/Route 资源契约与平台候选已完成，不是导航执行、真实 8792 部署或 M1 闭环验收。** 未修改节点保留各自版本。
 
 本文档树吸收设计总册，将现有规则落到可继续讨论的功能节点。保留需求确认程度、建议和未决项；产品验收尚未执行。前端目录按业务工作区＋共享交互组织，后端按能力域组织，另提供按界面区域和完整功能链查找的入口。
 
@@ -132,7 +132,14 @@ docs/specs/
 - [状态域](00-overview/04-runtime-state-domains.md) 补 Session lifecycle；[Collection/版本](30-contracts/05-dataset-model-lineage.md) 明确可编辑选择和不可变成员清单；[术语表](00-overview/05-glossary.md) 区分导航、工作区、页面和组件。
 - 当前 **89 项 REQ、26 PNG/25 独特内容**；旧数字保留历史标签。[新增四项验收](40-verification/06-scene-setup-first-loop.md) 与既有条目均未执行。本轮仅修改文档/机器索引，不修改产品代码、原生工程或图片。
 
-## V0.7 当前更新：统一 3D 工作台计划复评
+## V0.8 当前更新：版本化地图与带朝向 Route 切片
+
+- [S18](90-governance/sources/S18-navigation-map-route-slice.md) 补充本次明确需求：PointGoal 与每个 Waypoint 必须显式 `x/y/yaw`，缺失或 `null` 报错，显式 `0.0` 合法。S10 原文保留，不改写历史范围确认。
+- [地图/Route 契约](30-contracts/08-navigation-map-route.md)、[任务模板](10-frontend/02-scene-setup/02-task-template-configuration.md)、[Waypoint 编辑器](10-frontend/02-scene-setup/04-map-waypoint-editor.md) 与 [后端执行边界](20-backend/03-observation-algorithms/03-map-waypoint-execution.md) 固定 m/rad、map +X/+Y、yaw 正方向、`[-π,π)` 归一化、origin 图像左下角、图像列 +X/行 -Y。
+- 地图来源区分 G3B 历史离线与 live SLAM；Route Draft、不可变 Route Version、固定版本引用和 baseRevision 冲突进入主责契约。保存仅创建资源/显示数据，不执行导航、运动、RESET 或录制。
+- 机器目录新增 S18 至 150 个文档节点、13 个补充来源；需求仍 89 项，图片不变。M1.3 后端候选已完成，产品端到端验收仍未执行。
+
+## V0.7 更新：统一 3D 工作台计划复评
 
 - [S17](90-governance/sources/S17-3d-workbench-replan.md) 重申统一主架构和好操作的 3D 界面；补 DEC-052～054，保留 M1/M2、专项轻宿主及既有后端。
 - [实施计划](00-overview/09-page-design-delivery-plan.md) 增加架构/复用决定、A–H 工作台形态、交互服务与 M1.2a 样板门槛；[PAGE-03](10-frontend/page-designs/03-simulation.md) 同步。无新增产品需求或 TEST 编号。

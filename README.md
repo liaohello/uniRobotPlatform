@@ -30,3 +30,7 @@ A MuJoCo-based embodied AI simulation and 3D interaction data collection platfor
 ### M1.2d 后端候选（2026-10-24）
 
 [M1.2d 交付记录](docs/backend-m1.2d.md)：修复 native RESET/开录生命周期竞态与 started 被准备 TTL 误过期；单 Session GET 增加只读 `current`，列表明确为存档视图；平台实际 `NativeBindingClient` 已与隔离 native mock 完成真实 HTTP prepare/readback/start/begin/release 集成。候选完成，原生补丁仍未部署到 8792，真实物理验证未执行。
+
+### M1.3 后端候选（2026-10-24）
+
+[M1.3 交付记录](docs/backend-m1.3.md)：接入真实 G3B 历史离线地图的固定版本读取，交付 PointGoal/Waypoint 必填 `x/y/yaw`、m/rad 与旋转坐标约定，以及 Route Draft baseRevision 保存和不可变 Route Version 发布。平台候选 18953 已验证地图、PGM、冲突和版本不可变；保存不触发 native、Nav2、cmd_vel、RESET、运动或录制，当前 G1 仍无导航执行资格。8792 未部署，M1 闭环未验收。

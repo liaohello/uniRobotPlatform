@@ -1,6 +1,6 @@
 {
-  "version": "0.7",
-  "date": "2026-10-23",
+  "version": "0.8",
+  "date": "2026-10-24",
   "status": "base_specification_draft",
   "source_sha256": "995e4bf3c3fdc19f6874e1d221d5e52195db5f38e79fcac8c082b8ac9939119a",
   "packages": [
@@ -228,7 +228,7 @@
       "title": "Scene Setup 任务配置与实验配置流程",
       "layer": "前端",
       "source_chapter": null,
-      "last_revision": "0.6"
+      "last_revision": "0.7"
     },
     {
       "path": "10-frontend/02-scene-setup/03-so101-tabletop-layout.md",
@@ -244,7 +244,7 @@
       "title": "2D 地图与 Waypoint 路线编辑",
       "layer": "前端",
       "source_chapter": null,
-      "last_revision": "0.2"
+      "last_revision": "0.4"
     },
     {
       "path": "10-frontend/02-scene-setup/README.md",
@@ -710,7 +710,7 @@
       "title": "地图与 Waypoint 校验、授权和执行",
       "layer": "后端",
       "source_chapter": null,
-      "last_revision": "0.2"
+      "last_revision": "0.3"
     },
     {
       "path": "20-backend/03-observation-algorithms/04-task-assessment.md",
@@ -873,7 +873,7 @@
       "title": "地图、Waypoint 路线与执行反馈契约",
       "layer": "共享契约",
       "source_chapter": null,
-      "last_revision": "0.5"
+      "last_revision": "0.6"
     },
     {
       "path": "30-contracts/09-evaluation-comparison.md",
@@ -1237,6 +1237,14 @@
       "layer": "来源归档",
       "source_chapter": null,
       "last_revision": "0.7"
+    },
+    {
+      "path": "90-governance/sources/S18-navigation-map-route-slice.md",
+      "id": "SRC-S18-NAVIGATION-MAP-ROUTE-SLICE",
+      "title": "S18｜版本化地图与带朝向 Waypoint 路线切片",
+      "layer": "来源归档",
+      "source_chapter": null,
+      "last_revision": "0.8"
     }
   ],
   "supplement_sources": {
@@ -1299,6 +1307,11 @@
       "path": "90-governance/sources/S17-3d-workbench-replan.md",
       "sha256": "81779eaae6a980aa615e62dba8d8cc717c5cc44c02546b19c1039ad63b17b870",
       "kind": "current_user_3d_workbench_replan_request"
+    },
+    "S18": {
+      "path": "90-governance/sources/S18-navigation-map-route-slice.md",
+      "sha256": "e85757352660bd8574c997ab5b84a51b28fd41007bef631830f20cf922a12c17",
+      "kind": "current_user_navigation_map_route_slice_request"
     }
   },
   "page_design_index": "10-frontend/page-designs/README.md",

@@ -1,12 +1,20 @@
 # Specification 修订记录
 
-规范 ID：`GOV-CHANGELOG` · 责任层：治理 · 版本：V0.7（2026-10-23）
+规范 ID：`GOV-CHANGELOG` · 责任层：治理 · 版本：V0.8（2026-10-24）
 
 状态：设计草案；S08/S09 是用户提供的分析文本，不自动视为所有细节已确认。Waypoint 范围以 S10 的用户明确选择为准。诊断/草案实现证据见独立交付记录，正式 M1/M2 与工作台验收未执行。
 
 来源：[S08](sources/S08-frontend-ia-analysis.md)、[S09](sources/S09-unified-development-reuse-analysis.md)、[S10](sources/S10-waypoint-scope-confirmation.md)。
 
 [上级目录](README.md) · [总索引](../README.md)
+
+## V0.8｜2026-10-24
+
+- 按 S18 将 PointGoal/waypoint 朝向改为必填，明确 m/rad、map +X/+Y、yaw 正方向与归一化、地图 origin 为图像左下角、图像列 +X/行 -Y；未给 yaw 报错，显式 0 合法。
+- 新增版本化地图读取与 Route Draft/Version 资源切片；地图来源区分 G3B 历史离线包与 live SLAM，未证明兼容的运行时不授予导航资格。
+- Route 保存只写资源，不发导航/机器人命令；点位、footprint、整条路径可达、动态执行分别表达，未实现检查为 unsupported。
+- M1.3 候选 `m1g-20261024T113913Z-platform` 在服务器 18953 完成真实 Room A/B 读取、Route v1/v2、409 与固定版本不可变验证；平台全量 108 passed / 3 failed，三项仍为既有外部工程/native docs 布局失败。OpenAPI、真实地图资产、route evidence 与 native before/after 见 [M1.3 交付记录](../../backend-m1.3.md)。
+- 机器目录新增 S18，现为 150 个文档节点、13 个补充来源；REQ 仍 89 项。本切片不是导航执行、部署或真实 M1 验收。
 
 ## V0.7｜2026-10-23
 

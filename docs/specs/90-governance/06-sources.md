@@ -87,3 +87,7 @@ S08/S09 原文件按字节归档；其中远程图片/仓库声明不构成本�
 ## V0.7 前端执行计划复评
 
 [S17](sources/S17-3d-workbench-replan.md)：当前用户要求依据已有设计和 Specification 重新规划好操作的 3D 界面，并明确可用多 agent 核定。重申 S11 的统一前端架构原则，保留 S16 的阶段/轻量宿主边界。具体 React/TS、SceneView 封装、Dockview 验证与样板顺序是本轮工程建议，不虚构历史库选型确认；本轮仅修订文档，前端实现继续暂停。来源字节哈希登记于 catalog.json 与 traceability.json。
+
+## V0.8 地图/路线切片来源
+
+[S18](sources/S18-navigation-map-route-slice.md)：本次用户要求版本化地图读取、带朝向 Waypoint 的 Draft/Version 保存链路、地图/姿态约定和执行隔离。S10 原文保留；S18 是新增需求来源，不重写 S10 的历史范围确认。

@@ -1,0 +1,39 @@
+{
+  "active_session_after": null,
+  "active_session_before": null,
+  "backend_generation_after": 1,
+  "backend_generation_before": 1,
+  "episode_id_after": "episode_43c22f95536f4517be04e4b195d6d354",
+  "episode_id_before": "episode_43c22f95536f4517be04e4b195d6d354",
+  "identity_unchanged": true,
+  "owner_after": [
+    null,
+    null
+  ],
+  "owner_before": [
+    null,
+    null
+  ],
+  "recording_after": {
+    "command_capture_ready": false,
+    "dropped_events": 0,
+    "episode_id": null,
+    "error": null,
+    "queued_events": 0,
+    "recording_segment_id": null,
+    "status": "IDLE"
+  },
+  "recording_before": {
+    "command_capture_ready": false,
+    "dropped_events": 0,
+    "episode_id": null,
+    "error": null,
+    "queued_events": 0,
+    "recording_segment_id": null,
+    "status": "IDLE"
+  },
+  "run_id_after": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+  "run_id_before": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+  "safety_latched_after": true,
+  "safety_latched_before": true
+}

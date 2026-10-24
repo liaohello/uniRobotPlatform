@@ -1,0 +1,1417 @@
+{
+  "contract": {
+    "route_paths": [
+      "/api/v1/maps",
+      "/api/v1/maps/{map_id}/versions/{version}",
+      "/api/v1/maps/{map_id}/versions/{version}/image",
+      "/api/v1/route-drafts",
+      "/api/v1/route-drafts/{route_id}",
+      "/api/v1/route-drafts/{route_id}/publish",
+      "/api/v1/routes/{route_id}/versions",
+      "/api/v1/routes/{route_id}/versions/{version}"
+    ],
+    "waypoint_required": [
+      "id",
+      "order",
+      "x_m",
+      "y_m",
+      "yaw_rad"
+    ],
+    "yaw_schema": {
+      "description": "Explicit yaw in radians; missing or null is rejected",
+      "title": "Yaw Rad",
+      "type": "number"
+    }
+  },
+  "created": {
+    "body": {
+      "content_digest": "a9ee5895be83db986da5ea830fb12beff74f657feeba80d9e3ef5844dd484e62",
+      "created_at": "2026-10-24T11:57:26+00:00",
+      "draft_revision": 1,
+      "map_ref": {
+        "frame": "map",
+        "map_id": "map_room_a_g3b_release_v1",
+        "version": "v1"
+      },
+      "name": "M1.3 Room A route",
+      "route_id": "route-9e55257fc5d24a03a54986d9fcaa8a80",
+      "schema_version": "unirobot-route-draft-1",
+      "updated_at": "2026-10-24T11:57:26+00:00",
+      "validation": {
+        "adoption_supported": false,
+        "arrival_acceptance": "not_checked",
+        "checks": [
+          {
+            "detail": "map_room_a_g3b_release_v1 v1 map",
+            "key": "map_binding",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "frame map",
+            "key": "map_frame",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "2 ordered waypoints",
+            "key": "waypoint_sequence",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "free cell row=2 column=6",
+            "key": "waypoint_pose:wp-a",
+            "status": "passed",
+            "waypoint_id": "wp-a"
+          },
+          {
+            "detail": "free cell row=2 column=7",
+            "key": "waypoint_pose:wp-b",
+            "status": "passed",
+            "waypoint_id": "wp-b"
+          },
+          {
+            "detail": "no robot footprint binding in this resource slice",
+            "key": "footprint",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "no planner or path validation in this resource slice",
+            "key": "path_reachability",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "no navigation runtime or Session execution in this resource slice",
+            "key": "dynamic_execution",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "current G1 has no navigation execution capability; no route adoption",
+            "key": "g1_route_adoption",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "route save does not evaluate arrival; tolerances come from Task Template",
+            "key": "arrival_acceptance",
+            "status": "not_checked",
+            "waypoint_id": null
+          }
+        ],
+        "display_supported": true,
+        "execution_supported": false,
+        "g1_navigation_supported": false,
+        "navigation_eligible": false,
+        "pose_checks_passed": true,
+        "reasons": [
+          "route is a resource and display artifact only; it is not navigation-eligible"
+        ],
+        "tolerance_source": "Task Template goal.position_tolerance / goal.yaw_tolerance_rad; not evaluated by route save",
+        "unsupported_checks": [
+          "footprint",
+          "path_reachability",
+          "dynamic_execution",
+          "g1_route_adoption"
+        ]
+      },
+      "waypoints": [
+        {
+          "id": "wp-a",
+          "order": 1,
+          "x_m": -0.875,
+          "y_m": 1.075,
+          "yaw_rad": 0.0
+        },
+        {
+          "id": "wp-b",
+          "order": 2,
+          "x_m": -0.825,
+          "y_m": 1.075,
+          "yaw_rad": 0.5
+        }
+      ]
+    },
+    "status": 201
+  },
+  "free_points": [
+    [
+      -0.875,
+      1.075
+    ],
+    [
+      -0.825,
+      1.075
+    ]
+  ],
+  "image_bad": {
+    "body": {
+      "detail": {
+        "code": "map_asset_revision_changed",
+        "message": "map image digest changed; reload map list"
+      }
+    },
+    "status": 409
+  },
+  "image_bytes": 2786,
+  "image_status": 200,
+  "map_frame_missing": {
+    "body": {
+      "detail": {
+        "code": "map_frame_mismatch",
+        "message": "requested frame odom != map frame map"
+      }
+    },
+    "status": 409
+  },
+  "map_list": {
+    "body": {
+      "live": false,
+      "maps": [
+        {
+          "assets": [
+            {
+              "bytes": 124,
+              "media_type": null,
+              "relative_path": "map.yaml",
+              "role": "occupancy_yaml",
+              "sha256": "2f31e4f4dfc94f9cc1ed74dca5d38ffa134764f611d6fb3ab7e268821aaeaee4"
+            },
+            {
+              "bytes": 2786,
+              "media_type": "image/x-portable-graymap",
+              "relative_path": "map.pgm",
+              "role": "occupancy_image",
+              "sha256": "01dcdb387aed81b521cba6d31bb5d403d9db1de84b35546c4e34988191069d71"
+            },
+            {
+              "bytes": 6632104,
+              "media_type": null,
+              "relative_path": "posegraph.posegraph",
+              "role": "pose_graph",
+              "sha256": "96dcb2327ef203186aabe2ca863e5b304ed1824c9ca7b2675b27f0591900799e"
+            },
+            {
+              "bytes": 3163076,
+              "media_type": null,
+              "relative_path": "posegraph.data",
+              "role": "pose_graph_data",
+              "sha256": "5abab7cc721d2bb786c3105af0d814c66344cff66072b8786eb1d52c5f81f40c"
+            },
+            {
+              "bytes": 80,
+              "media_type": null,
+              "relative_path": "manifest.sha256",
+              "role": "map_manifest",
+              "sha256": "b7d2b2ec4eb483b8d9704d889b125f45e52c651846bb42aea074a5d2ebc54998"
+            }
+          ],
+          "assets_verified": true,
+          "base_frame": "base_link",
+          "compatibility": {
+            "current_runtime_status": "not_checked",
+            "g1_recipe_model_match": false,
+            "g1_recipe_scene_match": false,
+            "g1_recipe_status": "failed",
+            "navigation_eligible": false,
+            "reasons": [
+              "map scene/model does not match the current G1 recipe",
+              "navigation runtime is not available",
+              "footprint/path/dynamic checks are unsupported"
+            ],
+            "unverified": [
+              "posegraph is hash-verified but not parsed",
+              "current runtime compatibility was not read"
+            ]
+          },
+          "coordinate_convention": {
+            "cell_center": "col+0.5,row+0.5",
+            "frame": "map",
+            "image_column": "+X",
+            "image_row": "-Y",
+            "origin": "image_lower_left_corner_in_map_frame",
+            "x_axis": "+X",
+            "y_axis": "+Y",
+            "yaw_positive": "counterclockwise_from_+X_to_+Y",
+            "yaw_range": "[-pi,pi)"
+          },
+          "frame": "map",
+          "free_thresh": 0.196,
+          "height_px": 47,
+          "image": {
+            "bytes": 2786,
+            "media_type": "image/x-portable-graymap",
+            "relative_path": "map.pgm",
+            "role": "occupancy_image",
+            "sha256": "01dcdb387aed81b521cba6d31bb5d403d9db1de84b35546c4e34988191069d71"
+          },
+          "initial_prior": {
+            "covariance": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "x_m": 0.0,
+            "y_m": 0.0,
+            "yaw_rad": 0.0
+          },
+          "interface_profile": "g3b-1.0",
+          "live": false,
+          "manifest_sha256": "aaee75864a1a1edc7bdf73734640078640b0b40b69020574e80eef81c1b6fd34",
+          "map_frame": "map",
+          "map_id": "map_room_a_g3b_release_v1",
+          "model_sha256": "62bea46ce1468baf227a44e2ff71d509010e173337f1c875d2bd3c0399ab4241",
+          "navigation_profile_sha256": "c9de2351cee65908ed646b434278fa9eee3f0c6b90910146815d46241c6e51e1",
+          "negate": false,
+          "occupied_thresh": 0.65,
+          "odom_frame": "odom",
+          "origin": {
+            "x_m": -1.2,
+            "y_m": -1.15,
+            "yaw_rad": 0.0
+          },
+          "reason": null,
+          "resolution_m": 0.05,
+          "scan_config_sha256": "ad789e8e5e54e931251b034b2733711f9b0f2dcbc2dc3031282165fe3c7eafe1",
+          "scene_id": "navigation_diagnostic",
+          "schema_version": "unirobot-map-version-1",
+          "sensor_profile_sha256": "d00addc1a1cfdb85025be8f45a2c1aa5a658e76f75f6fe9245501fa1df7e73e9",
+          "source": "g3b_historical_offline",
+          "status": "available",
+          "test_only": false,
+          "version": "v1",
+          "width_px": 59
+        },
+        {
+          "assets": [
+            {
+              "bytes": 124,
+              "media_type": null,
+              "relative_path": "map.yaml",
+              "role": "occupancy_yaml",
+              "sha256": "6b1814bee97daada04a700a87fcad3e0be59ac49b030f373bf8012ada95c57d0"
+            },
+            {
+              "bytes": 4231,
+              "media_type": "image/x-portable-graymap",
+              "relative_path": "map.pgm",
+              "role": "occupancy_image",
+              "sha256": "f3242226c9d6492a24d5f63f25d191a3c8daff7be9a6639cc5f03cb8361cdd5a"
+            },
+            {
+              "bytes": 6650471,
+              "media_type": null,
+              "relative_path": "posegraph.posegraph",
+              "role": "pose_graph",
+              "sha256": "ea6d7ccdaebc2238423b58935c5b51299c8a26fec12d15c28b93ae4280c433b8"
+            },
+            {
+              "bytes": 3179577,
+              "media_type": null,
+              "relative_path": "posegraph.data",
+              "role": "pose_graph_data",
+              "sha256": "e8d139129d7b30c8ae8098acced74adaf470931d97c4d60f7326c5b8111952e8"
+            },
+            {
+              "bytes": 80,
+              "media_type": null,
+              "relative_path": "manifest.sha256",
+              "role": "map_manifest",
+              "sha256": "a63fd614cd194893dd85b684a2c090f4224019f3fd49c41067e42dcf26e9d761"
+            }
+          ],
+          "assets_verified": true,
+          "base_frame": "base_link",
+          "compatibility": {
+            "current_runtime_status": "not_checked",
+            "g1_recipe_model_match": false,
+            "g1_recipe_scene_match": false,
+            "g1_recipe_status": "failed",
+            "navigation_eligible": false,
+            "reasons": [
+              "map scene/model does not match the current G1 recipe",
+              "navigation runtime is not available",
+              "footprint/path/dynamic checks are unsupported"
+            ],
+            "unverified": [
+              "posegraph is hash-verified but not parsed",
+              "current runtime compatibility was not read"
+            ]
+          },
+          "coordinate_convention": {
+            "cell_center": "col+0.5,row+0.5",
+            "frame": "map",
+            "image_column": "+X",
+            "image_row": "-Y",
+            "origin": "image_lower_left_corner_in_map_frame",
+            "x_axis": "+X",
+            "y_axis": "+Y",
+            "yaw_positive": "counterclockwise_from_+X_to_+Y",
+            "yaw_range": "[-pi,pi)"
+          },
+          "frame": "map",
+          "free_thresh": 0.196,
+          "height_px": 57,
+          "image": {
+            "bytes": 4231,
+            "media_type": "image/x-portable-graymap",
+            "relative_path": "map.pgm",
+            "role": "occupancy_image",
+            "sha256": "f3242226c9d6492a24d5f63f25d191a3c8daff7be9a6639cc5f03cb8361cdd5a"
+          },
+          "initial_prior": {
+            "covariance": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "x_m": 0.0,
+            "y_m": 0.0,
+            "yaw_rad": 0.0
+          },
+          "interface_profile": "g3b-1.0",
+          "live": false,
+          "manifest_sha256": "a6e641a570c85e21523863f75e1346469c668993c1af0d75fe92ff4d1ea0382c",
+          "map_frame": "map",
+          "map_id": "map_room_b_g3b_release_v1",
+          "model_sha256": "53e0bd0f64f2db19a1cfd5d0a8653dba645786f840332028e5ea1881354d6180",
+          "navigation_profile_sha256": "178b46511aa6d92d6c6446f3b127f1115e9e08aab0465be151c16627b207e3ef",
+          "negate": false,
+          "occupied_thresh": 0.65,
+          "odom_frame": "odom",
+          "origin": {
+            "x_m": -1.5,
+            "y_m": -1.45,
+            "yaw_rad": 0.0
+          },
+          "reason": null,
+          "resolution_m": 0.05,
+          "scan_config_sha256": "ad789e8e5e54e931251b034b2733711f9b0f2dcbc2dc3031282165fe3c7eafe1",
+          "scene_id": "g3b_l_shape_wide_door",
+          "schema_version": "unirobot-map-version-1",
+          "sensor_profile_sha256": "26d1675f96ea83de41607f647b7b34e27a05e56663a7be71a62da9b190053716",
+          "source": "g3b_historical_offline",
+          "status": "available",
+          "test_only": false,
+          "version": "v1",
+          "width_px": 74
+        }
+      ],
+      "reason": null,
+      "schema_version": "unirobot-map-catalog-1",
+      "source": "local_map_packages",
+      "supported": true
+    },
+    "status": 200
+  },
+  "map_version_missing": {
+    "body": {
+      "detail": {
+        "code": "map_version_not_found",
+        "message": "map map_room_a_g3b_release_v1 version v9 is not declared"
+      }
+    },
+    "status": 404
+  },
+  "missing_yaw": {
+    "body": {
+      "detail": [
+        {
+          "ctx": {
+            "error": {}
+          },
+          "input": {
+            "id": "wp-a",
+            "order": 1,
+            "x_m": -0.875,
+            "y_m": 1.075
+          },
+          "loc": [
+            "body",
+            "waypoints",
+            0
+          ],
+          "msg": "Value error, yaw_rad is required and must be an explicit finite number",
+          "type": "value_error"
+        },
+        {
+          "ctx": {
+            "error": {}
+          },
+          "input": {
+            "id": "wp-b",
+            "order": 2,
+            "x_m": -0.825,
+            "y_m": 1.075
+          },
+          "loc": [
+            "body",
+            "waypoints",
+            1
+          ],
+          "msg": "Value error, yaw_rad is required and must be an explicit finite number",
+          "type": "value_error"
+        }
+      ]
+    },
+    "status": 422
+  },
+  "native_comparison": {
+    "active_session_after": null,
+    "active_session_before": null,
+    "backend_generation_after": 1,
+    "backend_generation_before": 1,
+    "episode_id_after": "episode_43c22f95536f4517be04e4b195d6d354",
+    "episode_id_before": "episode_43c22f95536f4517be04e4b195d6d354",
+    "identity_unchanged": true,
+    "owner_after": [
+      null,
+      null
+    ],
+    "owner_before": [
+      null,
+      null
+    ],
+    "recording_after": {
+      "command_capture_ready": false,
+      "dropped_events": 0,
+      "episode_id": null,
+      "error": null,
+      "queued_events": 0,
+      "recording_segment_id": null,
+      "status": "IDLE"
+    },
+    "recording_before": {
+      "command_capture_ready": false,
+      "dropped_events": 0,
+      "episode_id": null,
+      "error": null,
+      "queued_events": 0,
+      "recording_segment_id": null,
+      "status": "IDLE"
+    },
+    "run_id_after": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+    "run_id_before": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+    "safety_latched_after": true,
+    "safety_latched_before": true
+  },
+  "null_yaw": {
+    "body": {
+      "detail": [
+        {
+          "ctx": {
+            "error": {}
+          },
+          "input": {
+            "id": "wp-a",
+            "order": 1,
+            "x_m": -0.875,
+            "y_m": 1.075,
+            "yaw_rad": null
+          },
+          "loc": [
+            "body",
+            "waypoints",
+            0
+          ],
+          "msg": "Value error, yaw_rad is required and must be an explicit finite number",
+          "type": "value_error"
+        },
+        {
+          "ctx": {
+            "error": {}
+          },
+          "input": {
+            "id": "wp-b",
+            "order": 2,
+            "x_m": -0.825,
+            "y_m": 1.075,
+            "yaw_rad": null
+          },
+          "loc": [
+            "body",
+            "waypoints",
+            1
+          ],
+          "msg": "Value error, yaw_rad is required and must be an explicit finite number",
+          "type": "value_error"
+        }
+      ]
+    },
+    "status": 422
+  },
+  "occupied": {
+    "body": {
+      "detail": {
+        "classification": "occupied",
+        "code": "waypoint_occupied",
+        "column": 4,
+        "message": "waypoint wp-a is in an occupied cell",
+        "row": 0,
+        "waypoint_id": "wp-a"
+      }
+    },
+    "status": 422
+  },
+  "occupied_point": [
+    -0.975,
+    1.175
+  ],
+  "out_of_bounds": {
+    "body": {
+      "detail": {
+        "classification": "outside_map",
+        "code": "waypoint_out_of_bounds",
+        "column": 2024,
+        "message": "waypoint wp-a is outside the map",
+        "row": -1977,
+        "waypoint_id": "wp-a"
+      }
+    },
+    "status": 422
+  },
+  "published_v1": {
+    "body": {
+      "reused": false,
+      "route_version": {
+        "adoption_supported": false,
+        "content_digest": "a9ee5895be83db986da5ea830fb12beff74f657feeba80d9e3ef5844dd484e62",
+        "created_at": "2026-10-24T11:57:26+00:00",
+        "display_supported": true,
+        "execution_supported": false,
+        "map_ref": {
+          "frame": "map",
+          "map_id": "map_room_a_g3b_release_v1",
+          "version": "v1"
+        },
+        "navigation_eligible": false,
+        "route_id": "route-9e55257fc5d24a03a54986d9fcaa8a80",
+        "schema_version": "unirobot-route-version-1",
+        "validation": {
+          "adoption_supported": false,
+          "arrival_acceptance": "not_checked",
+          "checks": [
+            {
+              "detail": "map_room_a_g3b_release_v1 v1 map",
+              "key": "map_binding",
+              "status": "passed",
+              "waypoint_id": null
+            },
+            {
+              "detail": "frame map",
+              "key": "map_frame",
+              "status": "passed",
+              "waypoint_id": null
+            },
+            {
+              "detail": "2 ordered waypoints",
+              "key": "waypoint_sequence",
+              "status": "passed",
+              "waypoint_id": null
+            },
+            {
+              "detail": "free cell row=2 column=6",
+              "key": "waypoint_pose:wp-a",
+              "status": "passed",
+              "waypoint_id": "wp-a"
+            },
+            {
+              "detail": "free cell row=2 column=7",
+              "key": "waypoint_pose:wp-b",
+              "status": "passed",
+              "waypoint_id": "wp-b"
+            },
+            {
+              "detail": "no robot footprint binding in this resource slice",
+              "key": "footprint",
+              "status": "unsupported",
+              "waypoint_id": null
+            },
+            {
+              "detail": "no planner or path validation in this resource slice",
+              "key": "path_reachability",
+              "status": "unsupported",
+              "waypoint_id": null
+            },
+            {
+              "detail": "no navigation runtime or Session execution in this resource slice",
+              "key": "dynamic_execution",
+              "status": "unsupported",
+              "waypoint_id": null
+            },
+            {
+              "detail": "current G1 has no navigation execution capability; no route adoption",
+              "key": "g1_route_adoption",
+              "status": "unsupported",
+              "waypoint_id": null
+            },
+            {
+              "detail": "route save does not evaluate arrival; tolerances come from Task Template",
+              "key": "arrival_acceptance",
+              "status": "not_checked",
+              "waypoint_id": null
+            }
+          ],
+          "display_supported": true,
+          "execution_supported": false,
+          "g1_navigation_supported": false,
+          "navigation_eligible": false,
+          "pose_checks_passed": true,
+          "reasons": [
+            "route is a resource and display artifact only; it is not navigation-eligible"
+          ],
+          "tolerance_source": "Task Template goal.position_tolerance / goal.yaw_tolerance_rad; not evaluated by route save",
+          "unsupported_checks": [
+            "footprint",
+            "path_reachability",
+            "dynamic_execution",
+            "g1_route_adoption"
+          ]
+        },
+        "version": "v1",
+        "waypoints": [
+          {
+            "id": "wp-a",
+            "order": 1,
+            "x_m": -0.875,
+            "y_m": 1.075,
+            "yaw_rad": 0.0
+          },
+          {
+            "id": "wp-b",
+            "order": 2,
+            "x_m": -0.825,
+            "y_m": 1.075,
+            "yaw_rad": 0.5
+          }
+        ]
+      }
+    },
+    "status": 200
+  },
+  "published_v2": {
+    "body": {
+      "reused": false,
+      "route_version": {
+        "adoption_supported": false,
+        "content_digest": "370d246234a251d7adc8b8f1205c745a2ca37ebf4ea50b1d7f64f5aabaa7871c",
+        "created_at": "2026-10-24T11:57:26+00:00",
+        "display_supported": true,
+        "execution_supported": false,
+        "map_ref": {
+          "frame": "map",
+          "map_id": "map_room_a_g3b_release_v1",
+          "version": "v1"
+        },
+        "navigation_eligible": false,
+        "route_id": "route-9e55257fc5d24a03a54986d9fcaa8a80",
+        "schema_version": "unirobot-route-version-1",
+        "validation": {
+          "adoption_supported": false,
+          "arrival_acceptance": "not_checked",
+          "checks": [
+            {
+              "detail": "map_room_a_g3b_release_v1 v1 map",
+              "key": "map_binding",
+              "status": "passed",
+              "waypoint_id": null
+            },
+            {
+              "detail": "frame map",
+              "key": "map_frame",
+              "status": "passed",
+              "waypoint_id": null
+            },
+            {
+              "detail": "2 ordered waypoints",
+              "key": "waypoint_sequence",
+              "status": "passed",
+              "waypoint_id": null
+            },
+            {
+              "detail": "free cell row=2 column=7",
+              "key": "waypoint_pose:wp-b",
+              "status": "passed",
+              "waypoint_id": "wp-b"
+            },
+            {
+              "detail": "free cell row=2 column=6",
+              "key": "waypoint_pose:wp-a",
+              "status": "passed",
+              "waypoint_id": "wp-a"
+            },
+            {
+              "detail": "no robot footprint binding in this resource slice",
+              "key": "footprint",
+              "status": "unsupported",
+              "waypoint_id": null
+            },
+            {
+              "detail": "no planner or path validation in this resource slice",
+              "key": "path_reachability",
+              "status": "unsupported",
+              "waypoint_id": null
+            },
+            {
+              "detail": "no navigation runtime or Session execution in this resource slice",
+              "key": "dynamic_execution",
+              "status": "unsupported",
+              "waypoint_id": null
+            },
+            {
+              "detail": "current G1 has no navigation execution capability; no route adoption",
+              "key": "g1_route_adoption",
+              "status": "unsupported",
+              "waypoint_id": null
+            },
+            {
+              "detail": "route save does not evaluate arrival; tolerances come from Task Template",
+              "key": "arrival_acceptance",
+              "status": "not_checked",
+              "waypoint_id": null
+            }
+          ],
+          "display_supported": true,
+          "execution_supported": false,
+          "g1_navigation_supported": false,
+          "navigation_eligible": false,
+          "pose_checks_passed": true,
+          "reasons": [
+            "route is a resource and display artifact only; it is not navigation-eligible"
+          ],
+          "tolerance_source": "Task Template goal.position_tolerance / goal.yaw_tolerance_rad; not evaluated by route save",
+          "unsupported_checks": [
+            "footprint",
+            "path_reachability",
+            "dynamic_execution",
+            "g1_route_adoption"
+          ]
+        },
+        "version": "v2",
+        "waypoints": [
+          {
+            "id": "wp-b",
+            "order": 1,
+            "x_m": -0.825,
+            "y_m": 1.075,
+            "yaw_rad": 0.5
+          },
+          {
+            "id": "wp-a",
+            "order": 2,
+            "x_m": -0.875,
+            "y_m": 1.075,
+            "yaw_rad": 0.0
+          }
+        ]
+      }
+    },
+    "status": 200
+  },
+  "same_content_save": {
+    "body": {
+      "content_digest": "370d246234a251d7adc8b8f1205c745a2ca37ebf4ea50b1d7f64f5aabaa7871c",
+      "created_at": "2026-10-24T11:57:26+00:00",
+      "draft_revision": 2,
+      "map_ref": {
+        "frame": "map",
+        "map_id": "map_room_a_g3b_release_v1",
+        "version": "v1"
+      },
+      "name": "M1.3 Room A route",
+      "route_id": "route-9e55257fc5d24a03a54986d9fcaa8a80",
+      "schema_version": "unirobot-route-draft-1",
+      "updated_at": "2026-10-24T11:57:26+00:00",
+      "validation": {
+        "adoption_supported": false,
+        "arrival_acceptance": "not_checked",
+        "checks": [
+          {
+            "detail": "map_room_a_g3b_release_v1 v1 map",
+            "key": "map_binding",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "frame map",
+            "key": "map_frame",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "2 ordered waypoints",
+            "key": "waypoint_sequence",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "free cell row=2 column=7",
+            "key": "waypoint_pose:wp-b",
+            "status": "passed",
+            "waypoint_id": "wp-b"
+          },
+          {
+            "detail": "free cell row=2 column=6",
+            "key": "waypoint_pose:wp-a",
+            "status": "passed",
+            "waypoint_id": "wp-a"
+          },
+          {
+            "detail": "no robot footprint binding in this resource slice",
+            "key": "footprint",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "no planner or path validation in this resource slice",
+            "key": "path_reachability",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "no navigation runtime or Session execution in this resource slice",
+            "key": "dynamic_execution",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "current G1 has no navigation execution capability; no route adoption",
+            "key": "g1_route_adoption",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "route save does not evaluate arrival; tolerances come from Task Template",
+            "key": "arrival_acceptance",
+            "status": "not_checked",
+            "waypoint_id": null
+          }
+        ],
+        "display_supported": true,
+        "execution_supported": false,
+        "g1_navigation_supported": false,
+        "navigation_eligible": false,
+        "pose_checks_passed": true,
+        "reasons": [
+          "route is a resource and display artifact only; it is not navigation-eligible"
+        ],
+        "tolerance_source": "Task Template goal.position_tolerance / goal.yaw_tolerance_rad; not evaluated by route save",
+        "unsupported_checks": [
+          "footprint",
+          "path_reachability",
+          "dynamic_execution",
+          "g1_route_adoption"
+        ]
+      },
+      "waypoints": [
+        {
+          "id": "wp-b",
+          "order": 1,
+          "x_m": -0.825,
+          "y_m": 1.075,
+          "yaw_rad": 0.5
+        },
+        {
+          "id": "wp-a",
+          "order": 2,
+          "x_m": -0.875,
+          "y_m": 1.075,
+          "yaw_rad": 0.0
+        }
+      ]
+    },
+    "status": 200
+  },
+  "saved_v2": {
+    "body": {
+      "content_digest": "370d246234a251d7adc8b8f1205c745a2ca37ebf4ea50b1d7f64f5aabaa7871c",
+      "created_at": "2026-10-24T11:57:26+00:00",
+      "draft_revision": 2,
+      "map_ref": {
+        "frame": "map",
+        "map_id": "map_room_a_g3b_release_v1",
+        "version": "v1"
+      },
+      "name": "M1.3 Room A route",
+      "route_id": "route-9e55257fc5d24a03a54986d9fcaa8a80",
+      "schema_version": "unirobot-route-draft-1",
+      "updated_at": "2026-10-24T11:57:26+00:00",
+      "validation": {
+        "adoption_supported": false,
+        "arrival_acceptance": "not_checked",
+        "checks": [
+          {
+            "detail": "map_room_a_g3b_release_v1 v1 map",
+            "key": "map_binding",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "frame map",
+            "key": "map_frame",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "2 ordered waypoints",
+            "key": "waypoint_sequence",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "free cell row=2 column=7",
+            "key": "waypoint_pose:wp-b",
+            "status": "passed",
+            "waypoint_id": "wp-b"
+          },
+          {
+            "detail": "free cell row=2 column=6",
+            "key": "waypoint_pose:wp-a",
+            "status": "passed",
+            "waypoint_id": "wp-a"
+          },
+          {
+            "detail": "no robot footprint binding in this resource slice",
+            "key": "footprint",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "no planner or path validation in this resource slice",
+            "key": "path_reachability",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "no navigation runtime or Session execution in this resource slice",
+            "key": "dynamic_execution",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "current G1 has no navigation execution capability; no route adoption",
+            "key": "g1_route_adoption",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "route save does not evaluate arrival; tolerances come from Task Template",
+            "key": "arrival_acceptance",
+            "status": "not_checked",
+            "waypoint_id": null
+          }
+        ],
+        "display_supported": true,
+        "execution_supported": false,
+        "g1_navigation_supported": false,
+        "navigation_eligible": false,
+        "pose_checks_passed": true,
+        "reasons": [
+          "route is a resource and display artifact only; it is not navigation-eligible"
+        ],
+        "tolerance_source": "Task Template goal.position_tolerance / goal.yaw_tolerance_rad; not evaluated by route save",
+        "unsupported_checks": [
+          "footprint",
+          "path_reachability",
+          "dynamic_execution",
+          "g1_route_adoption"
+        ]
+      },
+      "waypoints": [
+        {
+          "id": "wp-b",
+          "order": 1,
+          "x_m": -0.825,
+          "y_m": 1.075,
+          "yaw_rad": 0.5
+        },
+        {
+          "id": "wp-a",
+          "order": 2,
+          "x_m": -0.875,
+          "y_m": 1.075,
+          "yaw_rad": 0.0
+        }
+      ]
+    },
+    "status": 200
+  },
+  "stale_save": {
+    "body": {
+      "detail": {
+        "code": "route_draft_revision_conflict",
+        "current_revision": 2,
+        "message": "route draft changed in another host; reload before saving"
+      }
+    },
+    "status": 409
+  },
+  "unknown": {
+    "body": {
+      "detail": {
+        "classification": "unknown",
+        "code": "waypoint_unknown",
+        "column": 0,
+        "message": "waypoint wp-a is in an unknown cell",
+        "row": 0,
+        "waypoint_id": "wp-a"
+      }
+    },
+    "status": 422
+  },
+  "unknown_point": [
+    -1.175,
+    1.175
+  ],
+  "v1read": {
+    "body": {
+      "adoption_supported": false,
+      "content_digest": "a9ee5895be83db986da5ea830fb12beff74f657feeba80d9e3ef5844dd484e62",
+      "created_at": "2026-10-24T11:57:26+00:00",
+      "display_supported": true,
+      "execution_supported": false,
+      "map_ref": {
+        "frame": "map",
+        "map_id": "map_room_a_g3b_release_v1",
+        "version": "v1"
+      },
+      "navigation_eligible": false,
+      "route_id": "route-9e55257fc5d24a03a54986d9fcaa8a80",
+      "schema_version": "unirobot-route-version-1",
+      "validation": {
+        "adoption_supported": false,
+        "arrival_acceptance": "not_checked",
+        "checks": [
+          {
+            "detail": "map_room_a_g3b_release_v1 v1 map",
+            "key": "map_binding",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "frame map",
+            "key": "map_frame",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "2 ordered waypoints",
+            "key": "waypoint_sequence",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "free cell row=2 column=6",
+            "key": "waypoint_pose:wp-a",
+            "status": "passed",
+            "waypoint_id": "wp-a"
+          },
+          {
+            "detail": "free cell row=2 column=7",
+            "key": "waypoint_pose:wp-b",
+            "status": "passed",
+            "waypoint_id": "wp-b"
+          },
+          {
+            "detail": "no robot footprint binding in this resource slice",
+            "key": "footprint",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "no planner or path validation in this resource slice",
+            "key": "path_reachability",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "no navigation runtime or Session execution in this resource slice",
+            "key": "dynamic_execution",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "current G1 has no navigation execution capability; no route adoption",
+            "key": "g1_route_adoption",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "route save does not evaluate arrival; tolerances come from Task Template",
+            "key": "arrival_acceptance",
+            "status": "not_checked",
+            "waypoint_id": null
+          }
+        ],
+        "display_supported": true,
+        "execution_supported": false,
+        "g1_navigation_supported": false,
+        "navigation_eligible": false,
+        "pose_checks_passed": true,
+        "reasons": [
+          "route is a resource and display artifact only; it is not navigation-eligible"
+        ],
+        "tolerance_source": "Task Template goal.position_tolerance / goal.yaw_tolerance_rad; not evaluated by route save",
+        "unsupported_checks": [
+          "footprint",
+          "path_reachability",
+          "dynamic_execution",
+          "g1_route_adoption"
+        ]
+      },
+      "version": "v1",
+      "waypoints": [
+        {
+          "id": "wp-a",
+          "order": 1,
+          "x_m": -0.875,
+          "y_m": 1.075,
+          "yaw_rad": 0.0
+        },
+        {
+          "id": "wp-b",
+          "order": 2,
+          "x_m": -0.825,
+          "y_m": 1.075,
+          "yaw_rad": 0.5
+        }
+      ]
+    },
+    "status": 200
+  },
+  "v2read": {
+    "body": {
+      "adoption_supported": false,
+      "content_digest": "370d246234a251d7adc8b8f1205c745a2ca37ebf4ea50b1d7f64f5aabaa7871c",
+      "created_at": "2026-10-24T11:57:26+00:00",
+      "display_supported": true,
+      "execution_supported": false,
+      "map_ref": {
+        "frame": "map",
+        "map_id": "map_room_a_g3b_release_v1",
+        "version": "v1"
+      },
+      "navigation_eligible": false,
+      "route_id": "route-9e55257fc5d24a03a54986d9fcaa8a80",
+      "schema_version": "unirobot-route-version-1",
+      "validation": {
+        "adoption_supported": false,
+        "arrival_acceptance": "not_checked",
+        "checks": [
+          {
+            "detail": "map_room_a_g3b_release_v1 v1 map",
+            "key": "map_binding",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "frame map",
+            "key": "map_frame",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "2 ordered waypoints",
+            "key": "waypoint_sequence",
+            "status": "passed",
+            "waypoint_id": null
+          },
+          {
+            "detail": "free cell row=2 column=7",
+            "key": "waypoint_pose:wp-b",
+            "status": "passed",
+            "waypoint_id": "wp-b"
+          },
+          {
+            "detail": "free cell row=2 column=6",
+            "key": "waypoint_pose:wp-a",
+            "status": "passed",
+            "waypoint_id": "wp-a"
+          },
+          {
+            "detail": "no robot footprint binding in this resource slice",
+            "key": "footprint",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "no planner or path validation in this resource slice",
+            "key": "path_reachability",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "no navigation runtime or Session execution in this resource slice",
+            "key": "dynamic_execution",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "current G1 has no navigation execution capability; no route adoption",
+            "key": "g1_route_adoption",
+            "status": "unsupported",
+            "waypoint_id": null
+          },
+          {
+            "detail": "route save does not evaluate arrival; tolerances come from Task Template",
+            "key": "arrival_acceptance",
+            "status": "not_checked",
+            "waypoint_id": null
+          }
+        ],
+        "display_supported": true,
+        "execution_supported": false,
+        "g1_navigation_supported": false,
+        "navigation_eligible": false,
+        "pose_checks_passed": true,
+        "reasons": [
+          "route is a resource and display artifact only; it is not navigation-eligible"
+        ],
+        "tolerance_source": "Task Template goal.position_tolerance / goal.yaw_tolerance_rad; not evaluated by route save",
+        "unsupported_checks": [
+          "footprint",
+          "path_reachability",
+          "dynamic_execution",
+          "g1_route_adoption"
+        ]
+      },
+      "version": "v2",
+      "waypoints": [
+        {
+          "id": "wp-b",
+          "order": 1,
+          "x_m": -0.825,
+          "y_m": 1.075,
+          "yaw_rad": 0.5
+        },
+        {
+          "id": "wp-a",
+          "order": 2,
+          "x_m": -0.875,
+          "y_m": 1.075,
+          "yaw_rad": 0.0
+        }
+      ]
+    },
+    "status": 200
+  },
+  "versions": {
+    "body": {
+      "route_id": "route-9e55257fc5d24a03a54986d9fcaa8a80",
+      "versions": [
+        {
+          "content_digest": "370d246234a251d7adc8b8f1205c745a2ca37ebf4ea50b1d7f64f5aabaa7871c",
+          "created_at": "2026-10-24T11:57:26+00:00",
+          "map_ref": {
+            "frame": "map",
+            "map_id": "map_room_a_g3b_release_v1",
+            "version": "v1"
+          },
+          "route_id": "route-9e55257fc5d24a03a54986d9fcaa8a80",
+          "version": "v2",
+          "waypoint_count": 2
+        },
+        {
+          "content_digest": "a9ee5895be83db986da5ea830fb12beff74f657feeba80d9e3ef5844dd484e62",
+          "created_at": "2026-10-24T11:57:26+00:00",
+          "map_ref": {
+            "frame": "map",
+            "map_id": "map_room_a_g3b_release_v1",
+            "version": "v1"
+          },
+          "route_id": "route-9e55257fc5d24a03a54986d9fcaa8a80",
+          "version": "v1",
+          "waypoint_count": 2
+        }
+      ]
+    },
+    "status": 200
+  },
+  "wrong_frame": {
+    "body": {
+      "detail": {
+        "code": "map_frame_mismatch",
+        "message": "requested frame odom != map frame map"
+      }
+    },
+    "status": 409
+  },
+  "wrong_map": {
+    "body": {
+      "detail": {
+        "code": "map_version_not_found",
+        "message": "map map_room_a_g3b_release_v2 version v1 is not declared"
+      }
+    },
+    "status": 404
+  }
+}

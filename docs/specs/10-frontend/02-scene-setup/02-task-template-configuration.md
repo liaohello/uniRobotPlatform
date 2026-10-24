@@ -1,6 +1,6 @@
 # Scene Setup 任务配置与实验配置流程
 
-规范 ID：`FE-SCENE-TEMPLATES` · 责任层：前端 · 版本：V0.6（2026-10-22）
+规范 ID：`FE-SCENE-TEMPLATES` · 责任层：前端 · 版本：V0.7（2026-10-24）
 
 状态：详细设计草案；本轮字段、默认值和校验行为是建议设计基线，不表示逐字段已由用户确认。Waypoint 在 Scene Setup 创建/编辑/保存为用户已确认范围；产品实现和验收未执行。
 
@@ -42,8 +42,9 @@
 |---|---|---|---|
 | `map_ref` | MapReference | 始终 | 当前 Scene 兼容地图；必填且地图版本/Frame 可解析 |
 | `goal.pose.xy` | Vec2 / m，map frame | 始终 | 不自动填成机器人当前位置；必填、位于地图范围且非已知障碍 |
-| `goal.pose.yaw` | Angle / rad | 朝向约束启用时 | 默认无朝向约束；启用后必填、有限值并归一化 |
-| `goal.position_tolerance` | number / m | 始终 | 0.30；>0，且不大于可配置上限 |
+| `goal.pose.yaw` | Angle / rad | 始终（本次 S18） | **必填**，有限值，从 map +X 向 +Y 为正，归一化到 [-π,π)；缺字段/null 报错，显式 0 合法；不暗补 0 |
+| `goal.position_tolerance` | number / m | 始终 | 来源为 Task Template/导航配置；建议 0.30；>0，且不大于可配置上限 |
+| `goal.yaw_tolerance_rad` | Angle / rad | 声称朝向验收时 | 来源为 Task Template/导航配置；本切片无默认值；未配置时朝向验收标 unsupported，不假定通过 |
 | `termination.max_duration` | number / s | 始终 | 300；>0 |
 | `termination.on_failure` | enum | 始终 | `terminate_episode`；必须属于模板枚举 |
 | `target_visibility` | policy / operator / evaluator channel refs | 始终 | PointGoal 可按任务协议提供目标坐标；三通道分别声明，不从 UI 可见性推导 |
@@ -61,7 +62,7 @@
 | `termination.max_duration` | number / s | 始终 | 300；>0 |
 | `termination.on_failure` | enum | 始终 | `terminate_episode` |
 
-Route 编辑字段（稳定 waypoint ID、顺序、map-frame XY、可选 yaw）由 [Waypoint 编辑器](04-map-waypoint-editor.md) 负责。显示编辑器仅当底盘/地图能力存在；保存生成不可变版本，不启动导航。路线至少 1 个可执行点，ID 唯一，顺序连续；未知/障碍点作为校验错误，不能因 UI 保存而静默跳过。
+Route 编辑字段（稳定 waypoint ID、顺序、map-frame XY、**必填 yaw**）由 [Waypoint 编辑器](04-map-waypoint-editor.md) 负责；yaw 缺失必须报错，显式 0 合法。显示编辑器仅当底盘/地图能力存在；保存生成不可变版本，不启动导航。路线至少 1 个可执行点，ID 唯一，顺序连续；未知/障碍点作为校验错误，不能因 UI 保存而静默跳过。
 
 ### `navigation.object_nav`
 

@@ -1,0 +1,10 @@
+{
+  "job_id": "m1g-live-18953",
+  "pid": 497279,
+  "port": 18953,
+  "release": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1g-20261024T113913Z-platform",
+  "maps_root": "/home/liaozhengyan/Desktop/mobileCar/var/maps",
+  "map_catalog": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1g-20261024T113913Z-platform/backend/config/maps.catalog.json",
+  "draft_db": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1g-20261024T113913Z-platform/report/m1g-live.sqlite3",
+  "native_base_url": "http://127.0.0.1:8792"
+}
