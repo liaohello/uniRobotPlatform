@@ -8,7 +8,7 @@
 | 问题 | 结果 | 证据 |
 |---|---|---|
 | 缓存索引建立后 run 目录被替换为 root 内另一 run 的软链，能否仍以原 run 身份读取 | 不能。每次构造读取位置都重新验证 run 目录身份，拒绝该替换 | [episodes.py:require_run_directory](../backend/src/unirobot/episodes.py)，隔离夹具 2 项 |
-| 一条真实 Episode 的图像帧能否与机器人状态建立**只依据记录键**的关联 | 能。代表记录 303 个持久帧全部通过 `sample_id` 关联到 rgb/depth 观测行与 transform 行，通过 `capture_control_tick_id == control_tick_id` 关联到 `feedback` 事件 | 冻结候选实测 23 项帧关联断言 |
+| 一条真实 Episode 的图像帧能否与机器人状态建立**只依据记录键**的关联 | 能。代表记录 303 个持久帧全部通过 `sample_id` 关联到 rgb/depth 观测行与 transform 行，通过 `capture_control_tick_id == control_tick_id` 关联到 `feedback` 事件 | 冻结候选实测读取检查由 69 项增至 86 项（新增 17 项帧/关联/媒体断言） |
 | 记录声明的 `feedback_sample_id` 是否总能找到对应观测行 | 否，实测 3/303 命中。读取侧把它作为 `unresolved_reference` 返回，不补造、不按时间相近顶替 | 同上 |
 | 是否已经具备统一历史时间游标 | 不具备。本切片只提供单 Episode 内的帧关联与实测时间差；跨流/跨 Episode 游标与同步 3D 仍未证明 | 见第九节 |
 
