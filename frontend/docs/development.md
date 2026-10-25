@@ -1,3 +1,77 @@
+# M1.8 接通真实历史帧关联浏览，并修正明确空时间基数组的回退（2026-10-25）
+
+本轮做两件事：把后端 frame-link-1 的**一条真实 GET 接成可操作的“图像—关联机器人状态—来源与时间”帧联动浏览**（按服务端 `next_offset/has_more` 推进、按 `sample_id` 打开、按契约允许的时间窗口定位，全部由同一帧驱动）；并修掉 `numericBasesOf` 把服务端明确返回的 `numeric_time_bases=[]` 当成缺字段、回退四个声明基的真实缺陷。只修改 `frontend/`。**完成只表示“单 Episode 内的帧关联浏览切片”按实测载荷接通并通过，不表示跨流/跨 Episode 统一游标、历史 3D 回放或正式 M1.5/M1 验收通过。**
+
+## 冻结版本与入口
+
+| 项 | 值 |
+|---|---|
+| 前端 release | `m1-front-geometry-20261025T174619Z-61127e8fec84`（104 个输入，聚合 `61127e8fec84ea99…`；服务器逐文件重算与 `source-manifest.json` 一致，`check-release.py` 在构建前先校验，不匹配即终止。六个 pass 全绿于该 release；本记录与 Git 段在其后提交，文档不参与产品代码） |
+| 提交 | 见本节末“Git”段（本地与远端 SHA 一致，未 force、未建 tag、未推凭据或原始归档） |
+| 帧与历史上游 | `http://127.0.0.1:18966` = 后端 `m1s-20261025T084308Z-platform`（frame-link-1 候选，服务器 PID 3668527，源码聚合 `932582d19de263ab…`、启动清单 `6872adad98dbc75f…`），同一进程继续提供 episode-read-1 五条 GET + frame-link-1 一条 GET |
+| 保留上游 | 18964（`m1p`，无 `/frames` 路由）、18960（`m1k`）、18959、18949、18953、8792 全部保留未动；离线地图 pass 按其定义仍指向 **18949**（该候选没有 map/route 端点），不改用 18966 冒充离线 |
+| 本轮预览 | 六个 pass 各一个只读预览：18999（帧·真实）、19000（历史·真实）、19001（帧·合成）、19002（历史·合成）、19003（地图/Session/配置/几何/生命周期）、19004（离线地图）。**交付预览 18986 → 18964 全程保留未动**；本轮启动的六个预览在结束时按登记身份逐一停止 |
+| 预览台账 | `~/Desktop/uniRobotPlatform/var/frontend-previews/registry.json`（`tools/preview-registry.py`；round `m18-rf/m18-rh/m18-sf/m18-sh/m18-live/m18-off`，每轮开始前先按 pid+round+cmdline+start tick+uid+监听归属复核再停止，绝不按端口或进程名批量匹配） |
+| 真实 native | 8792 未被本轮任何批次重启或写入：每个 pass 的 `native-read-only.json` 记录 `native_mutations_sent=false`、`new_physics_process_started=false`，前后 `run_id/backend_generation/episode_id/recording_status` 一致 |
+
+## 一、`numericBasesOf` 的空数组回退（真实缺陷）
+
+`src/adapters/platform-episodes.ts` 原写法是 `page?.time?.numeric_time_bases?.length ? … : [...DECLARED_NUMERIC_BASES]`：服务端**明确回答“本流没有任何可数值定位的基”**（`[]`）时，`.length` 判成假，界面回退到四个声明基，`seekGate` 于是放行定位并把回退出来的列表当作 reader 的答案显示。现在改为“数组存在就是权威答案，包括空数组”，只有整字段缺失（尚未读过任何页）才使用 `DECLARED_NUMERIC_BASES`：
+
+- 空白/纯空格仍直接拒绝且不发请求（“要定位到 0 请显式输入 0”）；显式 `0`、`0.0`、`-2.5` 仍合法；`abc/NaN/Infinity/1e999` 仍拒绝。
+- `[]` 时 `seekGate` 拒绝，且拒绝文案打印 `numeric_time_bases=空`，不再列出四个基。
+- 18966 实测各 records 页都返回 4 个数值基，所以 `[]` 分支由**合成夹具**（`browser-frames.py --mode synthetic`，界面面板与拒绝文案）+ 单元测试共同覆盖，不冒充归档事实。
+
+## 二、frame-link-1 客户端与“只加一条精确 GET”的代理
+
+- 新模块 `src/adapters/platform-frames.ts`：`readFramesPage()` 只发 `GET /api/v1/episodes/{id}/frames`，与 episode 客户端共用同一个 schema 门（`unirobot-mobilecar-frame-link-1` + `read_only=true`，不符即 `EpisodeContractError`）。参数只在契约允许的组合下发送：`time_base` 必须与至少一个边界同行，单独的边界整体丢弃（实测服务端会**静默忽略**无基的边界，若照发就会把“未过滤”误读成“已过滤”）。
+- `tools/serve-readonly.py` 只新增一行 `^/api/v1/episodes/<ID>/frames$` 的 `{'GET'}`，不是 `/episodes/{id}` 通配；`/frames/extra`、`/frames/deeper/still`、`POST /frames`、`POST /episodes/{id}/validate` 都仍由网关自身 HTML 错误页拒绝、不转发（浏览器 pass 逐条断言）。
+- 视图投影全部按响应原词：`paging` 12 个计数、`cursor`（`line_index_is_not_a_clock`、`persist_sequence_is_the_recorders_own_counter`）、`linkage.roles/status_meaning/primary_roles/selection_rules`、`summary` 六项、`time.{selectable_time_bases,units,synchronized_across_streams,clock_sameness,deltas_are_recorded_arithmetic}`、`three_d_replay` 三个布尔位、`not_proven`、`capability_limits`。
+
+## 三、帧浏览的可操作行为（`src/workbench/frame-browser.tsx`）
+
+- 打开 Episode 详情后，帧面板按**详情返回的身份**（source/run/episode）自动读取第一帧页；前后帧、每页 1/5/20、`next_offset` 翻页、回退上一页落到该页最后一帧、按 `sample_id` 精确打开并可清除、按 `selectable_time_bases` 之一 + 数值秒边界定位并可清除窗口。
+- 翻页始终携带当前 `sample_id` 与窗口条件；**响应没有 total，界面就不显示也不推算“共 N 帧”**（`data-frame-no-total="true"`，并断言面板文本不含“共 N 帧”）。
+- 实测到的分页语义缺口如实呈现：`offset=0&sample_id=<首帧>` 返回 1 帧且 `has_more=true`，按 `next_offset` 推进的那一页返回 0 帧、`has_more=false`；面板写明“`has_more=true` 混合了候选行计数与锚点原生行号（后端在 m1.5c 记录里列为待修正的分页语义），不等于还有匹配当前条件的帧”，停在该页并保留条件，不伪造帧、不声称遍历完。
+- 播放只按界面节奏（500 ms/1 s/2 s）在已读取的帧上前进，到页末按 `next_offset` 继续；芯片固定为“节奏只控制界面推进，不是录制帧率”，本轮不宣称录制帧率或跨流同步。
+
+## 四、状态、时间与媒体的措辞边界
+
+- 状态来自该帧 `state.recorded_state` 的真实字段（实测 `base_position_world_sim_m / base_quaternion_xyzw / base_twist_body_m_s / wheel_velocity_rad_s / arm_model_qpos_rad / gripper_width_m / tcp_position_world_m / feedback_time_monotonic / sim_time_s`），单位只按响应 `state.units` 的通配后缀匹配（最长后缀优先），匹配不到就写“未在 units 表里声明（不自行推断单位）”。`arm_model_qpos_rad` 标为**机械臂模型关节角（qpos，录制值）**并明确“不是用户控制角、也不是标定结果”；未知字段保留原名并注明 reader 未声明含义。
+- 同时显示 source/run/episode/sample、`join_key`+`key_value`、`event_seq`、`record_position`（如 `events.jsonl#27`）、各角色命中位置、锚点 `line_index/persist_sequence`、profile 与身份匹配位。四个主角色 `matched` 与 `declared_reference_status=unresolved_reference` **分两行显示**，引用未解析处写明“不等于完全没有机器人状态——本帧的关联状态来自 state_feedback_event”。
+- `2.885 ms` 一类数字固定标为“关联状态事件时间差”，附“两条记录字段相减…不是物理状态采样延迟，不是同步证明，也不推导帧率”，并另列 `capture_value/other_value` 原始两端值与 `recorder_declared_feedback.feedback_time_s/feedback_clock`；`same_clock_verified=false`、`clock_sameness.verified_by_reader=false` 原样透出，不推导同钟或同时刻。
+- 媒体只按该帧 `media.items[].uri` 读取（该结构**没有** `kind` 字段，类别由 `field` 名映射），默认只自动读取 `rgb_uri`；`absent / refused(refusal_code) / not_recorded_on_this_frame` 一律不请求、不显示图像，并在切换 Episode/翻页/换条件/换帧时清空旧图与释放 objectURL。摘要声明（`declared_sha256_by_row`）、本次服务端重算（`X-Episode-Asset-Sha256`）、完整性结论分三行；`.npy` 按字节显示并写明不做 NumPy 解码、不画点云、不启用历史 3D。
+
+## 五、异步归属
+
+帧面板自持一套 serial：`pageSerial` 绑定 episode/run，`assetSerial` 绑定 `episode|run|sample_id` 三元键；任何 Episode/run 切换、翻页、条件变更、换帧与卸载都会使旧响应与旧解码作废（`live()` / `frameKeyRef` 双条件），abort 控制器统一回收，读取错误保持可见。历史视图外壳、组件与布局未重写，帧面板作为 `.history-view` 内的一个面板挂在既有三栏之下，不向 live Actual/Target 回填任何历史数据（pass 断言帧面板内 `canvas=0`、无 Target/Ghost 控件）。
+
+## 六、实测事实与合成夹具的分工
+
+真实（18966，只读）：COMPLETE 记录 `run_0104613ff736…/episode_27bfed54…` 首页 5 帧四主角色全 `matched`、`declared_reference_status=unresolved_reference`、`age_ms=2.8854069532826543`、rgb 32804 B `image/png` 且服务端摘要与声明一致、depth 1228928 B `application/octet-stream`；FAILED/INCOMPLETE 记录 `run_1f6fb348…/episode_879cf704…` 4 帧同样 matched + 引用未解析。合成（`page.route` 夹具，标注 synthetic）：空 `selectable_time_bases`、`absent/refused/not_recorded_on_this_frame` 媒体、摘要不符、非图像字节、状态 `missing`、切换后的迟到帧页、错误 schema、`episode_stream_unavailable`、`sample_id_invalid`、records 页 `numeric_time_bases=[]`。
+
+## 七、验证（服务器执行）
+
+每个 pass 都是“构建 → 单元测试 → 浏览器套件”的同一冻结树，报告目录 `~/Desktop/uniRobotPlatform/var/reports/<release>-<pass>/`。
+
+| pass | 上游 | 预览 | 结果 | 关键度量 |
+|---|---|---|---|---|
+| 帧·真实（`browser-frames.py --mode real`） | 18966 | 18999（round `m18-rf`） | **39 checks passed** | 10 次 `/frames` GET、77 个请求全为 GET；COMPLETE 首页 5 帧四主角色 `matched` + 引用 `unresolved_reference`、`age_ms=2.8854069532826543`、`next_offset=5`；FAILED 记录 4 帧同样 matched/未解析 |
+| 历史·真实（`browser-history.py --mode real`） | 18966 | 19000（`m18-rh`） | **77 checks passed** | 与上一轮同计数（未照抄：本次实测 47 次历史 GET、`event_seq_filter={excluded:3038,anomalies:200}`、COMPLETE→`known_stale_self_check`、FAILED→`incomplete_terminal_recorded`/`unexplained`）；帧面板加入后旧断言仍全部成立 |
+| 帧·合成（`--mode synthetic`，`page.route` 夹具） | 夹具（不触网） | 19001（`m18-sf`） | **33 checks passed** | 空 `selectable_time_bases`、`absent/refused/not_recorded_on_this_frame`、摘要不符、`.npy` 字节、状态 `missing`、切换后迟到帧页、错误 schema、`episode_stream_unavailable`、`sample_id_invalid`、records 页 `numeric_time_bases=[]` 各自单独断言；全部标注 synthetic |
+| 历史·合成 | 夹具 | 19002（`m18-sh`） | **41 checks passed** | 旧套件在新面板存在下不回归 |
+| 回归（地图 live / Session / 配置 / 几何 / 生命周期） | 18966 | 19003（`m18-live`） | **68 / 38 / 51 / 48 checks passed** | 同一冻结前端、同一上游；`native_mutations_sent=false`、`new_physics_process_started=false` |
+| 离线地图（按定义指向无 map 端点的候选） | **18949** | 19004（`m18-off`） | **15 checks passed** | `write_requests=[]`；离线口径未被 18966 冒充 |
+| 单元测试 | — | — | **113 passed / 0 failed**（9 个文件） | 新增 `platform-frames.test.ts`（客户端参数面、分页/空页解释、状态与时间措辞、角色分离、媒体可用性、来源与边界）与空数组回退用例 |
+
+native 8792 未被本轮任何批次重启或写入：六个 pass 的 `native-read-only.json` 前后 `run_id/backend_generation/episode_id/recording_status` 一致。本轮启动的六个预览在取证后按登记身份逐个 `stop`（`verified_identity=["match"]`、无需 SIGKILL），`listeners-after` 显示 18999–19004 已无监听，**18986（交付预览 → 18964）与 18966（帧候选）仍在监听、未动**。
+
+被取代的迭代（同轮，未回填、不拼成最终通过）：`…T160447Z-28bab0d54d55`（tsc：`stateAgeOf` 误用 `frame.time`，应为 `page.time`）；`…T160616Z-ceaa4b549797`（3 项单元测试失败，其中一项暴露真实缺陷：客户端会在没有任何边界时仍发送 `time_base`，现改为边界与基同行才发送）；`…T160801Z-6bb75ea61821`（我的执行脚本相对路径错误，未跑成）；`…T160947Z-a550e5561053` 与 `…T161148Z-43df2fcfa29e`（帧面板复用 `.history-3d-notice`、`.history-record-table` 类名与旧套件的选择器相撞，改为独立 `history-frame-boundary` / `frame-record-table`，未削弱任何断言）；`…T161434Z-f428baca07a6`、`…T163724Z-b1656ad1ccdc`、`…T164912Z-b1656ad1ccdc`（测试自身的等待与取值缺陷：读属性当文本、合成夹具的身份段取错、切换后未等帧页绑定）；`…T170032Z-a1da39869482`、`…T170942Z-08cd6b50b66f`、`…T172447Z-f4052c63f5a8`、`…T173442Z-6ce88689d3fb`（离线 pass 被我以 live 模式调用；合成媒体断言与播放芯片断言读取的是属性值而非可见文本；缺“媒体已落定”等待造成的真实 flake——现以 `wait_asset_settled / wait_asset_uri` 消除，不放宽比较）。
+
+## 八、边界与未覆盖
+
+未证明：跨流/跨 Episode 的统一历史游标；两个写入者是否共享时钟；`rgbd_capture_timing` 自述反馈时间与状态记录时间的等价性；历史 3D 渲染正确性；逐 body 位姿可否由现有流重建；广泛连续播放（须以后端修正后的分页契约为准）。未覆盖：`observations/persist` 之外作为锚点的帧关联、NumPy 数值解码与点云、除真实两帧记录外的归档全量、训练资格。未做：native 任何写请求、8792 变更、物理运动/录制/RESET/训练、`backend/` 与公共契约改动、生产 pin 变更、`frontend/` 之外的文件改动。
+
 # M1.7 历史浏览正式适配 18964、定位上下文修复与预览所有权收敛（2026-10-25）
 
 本轮做四件事：把历史浏览从旧读者候选**正式迁到后端只读整改后的 18964 并按实测载荷适配**；修掉 `history-view` 定位（seek）的上下文缺陷；把 `observations-persist` 的真实媒体引用接全；并处理两项长期记录在案的相机保持断言与预览清理方式。只修改 `frontend/`。远端已推送（见下表）。**完成只表示历史浏览/单流播放切片适配整改候选并通过，不表示跨流同步、历史 3D 回放或正式 M1.5/M1 验收通过。**
