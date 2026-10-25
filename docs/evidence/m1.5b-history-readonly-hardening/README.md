@@ -39,3 +39,13 @@
 ## 五、历史失败与基线
 
 平台全量：147 passed / 3 failed，失败项仍是 `test_catalog::test_catalog_loads_real_tasks`、`test_catalog::test_every_task_has_existing_evidence`、`test_migrate::test_manifest_sources_exist`（断言读取仓库文档/外部工程布局，服务器 release 副本内不成立）。链条：74/3 → 90/3 → 98/3 → 108/3 → 123/3 → 128/3 → 140/3 → 本轮 147/3（新增 7 项聚焦测试全通过，未新增失败）。不使用"全绿"表述。
+
+## 六、冻结后复跑（2026-10-25，不生成新绑定产物）
+
+冻结之后在服务器做了一次独立复跑，输出只写入 `/tmp/m1p-verify-<ts>/` 并在验证后删除，`releases/` 与 `var/reports/` 中已提交的本册产物未被改写，因此本节不构成新的绑定报告，只证明上一节的数字可再现：
+
+- 副本聚焦测试 `tests/test_episodes.py`：19 passed。副本全量：147 passed / 3 failed，失败项与本册第五节完全同名同因（历史仓库布局断言）。
+- 对存活候选 `127.0.0.1:18964` 重跑 `tools/episode_history_check.py`：69/69，`requests.methods=["GET"]`、`total=51`、`platform_source.match=true`（recorded 与 recomputed 均为 `4090935b4c45c900…`）、946 文件覆盖集合 `drift=[]`。
+- 独立重算归档 696 个身份文件聚合摘要：`60c0c6963bc9ae84…`，与 `m1p-…/coverage-digests.json` 的 before/after 一致。
+- native 排障一律走 `tools/native_get_probe.GetProbe`（无 method/body 形参）：`/api/v1/health` 200，`run_9c88e3e3…/gen 1/episode_43c22f95…` 未变，`non_get=[]`。
+- 文档修复提交 `1f7f88e` 只触及 `docs/specs/`，不在清单摘要根（`src/unirobot`/`config`/`tools`）内，`4090935b…` 与 `832bf518…` 继续有效。

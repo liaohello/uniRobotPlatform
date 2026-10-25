@@ -105,6 +105,16 @@ PYTHONPATH=src $PY tools/history_replay_facts.py --platform-url http://127.0.0.1
 PYTHONPATH=src $PY -m pytest tests/test_episodes.py -q
 ```
 
+### 冻结后复跑（不生成新产物）
+
+冻结之后只做过一次服务器复跑验证，且只写入临时目录、验证完即删除，release 与 `var/reports/` 下的报告没有被改写：
+
+- 把 `$REL/backend` 与 `$REL/docs` 复制到 `/tmp/m1p-verify-<ts>/`（保持 `<repo>/backend` 目录层级，否则 `settings.py` 的仓库根标记 `docs/specs/catalog.json` 找不到，会误报 catalog 缺失），在副本内运行：聚焦 `tests/test_episodes.py` **19 passed**；全量 **147 passed / 3 failed**，失败仍是同样三条历史项（`test_catalog.py::test_catalog_loads_real_tasks`、`test_catalog.py::test_every_task_has_existing_evidence`、`test_migrate.py::test_manifest_sources_exist`）。
+- 对存活候选 `http://127.0.0.1:18964` 重跑 `tools/episode_history_check.py`：**69/69**，`requests.methods=["GET"]`、`total=51`，`platform_source.match=true` 且 `recorded_aggregate == recomputed_aggregate == 4090935b4c45c900…`，覆盖集合 946 文件 `drift=[]`。
+- 独立重算归档 696 个身份文件聚合摘要 = `60c0c6963bc9ae84…`，与 `coverage-digests.json` 前后一致。
+- GET-only 排障走 `tools/native_get_probe.py`：`GetProbe(log_path=…)` 只有 `get/json/summary/write_summary`，`/api/v1/health` 返回 200 且 `run_9c88e3e3…/gen 1/episode_43c22f95…` 未变，摘要 `{"methods":["GET"],"non_get":[]}`。
+- 后续提交 `1f7f88e` 只改 `docs/specs/` 三个链接与两处登记摘要，不落入清单摘要根（`src/unirobot`、`config`、`tools`），因此不使 `4090935b…` 失效；实测复制体与冻结体逐文件一致（`src/unirobot/episodes.py c833697d8607…`、`tools/native_get_probe.py 36ec686932a0…` 等）。
+
 ## 十、边界与未覆盖
 
 - 未覆盖：其他 Episode 在违规时点之前没有前置摘要，因此"未变"只对已记录集合成立；同步回放与统一游标；逐 body 位姿可否重建；`quality_report.json` 重写前内容比对；归档全量逐记录校验；训练资格。
