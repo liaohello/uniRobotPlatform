@@ -2,7 +2,9 @@
 
 2026-10-25 · 范围：把服务器已有的真实历史录制以**只读**方式接入平台，固定一个明确来源，冻结最小历史读取契约与 OpenAPI，并保持原生身份、时间与动作语义不变。
 
-**真实历史 reader 首个切片完成（61/61 服务器实测断言）；这不代表同步回放 UI、新采集闭环或正式 M1.5/M1 验收通过。** 原始数据全部留在服务器，不搬目录、不重写、不导出重算；8792 未修改、未重启、仅 GET；`frontend/` 未改动。
+**真实历史 reader 首个切片完成（61/61 服务器实测断言）；这不代表同步回放 UI、新采集闭环或正式 M1.5/M1 验收通过。** 原始数据全部留在服务器，不搬目录、不重写、不导出重算；`frontend/` 未改动。
+
+**本轮边界违规与后果（不隐瞒）**：交付代码路径与 61 项检查只对 native 发 GET，但一次人工排障探测向 8792 发送了 `POST /api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/validate`，违反了"仅 GET"边界。后果已实测限定为**该记录的一份派生文件**被 native 自己重写：`…/episode_27bfed54…/quality_report.json`，mtime 2026-10-25 12:20:38，摘要 `53314c847d17f38da6b32587aaaeb830660f495bc5f2df45b57d3759efa303bd`；该文件重写前的摘要未被快照，因此**不能声称内容不变**。原始记录经复核未变：`episode.json` `0dec88f47c9fa1dd…` 与 `episode_complete.json` `b2923d0f9587fe04…` 仍等于落地前基线，mtime 仍是 2026-10-18；全归档 696 文件聚合摘要仍为 `60c0c6963bc9ae84…`（逐文件差异 0 项）；8792 运行时状态前后一致（`episode_43c22f95…`、`recording_status=IDLE`），未被停止/重启/替换。后续任何复现都不得对 native 发非 GET 请求。
 
 ## 一、结论
 
@@ -67,6 +69,7 @@
 | 聚焦单测（隔离夹具/副本，不改原始 Episode） | 12 passed：COMPLETE/FAILED/缺 tail/坏行/缺流/跨 run 同名歧义/越界与软链/摘要不符/未知 sidecar/3D 两态/分页与时间基/OpenAPI 只读面 |
 | 平台全量 | 140 passed / 3 failed |
 | 历史失败基线（未跳过、不称全绿） | `test_catalog::test_catalog_loads_real_tasks`、`test_catalog::test_every_task_has_existing_evidence`、`test_migrate::test_manifest_sources_exist`；可核对链条 74/3 → 90/3 → 98/3 → 108/3 → 123/3 → 128/3 → 本轮 140/3，本轮新增 12 项全通过，未新增失败项 |
+| 8792 | 检查工具与平台代码只发 GET；`capabilities` 仍不声明 stop/end 协议，health 前后完全一致。人工排障期间误发过一次 `POST …/validate`（后果与复核见开头说明），不属于交付代码路径 |
 | 端口与服务 | 历史候选 18960（本轮新起，独立 SQLite `report/history-<ts>.sqlite3`，`existed_before=false`）；18959 统一候选、18949、18953、8792 全部保留；18954/18956 空闲 |
 
 ## 九、前端接线（本轮不改前端代码）
@@ -98,5 +101,5 @@ PYTHONPATH=$REL/backend/src $PY tools/episode_history_check.py --platform-url ht
 ## 十一、冻结状态与边界
 
 - 平台本轮新增/修改：`backend/src/unirobot/episodes.py`、`backend/config/mobilecar-history-source.json`、`backend/src/unirobot/api.py`（5 条 GET 路由与错误/缓存中间件）、`backend/src/unirobot/settings.py`（`UNIROBOT_HISTORY_SOURCE`、`UNIROBOT_EPISODE_ROOT`）、`backend/tools/launch_unified_gateway.py`（`--history-source`/`--episode-root` + 启动清单 history 块 + `tools` 纳入源码摘要）、`backend/tools/episode_history_check.py`、`backend/tests/test_episodes.py`。平台改动本地提交、**不推送**。
-- native：未提交、未部署、未重启；`ReplayReader`/Recorder 格式只被读取和引用，未改写任何历史 Episode。
+- native：未提交、未部署、未重启；`ReplayReader`/Recorder 格式只被读取和引用，未改写任何**原始**记录文件（`episode.json`、`episode_complete.json`、`events.jsonl` 等的摘要已逐文件复核）。一次人工误发的 `POST …/validate` 让 native 自己重写了一条记录的派生 `quality_report.json`，事实与复核范围见开头说明。
 - 未验证：同步 3D 回放渲染、真机停车与录制闭环、新采集链路、G1/G4A2 与 a5/drvfix 选择、正式 M1.5/M1 验收。本 Goal 完成只表示真实历史 reader 首个切片可用。
