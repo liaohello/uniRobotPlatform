@@ -100,3 +100,7 @@ S08/S09 原文件按字节归档；其中远程图片/仓库声明不构成本�
 ## V0.8 统一候选与发布身份来源
 
 [S20](sources/S20-unified-candidate-release-identity.md)：本次用户 Goal 要求把已验证能力收敛为一个统一可联调候选（同一冻结源码/启动配置/OpenAPI），把几何读取兼容与执行资格分开判定，把候选身份升级为缺项必失败的完整发布身份，并修正维护窗口顺序。历史 S14～S19 原文与事实保持不变。来源字节哈希登记于 catalog.json 与 traceability.json。
+
+## V0.8 真实历史读取来源
+
+[S21](sources/S21-history-episode-read-slice.md)：本次用户 Goal 要求完成真实历史 Episode/segment 只读 reader 首个切片——固定一个历史来源与实际 recording_root、冻结最小读取契约与 OpenAPI、保留复合身份与原生时间/动作语义、把声明状态与实际读取验证分层、路径受限只读并把启动器纳入发布身份。历史 S14～S20 原文与事实保持不变。来源字节哈希登记于 catalog.json 与 traceability.json。

@@ -33,3 +33,7 @@ MAP_CATALOG_PATH = Path(
 MAPS_ROOT = Path(
     os.environ.get("UNIROBOT_MAPS_ROOT", BACKEND_ROOT / "config" / "maps")
 ).expanduser()
+HISTORY_SOURCE_PATH = Path(
+    os.environ.get("UNIROBOT_HISTORY_SOURCE", BACKEND_ROOT / "config" / "mobilecar-history-source.json")
+).expanduser()
+EPISODE_ROOT_OVERRIDE = os.environ.get("UNIROBOT_EPISODE_ROOT")

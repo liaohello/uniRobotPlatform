@@ -138,6 +138,7 @@ docs/specs/
 - [Session 生命周期](20-backend/01-session-scene/01-session-lifecycle.md#stop-与录制结束协议m1-stop-1--m1-end-1) 增加 `m1-stop-1`/`m1-end-1` 端点、拒绝与并发规则，允许访问的 native 路径由五个改为七个。
 - [Episode 采集契约](30-contracts/03-episode-events-annotations.md#m14-身份绑定-stop-与可靠录制结束候选m1-stop-1--m1-end-1) 与 [控制命令契约](30-contracts/02-control-intervention-commands.md#stop-回执分层m14-候选) 固定"受理 / STOP 下发 / 停车证据与覆盖 / Recorder 排空 / 落盘终态与完整性"五层；`coverage_complete` + `integrity` 才是"整机停稳且录制完整"。
 - [控制权契约](30-contracts/06-control-authority.md#stop-与控制权m14-候选) 明确安全 STOP 不是接管流程，也不得被新增 owner/lease 门槛挡住。
+- 机器目录新增 S21 与 DEC-058，补充来源 16 个、文档节点 150 个、REQ 仍 89 项。真实历史 Episode/segment 只读 reader 首个切片（候选 `m1k-20261025T040435Z-platform`，`127.0.0.1:18960`）以五条受限 GET 读取 348 条真实录制，服务器 61/61 断言、归档摘要前后不变；同步回放与新采集闭环未做。实现与证据见 [M1.5a 交付记录](../backend-m1.5a-history-reader.md) 与 [M1.5a 证据册](../evidence/m1.5a-history/README.md)，契约条款并入 [Episode/采集契约](30-contracts/03-episode-events-annotations.md)。
 - 机器目录新增 S19，补充来源 14 个、文档节点 150 个、REQ 仍 89 项。实现与无物理集成证据见 [M1.4 交付记录](../backend-m1.4.md)。
 
 ## V0.8 当前更新：版本化地图与带朝向 Route 切片

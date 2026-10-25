@@ -1,7 +1,7 @@
 {
   "version": "0.8",
   "date": "2026-10-25",
-  "status": "V0.8：新增 S20 统一候选与发布身份来源；150 个文档节点、15 个补充来源。",
+  "status": "V0.8：新增 S20 统一候选与发布身份来源与 S21 历史只读切片来源；150 个文档节点、16 个补充来源。",
   "source_sha256": "995e4bf3c3fdc19f6874e1d221d5e52195db5f38e79fcac8c082b8ac9939119a",
   "packages": [
     {
@@ -1322,6 +1322,11 @@
       "path": "90-governance/sources/S20-unified-candidate-release-identity.md",
       "sha256": "04f4fc83df31e9ca92df01f768d3359629035822462ffecd3e1fd0b8c316e989",
       "kind": "current_user_unified_candidate_release_identity_goal"
+    },
+    "S21": {
+      "path": "90-governance/sources/S21-history-episode-read-slice.md",
+      "sha256": "13147c106694266b963c624c1bd9dea2b8c1ad1288d6d565ab66d80432a31e72",
+      "kind": "current_user_history_episode_read_slice_goal"
     }
   },
   "page_design_index": "10-frontend/page-designs/README.md",

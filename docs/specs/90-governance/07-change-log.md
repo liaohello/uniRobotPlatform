@@ -10,6 +10,15 @@
 
 ## V0.8｜2026-10-25
 
+### 2026-10-25 M1.5a 真实历史 Episode/segment 只读 reader 首个切片
+- 按 S21/DEC-058 新增平台受限只读历史面：`backend/src/unirobot/episodes.py` 与五条 GET（列表 / 轻量详情 / 可用流 / 按流有界记录页 / Episode `assets/` 内媒体资产），统一 `unirobot-mobilecar-episode-read-1` 与 `read_only=true`；来源固定在 `backend/config/mobilecar-history-source.json`（`mobilecar-server-history-20261017` → `/home/liaozhengyan/Desktop/mobileCar/var/runs`，native `drvfix-20261019T044549Z-0a80415b2577`）。原始数据留在服务器，不搬运、不重写、不重算导出，不修改或重启 8792。
+- 完整性分四层：记录声明状态、`complete_tail` 存在性、tail 声明校验和条目、本次读取实际重算结果。实测发现 native tail 对自身 `episode.json` 的声明是**过期自校验**（抽样 16/16 条真实记录 `mismatch_present`，COMPLETE 记录声明 924 条摘要），平台如实报告且不改写生命周期状态；`FAILED`/`audit_status=INCOMPLETE` 记录标为 `incomplete_terminal_recorded` 且仍可读；`training_qualified=false` 不阻止原始读取。
+- 身份与时间动作语义逐字保留：source/adapter+run+episode+segment+contract 版本+目录原始引用；同名跨 run 409 `episode_id_ambiguous`；`backend_generation` 只按记录 payload 如实标注；`wall/backend_monotonic/sim/measurement/arrival` 时间与单位不转换，游标声明"文件顺序不是时钟、不跨流同步"，Actual/记录 Target/命令意图/执行反馈分类不合并；legacy 无 sidecar 时关联明确未知，不伪造 ValidatedSnapshot。
+- 3D 身份取自记录内 `manifest.json` 与 `transforms.jsonl`：与生产 pin 可比对时 `identity_verified_rendering_unverified`，否则 `restricted`；禁止套用在线 geometry/Actual。路径受限并复用既有保护：`..`/绝对路径/软链越界/非 `assets/` 目标/摘要不符/不支持后缀/超大小分别定位，不代理 validate、控制、RESET、录制或步进。
+- 服务器验证：历史候选 release `m1k-20261025T040435Z-platform` 常驻 `127.0.0.1:18960`，`tools/episode_history_check.py` 61/61 通过（348 条与 native 列表一致；events 12561 条实际计数；303 张 rgb/depth/masks 资产摘要核验；平台详情 21,031 字节对 native 整条 20,946,833 字节；归档聚合摘要 `60c0c696…` 读取前后不变；8792 前后一致且仍无 stop/end 协议）；同一候选统一能力回归 27/27；聚焦 12 passed；平台全量 140 passed / 3 failed（同一历史三项，链条 128/3 → 140/3，未新增失败）。见 [M1.5a 交付记录](../../backend-m1.5a-history-reader.md) 与 [证据册](../../evidence/m1.5a-history/README.md)。
+- 顺带闭合发布身份缺口：`launch_unified_gateway.py` 的平台源码摘要现覆盖 `src/unirobot + config + tools`（42 文件，`e86a709fb6e59f44…`），启动器与检查工具不再落在身份之外；native 完整清单与生产 pin 的边界不变。
+- 机器目录新增 S21，现为 150 个文档节点、16 个补充来源；REQ 仍 89 项。本切片不是同步回放 UI、不是新采集闭环，也不是正式 M1.5/M1 验收。
+
 ### 2026-10-25 M1.4b 统一可联调候选与部署前发布身份
 
 - 统一候选 release `m1j-20261025T020857Z-platform`：`tools/launch_unified_gateway.py` 用一份启动清单在一个进程内同时提供 geometry-2 scene 与 23 资产、capabilities/snapshot/kinematics、Map/Route 资源、Draft/validate、Session/`current` 与 STOP/end schema；`tools/unified_candidate_check.py` 27/27 通过，正向生命周期 39/39。候选以 `http://127.0.0.1:18959` 常驻保留为前端联调基址（独立 SQLite、对真实 native 仅 GET），在该存活地址重跑同一套检查 27/27；18954/18956 两个 test-only 服务检查后已停止；18949/18953 未替换。

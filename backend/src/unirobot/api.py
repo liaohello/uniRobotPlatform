@@ -48,7 +48,8 @@ from .routes import (
     CreateRouteDraft, MapRef, PublishRouteDraft, PublishResult, RouteDraft, RouteError, RouteService,
     RouteVersion, RouteVersionList, SaveRouteDraft,
 )
-from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH, MAP_CATALOG_PATH, MAPS_ROOT
+from .episodes import EpisodeArchive, HistoryError, load_history_source
+from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH, EPISODE_ROOT_OVERRIDE, HISTORY_SOURCE_PATH, MAP_CATALOG_PATH, MAPS_ROOT
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -66,7 +67,9 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
                mobilecar_integration: MobileCarIntegration | None = None,
                recipe: Recipe | None = None,
                map_catalog_path: Path | None = None,
-               maps_root: Path | None = None) -> FastAPI:
+               maps_root: Path | None = None,
+               history_source_path: Path | None = None,
+               episode_root: Path | None = None) -> FastAPI:
     path = Path(catalog_path) if catalog_path else CONFIG_PATH
 
     catalog = load_catalog(path)
@@ -113,6 +116,26 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     )
     application.state.maps = map_store
     application.state.routes = RouteService(draft_db_path or DRAFT_DB_PATH, map_store)
+    history_path = Path(history_source_path) if history_source_path else HISTORY_SOURCE_PATH
+    history_override = Path(episode_root) if episode_root else (Path(EPISODE_ROOT_OVERRIDE) if EPISODE_ROOT_OVERRIDE else None)
+    archive = None
+    history_unavailable = None
+    if history_path.is_file():
+        try:
+            history_source, history_root = load_history_source(history_path, history_override)
+        except HistoryError as exc:
+            history_unavailable = {"code": exc.code, "message": str(exc), "detail": exc.detail,
+                                   "source_file": str(history_path)}
+        else:
+            archive = EpisodeArchive(history_source, history_root,
+                                     reference_model_sha256=recipe.expected.get("model_sha256"),
+                                     reference_scene_id=recipe.expected.get("scene_id"))
+    else:
+        history_unavailable = {"code": "history_source_not_configured",
+                               "message": f"no history source declaration at {history_path}", "detail": {},
+                               "source_file": str(history_path)}
+    application.state.episodes = archive
+    application.state.history_unavailable = history_unavailable
     application.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -165,7 +188,7 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
         response = await call_next(request)
         if (request.url.path.startswith("/api/v1/mobilecar/") or request.url.path.startswith("/api/v1/sessions")
             or request.url.path.startswith("/api/v1/maps") or request.url.path.startswith("/api/v1/routes")
-            or request.url.path.startswith("/api/v1/route-drafts")):
+            or request.url.path.startswith("/api/v1/route-drafts") or request.url.path.startswith("/api/v1/episodes")):
             response.headers["Cache-Control"] = "no-store"
         return response
 
@@ -193,6 +216,52 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     async def route_failure(request: Request, exc: RouteError):
         return JSONResponse(status_code=exc.status_code,
                             content={"detail": {"code": exc.code, "message": str(exc), **exc.detail}})
+
+    @application.exception_handler(HistoryError)
+    async def history_failure(request: Request, exc: HistoryError):
+        return JSONResponse(status_code=exc.status_code,
+                            content={"detail": {"code": exc.code, "message": str(exc), "read_only": True,
+                                                **exc.detail}})
+
+    def _archive(request: Request) -> EpisodeArchive:
+        archive = request.app.state.episodes
+        if archive is None:
+            info = request.app.state.history_unavailable or {"code": "history_source_not_configured", "message": "no history source", "detail": {}}
+            raise HistoryError(info["code"], info["message"], 503, info.get("detail") or {})
+        return archive
+
+    @application.get("/api/v1/episodes")
+    def episodes_list(request: Request, limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
+                      run_id: str | None = None, recording_status: str | None = None,
+                      episode_id: str | None = None) -> dict[str, Any]:
+        return _archive(request).list_episodes(limit=limit, offset=offset, run_id=run_id,
+                                               recording_status=recording_status, episode_id=episode_id)
+
+    @application.get("/api/v1/episodes/{episode_id}")
+    def episode_detail(request: Request, episode_id: str, run_id: str | None = None) -> dict[str, Any]:
+        return _archive(request).detail(episode_id, run_id)
+
+    @application.get("/api/v1/episodes/{episode_id}/streams")
+    def episode_streams(request: Request, episode_id: str, run_id: str | None = None) -> dict[str, Any]:
+        return _archive(request).stream_catalog(episode_id, run_id)
+
+    @application.get("/api/v1/episodes/{episode_id}/streams/{stream_id}/records")
+    def episode_records(request: Request, episode_id: str, stream_id: str, run_id: str | None = None,
+                        limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
+                        event_seq_from: int | None = None, event_seq_to: int | None = None,
+                        time_base: str | None = None, time_from: float | None = None,
+                        time_to: float | None = None) -> dict[str, Any]:
+        return _archive(request).records(episode_id, stream_id, run_id=run_id, limit=limit, offset=offset,
+                                        event_seq_from=event_seq_from, event_seq_to=event_seq_to,
+                                        time_base=time_base, time_from=time_from, time_to=time_to)
+
+    @application.get("/api/v1/episodes/{episode_id}/assets/{asset_path:path}")
+    def episode_asset(request: Request, episode_id: str, asset_path: str, run_id: str | None = None,
+                      sha256: str | None = Query(None, pattern=r"^[0-9a-f]{64}$")):
+        body, media_type, headers = _archive(request).asset(episode_id, asset_path, run_id, sha256)
+        return Response(body, media_type=media_type,
+                        headers={**headers, "ETag": f'"{sha256 or headers["X-Episode-Asset-Sha256"]}"',
+                                 "Cache-Control": "no-store"})
 
     @application.get("/api/v1/experiment-drafts")
     def list_drafts(request: Request) -> list[dict]:

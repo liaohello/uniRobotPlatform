@@ -28,7 +28,7 @@ from unirobot.catalog import load_catalog
 from unirobot.recipe import load_recipe
 from unirobot.settings import BACKEND_ROOT, CONFIG_PATH
 
-SOURCE_ROOTS = ("src/unirobot", "config")
+SOURCE_ROOTS = ("src/unirobot", "config", "tools")
 
 
 def sha256(path: Path) -> str:
@@ -72,6 +72,10 @@ def main() -> int:
     parser.add_argument("--maps-root", type=Path, required=True)
     parser.add_argument("--draft-db", type=Path, required=True)
     parser.add_argument("--recipe", type=Path, default=BACKEND_ROOT / "config" / "mobilecar-g1-recipe-v2.json")
+    parser.add_argument("--history-source", type=Path, default=BACKEND_ROOT / "config" / "mobilecar-history-source.json",
+                        help="frozen declaration of ONE historical source and its recording root")
+    parser.add_argument("--episode-root", type=Path, default=None,
+                        help="override the declared recording root, e.g. an isolated fixture copy")
     parser.add_argument("--out-manifest", type=Path, required=True)
     parser.add_argument("--allow-existing-db", action="store_true",
                         help="reuse a candidate database deliberately; off by default so an earlier namespace is never overwritten")
@@ -97,10 +101,15 @@ def main() -> int:
 
     require(bundle / "bundle.json", "geometry bundle manifest")
     assets = sorted((bundle / "assets").glob("*.stl"))
+    if not args.history_source.is_file():
+        raise SystemExit(f"history source declaration is missing: {args.history_source}")
     application = create_app(catalog_path=catalog_path, draft_db_path=args.draft_db,
                              compiled_geometry_path=bundle, recipe=recipe,
                              map_catalog_path=map_catalog, maps_root=maps_root,
-                             mobilecar_integration=integration)
+                             mobilecar_integration=integration,
+                             history_source_path=args.history_source, episode_root=args.episode_root)
+    history = application.state.history_unavailable or {}
+    archive = application.state.episodes
 
     manifest = {
         "candidate": "unified-platform-candidate",
@@ -118,6 +127,17 @@ def main() -> int:
                    or recipe.body.get("required_protocols", {})},
         "native": {"catalog": str(catalog_path), "base_url": args.native_url or "from catalog",
                    "gateway_access": "GET only; no write request is sent to any native instance by this launch"},
+        "history": {
+            "source_file": str(args.history_source),
+            "source_file_sha256": sha256(args.history_source),
+            "configured": archive is not None,
+            "source_id": archive.source.source_id if archive else None,
+            "resolved_recording_root": str(archive.root) if archive else None,
+            "root_override": str(args.episode_root) if args.episode_root else None,
+            "declared_scale": archive.source.declared_scale if archive else None,
+            "access": "read_only_files; the platform never writes, moves or re-exports the recordings",
+            "unavailable_reason": history or None,
+        },
         "database": {"path": str(args.draft_db), "existed_before": database_existed_before,
                      "namespace_note": "isolated file; no earlier candidate SQLite is read or replaced"},
         "scene_read_contract": "unirobot-mobilecar-geometry-2",

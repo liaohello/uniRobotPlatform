@@ -1,0 +1,676 @@
+{
+  "checks": [
+    {
+      "detail": {
+        "code": null,
+        "status": 200
+      },
+      "name": "history list answers on the candidate",
+      "passed": true
+    },
+    {
+      "detail": "unirobot-mobilecar-episode-read-1",
+      "name": "list uses the frozen episode read schema",
+      "passed": true
+    },
+    {
+      "detail": true,
+      "name": "list declares itself read-only",
+      "passed": true
+    },
+    {
+      "detail": {
+        "access": "read_only_files",
+        "adapter_id": "mobilecar",
+        "archive_baseline": {
+          "aggregate_sha256": "60c0c6963bc9ae8442bc3d9c9e5f0c33c19973cee966994365313b57ae9d6664",
+          "files_hashed": 696,
+          "meaning": "a change-detection reference captured before the platform read path went live; it is not a claim that the archive contents are training-qualified or independently verified",
+          "scope": "sha256 of every episode.json and episode_complete.json in the archive, folded into one aggregate digest"
+        },
+        "declaring_instance": {
+          "access": "GET_only",
+          "base_url": "http://127.0.0.1:8792",
+          "config_file": "configs/g4a2_server.yaml",
+          "recording_root_in_config": "../../var/runs"
+        },
+        "native_contract_version": "mobilecar-1.0",
+        "native_release_id": "drvfix-20261019T044549Z-0a80415b2577",
+        "platform_writes": false,
+        "recording_root": "/home/liaozhengyan/Desktop/mobileCar/var/runs",
+        "robot_id": "landerpi",
+        "source_id": "mobilecar-server-history-20261017"
+      },
+      "name": "list carries the fixed source identity",
+      "passed": true
+    },
+    {
+      "detail": {
+        "access": "GET_only",
+        "base_url": "http://127.0.0.1:8792",
+        "config_file": "configs/g4a2_server.yaml",
+        "recording_root_in_config": "../../var/runs"
+      },
+      "name": "source declares GET-only native access",
+      "passed": true
+    },
+    {
+      "detail": {
+        "aggregate_sha256": "60c0c6963bc9ae8442bc3d9c9e5f0c33c19973cee966994365313b57ae9d6664",
+        "files_hashed": 696,
+        "meaning": "a change-detection reference captured before the platform read path went live; it is not a claim that the archive contents are training-qualified or independently verified",
+        "scope": "sha256 of every episode.json and episode_complete.json in the archive, folded into one aggregate digest"
+      },
+      "name": "source carries the frozen archive baseline",
+      "passed": true
+    },
+    {
+      "detail": [
+        "no replay execution",
+        "no native validate proxy",
+        "no control, RESET, recording or physics stepping"
+      ],
+      "name": "list states its capability limits",
+      "passed": true
+    },
+    {
+      "detail": {
+        "native": 348,
+        "platform": 348
+      },
+      "name": "platform index matches the native list size",
+      "passed": true
+    },
+    {
+      "detail": 5,
+      "name": "list page honours the limit",
+      "passed": true
+    },
+    {
+      "detail": [],
+      "name": "offset pages do not overlap",
+      "passed": true
+    },
+    {
+      "detail": {
+        "declared_total_from_native_list": 348,
+        "limit": 5,
+        "next_offset": 10,
+        "offset": 5,
+        "order": "run_id_then_episode_id",
+        "returned": 5,
+        "total_matches": 348
+      },
+      "name": "paging reports a resolvable next_offset",
+      "passed": true
+    },
+    {
+      "detail": 422,
+      "name": "oversized page is rejected not truncated silently",
+      "passed": true
+    },
+    {
+      "detail": null,
+      "name": "list marks every status as declared-only",
+      "passed": true
+    },
+    {
+      "detail": {
+        "count": 6
+      },
+      "name": "FAILED filter returns the real incomplete records",
+      "passed": true
+    },
+    {
+      "detail": [
+        {
+          "ended_wall_utc": "2026-10-17T16:11:31.300794Z",
+          "previous_recording_segment_id": null,
+          "reason": "G2A_MOTION_ARM_COMPLETE",
+          "recording_segment_id": "seg_001_d9ba710d3f",
+          "started_backend_monotonic_s": 426494.223690427,
+          "started_wall_utc": "2026-10-17T16:10:29.710250Z",
+          "status": "COMPLETE",
+          "termination_reason": "G2A_MOTION_ARM_COMPLETE"
+        }
+      ],
+      "name": "COMPLETE detail keeps native run/episode/segment identity",
+      "passed": true
+    },
+    {
+      "detail": null,
+      "name": "episode display name is not treated as a global key",
+      "passed": true
+    },
+    {
+      "detail": {
+        "available": true,
+        "distinct_values": [
+          1
+        ],
+        "reason": null,
+        "scope": "sampled recorded payloads, not a per-record field"
+      },
+      "name": "backend generation is reported from the recorded payload or as unavailable",
+      "passed": true
+    },
+    {
+      "detail": {
+        "audit_status": "COMPLETE",
+        "complete_tail_file_present": true,
+        "declared_checksum_entries": 924,
+        "episode_json_readable": true,
+        "recording_status": "COMPLETE",
+        "require_recording": true,
+        "result": "failure",
+        "tail_json_readable": true,
+        "task_result_source": "world_sim_isolated_oracle_v1",
+        "termination_reason": "G2A_MOTION_ARM_COMPLETE"
+      },
+      "name": "COMPLETE detail declares the recorded statuses verbatim",
+      "passed": true
+    },
+    {
+      "detail": "complete",
+      "name": "recorded lifecycle closure and checksum verification are separate layers",
+      "passed": true
+    },
+    {
+      "detail": [
+        "files not opened by this request",
+        "asset payloads except the ones actually served",
+        "archive-wide per-record checksum verification",
+        "physical settle/stop evidence behind a recorded status"
+      ],
+      "name": "unverified scope is stated, not implied",
+      "passed": true
+    },
+    {
+      "detail": {
+        "matched": 0,
+        "mismatched": [
+          "episode.json"
+        ],
+        "verdict": "mismatch_present"
+      },
+      "name": "stale declared checksums are surfaced as a finding, not relabeled",
+      "passed": true
+    },
+    {
+      "detail": {
+        "commands": [
+          true,
+          60
+        ],
+        "control": [
+          true,
+          12188
+        ],
+        "episode": [
+          true,
+          1
+        ],
+        "events": [
+          true,
+          12561
+        ],
+        "initial-snapshot": [
+          true,
+          1
+        ],
+        "observations-index": [
+          true,
+          3038
+        ],
+        "observations-persist": [
+          true,
+          303
+        ],
+        "tail": [
+          true,
+          1
+        ],
+        "transforms": [
+          true,
+          303
+        ]
+      },
+      "name": "stream availability is per-file and honest",
+      "passed": true
+    },
+    {
+      "detail": {
+        "available": true,
+        "bytes": 12472413,
+        "format": "jsonl",
+        "records": 12561,
+        "records_counted": true,
+        "records_over_read_size_limit": 0,
+        "relative_path": "events.jsonl",
+        "semantics": "native event append order: lifecycle, feedback_initial, actuator_reference, command intent and feedback events",
+        "stream_id": "events"
+      },
+      "name": "jsonl record counts come from an actual scan",
+      "passed": true
+    },
+    {
+      "detail": {
+        "available_time_bases": {
+          "control": {
+            "available": true,
+            "time_bases_in_first_record": [
+              "backend_monotonic_s",
+              "sim_time_s",
+              "wall_utc"
+            ]
+          },
+          "events": {
+            "available": true,
+            "time_bases_in_first_record": [
+              "backend_monotonic_s",
+              "sim_time_s",
+              "wall_utc"
+            ]
+          },
+          "observations-index": {
+            "available": true,
+            "time_bases_in_first_record": [
+              "arrival_time_s",
+              "measurement_time_s",
+              "sim_time_s"
+            ]
+          }
+        },
+        "browser_arrival_order_is_not_used": true,
+        "clocks_declared_by_run_manifest": [
+          "sim",
+          "backend_monotonic",
+          "device",
+          "wall_utc"
+        ],
+        "record_order_is_native_append_order": true,
+        "synchronized_across_streams": false,
+        "units": {
+          "*_m": "metres",
+          "*_ms": "milliseconds",
+          "*_rad": "radians",
+          "*_s": "seconds"
+        }
+      },
+      "name": "record order stays native append order with no synthetic clock",
+      "passed": true
+    },
+    {
+      "detail": [
+        "sim",
+        "backend_monotonic",
+        "device",
+        "wall_utc"
+      ],
+      "name": "run manifest clock set is preserved",
+      "passed": true
+    },
+    {
+      "detail": [
+        "actuator_reference"
+      ],
+      "name": "Actual, recorded target, command intent and feedback stay separate classes",
+      "passed": true
+    },
+    {
+      "detail": {
+        "known": false,
+        "platform_session_id": null,
+        "policy": "no platform configuration association is invented for a native record",
+        "reason": "legacy_native_record_without_platform_sidecar",
+        "validated_snapshot_ref": null
+      },
+      "name": "legacy records carry no invented platform configuration",
+      "passed": true
+    },
+    {
+      "detail": {
+        "blocks_raw_read": false,
+        "declared_eligibility_present": true,
+        "export_valid": null,
+        "note": "training_qualified=false never blocks a qualified raw read of the recorded data",
+        "quality_report_present": true,
+        "training_qualified": null
+      },
+      "name": "training qualification never blocks the raw read",
+      "passed": true
+    },
+    {
+      "detail": {
+        "model_match": "match",
+        "recorded": "3ca3d6d0a92a",
+        "reference": "3ca3d6d0a92a",
+        "scene_match": "match",
+        "status": "identity_verified_rendering_unverified"
+      },
+      "name": "3D replay status follows the recorded identity, never the live scene",
+      "passed": true
+    },
+    {
+      "detail": {
+        "seqs": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "types": [
+          "actuator_reference",
+          "feedback",
+          "feedback_initial",
+          "recording_start"
+        ]
+      },
+      "name": "events page returns real recorded events",
+      "passed": true
+    },
+    {
+      "detail": {
+        "records_without_the_selected_base": 0,
+        "selected_time_base": null,
+        "synchronized_across_streams": false,
+        "time_from": null,
+        "time_to": null,
+        "units": "seconds for *_s, milliseconds for *_ms; wall_utc is ISO-8601 Z"
+      },
+      "name": "event records keep native time fields and units untouched",
+      "passed": true
+    },
+    {
+      "detail": {
+        "first_event_seq": 1,
+        "first_line_index": 0,
+        "last_event_seq": 5,
+        "last_line_index": 4,
+        "line_index_is_not_a_clock": true,
+        "order": "native_append_order"
+      },
+      "name": "cursor states that line index is not a clock",
+      "passed": true
+    },
+    {
+      "detail": {
+        "has_more": true,
+        "limit": 5,
+        "next_offset": 10,
+        "offset": 5,
+        "returned": 5,
+        "scanned_lines": 11,
+        "skipped_before_offset": 5
+      },
+      "name": "event pages advance without overlap",
+      "passed": true
+    },
+    {
+      "detail": [
+        100,
+        101,
+        102,
+        103,
+        104
+      ],
+      "name": "event_seq window filters inside the stream",
+      "passed": true
+    },
+    {
+      "detail": {
+        "returned": 5,
+        "without_base": 0
+      },
+      "name": "time window uses a named native time base, not file position",
+      "passed": true
+    },
+    {
+      "detail": {
+        "code": "time_base_unsupported",
+        "status": 400
+      },
+      "name": "unknown clock base is refused",
+      "passed": true
+    },
+    {
+      "detail": [
+        "actuator_reference",
+        "feedback",
+        "actuator_reference"
+      ],
+      "name": "recorded control stream exposes target and feedback records",
+      "passed": true
+    },
+    {
+      "detail": {
+        "over_limit_lines": [],
+        "returned": 3
+      },
+      "name": "oversized observation lines are reported, never replaced with invented frames",
+      "passed": true
+    },
+    {
+      "detail": {
+        "returned": 2
+      },
+      "name": "persist accounting stream is readable",
+      "passed": true
+    },
+    {
+      "detail": {
+        "returned": 2
+      },
+      "name": "recorded transforms are separate from any live geometry",
+      "passed": true
+    },
+    {
+      "detail": {
+        "returned": 1
+      },
+      "name": "initial snapshot record is readable as one json document",
+      "passed": true
+    },
+    {
+      "detail": {
+        "depth": 303,
+        "masks": 303,
+        "rgb": 303
+      },
+      "name": "media summary counts real assets",
+      "passed": true
+    },
+    {
+      "detail": "cab5cfff4c3eec48",
+      "name": "media asset is served and digest-verified by the reader",
+      "passed": true
+    },
+    {
+      "detail": {
+        "declared_matches_digest": true,
+        "header": "cab5cfff4c3eec48",
+        "run_header": "run_0104613ff7364ae78cf2f3946bd45f7b",
+        "status": 200
+      },
+      "name": "asset honours the requested sha256",
+      "passed": true
+    },
+    {
+      "detail": 409,
+      "name": "digest mismatch is refused before the bytes are returned",
+      "passed": true
+    },
+    {
+      "detail": {
+        "checked_samples": 303
+      },
+      "name": "no unsupported asset type exists in this record",
+      "passed": true
+    },
+    {
+      "detail": {
+        "code": "episode_asset_path_invalid",
+        "status": 400
+      },
+      "name": "traversal outside the episode is rejected",
+      "passed": true
+    },
+    {
+      "detail": 404,
+      "name": "missing media is located as missing",
+      "passed": true
+    },
+    {
+      "detail": {
+        "audit_status": "INCOMPLETE",
+        "complete_tail_file_present": true,
+        "declared_checksum_entries": 30,
+        "episode_json_readable": true,
+        "recording_status": "FAILED",
+        "require_recording": true,
+        "result": "unknown",
+        "tail_json_readable": true,
+        "task_result_source": null,
+        "termination_reason": "RECORDING_FAILED"
+      },
+      "name": "FAILED record keeps its declared failure and incomplete audit",
+      "passed": true
+    },
+    {
+      "detail": "incomplete_terminal_recorded",
+      "name": "FAILED record is layered as an incompletely recorded terminal state",
+      "passed": true
+    },
+    {
+      "detail": {
+        "audit_status": "INCOMPLETE",
+        "declaration_only": true,
+        "recording_status": "FAILED",
+        "termination_reason": "RECORDING_FAILED"
+      },
+      "name": "an incomplete record is still readable rather than hidden",
+      "passed": true
+    },
+    {
+      "detail": {
+        "absent": [],
+        "note": "empty means the record carries every stream file"
+      },
+      "name": "absent streams in the FAILED record are named",
+      "passed": true
+    },
+    {
+      "detail": {
+        "checksum_verdicts": {
+          "mismatch_present": 16
+        },
+        "lifecycle_statuses": {
+          "complete": 16
+        },
+        "note": "mismatch_present is the recorder's own stale declaration for episode.json, reported as a finding",
+        "sampled": 16
+      },
+      "name": "a stale recorder self-check never rewrites the declared lifecycle status",
+      "passed": true
+    },
+    {
+      "detail": 404,
+      "name": "unknown episode returns a located 404",
+      "passed": true
+    },
+    {
+      "detail": 404,
+      "name": "unknown stream names the supported set",
+      "passed": true
+    },
+    {
+      "detail": [
+        "/api/v1/episodes",
+        "/api/v1/episodes/{episode_id}",
+        "/api/v1/episodes/{episode_id}/assets/{asset_path}",
+        "/api/v1/episodes/{episode_id}/streams",
+        "/api/v1/episodes/{episode_id}/streams/{stream_id}/records"
+      ],
+      "name": "OpenAPI exposes exactly the five read-only history paths",
+      "passed": true
+    },
+    {
+      "detail": [
+        "/api/v1/episodes",
+        "/api/v1/episodes/{episode_id}",
+        "/api/v1/episodes/{episode_id}/assets/{asset_path}",
+        "/api/v1/episodes/{episode_id}/streams",
+        "/api/v1/episodes/{episode_id}/streams/{stream_id}/records"
+      ],
+      "name": "no validate/assessment write is proxied",
+      "passed": true
+    },
+    {
+      "detail": {
+        "native_bytes": 20946833,
+        "platform_bytes": 21031
+      },
+      "name": "platform detail stays light compared with the native whole-record dump",
+      "passed": true
+    },
+    {
+      "detail": {
+        "after": "episode_43c22f95536f4517be04e4b195d6d354",
+        "before": "episode_43c22f95536f4517be04e4b195d6d354",
+        "recording": "IDLE"
+      },
+      "name": "declaring native instance is unchanged by the whole read pass",
+      "passed": true
+    },
+    {
+      "detail": {
+        "keys": [
+          "arm_joint_names",
+          "arm_user_limits_rad",
+          "arm_velocity_limits_rad_s",
+          "backend_kind",
+          "base_linear_limit_m_s",
+          "base_yaw_limit_rad_s",
+          "camera_parent_body",
+          "contract_version",
+          "g4a2_postures",
+          "gripper_max_width_m",
+          "gripper_min_width_m",
+          "ground_truth_policy_visible",
+          "model_id",
+          "model_sha256",
+          "scene_id",
+          "sensor_streams",
+          "supported_commands",
+          "tcp_orientation_is_soft",
+          "tcp_parent_body",
+          "tcp_position_tolerance_m"
+        ]
+      },
+      "name": "declaring native instance still advertises no stop/end protocol",
+      "passed": true
+    },
+    {
+      "detail": {
+        "after": "60c0c6963bc9ae8442bc3d9c9e5f0c33c19973cee966994365313b57ae9d6664",
+        "before": "60c0c6963bc9ae8442bc3d9c9e5f0c33c19973cee966994365313b57ae9d6664"
+      },
+      "name": "archive raw files are byte-identical to the frozen baseline",
+      "passed": true
+    }
+  ],
+  "classification": "read-only historical slice; the archive is native-owned and was not written",
+  "complete_record": "run_0104613ff7364ae78cf2f3946bd45f7b:episode_27bfed5427684795b361cd2ec21e9aa7",
+  "failed_record": "run_1f6fb34853f94130aadedb8fa486705b:episode_879cf70489064a3b83bb15b5395a8341",
+  "native_url": "http://127.0.0.1:8792",
+  "not_covered": [
+    "synchronized 3D replay rendering",
+    "new collection closure",
+    "M1.5/M1 acceptance"
+  ],
+  "passed": 61,
+  "platform_url": "http://127.0.0.1:18960",
+  "source_id": "mobilecar-server-history-20261017",
+  "total": 61
+}

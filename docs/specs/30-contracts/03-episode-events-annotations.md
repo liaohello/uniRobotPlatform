@@ -109,3 +109,16 @@ M1 只要求其已声明必需流能重载和只读回放；缺失流、损坏�
 源码依据：[原生契约](../../../../mobileCar/docs/interface_contract_v1.md)、[API/运行入口](../../../../mobileCar/src/mobilecar/app.py)、[Recorder](../../../../mobileCar/src/mobilecar/data/recorder.py)、[ReplayReader](../../../../mobileCar/src/mobilecar/data/replay.py)。这些路径为本地调查证据，正式接入还需固定对应源码版本与实际运行结果。
 
 验收：[TEST-MOBILE-001/002](../40-verification/06-scene-setup-first-loop.md)，保留 [TEST-REC-001/004](../40-verification/02-workspace-runtime-acceptance.md) 的来源/Reset 测试；训练与集合不作为 M1 前置。
+
+## 平台历史只读 API（M1.5a 首个切片，S21/DEC-058）
+
+来源固定为一个明确声明（source_id、adapter、native release、实际 recording_root、声明规模与归档聚合基线），原始数据留在服务器，平台不搬运、不重写、不重算导出，也不为此修改或重启任何 native 实例。
+
+- 读取面只有五条 GET：Episode 列表（`limit` 上限 200、`offset`、`run_id`/`recording_status`/`episode_id` 过滤）、轻量详情、可用流目录、按流的有界记录页、该 Episode `assets/` 子树内的媒体资产。响应统一 `schema_version: unirobot-mobilecar-episode-read-1` 与 `read_only: true`；详情必须保持轻量，不把整份 JSONL 交给前端，也不建设通用数据查询框架。
+- 复合身份保留 `source/adapter + run_id + episode_id + recording_segment_id(+previous) + native contract_version + episode 目录原始引用`；episode 显示名不是全局键，同名跨 run 必须带 `run_id`，否则 409 `episode_id_ambiguous`。`backend_generation` 若只存在于记录 payload，则按 payload 如实标注，不伪装成顶层字段。
+- 时间与动作保持原义：`wall_utc / backend_monotonic_s / sim_time_s / measurement_time_s / arrival_time_s / clock_id / frame_id / event_seq / persist_sequence` 与单位逐字返回；游标声明"文件顺序不是时钟"与"不跨流同步"；时间过滤只接受命名时间基，未知基（含浏览器到达顺序）拒绝。Actual（`feedback_initial`/`feedback`）、记录 Target（`actuator_reference`）、命令意图（`requested` 等）与执行反馈分类不合并。
+- 完整性分四层表达：记录声明的 `recording_status/audit_status/termination_reason`、`complete_tail` 文件存在性、tail 内声明校验和条目、以及本次读取实际重算/解析的结果。未做全量核验不得声称"全 Episode 已验证完整"；tail 对自身 `episode.json` 的过期自校验按 `mismatch_present` 报告，不改写生命周期状态，也不据此宣布数据损坏。缺流、坏行、缺媒体、未知时钟与不支持格式各自定位（`episode_stream_unavailable`、`integrity.corrupt_lines` 行号、`episode_asset_missing`、`time_base_unsupported`、`episode_asset_type_unsupported`），不静默丢弃、不制造默认帧。`training_qualified=false` 不阻止合格原始读取。
+- 3D 回放身份只取记录内 `manifest.json` 的 `model_id/model_sha256/scene_id/map_mode/truth_access/clocks` 与 `transforms.jsonl`；与当前 pin 可比对时标 `identity_verified_rendering_unverified`，无法证明时标 `restricted`。任何情况都不得把当前在线 geometry 或 Actual 自动套到历史 Episode。legacy 记录无平台 sidecar 时 `platform_association.known=false`，不伪造 ValidatedSnapshot/Session 关联。
+- 历史 API 不代理 native 的 `POST /episodes/{id}/validate`、assessment/eligibility 写操作、控制、RESET、录制、物理步进或任何重执行；`POST /api/v1/runs/{run_id}/stop` 仍不是机器人 STOP。资产路径拒绝绝对路径与 `..`，解析后必须落在该 Episode 的 `assets/` 子树内，软链越界与摘要不符分别 409。
+
+实现与真实数据证据见 [M1.5a 交付记录](../../backend-m1.5a-history-reader.md) 与 [M1.5a 证据册](../../evidence/m1.5a-history/README.md)：348 条记录索引与 native 列表一致、COMPLETE 与 FAILED/不完整记录分别读取、平台轻量详情 21 KB 对 native 整条 20.9 MB、归档聚合摘要读取前后不变。本节只冻结"首个只读切片"的契约；跨流同步游标对齐、渲染正确性与新采集闭环仍未完成。

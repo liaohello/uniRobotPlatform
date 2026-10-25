@@ -1,0 +1,49 @@
+{
+  "schema_version": "unirobot-history-source-1",
+  "source_id": "mobilecar-server-history-20261017",
+  "adapter_id": "mobilecar",
+  "robot_id": "landerpi",
+  "contract_version": "mobilecar-1.0",
+  "reader_format": "native recorder on-disk layout (runs/<run_id>/episodes/<episode_id>/...)",
+  "recording_root": "/home/liaozhengyan/Desktop/mobileCar/var/runs",
+  "native_release_id": "drvfix-20261019T044549Z-0a80415b2577",
+  "declaring_instance": {
+    "base_url": "http://127.0.0.1:8792",
+    "config_file": "configs/g4a2_server.yaml",
+    "recording_root_in_config": "../../var/runs",
+    "access": "GET_only"
+  },
+  "access": "read_only_files",
+  "declared_scale": {
+    "episodes_from_native_list": 348,
+    "run_ids_in_native_list": 272,
+    "run_directories_on_disk": 295,
+    "observed_recording_status": {
+      "COMPLETE": 342,
+      "FAILED": 6
+    },
+    "observed_audit_status": {
+      "COMPLETE": 342,
+      "INCOMPLETE": 6
+    },
+    "observed_complete_tail_true": 348,
+    "observed_multi_segment_episodes": 0,
+    "observed_duplicate_episode_ids": 0
+  },
+  "archive_baseline": {
+    "scope": "sha256 of every episode.json and episode_complete.json in the archive, folded into one aggregate digest",
+    "files_hashed": 696,
+    "aggregate_sha256": "60c0c6963bc9ae8442bc3d9c9e5f0c33c19973cee966994365313b57ae9d6664",
+    "meaning": "a change-detection reference captured before the platform read path went live; it is not a claim that the archive contents are training-qualified or independently verified"
+  },
+  "policy": {
+    "raw_data_stays_on_server": true,
+    "platform_writes": false,
+    "copies_or_moves_recordings": false,
+    "recomputes_or_reexports_for_reading": false,
+    "modifies_or_restarts_declaring_instance": false,
+    "proxies_native_validate_or_assessment": false,
+    "declared_status_is_independently_verified": false,
+    "training_qualified_blocks_read": false
+  }
+}
