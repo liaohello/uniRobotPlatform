@@ -21,7 +21,10 @@
 | 文件 | 内容 |
 |---|---|
 | `unified-startup.json` | 统一候选的冻结启动配置：端口、native 地址、geometry bundle 路径与 `bundle.json` 摘要、23 资产逐文件摘要、map catalog/资源根与包列表、recipe（id/revision/fingerprint/required_protocols）、数据库命名空间与 `existed_before=false`、平台源码摘要 |
-| `unified-candidate-check.json` | 27 项断言全通过（见第三节） |
+| `unified-candidate-check.json` | 27 项断言全通过（见第三节）|
+| `unified-startup-live.json`、`unified-candidate-check-live.json` | 统一候选改为常驻后，在存活地址 `http://127.0.0.1:18959`（服务器 pid 3608367、独立会话、`--draft-db …/unified-live-021657.sqlite3`）上重跑同一套检查：27/27 通过。与上面两条是同版本源码的两次独立运行，不是同一份文件；两份启动清单只在 `database.path` 上不同，源码摘要、recipe、geometry bundle 与 maps 配置逐字段一致，因此 `startup_manifest_digest` 不同（`73449654…` 与 `c51395a9…`） |
+| `live-candidate-identity.json` | 存活候选的服务器实测身份：`ss`/`/proc` 取到的 pid、启动时间、工作目录、环境变量、逐字命令行、SQLite 路径，加只读探测结果（scene `schema_version`、地图数量、OpenAPI 版本与路径数）。`m1j_live_identity.sh` 生成 |
+| `m1j_live.sh` | 常驻启动脚本：先检查 `18959` 空闲（被占用即拒绝，不替换已存活实例），再以独立会话启动并在同一地址上复检 27 项 |
 | `unified-check.log`、`unified-gateway.log` | 检查与网关输出 |
 | `cross/cross-http-stop-end.json` | 同一冻结源码上的正向 STOP/end 生命周期 39/39（test-only recipe + mock backend + 真实 native HTTP + 真实 Recorder 文件），尾事件与摘要核对一致 |
 | `cross-run.log` | 上述集成的退出码与摘要行 |

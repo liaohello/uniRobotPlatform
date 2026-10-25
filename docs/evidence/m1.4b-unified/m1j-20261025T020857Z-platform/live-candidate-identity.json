@@ -1,0 +1,17 @@
+{
+  "candidate_release": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1j-20261025T020857Z-platform",
+  "listen_port": 18959,
+  "pid": 3608367,
+  "process_started": "Sun Oct 25 10:16:57 2026",
+  "working_directory": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1j-20261025T020857Z-platform/backend",
+  "unirobot_or_pythonpath_env": "PYTHONPATH=/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1j-20261025T020857Z-platform/backend/src",
+  "command_line": "/home/liaozhengyan/Desktop/uniRobotPlatform/envs/gateway-py314/bin/python tools/launch_unified_gateway.py --port 18959 --native-url http://127.0.0.1:8792 --geometry-bundle /home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-geometry-20261023T192202Z-cdfc7472e5de/geometry --map-catalog /home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1j-20261025T020857Z-platform/backend/config/maps.catalog.json --maps-root /home/liaozhengyan/Desktop/mobileCar/var/maps --draft-db /home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1j-20261025T020857Z-platform/report/unified-live-021657.sqlite3 --out-manifest /home/liaozhengyan/Desktop/uniRobotPlatform/var/reports/m1j-20261025T020857Z-platform/unified-startup-live.json",
+  "draft_db_path": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1j-20261025T020857Z-platform/report/unified-live-021657.sqlite3",
+  "draft_db_exists": true,
+  "read_only_probe_results": {
+    "scene_schema_version": "unirobot-mobilecar-geometry-2",
+    "map_count": 2,
+    "openapi": "0.1.0 37"
+  },
+  "note": "captured with ss/proc/curl GET only; no native write request, no process restart"
+}
