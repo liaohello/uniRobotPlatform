@@ -1,3 +1,66 @@
+# M1.6 保存期间编辑覆盖修复与历史 Episode 只读浏览/单流播放（2026-10-25）
+
+本轮做两件事：修掉**同一路线保存期间的新编辑被服务器响应覆盖**的缺陷，并把后端历史读取候选的 `episode-read-1` 接成工作台里的**历史 Episode 浏览 + 单流分页/播放**视图。只修改 `frontend/`，本地提交不推送。完成只表示“历史浏览/单流播放切片”可用，**不**表示跨流同步、历史 3D 回放或正式 M1.5/M1 验收通过。
+
+## 冻结版本与入口
+
+| 项 | 值 |
+|---|---|
+| 前端 release | `m1-front-geometry-20261025T070938Z-7fc0e8e5f2a6`，98 个输入，聚合 SHA-256 `7fc0e8e5f2a67035f33149244c0157e1fb9471035bc13809546bf18766b9d03a`（`source-manifest.json` 逐文件摘要） |
+| 交付提交 | 本轮提交（本地，未推送），基线 HEAD `f25855f`、上一轮主实现 `b05178b` |
+| 历史上游 | `http://127.0.0.1:18960`，PID 1757266，后端 release `m1k-20261025T040435Z-platform`，`--history-source config/mobilecar-history-source.json`（source `mobilecar-server-history-20261017`，root `~/Desktop/mobileCar/var/runs`，native release `drvfix-20261019T044549Z-0a80415b2577`），独立 SQLite `report/history-041241.sqlite3`；同一进程继续提供 geometry-2 + 23 资产、Map/Route、Session/`current`、STOP/end 契约 |
+| 统一上游 | `http://127.0.0.1:18959`（PID 3608367）保持不变，作为回归与合成夹具 pass 的上游；该上游**没有** episode 读取路径，历史视图在它上面如实显示网关拒绝 |
+| 交付预览 | 18972 → 18959（全套回归）、18973 → 18959（地图/路线）为上一轮交付预览；本轮新增 **18974 → 18960**（历史 + 统一能力，PID 见 `var/preview-logs/preview-18974.log`），实测 `GET /api/v1/episodes?limit=1` 返回 `episode-read-1`，`POST /episodes/{id}/validate`、`POST /runs/{id}/stop`、`POST /commands` 均为网关本地 404 拒绝、不转发 |
+| 真实 native | 8792 仍 PID 941842（`drvfix`/G4A2）；每个 pass 前后 `run_9c88e3e…`/generation 1/`episode_43c22f…`/`recording_status=IDLE` 一致，全部报告 `native_mutations_sent=false`、`new_physics_process_started=false`；本轮对 8792 与 18960 只发 GET |
+
+## 一、保存期间的新编辑不再被覆盖
+
+- 缺陷位置是 `writeSave`/`createRoute` 的成功分支：它把 `working` 整体换成响应回显，PUT 在途期间的编辑因此静默丢失。现在改为**服务端记录与本地编辑器分别落地**（`src/map/use-route-workspace.ts` 的 `applyWriteEcho`）：`serverDraft`（`draft_revision`/`content_digest`/`validation`）总是采纳；本地编辑器只在“提交后未再改动”时被回显替换，否则保留较新的本地内容并只同步已保存修订号。
+- 判定依据是提交瞬间的快照与解析时的 `workingRef` 比较（label + map 绑定 + `routeContentEqual` 点位内容），沿用 `session-panel.saveDraft` 的既有先例，不引入通用合并框架。
+- 分别表达：`data-draft-revision` 只表示服务器已保存修订；`data-route-dirty` 仍是“本地内容 ≠ 服务器草案”；新增 `data-edits-after-save` 与 `[data-after-save-edits]` 说明块，明确“服务器已存 rN、提交之后的编辑仍未保存、下一次会以 `base_revision=rN` 提交”。保存进行中另有 `[data-saving]` 提示。`reloadServerDraft`（显式“放弃本地编辑”）、`openRoute`、`closeRoute` 仍整体替换并清零该状态。
+- 保留的行为：`WriteContext`（epoch + routeId + mapId/mapVersion + attached）、地图事务序号、真实 409 与 `current_revision`、不可变旧版本、解除绑定后的迟到响应忽略与 `data-stale-write` 提示、`busy` 门控与发布口径（`data-publish-dirty` 仍按 `dirty` 判定）。
+- 确定性覆盖：`tests/browser-map.py` 新增“延迟 PUT 期间继续编辑”用例（PUT 延迟 3 s → 期间把第二点改为 45° → 断言服务器存的是提交瞬间的 30°、界面仍是 45°、`data-route-dirty=true`、`data-edits-after-save=true`，再保存后服务器为 45° 且两个标记归位）。该用例在 18960 与 18959 两个上游都通过（各 68 项断言）。
+
+## 二、历史 Episode 浏览与单流只读播放
+
+- 新模块 `src/adapters/platform-episodes.ts`：五条精确 GET 的客户端 + 纯函数投影（`integrityFacets`、`checksumFinding`、`streamViews`、`timeFieldOf`、`presentTimeBases`、`mediaRefsOf`、`declaredDigestOf`、`rowViews`、`emptyListKind`、`threeDNotice`、`describeHistoryError`）。字段名逐条来自服务器实测载荷；`schema_version` 不是 `episode-read-1` 或 `read_only!==true` 的响应直接判为契约错误，不做乐观渲染。
+- 新视图 `src/workbench/history-view.tsx`，入口是左侧导航“历史 Episode”（`workspaceView==='history'`），**只在被选中时挂载**，因此其他 pass 不会产生任何 `/api/v1/episodes` 请求。列表分页 + `recording_status`/`run_id` 筛选 + 详情（segment、9 条可用流、录制内模型身份、时间声明、动作类别、媒体摘要、来源身份与归档基线、能力限制）。
+- 身份：每行与详情都同时显示 `source_id · run_id · episode_id`，请求一律带 `run_id`；另有“按身份打开”入口用于验证规则——不给 `run_id` 时按服务端 409 `episode_id_ambiguous` 显示候选 run（`detail.runs`）并要求显式选择，界面不合并、不串读。`task_language` 只作显示名。legacy 关联按 `platform_association.known=false` + `reason=legacy_native_record_without_platform_sidecar` 原样显示为未知。
+- 完整性分五层（`declared`/`lifecycle`/`tail`/`checksum`/`uncovered`），每层只说明自己；`checksum_verification.verdict=mismatch_present` 显示为不成立并写明“不得读作全部完整”，界面文案不出现“已验证完整”。“过期自校验”解释只在**不符项仅限 `episode.json`/`episode_complete.json` 且声明为 COMPLETE** 时给出，其余一律写“原因未证明，不归因于同一历史问题”。真实数据两侧都验到：COMPLETE 记录 `pattern=known_stale_self_check`（924 条声明、本次重算 2 个文件、1 条不符），FAILED 记录 `status=incomplete_terminal_recorded` + tail 存在 + `pattern=unexplained`。全程不调用 validate 或任何写接口。
+- 单流分页与播放：`limit/offset` 有界读取；播放/暂停、上一条/下一条、跨页按 `next_offset` 续读、`has_more=false` 时停止并说明“不代表录制结束”；节奏是界面参数并显式标注 `data-playback-cadence-ui-only=true`（不是录制帧率）。时间基只在该流声明的基（`detail.time.available_time_bases`）或本页记录实际携带的字段中选择，显示数值 + 单位 + `clock_id`（记录没有 `clock_id` 时显示 `null`，不编造）；缺该字段的记录显示“无该时间字段”，绝不补 0；`line_index_is_not_a_clock=true` 与 `synchronized_across_streams=false` 持续显示为“跨流未同步”。定位只用 `time_base + time_from`（分页读取不带 `time_base`，因为服务端要求伴随区间，否则 400 `time_range_required`），`wall_utc` 不做数值定位（区间格式未在契约中声明）。
+- 媒体：只按记录自身的 `asset_uri`/`valid_mask_uri` 读取，声明摘要仅当 `media_summary` 样本确实携带时以 `?sha256=` 交给服务端核验，实际摘要取 `X-Episode-Asset-Sha256`；`.png` 内联显示并以浏览器解码结果为准，`.npy`（`application/octet-stream`）按字节显示并明确“不能内联显示”；缺媒体、`episode_asset_missing`、`episode_asset_digest_mismatch`、`episode_asset_type_unsupported` 各自原文显示。切换 Episode/流/游标会推进序号并作废在途请求与 `objectURL`，迟到的字节与迟到的解码都不会写入新上下文。
+- 只读隔离：视图只接收 `PlatformEpisodeApi`，渲染在 `WorkbenchContext` 之外，因此没有 live 快照、Target/Ghost、命令或物理步进能力；实测历史视图内 `canvas` 数为 0，live 轮询继续（`.monitor-chip` 计数增长）而历史 DOM 指纹逐字节不变；“返回实时视图”显式声明数据源仍是当前 live 来源且历史内容未回填 Target。
+- 历史 3D 限制先行：`three_d_replay` 块在任何 3D 能力之前显示，写明模型/场景摘要匹配等级与“身份摘要匹配不等于渲染正确性已验证”，并原样引用 `live_geometry_or_actual_may_be_applied=false`；本切片不挂载历史 3D、不做同步回放。
+- 代理：`tools/serve-readonly.py` 只新增 5 条精确 GET 正则（列表、详情、streams、records、`assets/<最多 8 段>`），并透传 `X-Episode-Asset-Sha256`/`X-Episode-Run-Id`；`POST /episodes/{id}/validate`、`GET /episodes/{id}/assessment`、`POST /episodes/{id}`、`PUT/DELETE` records、`/runs/{id}/stop`、`/commands`、`/reset` 与 native 透传继续被网关自身 HTML 错误页拒绝、不转发（两套 pass 逐条断言）。
+
+## 三、服务器验证（全部在服务器执行）
+
+| pass | 上游 | 结果 |
+|---|---|---|
+| `tsc --noEmit && vite build` + vitest | — | 构建通过；**91 passed / 0 failed**（9 文件，含新增 `tests/platform-episodes.test.ts` 13 项） |
+| `browser-history.py --mode real` | 18960 | **56/56** 断言：分页与 `next_offset` 不重叠、FAILED 筛选与 `total_matches`、身份三元组与 `run_id` 携带、segment/9 流/媒体覆盖口径、五层完整性与两种 pattern、行号非时钟、时间基与单位/`clock`、seek 与 `records_without_the_selected_base` 计数、真实 RGB PNG 摘要核验与解码、`.npy` 非内联、缺媒体文案、流可用性、`episode_stream_unsupported` 原文、无 3D canvas、live 轮询不改写历史 DOM |
+| `browser-history.py --mode synthetic` | 18959 | **35/35** 断言：`readable=false` 行、筛选空页 vs 无记录、未知 `backend_generation`、`restricted` 3D、`training_qualified=false` 不阻断读取、不可用流与 `episode_stream_unsupported`、缺时间字段不补 0、`has_more=false` 停止、损坏/超限行、四种媒体错误（摘要不符/缺失/类型不支持/非图像）、`wall_utc` 不猜测格式、409 歧义与按候选 run 重读、契约版本不符被拒、迟到 records 页与迟到媒体都不覆盖新上下文 |
+| `browser-map.py --mode live` | 18960 / 18959 | **68/68**（含本轮新增“延迟 PUT 期间继续编辑”） |
+| `browser-map.py --mode offline` | 18949 | **15/15** |
+| `browser-session.py` | 18959 | **38/38**（本轮另两次复跑亦 38/38） |
+| `browser-config.py` | 18960 | **51/51** |
+| `browser-lifecycle.py --mode synthetic` / `--mode live` | 18960 | **48/48** / **7/7**（含网关逐条本地拒绝断言） |
+| `browser-readonly.py` + `browser-workbench.py` | 18960 | **32/32** + **29/29** |
+| `browser-geometry.py` / `browser-usability.py` | 18960 | **23/23** / **100/100** |
+| 8792 与端口 | 每次 check-release | 前后 health 一致、`native_mutations_sent=false`、`new_physics_process_started=false`、监听集合仅新增/移除本轮预览 |
+
+**本轮边界违规与后果（不隐瞒）**：清理迭代预览时使用了过宽的端口正则（`1(89|90|91)..` + `serve-readonly.py`），误停了上一轮交付预览 **18972 与 18973**。已按原端口、原 dist（`m1-front-geometry-20261025T044805Z-66976ad5df73/frontend/dist`）与原上游（18959）重新启动，实测两者 `GET /` 200、`GET /api/v1/mobilecar/scene` 返回 geometry-2；后端候选 8792/18949/18953/18959/18960 全程未被停止、重启或替换。今后清理预览只按精确端口匹配。
+
+**观察到的不稳定项（如实记录，不称全绿）**：`browser-session.py` 的“invalidation cancels the local target but keeps renderer, camera and layout”与 `browser-readonly.py` 的“runtime-only change keeps verified content, renderer, camera and layout”各在一次 pass 失败过一次（同一类相机一致性断言）；同一 release 复跑后两项均通过（session 38/38 两次、readonly 32/32 + geometry 23 + usability 100）。这两处不在本轮改动路径上（本轮未改 viewport/相机逻辑），但根因未定位，留作后续核对；不据此宣称 3D 一致性回归永久稳定。
+
+**测试口径的一处调整**：新增 episode GET 白名单后，`POST /api/v1/episodes/stop` 由原来的 404（路径未放行）变为 405（方法不允许），`browser-lifecycle.py` 原本只匹配 “allowlisted” 字样，因此放宽为同时接受本网关自己的 “method not allowed” 措辞；拒绝仍是本地 HTML 错误页、不转发（逐条断言状态码与 `text/html`）。
+
+## 四、仍未验证与不做
+
+- 未验证：跨流同步游标对齐、历史 3D/同步回放、真实 STOP/录制收尾、新采集闭环、导航执行、G1/G4A2 与 a5/drvfix 选择、正式 M1.5/M1 验收。
+- 后端仍在修复历史读取边界与冻结证据（见后端 `docs/backend-m1.5a-history-reader.md` 中披露的一次人工 `POST …/validate` 事件）；因此本轮验收以 `18960` 这一明确候选为准，后端换候选后需重跑 `--history --history-mode real`。
+- 前端不搬移、不改写、不重算归档数据；不新增存储、不建索引库；不代理 native 透传。
+
 # M1.5+ 异步上下文归属修复与 18959 单一上游联合验收（2026-10-25）
 
 本轮做两件事：把上一轮剩下的**异步上下文污染**修掉（路线写入的迟到响应可恢复已被解除的绑定；Session 恢复读回可把选择拉回旧 Session 并抢占新选择的 current 读取），并把前端预览指向**后端统一候选 18959 作为唯一上游**完成适用回归的联合验收。只修改 `frontend/`，本地提交不推送。联合验收不拼接 18949/18953 两个旧上游的结果。

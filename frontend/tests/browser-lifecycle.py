@@ -180,7 +180,7 @@ async def main():
                     response = await page.request.fetch(a.url + path, method=method, data=b'{}' if method == 'POST' else None)
                     body = (await response.text()).lower()
                     refused.append({'method': method, 'path': path, 'status': response.status,
-                                    'gateway': 'allowlisted' in body or 'allowlisted' in (response.status_text or '').lower(),
+                                    'gateway': any(phrase in body for phrase in ('allowlisted', 'method not allowed')),
                                     'html_error_page': 'text/html' in (response.headers.get('content-type') or '')})
                 report['gateway_boundary'] = refused
                 check('the gateway refuses run-stop, commands, RESET, episodes and native control paths with its own error page instead of forwarding them',

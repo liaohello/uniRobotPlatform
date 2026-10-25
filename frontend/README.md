@@ -49,6 +49,8 @@ npm test -- --maxWorkers=2
 python3 tests/browser-usability.py http://127.0.0.1:18934 /tmp/usability --release <release_id>
 python3 tests/browser-config.py http://127.0.0.1:18934 /tmp/config
 python3 tests/browser-session.py http://127.0.0.1:18934 /tmp/session
+python3 tests/browser-history.py http://127.0.0.1:18960-proxy /tmp/history --mode real       # 真实历史记录（上游须为 episode-read-1 候选）
+python3 tests/browser-history.py http://127.0.0.1:18947 /tmp/history-synth --mode synthetic # 隔离故障夹具，不触碰归档
 python3 tools/serve-readonly.py --directory dist --port 18947 --upstream http://127.0.0.1:18944
 ```
 
@@ -58,7 +60,7 @@ python3 tools/serve-readonly.py --directory dist --port 18947 --upstream http://
 
 ## 真实来源与平台配置
 
-`PlatformService` 只读 scene / capabilities / snapshot / kinematics / execution-recipe，资产使用 scene 提供的 URI 与 sha256 查询参数，经同源代理读取。默认请求完成后等待1秒，可选择2/5秒；不叠加请求，10秒超时，切源取消迟到结果。普通快照只更新 Actual，不重建renderer、覆盖本地 Target 或重置相机。世界物体只显示编译初态，没有实时物体真值。媒体和连续 Episode 回放仍未接入。`PlatformConfigApi` 仅使用同源代理的白名单路径：Draft 创建/列表/读取/保存/validate、配置快照读取、Session 读取。
+`PlatformService` 只读 scene / capabilities / snapshot / kinematics / execution-recipe，资产使用 scene 提供的 URI 与 sha256 查询参数，经同源代理读取。默认请求完成后等待1秒，可选择2/5秒；不叠加请求，10秒超时，切源取消迟到结果。普通快照只更新 Actual，不重建renderer、覆盖本地 Target 或重置相机。世界物体只显示编译初态，没有实时物体真值。`PlatformConfigApi` 仅使用同源代理的白名单路径：Draft 创建/列表/读取/保存/validate、配置快照读取、Session 读取。历史 Episode 走独立的 `PlatformEpisodeApi`（episode-read-1 五条精确 GET：列表、详情、流目录、单流 records、assets 字节），只在“历史 Episode”视图内使用：该视图不挂载 3D、不订阅 live 轮询、没有可执行 Target/Ghost，只做单流分页浏览与按界面节奏的播放；跨流同步、历史 3D 回放与任何录制写入仍未接入。
 
 live Joint/TCP 候选使用 `GET /api/v1/mobilecar/kinematics` 的版本化元数据，并要求 execution-recipe 的模型 pin 与 profile digest 匹配；同时检查关节顺序、单位、TCP 父节点/site、相机父节点和 5 项实时一致性。元数据缺失或不匹配时禁用本地候选并显示具体原因，不自动回退。`orientation_xyzw=null` 只表示源未声明姿态。冻结样本使用自身独立参考 profile，并明确标注不是 live 元数据。见 [来源](docs/provenance.md) 和 [最小后端差距](docs/backend-gaps.md)。
 

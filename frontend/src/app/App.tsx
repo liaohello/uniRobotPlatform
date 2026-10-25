@@ -9,6 +9,8 @@ import { jointTarget,tcpTarget } from './state';
 import { WorkbenchLayout } from '../workbench/Layout';
 import { SessionPanel } from '../workbench/session-panel';
 import { SceneSetupView } from '../workbench/scene-setup';
+import { HistoryView } from '../workbench/history-view';
+import { PlatformEpisodeApi } from '../adapters/platform-episodes';
 import { useRouteWorkspace } from '../map/use-route-workspace';
 
 import { Icon } from '../workbench/Icon';
@@ -17,7 +19,8 @@ export function App(){
  const [selected,setSelected]=useState<string|null>('arm');const [tool,setTool]=useState<Tool>('select');const [target,setTarget]=useState<LocalTarget|null>(null);
  const [notice,setNotice]=useState('');const [events,setEvents]=useState<TimelineEvent[]>([]);const [interacting,setInteracting]=useState(false);const [ghost,setGhost]=useState(true);const [world,setWorld]=useState(true);
  const [preset,setPreset]=useState<LayoutPreset>(()=>window.innerHeight<700&&window.innerWidth>=900?'focus3d':'standard');const [maximized,setMaximized]=useState(false);const [drawer,setDrawer]=useState<'none'|'session'>('none');
- const [workspaceView,setWorkspaceView]=useState<'scene'|'simulation'>('simulation');const route=useRouteWorkspace();
+ const [workspaceView,setWorkspaceView]=useState<'scene'|'simulation'|'history'>('simulation');const route=useRouteWorkspace();
+ const episodes=useMemo(()=>new PlatformEpisodeApi(),[]);
  const [navCollapsed,setNavCollapsed]=useState(false);const [details,setDetails]=useState(false);
  const [fullscreen,setFullscreen]=useState<FullscreenState>({active:false,supported:typeof document!=='undefined'&&document.fullscreenEnabled,reason:''});
  const mainRef=useRef<HTMLElement>(null);
@@ -94,6 +97,14 @@ export function App(){
    });
  },[]);
  function log(label:string){setEvents(items=>[...items.slice(-39),{id:++serial.current,kind:'local',time:Date.now(),label}]);}
+ // Leaving history is an explicit source handover: the live read-only source is what the 3D view shows
+ // again, and no recorded state or target is carried back from the episode reader.
+ function switchView(next:'scene'|'simulation'|'history'){
+   const leaving=workspaceView==='history';
+   setWorkspaceView(next);if(next==='scene')setDrawer('none');
+   if(leaving){targetRef.current=target;setNotice(`已从历史浏览返回${next==='scene'?'场景布置':'Simulation 实时视图'}：数据源仍是「${sourceLabel}」，Actual/geometry 只来自 live 只读读取；历史 Episode 的状态、记录与媒体没有回填任何本地 Target，也未发送命令或物理步进。`);log('返回实时视图 · 数据源显式恢复，历史内容未回填目标');}
+   if(next==='history')log('进入历史浏览 · 只读 episode-read-1');
+ }
  function cancelTarget(){view.current?.cancelGesture();setTarget(null);targetRef.current=null;setNotice('已取消本地目标；Actual 未被本地预览改写，也未发送停止或运动命令。');log('取消本地目标');}
  function editJoint(name:string,value:number){if(!sample)return;try{const next=jointTarget(sample,targetRef.current,name,value);targetRef.current=next;setTarget(next);setNotice('Joint 本地预览已更新；其他关节目标保留。');}catch(e){setNotice((e as Error).message);}}
  function editTcp(position:Vec3){if(!sample)return;try{const next=tcpTarget(sample,targetRef.current,position);targetRef.current=next;setTarget(next);setNotice(next.preview==='unreachable'?'本地位置 IK 未收敛，Target 保留；不能提交执行。':'本地位置 IK 候选已更新；没有轨迹/碰撞/动力学验证。');}catch(e){setNotice((e as Error).message);}}
@@ -116,9 +127,9 @@ export function App(){
  <div className="app-body"><nav className={`side-nav ${navCollapsed?'collapsed':''}`} aria-label="主导航"><div className="nav-group-label">WORKSPACE</div>{[
    {icon:'cube',label:'场景布置',target:'scene' as const},
    {icon:'play',label:'Simulation',target:'simulation' as const},
-   {icon:'chart',label:'Replay',target:null}
+   {icon:'chart',label:'历史 Episode',target:'history' as const}
  ].map(({icon,label,target})=><button key={label} className={target===workspaceView?'selected':''} disabled={!target}
-   title={target?'切换工作台':'后续切片接入'} onClick={()=>{if(!target)return;setWorkspaceView(target);if(target==='scene')setDrawer('none');}}>
+   title={target==='history'?'只读浏览历史 Episode（episode-read-1）；不发命令、不推进物理':target?'切换工作台':'后续切片接入'} onClick={()=>{if(!target)return;switchView(target);}}>
    <Icon name={icon} size={18}/><span>{label}</span></button>)}<div className="nav-divider"/><div className="nav-group-label">RESOURCES</div><button disabled title="后续切片接入"><Icon name="layers" size={18}/><span>数据与模型</span></button><div className="nav-bottom"><Icon name="info"/><span>浏览器仅渲染<br/>物理由后端负责</span></div></nav>
  <main ref={mainRef}><div className="control-strip">
    <div className="control-group"><span className="control-label">Session <b>准备抽屉</b></span><button disabled title="请在 Session 准备抽屉中显式 Start；顶部按钮不绕过资格"><Icon name="play" size={13}/>Start</button><button disabled title="没有绑定在线 Session"><Icon name="stop" size={12}/>停止</button></div>
@@ -128,6 +139,6 @@ export function App(){
    <div className="control-group authority-group"><span className="chip strong">Human · 本地预览</span><span className="chip masked">Base <i>{sample?.live?.authority.base_owner_session_id??'无 Owner'}</i></span><span className="chip masked">Arm <i>{sample?.live?.authority.arm_owner_session_id??'无 Owner'}</i></span><button disabled title="需要后端控制权确认">申请接管</button><button aria-expanded={details} aria-label="只读与连接详情" title="只读与连接详情" onClick={()=>setDetails(!details)}><Icon name="info" size={14}/>详情</button><button className={drawer==='session'?'active':''} aria-pressed={drawer==='session'} onClick={()=>setDrawer(drawer==='session'?'none':'session')}>Session 准备</button></div>
  </div>
  {details&&<div className="control-details"><span>执行来源 <b>Human · 本地预览</b></span><span>Gripper <b>继承 Arm / 未接入</b></span><span>只读 Owner <b>≠ 本方授权</b></span><span>运动学 <b title={sample?.live?.kinematics.reason||sample?.live?.kinematics.digest} className={sample?.live&&sample.live.kinematics.status!=='verified'?'kin-warn':''}>{sample?.live?`${sample.live.kinematics.profileId||'不可用'} · ${sample.live.kinematics.status}`:'冻结样本独立参考 profile'}</b></span><span>本地 Target <b>未提交 · 无运动/停止/RESET 请求</b></span><span>快照 <b>{monitor.snapshots}</b> · 请求 <b>{monitor.requestMs?.toFixed(0)??'—'} ms</b></span>{sample?.live?.runtimeMismatchAtInit&&<span className="kin-warn">加载时 scene 与 snapshot 运行身份不同；内容身份一致，采用 snapshot Actual</span>}</div>}
- {workspaceView==='scene'?<SceneSetupView workspace={route}/>:workspace?<WorkbenchContext.Provider value={workspace}><><WorkbenchLayout/>{drawer==='session'&&<SessionPanel/>}</></WorkbenchContext.Provider>:<div className="loading-view"><Icon name="info" size={30}/><h2>3D 数据源不可用</h2><p role="alert">{error}</p><p className="session-note">地图与路线资源不依赖机器人场景：仍可在左侧“场景布置”编辑；Simulation 需要 geometry-2 只读 envelope。</p><button className="primary" onClick={()=>setSourceMode('frozen')}>使用冻结原生样本</button></div>}
+ {workspaceView==='history'?<HistoryView api={episodes} onLeave={()=>switchView('simulation')}/>:workspaceView==='scene'?<SceneSetupView workspace={route}/>:workspace?<WorkbenchContext.Provider value={workspace}><><WorkbenchLayout/>{drawer==='session'&&<SessionPanel/>}</></WorkbenchContext.Provider>:<div className="loading-view"><Icon name="info" size={30}/><h2>3D 数据源不可用</h2><p role="alert">{error}</p><p className="session-note">地图与路线资源不依赖机器人场景：仍可在左侧“场景布置”编辑；Simulation 需要 geometry-2 只读 envelope。</p><button className="primary" onClick={()=>setSourceMode('frozen')}>使用冻结原生样本</button></div>}
  <footer className="status-bar"><span><span className={`status-dot ${monitor.state==='stale'?'amber':'green'}`}/>{notice||(sample?.live?'后端 Actual / 已有 Target 只读；本地 Target 未提交。Session / 运动 / 录制禁用。':'冻结来源：离线观察与目标预览。')}</span><span>{fullscreen.active?'全屏中 · Esc 由浏览器处理':'world_sim · m / rad · 前端渲染，无物理步进'}</span></footer></main></div></div>;
 }

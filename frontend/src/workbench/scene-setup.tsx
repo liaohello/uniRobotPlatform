@@ -38,6 +38,7 @@ export function SceneSetupView({ workspace }: { workspace: RouteWorkspace }) {
       <div className="scene-setup-badges">
         <span className="chip strong" data-scene-map-mode={workspace.offlineMode ? 'offline-test' : 'backend'}>{workspace.offlineMode ? '离线测试地图' : '后端地图资源'}</span>
         <span className="chip masked" data-route-dirty={String(workspace.dirty)}>{server ? (workspace.dirty ? '本地未保存编辑' : '与服务端草案一致') : '未绑定服务端草案'}</span>
+        <span className="chip masked" data-edits-after-save={String(workspace.editsAfterSave)}>{workspace.editsAfterSave ? `保存后又有编辑 · 服务器已存 r${server?.draftRevision ?? 0}` : '无保存后遗留编辑'}</span>
         <span className="chip masked">导航执行未开放</span>
       </div>
     </header>
@@ -125,6 +126,10 @@ export function SceneSetupView({ workspace }: { workspace: RouteWorkspace }) {
               <button disabled={workspace.busy !== ''} onClick={workspace.reloadServerDraft} data-reload-server>重载服务器草案（放弃本地编辑）</button>
               <button disabled={!gates.retry.enabled} data-retry-server={gates.retry.enabled ? 'ready' : 'blocked'} data-retry-reason={gates.retry.reason} onClick={workspace.retrySaveOnServer}>以服务器修订重试（用本地内容写入）</button></p></div></div>}
           {workspace.draftError && <div className="session-error" role="alert" data-route-error>{workspace.draftError}</div>}
+          {workspace.busy === 'route-save' && <p className="session-note" data-saving="true">PUT 进行中：这期间对 PointGoal 的修改不会被服务器响应覆盖，响应只更新已保存的 draft_revision 与 content_digest。</p>}
+          {workspace.editsAfterSave && server && <div className="session-blocked" role="status" data-after-save-edits="true">
+            <Icon name="info" size={15}/><div><b>服务器已保存 r{server.draftRevision}，提交之后的本地编辑仍未保存</b>
+              <p>本次写入受理的是提交瞬间的快照；此后在界面上继续做的编辑既没有被响应覆盖，也没有被丢弃（data-route-dirty 仍为 true，本地共 {draft.waypoints.length} 点）。再点“保存草案（条件写）”会以 base_revision=r{server.draftRevision} 提交当前本地内容。</p></div></div>}
           {workspace.staleWriteHint && <div className="session-blocked" role="status" data-stale-write="true"><Icon name="info" size={15}/><div><b>迟到的路线写入结果已被忽略</b><p>{workspace.staleWriteHint}</p></div></div>}
           <div className="session-inline">
             <input aria-label="按 route_id 打开" placeholder="route-…" value={openId} onChange={(event) => setOpenId(event.target.value)} disabled={workspace.busy !== ''}/>

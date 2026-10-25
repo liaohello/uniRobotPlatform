@@ -377,6 +377,73 @@ async def live_flow(page):
           (revision_before_late, server_after_late['draft_revision']))
     await page.unroute(f'**/api/v1/route-drafts/{route_id}', late_save)
 
+    # Editing while a save is in flight must not lose the newer local edits, and the saved revision
+    # must still be expressed separately from them. The PUT is delayed so the interleaving is exact.
+    await page.locator('input[aria-label="按 route_id 打开"]').fill(route_id)
+    await page.locator('.scene-setup [data-route-open]').click()
+    await page.wait_for_selector('.scene-setup [data-draft-bound="true"]', timeout=25000)
+    ids = await page.locator('.scene-setup [data-waypoint-id]').evaluate_all('els=>els.map(e=>e.getAttribute("data-waypoint-id"))')
+    revision_before_echo = int(await page.locator('.scene-setup [data-draft-revision]').get_attribute('data-draft-revision'))
+    digest_before_echo = await page.locator('.scene-setup [data-content-digest]').get_attribute('data-content-digest')
+    # The submitted snapshot has to differ from what the server already holds, otherwise a real
+    # save would legitimately return an unchanged digest and prove nothing.
+    await set_pose(page, ids[1], None, None, 30)
+    submitted_yaw = await yaw_of(page, ids[1])
+    async def delayed_put(route):
+        response = await route.fetch()
+        await asyncio.sleep(3.0)
+        await route.fulfill(response=response)
+    await page.route(f'**/api/v1/route-drafts/{route_id}', delayed_put)
+
+    async def wait_or_dump(js, arg=None, timeout=30000):
+        try:
+            await page.wait_for_function(js, arg=arg, timeout=timeout)
+        except Exception as exc:
+            report['real']['edit_during_save_state'] = await page.evaluate(
+                """()=>({revision:document.querySelector('.scene-setup [data-draft-revision]')?.getAttribute('data-draft-revision'),
+                  dirty:document.querySelector('.scene-setup [data-route-dirty]')?.getAttribute('data-route-dirty'),
+                  after:document.querySelector('.scene-setup [data-edits-after-save]')?.getAttribute('data-edits-after-save'),
+                  bound:document.querySelector('.scene-setup [data-draft-bound]')?.getAttribute('data-draft-bound'),
+                  reason:document.querySelector('.scene-setup [data-route-save]')?.getAttribute('data-route-save-reason'),
+                  stale:(document.querySelector('.scene-setup [data-stale-write]')?.innerText||'').slice(0,180),
+                  error:(document.querySelector('.scene-setup [data-route-error]')?.innerText||'').slice(0,180),
+                  yaw:document.querySelectorAll('.scene-setup [data-waypoint-id]')[1]?.getAttribute('data-yaw-rad')})""")
+            report['real']['edit_during_save_timeout'] = str(exc)[:160]
+            raise
+    await page.locator('.scene-setup [data-route-save]').click()
+    await page.wait_for_function("()=>document.querySelector('.scene-setup [data-route-save]').innerText.includes('保存中')", timeout=15000)
+    await set_pose(page, ids[1], None, None, 45)
+    check('the PointGoal editor stays usable during an in-flight save',
+          await yaw_of(page, ids[1]) != submitted_yaw
+          and await page.locator('.scene-setup [data-saving]').count() == 1)
+    await wait_or_dump("(before)=>document.querySelector('.scene-setup [data-draft-revision]').getAttribute('data-draft-revision')===String(Number(before)+1)", arg=revision_before_echo)
+    await wait_or_dump("(before)=>document.querySelector('.scene-setup [data-content-digest]').getAttribute('data-content-digest')!==before", arg=digest_before_echo)
+    await page.unroute(f'**/api/v1/route-drafts/{route_id}', delayed_put)
+    check('the server echo keeps the edit made after submit instead of rolling it back',
+          abs(float(await yaw_of(page, ids[1])) - 0.7853982) < 1e-4, await yaw_of(page, ids[1]))
+    check('saved revision and unsaved local edits are expressed separately',
+          int(await page.locator('.scene-setup [data-draft-revision]').get_attribute('data-draft-revision')) == revision_before_echo + 1
+          and await page.locator('.scene-setup [data-route-dirty]').get_attribute('data-route-dirty') == 'true'
+          and await page.locator('.scene-setup [data-edits-after-save]').get_attribute('data-edits-after-save') == 'true')
+    after_save = page.locator('.scene-setup [data-after-save-edits]')
+    check('the interface names what was saved and what is still local',
+          f'r{revision_before_echo + 1}' in await after_save.inner_text()
+          and 'base_revision=r' in await after_save.inner_text(), (await after_save.inner_text())[:200])
+    server_after_echo = await (await page.request.get(f'{a.url}/api/v1/route-drafts/{route_id}')).json()
+    check('the server stored exactly the submitted snapshot, not the later local edit',
+          abs(server_after_echo['waypoints'][1]['yaw_rad'] - float(submitted_yaw)) < 1e-6
+          and abs(server_after_echo['waypoints'][1]['yaw_rad'] - 0.7853982) > 1e-3,
+          (server_after_echo['waypoints'][1]['yaw_rad'], submitted_yaw))
+    await page.locator('.scene-setup [data-route-save]').click()
+    await wait_or_dump("()=>document.querySelector('.scene-setup [data-draft-revision]').getAttribute('data-draft-revision')==='{}' && document.querySelector('.scene-setup [data-route-dirty]').getAttribute('data-route-dirty')==='false'".format(revision_before_echo + 2))
+    server_resaved = await (await page.request.get(f'{a.url}/api/v1/route-drafts/{route_id}')).json()
+    check('saving again adopts the preserved local edit and clears the separate unsaved state',
+          abs(server_resaved['waypoints'][1]['yaw_rad'] - 0.7853982) < 1e-6
+          and await page.locator('.scene-setup [data-edits-after-save]').get_attribute('data-edits-after-save') == 'false'
+          and await page.locator('.scene-setup [data-route-dirty]').get_attribute('data-route-dirty') == 'false',
+          server_resaved['waypoints'][1]['yaw_rad'])
+    await page.screenshot(path=str(a.output / 'edits-during-save.png'), full_page=True)
+
     scene_doc = await (await page.request.get(f'{a.url}/api/v1/mobilecar/scene')).json()
     geometry_two = scene_doc.get('schema_version') == 'unirobot-mobilecar-geometry-2'
     await page.get_by_role('button', name='Simulation', exact=True).click()

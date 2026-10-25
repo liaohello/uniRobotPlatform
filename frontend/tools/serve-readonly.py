@@ -6,8 +6,11 @@ map raster images, and route drafts with immutable route versions. Platform Draf
 create/save/validate, Session prepare/start, route-draft create/save/publish and the
 three Session lifecycle actions (recording begin, robot STOP, recording end) are the
 only writes; each is an exact path, so no wildcard control path is reachable.
-Motion/teleop, RESET, /runs/{id}/stop, episode and native command endpoints stay
-unproxied. There is no route collection GET upstream, so
+The history reader is exposed as five exact GET paths only (episode-read-1: list, detail,
+stream catalogue, per-stream records, episode assets). Native episode validate/assessment,
+replay execution, motion/teleop, RESET, /runs/{id}/stop and native command endpoints stay
+unproxied: they are refused by this gateway itself, never forwarded. There is no route
+collection GET upstream, so
 none is exposed here. Method, path, status,
 error body and query string are preserved; no request body is invented.
 """
@@ -15,6 +18,9 @@ import argparse,functools,http.server,json,re,time,urllib.request,urllib.error
 from pathlib import Path
 
 ID=r'[A-Za-z0-9_.-]{1,128}'
+# At most eight nested segments and no dot-segments: the reader enforces its own asset
+# boundary, this gateway simply refuses to carry anything outside the declared shape.
+ASSET=r'[A-Za-z0-9_-][A-Za-z0-9_.-]*(?:/[A-Za-z0-9_-][A-Za-z0-9_.-]*){0,7}'
 ROUTES=[
  (re.compile(r'^/api/v1/mobilecar/(scene|capabilities|snapshot|kinematics|execution-recipe|preflight)$'),{'GET'}),
  (re.compile(r'^/api/v1/mobilecar/scene/assets/'+ID+r'$'),{'GET'}),
@@ -37,6 +43,11 @@ ROUTES=[
  (re.compile(r'^/api/v1/sessions/'+ID+r'/recording/end$'),{'POST'}),
  (re.compile(r'^/api/v1/routes/'+ID+r'/versions$'),{'GET'}),
  (re.compile(r'^/api/v1/routes/'+ID+r'/versions/'+ID+r'$'),{'GET'}),
+ (re.compile(r'^/api/v1/episodes$'),{'GET'}),
+ (re.compile(r'^/api/v1/episodes/'+ID+r'$'),{'GET'}),
+ (re.compile(r'^/api/v1/episodes/'+ID+r'/streams$'),{'GET'}),
+ (re.compile(r'^/api/v1/episodes/'+ID+r'/streams/'+ID+r'/records$'),{'GET'}),
+ (re.compile(r'^/api/v1/episodes/'+ID+r'/assets/'+ASSET+r'$'),{'GET'}),
 ]
 
 MAX_BODY=65536
@@ -75,7 +86,7 @@ class Preview(http.server.SimpleHTTPRequestHandler):
             self.reply(503,payload,'application/json');self.record(method,503,started,len(payload));return
         with response:
             data=response.read();status=response.code
-            passthrough={key:response.headers[key] for key in ('ETag','X-Content-Type-Options','Location') if key in response.headers}
+            passthrough={key:response.headers[key] for key in ('ETag','X-Content-Type-Options','Location','X-Episode-Asset-Sha256','X-Episode-Run-Id') if key in response.headers}
             self.reply(status,data,response.headers.get('Content-Type','application/octet-stream'),passthrough)
         self.record(method,status,started,len(data))
     def reply(self,status,body,content_type,headers=None):

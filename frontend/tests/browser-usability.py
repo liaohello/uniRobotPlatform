@@ -34,15 +34,18 @@ def check(name, condition, detail=None):
     checks.append(name)
 
 
-def settle_canvas(page, timeout_ms=20000):
+def settle_canvas(page, timeout_ms=20000, changed_from=None):
     """Wait until the dock has actually re-laid out after a viewport change: two consecutive canvas
-    rectangles must agree, so a layout assertion never measures a frame that is still resizing."""
+    rectangles must agree, so a layout assertion never measures a frame that is still resizing.
+    `changed_from` additionally refuses to settle while the canvas still holds the pre-resize height,
+    because window.innerWidth/innerHeight update before the debounced layout runs."""
     previous = None
     deadline = time.time() + timeout_ms / 1000.0
     while time.time() < deadline:
         current = page.evaluate("""()=>{const c=document.querySelector('.canvas-host canvas').getBoundingClientRect();
           return {w:Math.round(c.width),h:Math.round(c.height),scrollH:document.documentElement.scrollHeight,innerH:window.innerHeight}}""")
-        if previous == current:
+        moved = changed_from is None or current['h'] != changed_from
+        if moved and previous is not None and previous == current:
             return current
         previous = current
         page.wait_for_timeout(150)
@@ -512,8 +515,9 @@ with sync_playwright() as pw:
               json.dumps(final['ui']['panels'], sort_keys=True) == panels_before)
 
         # ---- 1920x1080 ----
+        height_before_resize = settle_canvas(page)['h']
         page.set_viewport_size({'width': 1920, 'height': 1080})
-        big_metrics = settle_canvas(page)
+        big_metrics = settle_canvas(page, changed_from=height_before_resize)
         big = state(page)
         report['sizes']['1920x1080'] = big_metrics
         page.screenshot(path=str(a.output / 'usability-1920.png'), full_page=True)

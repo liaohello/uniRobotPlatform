@@ -466,3 +466,31 @@ button.primary{border-color:#3f6b78;background:#254652;color:#b8eef2}
 .receipt-layers li span.bad{background:rgba(233,120,120,.16);color:#e97878}
 .receipt-layers li span.unknown{background:rgba(228,181,98,.16);color:#e4b562}
 .receipt-layers li p{grid-column:1/-1;margin:0;color:#8ba0b2;line-height:1.45;word-break:break-word}
+
+/* ---------- history episode browsing (read-only) ---------- */
+.history-view{height:100%;overflow:auto;background:var(--bg,#12171d);padding:10px;display:flex;flex-direction:column;gap:9px}
+.history-body{display:grid;grid-template-columns:minmax(320px,1fr) minmax(360px,1.15fr) minmax(420px,1.35fr);gap:9px;align-items:start}
+.history-list-pane,.history-detail-pane,.history-stream-pane{border:1px solid #24303d;border-radius:8px;background:#141c24;padding:9px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.history-list-pane h3,.history-detail-pane h3,.history-stream-pane h3{margin:0;font-size:12px;color:#dce6ee}
+.history-episode-list{list-style:none;margin:0;padding:0;display:grid;gap:5px;max-height:46vh;overflow:auto}
+.history-episode-list button{display:grid;gap:2px;text-align:left;width:100%;background:#182430;border-color:#27394a;color:#c9d6e2}
+.history-episode-list button b{font-size:11px;color:#eaf1f7}
+.history-episode-list button span{font-size:10px;color:#8ba0b2;word-break:break-all}
+.history-episode-list button small{font-size:9.5px;color:#7d93a6;line-height:1.5}
+.history-episode-list li.selected button,.history-episode-list button[aria-pressed="true"]{border-color:#3d6d8f;background:#1c2c3a}
+.history-record-table{width:100%;border-collapse:collapse;font-size:10px;color:#b9c8d6}
+.history-record-table th,.history-record-table td{border-bottom:1px solid #223040;padding:3px 5px;text-align:left;vertical-align:top;word-break:break-word}
+.history-record-table th{color:#8ba0b2;font-weight:600;background:#18222d}
+.history-record-table tr.selected td{background:#1d2d3c;color:#e6eff6}
+.history-record-table code{font-size:9.5px;background:#101820;padding:1px 3px;border-radius:3px;color:#9fb4c6}
+.history-cursor{font-size:10.5px;color:#a9c2d3;background:#16222d;border:1px solid #2a3d4f;border-radius:5px;padding:6px;word-break:break-word}
+.history-controls{flex-wrap:wrap}
+.history-3d-notice{border:1px solid #4d3b2b;background:#241f18;border-radius:5px;padding:8px;color:#e0b783;font-size:10px;display:flex;gap:7px}
+.history-3d-notice p{margin:3px 0 0;line-height:1.6;word-break:break-word}
+.history-media{border-top:1px solid #24303d;padding-top:7px;display:grid;gap:5px}
+.history-media h4{margin:0;font-size:11px;color:#c9d6e2}
+.media-ref{display:grid;gap:1px;font-size:9.5px;color:#8ba0b2;background:#17222d;border:1px solid #24303d;border-radius:4px;padding:5px;word-break:break-all}
+.media-ref b{color:#a9c2d3}
+.asset-frame{border:1px solid #2a3d4f;border-radius:5px;padding:6px;background:#141d26;display:grid;gap:5px;font-size:10px;color:#a9c2d3}
+.asset-frame img{max-width:100%;max-height:260px;image-rendering:pixelated;border:1px solid #2b3a48;background:#0d1319}
+.history-footer{color:#7d93a6;font-size:9.5px}
