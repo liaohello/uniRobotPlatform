@@ -2,7 +2,9 @@
 from pathlib import Path
 import argparse,datetime,functools,hashlib,http.server,json,os,socket,subprocess,sys,urllib.request
 p=argparse.ArgumentParser();p.add_argument('release',type=Path);p.add_argument('--environment',type=Path,required=True);p.add_argument('--node-bin',type=Path,required=True);p.add_argument('--browser-python',type=Path,required=True);p.add_argument('--reports',type=Path,required=True);p.add_argument('--port',type=int,required=True);p.add_argument('--read-only',action='store_true');p.add_argument('--upstream',default='http://127.0.0.1:18941');p.add_argument('--geometry',action='store_true');p.add_argument('--usability',action='store_true');p.add_argument('--config',action='store_true');p.add_argument('--session',action='store_true');p.add_argument('--map',action='store_true');p.add_argument('--lifecycle',action='store_true');p.add_argument('--lifecycle-live',action='store_true');p.add_argument('--map-mode',default='live',choices=('live','offline'));p.add_argument('--history',action='store_true');p.add_argument('--history-mode',default='real',choices=('real','synthetic'));p.add_argument('--skip-readonly',action='store_true');p.add_argument('--preview-registry',type=Path);p.add_argument('--preview-round',default='unregistered');a=p.parse_args()
-r=a.release.resolve();front=r/'frontend';a.environment=a.environment.resolve();a.reports.mkdir(parents=True,exist_ok=False)
+r=a.release.resolve();front=r/'frontend';a.environment=a.environment.resolve();a.reports=a.reports.resolve()
+if a.preview_registry:a.preview_registry=a.preview_registry.resolve()
+a.reports.mkdir(parents=True,exist_ok=False)
 def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 manifest=json.loads((r/'source-manifest.json').read_text())
 for f in manifest['files']:
