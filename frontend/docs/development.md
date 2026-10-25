@@ -1,4 +1,104 @@
+# M1.7 历史浏览正式适配 18964、定位上下文修复与预览所有权收敛（2026-10-25）
+
+本轮做四件事：把历史浏览从旧读者候选**正式迁到后端只读整改后的 18964 并按实测载荷适配**；修掉 `history-view` 定位（seek）的上下文缺陷；把 `observations-persist` 的真实媒体引用接全；并处理两项长期记录在案的相机保持断言与预览清理方式。只修改 `frontend/`。远端已推送（见下表）。**完成只表示历史浏览/单流播放切片适配整改候选并通过，不表示跨流同步、历史 3D 回放或正式 M1.5/M1 验收通过。**
+
+## 冻结版本与入口
+
+| 项 | 值 |
+|---|---|
+| 前端 release | `m1-front-geometry-20261025T090454Z-0f79150a35a9`，100 个输入，聚合 SHA-256 `0f79150a35a9134eb0c575d9a6b131ceee0b9f74ca61cf39996c5297f578e522`（服务器逐文件重算与 `source-manifest.json` 一致） |
+| 提交 | `c9349c0`（实现）+ `654755f`（测试取值修正）+ 本记录提交，三者均已推送；远端 `refs/heads/codex/m12a-workbench` SHA 与本地一致（用仓库既有 `core.sshCommand`（`~/.ssh/liaoGithub`），未改 Git 配置、未 force、未建 tag、未推凭据或原始历史数据） |
+| 历史上游 | `http://127.0.0.1:18964` = 后端 `m1p-20261025T053030Z-platform`（M1.5b 只读整改候选，服务器 PID 2102683，清单 `832bf518274600a9…`、源码聚合 `4090935b4c45c900…`），只读 schema `unirobot-mobilecar-episode-read-1`；同进程继续提供 geometry-2 + 23 资产、Map/Route、Draft/validate、Session/`current`、STOP/end 契约 |
+| 保留上游 | 18960（`m1k`，上一轮历史验收处）与 18959（`m1j` 统一候选）、18949、18953、8792 全部保留，未启动/停止/替换；两代候选不互换、不推断，本轮只用实测的 18964 |
+| 本轮预览 | **交付预览 18986 → 18964**（PID 615818，服务最终冻结 dist，历史真实/地图/Session/配置 pass 的同一个预览）。18987/18988/18989 是同批次的其它验证 pass 预览、18981 是迭代用 scratch 预览（非冻结树），四者本轮结束时按登记身份逐一停止（round `m17-life/m17-3d/m17-offline/m17-scratch`）。既有交付服务 18974 → 18960、18972/18973 → 18959 保留未动 |
+| 预览台账 | `~/Desktop/uniRobotPlatform/var/frontend-previews/registry.json`（`tools/preview-registry.py` 读写；每条含 pid、端口、release、上游、服务目录、完整 cmdline、内核 start tick、uid、round、状态与停止时刻） |
+| 真实 native | 8792 仍 PID 941842（`drvfix`/G4A2）。native 状态只经后端 `tools/native_get_probe.py` 的 `GetProbe` 读取，摘要 `{"methods":["GET"],"non_get":[]}`，`run_9c88e3e…` / `episode_43c22f…` / `recording_status=IDLE` 全程未变；日志 `/tmp/frontend-native-get-probe.jsonl`、`/tmp/frontend-native-get-probe-final.jsonl`。对 18964 的契约核对脚本 47 次请求也全是 GET |
+
+## 一、seek 定位的上下文修复（真实缺陷）
+
+上一轮的历史切片里，定位框的值、拒绝文案与结果提示都是**跨上下文存活**的，具体缺陷与现在的行为：
+
+- 切换 Episode / 流 / 时间基时，`seekText`、`seekError` 与定位结果提示一并清除（`clearSeek()` 在 `openEpisode`、`openStream` 与时间基 `onChange` 三处调用）。此前在一个流里输入的秒数会在换流后被当成另一种单位/时钟解释，旧的拒绝文案也会随新的记录页重新出现，看起来像新发现。
+- 空白或纯空格的输入**不再被 `Number('')` 变成 0**：`parseSeekValue()` 先 trim，空值直接拒绝且不发请求，并明确“要定位到 0 请显式输入 0”。显式 `0`、`0.0`、`-2.5` 仍是合法数值；`abc` / `NaN` / `Infinity` / `1e999` 继续被拒绝且不发请求。真实 pass 用请求计数断言“没有新的 `time_from` 请求发出”。
+- 数值定位的资格判定改为读服务端答案：`seekGate()` 用每页的 `time.numeric_time_bases`（无页时退回契约声明的 4 个 `*_s` 基），不再用“基名是否等于 `wall_utc`”。`wall_utc` 因此按“不是数值基”被拒绝，界面原样列出 `numeric_bases`，不猜日历区间格式；服务端侧对应 400 `time_base_not_numeric`。
+- 迟到归属保护保留并补强：`selectionRef` 仍在意图时绑定，`liveRecords/liveDetail` 仍按序号 + 选择判定；新增“**空记录页释放媒体槽**”——`readPage`/`step`/`seek` 在解析不到记录时调用 `clearAsset()`（递增 `assetSerial` 并 revoke `objectURL`），否则上一条记录在途的字节/解码会因为 episode+run+stream 未变而通过旧的 token 检查，写进一个已经没有记录的光标。合成 pass 用“已显示 rgb → 应用空区间 → 媒体槽清空”断言这一点。
+- 事件序号区间（`event_seq_from/to`）现在是界面上的一等输入：`applyRange` 归零 offset 重读，`clearRange` 恢复；非整数输入本地拒绝并发出 0 个请求。
+
+## 二、按 18964 实测载荷适配契约（不是照搬旧候选）
+
+先用 GET-only 探测脚本（`/tmp/probe_history_contract.py`，47 次请求、方法只有 GET）核对 18964 的真实响应，再改代码：
+
+- 新增声明与显示：`time.numeric_time_bases`、整块 `filtering.event_seq_range{from,to,active,excluded_without_valid_event_seq,anomalies[]}` 与 `filtering.note`、`source.recording_root_resolved` / `source.path_boundary`、`media_summary.symlink_or_escape_excluded` / `excluded_count`、`platform_association.source` / `sidecar_error`、`StreamDto.reason` / `parse_error` / `scan_truncated`、`corrupt_lines[].column`、`backend_generation.values` 分支。
+- 形状纠正：`integrity.lines_over_read_size_limit` 服务端给的是**行号数组**，旧 DTO 声明成对象数组并按 `.line_index` 取值，界面对真实数据永远显示 `null`；现在按 `number[]` 显示行号。详情 DTO 上 phantom 的顶层 `run_id`、记录页上不存在的 `capability_limits` 移除。
+- 错误码补全：`episode_stream_unavailable`、`episode_id_invalid`、`run_id_invalid`、`episode_path_escape`、`episode_record_corrupt`、`history_source_invalid/unavailable/not_configured`；422 的实际 code 是客户端 `parseError` 给的 `validation_error`（`detail` 为数组），旧的 `http_422` 提示永远不会命中，已替换；`describeHistoryError` 额外回显 `numeric_bases`、`expected` 与 `relative_path`。
+- 空页语义三分：`pageKind()`/`pageExplanation()` 用 `filtering` 把“该流合法地没有 event_seq（排除 N 行并计数）”“区间内无匹配”“offset 越过末尾”与“有记录”分开表达，读取失败仍是独立状态。真实验到 observations-index 3038 行、persist/transforms 各 303 行全部 `event_seq_missing_or_not_integer`（`value_type=NoneType`），HTTP 200、`next_offset=null`、`has_more=false`。
+- 可用流不再以 `records>0` 为开关：`available=true 且 records=0` 也能打开并按上面的规则解释；不可用流显示 `reason=stream_not_recorded_or_missing`，被扫描上限截断显示 `scan_truncated`，JSON 解析失败显示 `parse_error`。`GET …/streams` 目录接口现在真正被调用（`openEpisode` 里取一次），提供 `declared_status` 与每流字段。
+- `transforms` 语义按后端更正写入 3D 限制文案：它是带 frame/时钟标记的变换观测，不是逐 body 位姿序列，因此身份摘要匹配也复原不出历史姿态；本切片仍不挂 3D、不做同步回放。
+
+## 三、observations-persist 的真实媒体浏览
+
+- 记录引用按字段读取：`asset_uri`（index 流）、`rgb_uri`、`depth_uri`、`valid_mask_uri`（persist 流），每个引用显示它来自哪个字段、role 与 kind；声明摘要优先取记录自带的 `asset_sha256`/`rgb_sha256`/`depth_sha256`/`valid_mask_sha256`，其次才是 `media_summary` 的 20 条样本，两者都没有就写“本条无声明摘要”。`sample_id` 只作标签，绝不参与拼路径；index 流里 lidar/imu/encoders 的 `asset_uri` 为 `null` 时如实显示“没有引用”。
+- 默认只自动读取记录的主图（index 的 `asset_uri` 或 persist 的 `rgb_uri`），其余引用各有一个“按此引用读取”的动作，`.npy` 深度资产继续显示为字节 + 明确“不能内联显示”。
+- 三行分开：`摘要声明` / `本次读取`（字节数、content-type、服务端 `X-Episode-Asset-Sha256`、与声明是否一致）/ `完整性结论`（媒体一致不推出整条 Episode 完整，Episode 层仍由详情五层表达）。
+- 真实测得（18964，COMPLETE 记录）：`rgb_uri` → 200 `image/png` 32804 B、`depth_uri` → 200 `application/octet-stream`、`valid_mask_uri` → png；带错误 `?sha256=` 时 409 `episode_asset_digest_mismatch` 回显 `expected`/`actual`，不存在的路径 404 `episode_asset_missing`。persist 流没有任何一个已声明数值时间基，因此该流的定位保持“拒绝”，界面不编造 clock。
+
+## 四、两项相机保持断言的排查记录
+
+development.md 记录过：`browser-readonly.py` 的 “runtime-only change keeps verified content, renderer, camera and layout” 与 `browser-session.py` 的 “invalidation cancels the local target but keeps renderer, camera and layout” 各在一次 pass 失败过一次，根因未定位。本轮按“先记录触发顺序与测量时点，再判断”的方式处理：
+
+- 产品侧机制（读代码确认）：每个网格资产加载完成都会 `_scheduleFit()`，它是一个 **120 ms 去抖**后再执行的 `fitView()`，会重写 `camera.position`/`controls.target`/`near`/`far`（并按当前 aspect 计算）；`controls.enableDamping=true` 使每次 `controls.update()` 继续推进残余角度；`handleLayoutChange()` 在 resize/fullscreenchange 时无条件 `controls.update()`。也就是说，条件刚刚翻转的那一刻，相机是**可被合法移动**的。
+- 旧测试的测量时点：readonly 侧 “before” 只等固定 700 ms、“after” 在 `pendingLoads===0 && renderCount>0` 之后立刻取一次；session 侧两侧都是裸 `evaluate`，只有 `target===null` 这一个刚翻转的条件。两处对相机数组做**精确相等**比较。同仓库不抖的同类断言（`browser-readonly.py` 的“polling preserves … camera”、`browser-geometry.py` 拖拽期间那一条）等待的是“已完成 4 次轮询”或“拖拽把手势钉住 `userHasNavigated`”，即结构性避开了去抖 fit。
+- 本轮改动（不降阈值、不放宽身份比较）：`SceneView` 在 fit 回调里把 `fitTimer` 置回 `null`，`inspect()` 新增 `fitPending` / `autoFitSuppressed`，测试端加入共享 `tests/view_settle.py::settle_view()`：等 `pendingLoads===0 && fitPending===false && renderCount>0`，再要求连续两次采样 camera/cameraTarget/viewport 完全相同，两侧都用同一个门槛测量；`camera_trace()` 把“刚翻转的采样”和“静置后的采样”都写进报告。两条断言的比较对象不变，并**额外**要求 `scene.viewport` 相等，让标签里的“layout”不再只是名义。
+- 本轮实测（同一冻结 dist，上游 18964）：runtime 与 invalidation 两条在静置后 before/after 完全一致（camera 三量逐位相等、viewport 不变、`fitPending=false`），`browser-readonly` 32 项、`browser-session` 38 项通过；同一次 run 里作为对照的 resource（内容变化）分支在“刚翻转”时采样与静置后**不同**（`camera_at_flip` 与 `camera_after_settle` 的位置数组明显偏离，而静置后又回到与 before 几乎相同的值），说明这条路径确实存在“条件翻转后相机仍在运动”的窗口。
+- 结论与保留：**证据支持“旧失败是测量时点落在去抖 fit/阻尼残余之内”，不支持“产品在不该动相机时动了相机”**；但本轮没有复现出旧的失败实例（该次运行的 `camera_at_flip` 与 before 已相同），因此根因是**推断级**，不宣称 3D 一致性回归永久稳定，也不把 `scene.camera` 的精确比较降级成容差。若后续再出现失败，报告里的 `camera_measurements` 会同时给出两个采样点，可直接区分“仍在运动”与“真的变了”。
+
+## 五、预览进程所有权（把清理变成有证据的动作）
+
+- 上一轮的越界（用过宽端口正则误停 18972/18973）之后，本轮把规则落到代码：`tools/preview-registry.py` 提供 `register` / `verify` / `stop` / `free-port` 四个动作。`register` 记录 pid、端口、release、上游、服务目录、**完整 cmdline**、`/proc/<pid>/stat` 第 22 字段（内核 start tick）、uid 与本轮 round 标签，缺任一身份字段就拒绝登记。
+- `stop` 只接受台账里恰好一条匹配的 pid，并重新核对：进程存活、`/proc/<pid>/cmdline` 与登记完全一致、start tick 一致（防止 pid 复用）、uid 一致、且该 pid 仍持有登记的监听端口（读 `/proc/<pid>/net/tcp`，不是靠端口号）。任何一项不符就拒绝；round 标签不符也拒绝。停止只对该 pid 发一次 SIGTERM，超时才 SIGKILL，并把结果写回台账。
+- 没有任何端口正则、进程名批量匹配或“按端口号即视为己有”的路径；`free-port` 只报告哪些端口既可绑定又未被台账占用，不做任何 kill。`check-release.py` 现在把完整 `command` 写进 `preview.json`，并可用 `--preview-registry` / `--preview-round` 在启动预览后立即登记；相对 `--reports` / `--environment` 路径改为先 `resolve()`（此前把相对路径交给以 `frontend/` 为 cwd 的子进程会解析到错误目录）。
+- 本轮实际执行：一个候选 release 的验证批次因上述相对路径缺陷在登记前中止，留下 3 个未登记预览。处置方式是先按各自 `preview.json` 把它们补登记（`round=m17-aborted`）、`verify` 到 `owned=true`，再逐个 `stop --round m17-aborted` 停止（全部 SIGTERM 生效、无需 SIGKILL，端口随之释放）；同时验证了两条拒绝路径：对**未登记的 18964 后端 PID** 请求停止 → “exactly one registry entry must match pid … found 0”，对登记过但 round 标签不符的 PID → “refusing: entry round=… is not the requested round=…”。整个过程未触碰任何后端候选或 8792。
+
+## 六、服务器验证（同一冻结 release，全部在服务器执行）
+
+冻结候选 `m1-front-geometry-20261025T090454Z-0f79150a35a9`（100 输入，聚合 `0f79150a35a9134eb0c575d9a6b131ceee0b9f74ca61cf39996c5297f578e522`；服务器逐文件重算通过）。四个批次各自独立 `--reports` 目录、独立预览，批次退出码全部为 0。
+
+| pass | 上游 | 套件与结果 |
+|---|---|---|
+| m17-main | 18964 | `tsc --noEmit && vite build` 通过；vitest **97 passed / 0 failed**（含新增 6 项 seek/契约用例）；**历史真实 77 项全过（111 次浏览器请求，methods 只含 GET、non_get=0）**；地图 live 68；Session 38；配置 51 |
+| m17-life | 18964 | 历史合成夹具 41 项（58 次历史请求，全为 GET，`non_get=0`）；生命周期合成 48；生命周期 live 读取 7 |
+| m17-3d | 18964 | 只读集成 32（含 runtime 相机保持断言）；冻结工作台 29；geometry 23；usability 100 |
+| m17-offline | 18949 | 地图离线模式 15 |
+
+真实记录侧的关键取值（写在 m17-main 的 `history/browser.json.real`）：COMPLETE `run_0104613f… / episode_27bfed54…` → `integrity=complete`、`complete_checksum_pattern=known_stale_self_check`；FAILED `run_1f6fb348… / episode_879cf704…` → `integrity=incomplete_terminal_recorded`、`failed_checksum_pattern=unexplained`；`event_seq_filter={excluded: 3038, anomalies: 200}`（observations-index 全量被排除、异常示例按服务端上限截断到 200 条）；`persist_refs` 为 `assets/rgb/rgbd_e3213e6c…_rgb.png` / `…_depth_m.npy` / `…_valid.png`（引用直接取自记录字段）。
+
+相机证据（同一次冻结运行）：`runtime` 与 `invalidation` 两条 `moved_between_flip_and_settle=false`、`moved_after_settle=false`、`fit_pending_at_flip=false`、`viewport` 前后一致；作为对照的 `resource` 分支 `pending_loads_at_flip=44`、`moved_between_flip_and_settle=true`、`moved_after_settle=true`——内容变化本来就要换场景，该断言只断言“不复用旧网格”，因此不受影响，但它同时记录了“条件刚翻转时相机仍在运动”的实测窗口。
+
+native 证据：四个批次的 `native-read-only.json` 全部 `before == after`（`run_9c88e3e36e…` / `episode_43c22f95…` / `recording_status=IDLE`），`native_mutations_sent=false`、`new_physics_process_started=false`；本轮另外两次通过 `GetProbe` 读取 8792（`methods=["GET"]`、`non_get=[]`，日志 `/tmp/frontend-native-get-probe.jsonl`、`/tmp/frontend-native-get-probe-final.jsonl`）。
+
+## 七、预览登记与本轮处置
+
+`var/frontend-previews/registry.json` 记录本轮全部 12 个条目（含三个中止批次的补登记与停止）。处置全部通过 `preview-registry.py stop --pid … --round …`，每次先核对 cmdline、start tick、uid 与监听端口归属：
+
+- 保留：**18986 → 18964**（本轮交付预览，服务最终冻结 dist，PID 615818）；既有交付服务 18974 → 18960、18972/18973 → 18959 未触碰。
+- 已按身份停止：18982/18983/18984（中止批次补登记，round `m17-aborted`）；18987/18988/18989（上一版发布的验证预览，round `m17-life/m17-3d/m17-offline`）；18981（迭代用 scratch 预览，round `m17-scratch`）。全部 SIGTERM 生效、无 SIGKILL。
+- 两次拒绝路径实测：对未登记的 18964 后端 PID → `exactly one registry entry must match pid … found 0`；对 round 标签不符的登记 PID → `refusing: entry round=… is not the requested round=…`。未启动、未重启、未停止任何后端候选或 native。
+
+## 八、中途返工（不倒填）
+
+本轮先后冻结并上传过三个候选：`…T085230Z-51f8bb44e864` 因 `check-release.py` 把相对 `--reports`/`--preview-registry` 交给以 `frontend/` 为 cwd 的子进程，登记步骤失败（四个批次未跑任何浏览器套件；已补登记并停止其 3 个预览）；`…T085438Z-fab8d858e141` 四个批次全部通过，但 `browser-history.py` 把 `report.real.complete_pattern` 记在 FAILED Episode 打开的时刻，标签与取值不符；修正取值点后重冻为最终交付的 `…T090454Z-0f79150a35a9` 并重跑四个批次。三代的 release 目录与报告都保留在服务器 `releases/`、`reports/` 下，不互相拼接结论。
+
+## 九、边界与未覆盖
+
+- 未做也不宣称：跨流同步与统一回放游标、历史 3D 同步回放、真实控制/运动/录制/RESET/训练、生产 pin 或 recipe 改动；`frontend/` 之外未改一个字节。
+- 历史媒体仍不覆盖：`transforms` 记录把媒体路径放在 `metadata.rgb_path/depth_path/valid_mask_path` 内，本切片只读记录顶层引用，未接 metadata；`depth` 仍是“字节可读、不能内联”，没有做 `.npy` 数值解码。
+- 相机保持断言：根因是**推断级**（测量时点落在去抖 fit/阻尼残余内），本轮未复现旧失败实例；不宣称 3D 一致性回归永久稳定，比较仍为精确相等，未放宽阈值。
+- 空页/无 `event_seq` 的三分类已在 observations-index 真实验证；observations-persist 的区间排除与 transforms 的区间排除由同一次直接读取覆盖（各 303 行），界面路径只在 index 上跑过一次区间应用（同一分支逻辑）。
+- 生命周期正向 STOP/结束录制仍只在合成夹具成立：8792 未部署候选补丁，生产 recipe 未声明 `session_stop_protocol/recording_end_protocol`；本轮对这些端点只做读取。
+- 后端 reader 的边界案例（软链/越界/损坏）仍只在后端隔离夹具里成立；通过只读代理无法构造（网关按结构先拒），因此前端侧只断言这些码值在有响应时按原文显示。
+
 # M1.6 保存期间编辑覆盖修复与历史 Episode 只读浏览/单流播放（2026-10-25）
+
 
 本轮做两件事：修掉**同一路线保存期间的新编辑被服务器响应覆盖**的缺陷，并把后端历史读取候选的 `episode-read-1` 接成工作台里的**历史 Episode 浏览 + 单流分页/播放**视图。只修改 `frontend/`，本地提交不推送。完成只表示“历史浏览/单流播放切片”可用，**不**表示跨流同步、历史 3D 回放或正式 M1.5/M1 验收通过。
 

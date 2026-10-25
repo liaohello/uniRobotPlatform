@@ -49,10 +49,12 @@ npm test -- --maxWorkers=2
 python3 tests/browser-usability.py http://127.0.0.1:18934 /tmp/usability --release <release_id>
 python3 tests/browser-config.py http://127.0.0.1:18934 /tmp/config
 python3 tests/browser-session.py http://127.0.0.1:18934 /tmp/session
-python3 tests/browser-history.py http://127.0.0.1:18960-proxy /tmp/history --mode real       # 真实历史记录（上游须为 episode-read-1 候选）
-python3 tests/browser-history.py http://127.0.0.1:18947 /tmp/history-synth --mode synthetic # 隔离故障夹具，不触碰归档
-python3 tools/serve-readonly.py --directory dist --port 18947 --upstream http://127.0.0.1:18944
+python3 tests/browser-history.py http://127.0.0.1:18947 /tmp/history --mode real        # 真实历史记录：预览上游必须是 episode-read-1 候选（本轮为 18964）
+python3 tests/browser-history.py http://127.0.0.1:18947 /tmp/history-synth --mode synthetic # 隔离故障夹具（page.route），不触碰归档
+python3 tools/serve-readonly.py --directory dist --port 18947 --upstream http://127.0.0.1:18964
 ```
+
+预览进程只由 `tools/preview-registry.py` 管理：`free-port` 先报告既未被监听又未被台账占用的端口（只读，不杀任何东西），`check-release.py --preview-registry … --preview-round …` 在启动预览后立刻登记完整身份（pid、端口、release、上游、cmdline、内核 start tick、uid），`verify` 复核，`stop --pid … --round …` 只有在这些身份全部吻合时才终止那一个 pid。**不要用端口正则或进程名批量停止**，端口号本身不构成所有权证明。
 
 `tests/browser-session.py` is an explicitly synthetic, stateful protocol fixture; it does not create a real Session or prove native prepared/Start.
 
