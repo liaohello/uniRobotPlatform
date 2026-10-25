@@ -1,0 +1,525 @@
+{
+  "action_semantics": {
+    "categories_are_by_recorded_event_type": true,
+    "command_intent": [
+      "requested",
+      "approved",
+      "rejected",
+      "dispatch",
+      "dispatched",
+      "expired",
+      "command_response"
+    ],
+    "execution_feedback": [
+      "feedback"
+    ],
+    "lifecycle": [
+      "recording_start",
+      "recording_stop",
+      "episode_terminal"
+    ],
+    "note": "Actual state, recorded Target, command intent and execution feedback stay in separate event classes; this reader never promotes one into another",
+    "recorded_state": [
+      "feedback_initial"
+    ],
+    "recorded_target": [
+      "actuator_reference"
+    ]
+  },
+  "declared": {
+    "audit_status": "COMPLETE",
+    "complete_tail_file_present": true,
+    "declared_checksum_entries": 924,
+    "episode_json_readable": true,
+    "recording_status": "COMPLETE",
+    "require_recording": true,
+    "result": "failure",
+    "tail_json_readable": true,
+    "task_result_source": "world_sim_isolated_oracle_v1",
+    "termination_reason": "G2A_MOTION_ARM_COMPLETE"
+  },
+  "identity": {
+    "adapter_id": "mobilecar",
+    "backend_generation": {
+      "available": true,
+      "distinct_values": [
+        1
+      ],
+      "reason": null,
+      "scope": "sampled recorded payloads, not a per-record field"
+    },
+    "episode_directory": "/home/liaozhengyan/Desktop/mobileCar/var/runs/run_0104613ff7364ae78cf2f3946bd45f7b/episodes/episode_27bfed5427684795b361cd2ec21e9aa7",
+    "episode_display_name_is_not_a_key": true,
+    "episode_id": "episode_27bfed5427684795b361cd2ec21e9aa7",
+    "native_contract_version": "mobilecar-1.0",
+    "recording_root": "/home/liaozhengyan/Desktop/mobileCar/var/runs",
+    "recording_root_resolved": "/home/liaozhengyan/Desktop/mobileCar/var/runs",
+    "run_id": "run_0104613ff7364ae78cf2f3946bd45f7b",
+    "segments": [
+      {
+        "ended_wall_utc": "2026-10-17T16:11:31.300794Z",
+        "previous_recording_segment_id": null,
+        "reason": "G2A_MOTION_ARM_COMPLETE",
+        "recording_segment_id": "seg_001_d9ba710d3f",
+        "started_backend_monotonic_s": 426494.223690427,
+        "started_wall_utc": "2026-10-17T16:10:29.710250Z",
+        "status": "COMPLETE",
+        "termination_reason": "G2A_MOTION_ARM_COMPLETE"
+      }
+    ],
+    "source_id": "mobilecar-server-history-20261017"
+  },
+  "integrity": {
+    "checksum_verification": {
+      "declared_entries": 924,
+      "matched": [],
+      "meaning": "a tail checksum is the recorder's own declaration; only the files listed here were re-computed by this request, and a mismatch is reported as a finding instead of relabeled",
+      "mismatched": [
+        {
+          "actual_sha256": "0dec88f47c9fa1dd6dedc868e1d8637b078bc775aafa40e0aaa830324f270344",
+          "declared_sha256": "5ed143d0096339bb0a2946bb468c297bb148746ec4255f3c177304018e02aea9",
+          "relative_path": "episode.json"
+        }
+      ],
+      "verdict": "mismatch_present"
+    },
+    "declaration_is_not_verification": true,
+    "not_verified": [
+      "files not opened by this request",
+      "asset payloads except the ones actually served",
+      "archive-wide per-record checksum verification",
+      "physical settle/stop evidence behind a recorded status"
+    ],
+    "scope": "this episode, as read by this request",
+    "status": "complete",
+    "this_read_evidence": {
+      "episode_json_parsed": true,
+      "episode_json_sha256": "0dec88f47c9fa1dd6dedc868e1d8637b078bc775aafa40e0aaa830324f270344",
+      "files_recomputed_here": [
+        "episode.json",
+        "episode_complete.json"
+      ],
+      "tail_json_parsed": true,
+      "tail_json_sha256": "b2923d0f9587fe04978567fbb481939cc368683f6a50b747c992145ce95f8db6"
+    }
+  },
+  "media_linkage_sample": {
+    "asset_uri": null,
+    "note": "media path association is whatever the recorded observation metadata carries; it is copied, not inferred",
+    "observation_metadata_keys": []
+  },
+  "not_proven": [
+    "cross-stream time alignment or a shared replay cursor",
+    "that similar measurement/arrival values are the same instant",
+    "rendered 3D replay correctness even when the model digest matches",
+    "that files outside the fetched set are unchanged",
+    "completeness of the whole archive or training qualification"
+  ],
+  "paging_contract": {
+    "cursor": "native append order; line_index is never a clock",
+    "event_seq_range": "records without a true integer event_seq are excluded and counted when a range is active",
+    "limit_max": 200,
+    "offset_is_line_index": true
+  },
+  "platform_time_statement": {
+    "available_time_bases": {
+      "control": {
+        "available": true,
+        "time_bases_in_first_record": [
+          "backend_monotonic_s",
+          "sim_time_s",
+          "wall_utc"
+        ]
+      },
+      "events": {
+        "available": true,
+        "time_bases_in_first_record": [
+          "backend_monotonic_s",
+          "sim_time_s",
+          "wall_utc"
+        ]
+      },
+      "observations-index": {
+        "available": true,
+        "time_bases_in_first_record": [
+          "arrival_time_s",
+          "measurement_time_s",
+          "sim_time_s"
+        ]
+      }
+    },
+    "browser_arrival_order_is_not_used": true,
+    "clocks_declared_by_run_manifest": [
+      "sim",
+      "backend_monotonic",
+      "device",
+      "wall_utc"
+    ],
+    "record_order_is_native_append_order": true,
+    "synchronized_across_streams": false,
+    "units": {
+      "*_m": "metres",
+      "*_ms": "milliseconds",
+      "*_rad": "radians",
+      "*_s": "seconds"
+    }
+  },
+  "proven_by_this_run": [
+    "each listed field exists in the fetched records of this real Episode",
+    "per-stream time bases and frames are copied from the records themselves",
+    "the recorded model/scene identity and its comparison to the current pin"
+  ],
+  "recorded_model_identity": {
+    "map_mode": "unavailable",
+    "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+    "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "run_contract_version": "mobilecar-1.0",
+    "scene_id": "mobile_pick",
+    "source": "run manifest.json as recorded",
+    "truth_access": "GT_DEBUG_SEPARATE_FROM_DEFAULT_OBSERVATION"
+  },
+  "requests": {
+    "methods": [
+      "GET"
+    ],
+    "non_get": [],
+    "requests": 8
+  },
+  "source": {
+    "candidate_startup_manifest_digest": "a36b798ef81fc80dd8043480f290ca064681d51a8389b604760254bc23a5b584",
+    "episode_id": "episode_27bfed5427684795b361cd2ec21e9aa7",
+    "platform_source_aggregate": "bc33483d7f24e45e6ce80bb501125f51d1445836c07d7658a095fa74e002e350",
+    "platform_url": "http://127.0.0.1:18962",
+    "run_id": "run_0104613ff7364ae78cf2f3946bd45f7b"
+  },
+  "streams": {
+    "commands": {
+      "clock_and_frame": {},
+      "event_seq_present_in_any_record": true,
+      "identifier_fields": {
+        "command_id": [
+          "g2a_command_28973641a08045e8859bce12b77fd986"
+        ],
+        "control_tick_id": [
+          "None",
+          "tick_000006699"
+        ],
+        "event_seq": [
+          "332",
+          "333",
+          "334"
+        ],
+        "plan_id": [
+          "None"
+        ]
+      },
+      "media_metadata_keys": [],
+      "record_fields": [
+        "backend_monotonic_s",
+        "command_id",
+        "contract_version",
+        "control_tick_id",
+        "episode_id",
+        "event_seq",
+        "event_type",
+        "payload",
+        "plan_id",
+        "run_id",
+        "sim_time_s",
+        "task_phase",
+        "wall_utc"
+      ],
+      "relative_path": "commands.jsonl",
+      "returned": 3,
+      "time_bases_in_returned_records": null
+    },
+    "control": {
+      "clock_and_frame": {},
+      "event_seq_present_in_any_record": true,
+      "identifier_fields": {
+        "command_id": [
+          "None"
+        ],
+        "control_tick_id": [
+          "tick_000006539",
+          "tick_000006540"
+        ],
+        "event_seq": [
+          "3",
+          "4",
+          "5"
+        ],
+        "plan_id": [
+          "None"
+        ]
+      },
+      "media_metadata_keys": [],
+      "record_fields": [
+        "backend_monotonic_s",
+        "command_id",
+        "contract_version",
+        "control_tick_id",
+        "episode_id",
+        "event_seq",
+        "event_type",
+        "payload",
+        "plan_id",
+        "run_id",
+        "sim_time_s",
+        "task_phase",
+        "wall_utc"
+      ],
+      "relative_path": "control.jsonl",
+      "returned": 3,
+      "time_bases_in_returned_records": null
+    },
+    "events": {
+      "clock_and_frame": {},
+      "event_seq_present_in_any_record": true,
+      "identifier_fields": {
+        "command_id": [
+          "None"
+        ],
+        "control_tick_id": [
+          "tick_000006538",
+          "tick_000006539"
+        ],
+        "event_seq": [
+          "1",
+          "2",
+          "3"
+        ],
+        "plan_id": [
+          "None"
+        ]
+      },
+      "media_metadata_keys": [],
+      "record_fields": [
+        "backend_monotonic_s",
+        "command_id",
+        "contract_version",
+        "control_tick_id",
+        "episode_id",
+        "event_seq",
+        "event_type",
+        "payload",
+        "plan_id",
+        "run_id",
+        "sim_time_s",
+        "task_phase",
+        "wall_utc"
+      ],
+      "relative_path": "events.jsonl",
+      "returned": 3,
+      "time_bases_in_returned_records": null
+    },
+    "observations-index": {
+      "clock_and_frame": {
+        "clock_id": [
+          "backend_monotonic"
+        ],
+        "frame_id": [
+          "base_link"
+        ],
+        "quality": [
+          "simulated_nominal",
+          "simulated_raycast"
+        ],
+        "source": [
+          "mujoco_mj_ray",
+          "mujoco_sensor"
+        ]
+      },
+      "event_seq_present_in_any_record": false,
+      "identifier_fields": {
+        "feedback_sample_id": [
+          "None"
+        ],
+        "sample_id": [
+          "encoders_000006540",
+          "imu_000006540",
+          "laser_000006540"
+        ],
+        "stream_id": [
+          "encoders",
+          "imu",
+          "lidar"
+        ]
+      },
+      "media_metadata_keys": [
+        "angular_frame_note",
+        "control_tick_id",
+        "interface_profile",
+        "publish_period_s",
+        "source_sample_period_s"
+      ],
+      "record_fields": [
+        "arrival_time_s",
+        "asset_uri",
+        "capture_backend_monotonic_s",
+        "capture_control_tick_id",
+        "capture_sim_time_s",
+        "clock_id",
+        "contract_version",
+        "episode_id",
+        "feedback_sample_id",
+        "frame_id",
+        "measurement_time_s",
+        "metadata",
+        "quality",
+        "run_id",
+        "sample_id",
+        "sensor_kind",
+        "source",
+        "stream_id",
+        "timing",
+        "valid_mask_uri",
+        "value"
+      ],
+      "relative_path": "observations/index.jsonl",
+      "returned": 3,
+      "time_bases_in_returned_records": null
+    },
+    "observations-persist": {
+      "clock_and_frame": {},
+      "event_seq_present_in_any_record": false,
+      "identifier_fields": {
+        "feedback_sample_id": [
+          "joint_feedback_000006551",
+          "joint_feedback_000006578",
+          "joint_feedback_000006598"
+        ],
+        "persist_sequence": [
+          "1",
+          "2",
+          "3"
+        ],
+        "sample_id": [
+          "rgbd_9d0502beaa0f4fa586cc22f03032c294",
+          "rgbd_e3213e6cb64b4cd693c17d485d064d09",
+          "rgbd_e553d6b613cd4c9399567fd0d98f953f"
+        ],
+        "stream_id": [
+          "rgbd"
+        ]
+      },
+      "media_metadata_keys": [],
+      "record_fields": [
+        "arrival_backend_monotonic_s",
+        "arrival_to_persist_ms",
+        "capture_backend_monotonic_s",
+        "capture_control_tick_id",
+        "capture_sim_time_s",
+        "capture_to_persist_ms",
+        "depth_uri",
+        "episode_id",
+        "feedback_sample_id",
+        "interface_profile",
+        "kinds",
+        "persist_backend_monotonic_s",
+        "persist_sequence",
+        "profile_id",
+        "profile_sha256",
+        "profile_version",
+        "rgb_uri",
+        "run_id",
+        "sample_id",
+        "stream_id",
+        "valid_mask_uri"
+      ],
+      "relative_path": "observations/persist.jsonl",
+      "returned": 3,
+      "time_bases_in_returned_records": null
+    },
+    "transforms": {
+      "clock_and_frame": {
+        "clock_id": [
+          "backend_monotonic"
+        ],
+        "frame_id": [
+          "rgbd_optical"
+        ],
+        "source": [
+          "mujoco_renderer"
+        ]
+      },
+      "event_seq_present_in_any_record": false,
+      "identifier_fields": {
+        "sample_id": [
+          "rgbd_9d0502beaa0f4fa586cc22f03032c294",
+          "rgbd_e3213e6cb64b4cd693c17d485d064d09",
+          "rgbd_e553d6b613cd4c9399567fd0d98f953f"
+        ],
+        "stream_id": [
+          "rgbd"
+        ]
+      },
+      "media_metadata_keys": [
+        "T_TCP_camera",
+        "T_base_camera_render",
+        "T_base_link4",
+        "T_base_tcp",
+        "T_link4_camera",
+        "asset_bytes",
+        "asset_sha256",
+        "calibration_id",
+        "depth_convention",
+        "depth_path",
+        "height",
+        "interface_profile",
+        "joint_model_qpos_rad",
+        "joint_user_qpos_rad",
+        "matrix_storage",
+        "profile_id",
+        "profile_sha256",
+        "profile_version",
+        "recording_gate",
+        "rgb_path",
+        "rgbd_optical_convention",
+        "timing",
+        "transform_version",
+        "valid_fraction",
+        "valid_mask_path",
+        "vertical_fov_deg",
+        "width"
+      ],
+      "record_fields": [
+        "arrival_time_s",
+        "clock_id",
+        "contract_version",
+        "episode_id",
+        "frame_id",
+        "measurement_time_s",
+        "metadata",
+        "run_id",
+        "sample_id",
+        "source",
+        "stream_id"
+      ],
+      "relative_path": "transforms.jsonl",
+      "returned": 3,
+      "time_bases_in_returned_records": null
+    }
+  },
+  "three_d_replay": {
+    "live_geometry_or_actual_may_be_applied": false,
+    "model_match": "match",
+    "reasons": [
+      "the recorded model and scene digests equal the current production pin, so the mesh identity can be reused",
+      "rendered-replay correctness is not verified by this slice and live Actual/geometry is never substituted for recorded state"
+    ],
+    "recorded_model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "recorded_scene_id": "mobile_pick",
+    "recorded_transforms_available": true,
+    "reference_model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "reference_scene_id": "mobile_pick",
+    "scene_match": "match",
+    "status": "identity_verified_rendering_unverified",
+    "still_available": [
+      "metadata",
+      "events",
+      "recorded transforms",
+      "media assets that exist"
+    ]
+  }
+}

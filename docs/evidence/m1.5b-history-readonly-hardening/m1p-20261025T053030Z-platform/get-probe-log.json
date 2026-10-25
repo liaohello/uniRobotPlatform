@@ -1,0 +1,367 @@
+{
+  "methods": [
+    "GET"
+  ],
+  "non_get": [],
+  "only_method": "GET",
+  "probe": "native_get_probe",
+  "requests": [
+    {
+      "binary": false,
+      "bytes": 469,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:8792/api/v1/health"
+    },
+    {
+      "binary": false,
+      "bytes": 1530,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:8792/api/v1/capabilities"
+    },
+    {
+      "binary": false,
+      "bytes": 5084,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes?limit=5"
+    },
+    {
+      "binary": false,
+      "bytes": 141366,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:8792/api/v1/episodes"
+    },
+    {
+      "binary": false,
+      "bytes": 5072,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes?limit=5&offset=5"
+    },
+    {
+      "binary": false,
+      "bytes": 145,
+      "method": "GET",
+      "status": 422,
+      "url": "http://127.0.0.1:18964/api/v1/episodes?limit=1000"
+    },
+    {
+      "binary": false,
+      "bytes": 5548,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes?recording_status=FAILED&limit=20"
+    },
+    {
+      "binary": false,
+      "bytes": 20546,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7?run_id=run_0104613ff7364ae78cf2f3946bd45f7b"
+    },
+    {
+      "binary": false,
+      "bytes": 13122,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/events/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&limit=5"
+    },
+    {
+      "binary": false,
+      "bytes": 7938,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/events/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&limit=5&offset=5"
+    },
+    {
+      "binary": false,
+      "bytes": 7590,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/events/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&event_seq_from=100&event_seq_to=104&limit=10"
+    },
+    {
+      "binary": false,
+      "bytes": 7546,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/control/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&limit=5&time_base=sim_time_s&time_from=0.02"
+    },
+    {
+      "binary": false,
+      "bytes": 205,
+      "method": "GET",
+      "status": 400,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/events/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&time_base=browser_arrival&time_from=1"
+    },
+    {
+      "binary": false,
+      "bytes": 5595,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/control/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&limit=3"
+    },
+    {
+      "binary": false,
+      "bytes": 7818,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/observations-index/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&limit=3"
+    },
+    {
+      "binary": false,
+      "bytes": 4921,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/observations-persist/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&limit=2"
+    },
+    {
+      "binary": false,
+      "bytes": 11347,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/transforms/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&limit=2"
+    },
+    {
+      "binary": false,
+      "bytes": 9393,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/initial-snapshot/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&limit=2"
+    },
+    {
+      "binary": false,
+      "bytes": 36001,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/assets/assets/rgb/rgbd_00cf15f3cc574b909391717680c604f6_rgb.png"
+    },
+    {
+      "binary": false,
+      "bytes": 36001,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/assets/assets/rgb/rgbd_00cf15f3cc574b909391717680c604f6_rgb.png?sha256=cab5cfff4c3eec481672ec554d3f7be5e780ec0c97ac4b2bdfbb3d707469599b"
+    },
+    {
+      "binary": false,
+      "bytes": 283,
+      "method": "GET",
+      "status": 409,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/assets/assets/rgb/rgbd_00cf15f3cc574b909391717680c604f6_rgb.png?sha256=0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "binary": false,
+      "bytes": 188,
+      "method": "GET",
+      "status": 400,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/assets/rgb/%2e%2e/%2e%2e/%2e%2e/%2e%2e/assets/rgb/frame.png"
+    },
+    {
+      "binary": false,
+      "bytes": 163,
+      "method": "GET",
+      "status": 404,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/assets/rgb/definitely-not-recorded.png"
+    },
+    {
+      "binary": false,
+      "bytes": 12393,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_879cf70489064a3b83bb15b5395a8341?run_id=run_1f6fb34853f94130aadedb8fa486705b"
+    },
+    {
+      "binary": false,
+      "bytes": 12848,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_879cf70489064a3b83bb15b5395a8341/streams/events/records?run_id=run_1f6fb34853f94130aadedb8fa486705b&limit=3"
+    },
+    {
+      "binary": false,
+      "bytes": 135826,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes?limit=200"
+    },
+    {
+      "binary": false,
+      "bytes": 20546,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7?run_id=run_0104613ff7364ae78cf2f3946bd45f7b"
+    },
+    {
+      "binary": false,
+      "bytes": 9743,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_788c2017c93a41f4afa502d7c024fb15?run_id=run_0bc2060d285a4ee58fc33a5b312ce0df"
+    },
+    {
+      "binary": false,
+      "bytes": 9803,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_2515728d63174e9a8efa6f3b1da4ae70?run_id=run_0f6ba4cf9af0482db0b41a1b2e5de4bd"
+    },
+    {
+      "binary": false,
+      "bytes": 9784,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_ad1e0f5399c44249a60699a1a209434c?run_id=run_11c1cedc090947b8b0602e5d45d4d5e2"
+    },
+    {
+      "binary": false,
+      "bytes": 9775,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_fe59f43b84e9456da40b9c2da9653b6c?run_id=run_1a0c41c9fceb4175a12c24eacecd16b9"
+    },
+    {
+      "binary": false,
+      "bytes": 9794,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_7b5484a936c74e14b7298bf4e3f28211?run_id=run_2179824321f14ca7b2ad2e3325b1de74"
+    },
+    {
+      "binary": false,
+      "bytes": 9784,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_0e4c74223700468aa7f9f95bfff58352?run_id=run_2e77919c9eb643548fed43001596bda8"
+    },
+    {
+      "binary": false,
+      "bytes": 9770,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_92eacc089dce44d19215701a61561df4?run_id=run_361ee2f3eec8488e9d0bf0cb1da64df0"
+    },
+    {
+      "binary": false,
+      "bytes": 9751,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_39e306f5a3494545b84be316613ac20e?run_id=run_3bb7fbcaf089429685a700f33c789def"
+    },
+    {
+      "binary": false,
+      "bytes": 9794,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_427ef49f8cde47e89841f0fc69aaeee1?run_id=run_410e39a2350f4a51a261419de10cd8f6"
+    },
+    {
+      "binary": false,
+      "bytes": 20521,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_be4c78fbb0964ad88355a6be1c45d5bc?run_id=run_4b902053c0f04fb3addf6e67f56b1455"
+    },
+    {
+      "binary": false,
+      "bytes": 20508,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_856be580b0844613814741517e44e99b?run_id=run_574635097c484567b3e96e74d6f2a5d6"
+    },
+    {
+      "binary": false,
+      "bytes": 20504,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_fe3c69c42515479f802357283a1448a5?run_id=run_5f8d60467ea44c9694c88d895f4ea27d"
+    },
+    {
+      "binary": false,
+      "bytes": 9785,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_4128cb09a3254eaab7b6470d97cb93cf?run_id=run_6b53f8268b0a4d64a65c81b29099510a"
+    },
+    {
+      "binary": false,
+      "bytes": 9791,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_12a859e9d07342d99d8ec747731ae726?run_id=run_7a11453a27b9476c8b2b43370f76b2d3"
+    },
+    {
+      "binary": false,
+      "bytes": 20543,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_32975d5ce7eb4b10a58588858de103d7?run_id=run_81ccba839bec4e1991278b913fa2f1b3"
+    },
+    {
+      "binary": false,
+      "bytes": 193,
+      "method": "GET",
+      "status": 404,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_0000000000000000000000000000dead"
+    },
+    {
+      "binary": false,
+      "bytes": 248,
+      "method": "GET",
+      "status": 404,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/no-such-stream/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&limit=1"
+    },
+    {
+      "binary": false,
+      "bytes": 103945,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/openapi.json"
+    },
+    {
+      "binary": false,
+      "bytes": 20946833,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:8792/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7"
+    },
+    {
+      "binary": false,
+      "bytes": 20546,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7?run_id=run_0104613ff7364ae78cf2f3946bd45f7b"
+    },
+    {
+      "binary": false,
+      "bytes": 20546,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7?run_id=run_0104613ff7364ae78cf2f3946bd45f7b"
+    },
+    {
+      "binary": false,
+      "bytes": 20227,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/observations-index/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&event_seq_from=1&event_seq_to=5&limit=5"
+    },
+    {
+      "binary": false,
+      "bytes": 249,
+      "method": "GET",
+      "status": 400,
+      "url": "http://127.0.0.1:18964/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/streams/events/records?run_id=run_0104613ff7364ae78cf2f3946bd45f7b&time_base=wall_utc&time_from=1"
+    },
+    {
+      "binary": false,
+      "bytes": 469,
+      "method": "GET",
+      "status": 200,
+      "url": "http://127.0.0.1:8792/api/v1/health"
+    }
+  ]
+}

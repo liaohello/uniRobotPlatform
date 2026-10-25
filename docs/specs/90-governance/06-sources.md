@@ -104,3 +104,7 @@ S08/S09 原文件按字节归档；其中远程图片/仓库声明不构成本�
 ## V0.8 真实历史读取来源
 
 [S21](sources/S21-history-episode-read-slice.md)：本次用户 Goal 要求完成真实历史 Episode/segment 只读 reader 首个切片——固定一个历史来源与实际 recording_root、冻结最小读取契约与 OpenAPI、保留复合身份与原生时间/动作语义、把声明状态与实际读取验证分层、路径受限只读并把启动器纳入发布身份。历史 S14～S20 原文与事实保持不变。来源字节哈希登记于 catalog.json 与 traceability.json。
+
+## V0.8 历史只读整改与可复现发布来源
+
+[S22](sources/S22-history-readonly-hardening.md)：本次用户 Goal 要求把历史 reader 整改为构造级只读（只经不接受 method/body 的 GET-only 入口访问 native，重算只在隔离副本）、统一受限路径解析（索引与读取两侧都不得借目录或文件软链越界，缓存索引不得绕过读取时检查）、修复 `event_seq` 区间过滤（缺失/非整数/bool 排除并计数，不补造），修正超出证据的"全部原始文件未改"表述，并让报告重算并绑定冻结启动清单的源码摘要；保留违规记录、旧清单值与旧报告，不倒填、不猜测回滚。历史 S14～S21 原文与事实保持不变。来源字节哈希登记于 catalog.json 与 traceability.json。

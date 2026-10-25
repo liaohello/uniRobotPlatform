@@ -4,7 +4,7 @@
 
 **真实历史 reader 首个切片完成（61/61 服务器实测断言）；这不代表同步回放 UI、新采集闭环或正式 M1.5/M1 验收通过。** 原始数据全部留在服务器，不搬目录、不重写、不导出重算；`frontend/` 未改动。
 
-**本轮边界违规与后果（不隐瞒）**：交付代码路径与 61 项检查只对 native 发 GET，但一次人工排障探测向 8792 发送了 `POST /api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/validate`，违反了"仅 GET"边界。后果已实测限定为**该记录的一份派生文件**被 native 自己重写：`…/episode_27bfed54…/quality_report.json`，mtime 2026-10-25 12:20:38，摘要 `53314c847d17f38da6b32587aaaeb830660f495bc5f2df45b57d3759efa303bd`；该文件重写前的摘要未被快照，因此**不能声称内容不变**。原始记录经复核未变：`episode.json` `0dec88f47c9fa1dd…` 与 `episode_complete.json` `b2923d0f9587fe04…` 仍等于落地前基线，mtime 仍是 2026-10-18；全归档 696 文件聚合摘要仍为 `60c0c6963bc9ae84…`（逐文件差异 0 项）；8792 运行时状态前后一致（`episode_43c22f95…`、`recording_status=IDLE`），未被停止/重启/替换。后续任何复现都不得对 native 发非 GET 请求。
+**本轮边界违规与后果（不隐瞒）**：交付代码路径与 61 项检查只对 native 发 GET，但一次人工排障探测向 8792 发送了 `POST /api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/validate`，违反了"仅 GET"边界。后果已实测限定为**该记录的一份派生文件**被 native 自己重写：`…/episode_27bfed54…/quality_report.json`，mtime 2026-10-25 12:20:38，摘要 `53314c847d17f38da6b32587aaaeb830660f495bc5f2df45b57d3759efa303bd`；该文件重写前的摘要未被快照，因此**不能声称内容不变**。经复核未变的是下列明确集合（不是整个归档）：`episode.json` `0dec88f47c9fa1dd…` 与 `episode_complete.json` `b2923d0f9587fe04…` 仍等于落地前基线，mtime 仍是 2026-10-18；全归档 696 个同名文件聚合摘要仍为 `60c0c6963bc9ae84…`（逐文件差异 0 项）；8792 运行时状态前后一致（`episode_43c22f95…`、`recording_status=IDLE`），未被停止/重启/替换。后续任何复现都不得对 native 发非 GET 请求；该约束在 M1.5b 已由构造保证（`tools/native_get_probe.py`），并纠正了本节原先超出证据的表述，见 [M1.5b 整改记录](backend-m1.5b-history-readonly-hardening.md)。
 
 ## 一、结论
 
@@ -14,7 +14,7 @@
 | 平台历史读取 API（列表 / 轻量详情 / 可用流 / 分 records 页 / 媒体资产） | 5 个 GET 路径在同一 OpenAPI 中暴露，61/61 断言在服务器对**真实记录**通过 |
 | 真实记录规模 | 348 条 Episode（272 个 run id / 磁盘 295 个 run 目录）；声明 342 COMPLETE + 6 FAILED（audit 342 COMPLETE + 6 INCOMPLETE）；全部记录 `complete_tail=true`；多段 Episode 0；跨 run 重复 episode_id 0 |
 | 完整性分层 | 生命周期闭合状态、`complete_tail` 存在性、tail 声明校验和、本次读取实际重算结果分别表达；抽样 16 条真实记录的 tail 对自身 `episode.json` 声明均为**过期自校验**（`mismatch_present`），仍按声明保留生命周期状态，不改写、不称已验证 |
-| 原始数据未被改动 | 全量 `episode.json` + `episode_complete.json` 聚合摘要在整轮读取前后一致：`60c0c6963bc9ae8442bc3d9c9e5f0c33c19973cee966994365313b57ae9d6664`（696 文件）；8792 health 前后完全一致（`run_9c88e3e3…/gen 1/episode_43c22f95…`、`recording_status=IDLE`） |
+| 已覆盖集合复核未变（非整库证明） | 696 个 `episode.json` + `episode_complete.json` 聚合摘要在整轮读取前后一致：`60c0c6963bc9ae8442bc3d9c9e5f0c33c19973cee966994365313b57ae9d6664`；8792 health 前后完全一致（`run_9c88e3e3…/gen 1/episode_43c22f95…`、`recording_status=IDLE`）。其它文件（含被 native 重写的派生 `quality_report.json`）在该时点没有前置摘要，属未覆盖 |
 | 新候选端口，不替换既有服务 | 历史候选常驻 `http://127.0.0.1:18960`，同一进程继续携带 geometry-2、Map/Route、Session/`current`、STOP/end 契约（原统一检查 27/27 在该候选上复跑通过）；18959/18949/18953/8792 未替换 |
 | 发布身份小缺口已闭合 | `launch_unified_gateway.py` 的 `SOURCE_ROOTS` 增至 `("src/unirobot","config","tools")`，平台源码聚合摘要 `e86a709fb6e59f44…` 覆盖 42 个文件，其中包含启动器与本轮检查工具；native 完整清单 154 路径与生产 pin 的边界不变 |
 
@@ -54,7 +54,7 @@
 
 ## 六、面向未来 3D 回放的记录内身份
 
-`recorded_model_identity` 取自该 run 的 `manifest.json`（`model_id/model_sha256/scene_id/map_mode/truth_access/clocks`）。与生产 pin 比对后：所选记录 model 与 scene 均 `match`（`3ca3d6d0a92a…`），状态为 `identity_verified_rendering_unverified`；不匹配或不可证时状态为 `restricted` 并给出具体原因。两种状态都带 `live_geometry_or_actual_may_be_applied: false`，即绝不把当前在线 geometry 或 Actual 套到历史 Episode；`transforms.jsonl` 是记录内唯一的位姿来源（实测可读）。仍可提供真实元数据、事件与可用媒体。
+`recorded_model_identity` 取自该 run 的 `manifest.json`（`model_id/model_sha256/scene_id/map_mode/truth_access/clocks`）。与生产 pin 比对后：所选记录 model 与 scene 均 `match`（`3ca3d6d0a92a…`），状态为 `identity_verified_rendering_unverified`；不匹配或不可证时状态为 `restricted` 并给出具体原因。两种状态都带 `live_geometry_or_actual_may_be_applied: false`，即绝不把当前在线 geometry 或 Actual 套到历史 Episode。本节初稿曾把 `transforms.jsonl` 写成"记录内唯一的位姿来源"，该说法已在 M1.5b 更正：实测该流携带 `sample_id/stream_id/sensor_kind/clock_id/frame_id/measurement_time_s/arrival_time_s/source/metadata`，是带 frame/时钟标记的变换观测，不是逐 body 位姿序列，因此模型摘要相等仍不足以复原历史姿态。仍可提供真实元数据、事件与可用媒体。
 
 ## 七、受限读取与安全边界
 
@@ -101,5 +101,5 @@ PYTHONPATH=$REL/backend/src $PY tools/episode_history_check.py --platform-url ht
 ## 十一、冻结状态与边界
 
 - 平台本轮新增/修改：`backend/src/unirobot/episodes.py`、`backend/config/mobilecar-history-source.json`、`backend/src/unirobot/api.py`（5 条 GET 路由与错误/缓存中间件）、`backend/src/unirobot/settings.py`（`UNIROBOT_HISTORY_SOURCE`、`UNIROBOT_EPISODE_ROOT`）、`backend/tools/launch_unified_gateway.py`（`--history-source`/`--episode-root` + 启动清单 history 块 + `tools` 纳入源码摘要）、`backend/tools/episode_history_check.py`、`backend/tests/test_episodes.py`。平台改动本地提交、**不推送**。
-- native：未提交、未部署、未重启；`ReplayReader`/Recorder 格式只被读取和引用，未改写任何**原始**记录文件（`episode.json`、`episode_complete.json`、`events.jsonl` 等的摘要已逐文件复核）。一次人工误发的 `POST …/validate` 让 native 自己重写了一条记录的派生 `quality_report.json`，事实与复核范围见开头说明。
+- native：未提交、未部署、未重启；`ReplayReader`/Recorder 格式只被读取和引用。逐文件复核只覆盖 696 个 `episode.json`/`episode_complete.json`（以及 M1.5b 追加的覆盖集合），本节初稿提到的 `events.jsonl` 等并未事前快照，不属证明范围。一次人工误发的 `POST …/validate` 让 native 自己重写了一条记录的派生 `quality_report.json`，事实与复核范围见开头说明。
 - 未验证：同步 3D 回放渲染、真机停车与录制闭环、新采集链路、G1/G4A2 与 a5/drvfix 选择、正式 M1.5/M1 验收。本 Goal 完成只表示真实历史 reader 首个切片可用。

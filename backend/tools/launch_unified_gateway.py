@@ -22,31 +22,17 @@ from typing import Any
 
 import uvicorn
 
+from source_digest import SOURCE_ROOTS, digest_tree
+
 from unirobot.api import create_app
 from unirobot.mobilecar import MobileCarIntegration
 from unirobot.catalog import load_catalog
 from unirobot.recipe import load_recipe
 from unirobot.settings import BACKEND_ROOT, CONFIG_PATH
 
-SOURCE_ROOTS = ("src/unirobot", "config", "tools")
-
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def digest_tree(root: Path, relative_roots: tuple[str, ...]) -> dict[str, Any]:
-    entries: dict[str, str] = {}
-    for part in relative_roots:
-        base = root / part
-        if not base.is_dir():
-            raise SystemExit(f"platform source root is missing: {base}")
-        for file in sorted(base.rglob("*")):
-            if file.is_file() and file.suffix in {".py", ".json", ".yaml", ".html", ".js", ".css"} \
-                    and "__pycache__" not in file.parts:
-                entries[file.relative_to(root).as_posix()] = sha256(file)
-    aggregate = hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-    return {"file_count": len(entries), "aggregate": aggregate, "files": entries}
 
 
 def port_is_free(host: str, port: int) -> bool:
@@ -114,7 +100,8 @@ def main() -> int:
     manifest = {
         "candidate": "unified-platform-candidate",
         "listen": {"host": args.host, "port": args.port, "was_free_before_start": True},
-        "platform_source": {"backend_root": str(BACKEND_ROOT), **digest_tree(BACKEND_ROOT, SOURCE_ROOTS)},
+        "platform_source": {"backend_root": str(BACKEND_ROOT), "roots": list(SOURCE_ROOTS),
+                            **digest_tree(BACKEND_ROOT, SOURCE_ROOTS)},
         "geometry_bundle": {"path": str(bundle), "bundle_json": str(bundle / "bundle.json"),
                             "bundle_json_sha256": sha256(bundle / "bundle.json"),
                             "asset_count": len(assets),

@@ -11,10 +11,11 @@ import argparse
 import hashlib
 import json
 import sys
-import urllib.error
-import urllib.request
 from pathlib import Path
 from typing import Any
+
+import source_digest
+from native_get_probe import GetProbe
 
 NATIVE_VOCABULARY = {"recording_start", "recording_stop", "episode_terminal", "feedback_initial",
                     "feedback", "actuator_reference", "requested", "approved", "rejected",
@@ -36,13 +37,12 @@ class Results:
             raise Failed(f"{name}: {json.dumps(detail, ensure_ascii=False)[:400]}")
 
 
-def raw(url: str, body: bytes | None = None, timeout: float = 20.0) -> tuple[int, bytes, dict[str, str]]:
-    request = urllib.request.Request(url, data=body, headers={"content-type": "application/json"} if body else {})
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            return response.status, response.read(), dict(response.headers)
-    except urllib.error.HTTPError as exc:
-        return exc.code, exc.read(), dict(exc.headers)
+PROBE: GetProbe
+
+
+def raw(url: str) -> tuple[int, bytes, dict[str, str]]:
+    """GET only: the probe object has no method or body parameter to misuse."""
+    return PROBE.get(url)
 
 
 def get_json(url: str) -> tuple[int, Any]:
@@ -51,6 +51,50 @@ def get_json(url: str) -> tuple[int, Any]:
         return status, json.loads(payload)
     except json.JSONDecodeError:
         return status, payload.decode("utf-8", "replace")
+
+
+def coverage_snapshot(root: Path, records: list[tuple[str, str]]) -> dict[str, str]:
+    """Digests of the files this run actually opens, so 'unchanged' can only ever mean this set."""
+    covered: dict[str, str] = {}
+    for run_id, episode_id in records:
+        base = root / run_id / "episodes" / episode_id
+        for name in ("manifest.json",):
+            path = root / run_id / name
+            if path.is_file():
+                covered[f"{run_id}/{name}"] = hashlib.sha256(path.read_bytes()).hexdigest()
+        for name in ("episode.json", "episode_complete.json", "events.jsonl", "control.jsonl", "commands.jsonl",
+                     "transforms.jsonl", "initial_snapshot.json", "quality_report.json",
+                     "observations/index.jsonl", "observations/persist.jsonl"):
+            path = base / name
+            if path.is_file():
+                covered[f"{run_id}/{episode_id}/{name}"] = hashlib.sha256(path.read_bytes()).hexdigest()
+        assets = base / "assets"
+        if assets.is_dir():
+            for path in sorted(assets.rglob("*")):
+                if path.is_file():
+                    covered[f"{run_id}/{episode_id}/{path.relative_to(base).as_posix()}"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    for run_id, episode_id in records:
+        for name in ("episode.json", "episode_complete.json"):
+            path = root / run_id / "episodes" / episode_id / name
+            if path.is_file():
+                covered.setdefault(f"{run_id}/{episode_id}/{name}", hashlib.sha256(path.read_bytes()).hexdigest())
+    return covered
+
+
+def archive_digest(root: Path) -> str:
+    """The frozen baseline recipe: every episode.json and episode_complete.json digest, folded."""
+    entries: dict[str, str] = {}
+    for run_dir in sorted(p for p in root.iterdir() if p.is_dir()):
+        episodes = run_dir / "episodes"
+        if not episodes.is_dir():
+            continue
+        for episode in sorted(p for p in episodes.iterdir() if p.is_dir()):
+            for name in ("episode.json", "episode_complete.json"):
+                path = episode / name
+                if path.is_file():
+                    entries[f"{run_dir.name}/{episode.name}/{name}"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    folded = hashlib.sha256(json.dumps(entries, sort_keys=True).encode()).hexdigest()
+    return hashlib.sha256(folded.encode()).hexdigest()
 
 
 def code_of(payload: Any) -> str | None:
@@ -69,7 +113,14 @@ def main() -> int:
     parser.add_argument("--complete-episode", required=True, help="run_id:episode_id of a real COMPLETE record")
     parser.add_argument("--failed-episode", required=True, help="run_id:episode_id of a real FAILED/incomplete record")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--startup-manifest", type=Path, required=True,
+                        help="frozen manifest of the release being checked; its recorded platform source aggregate is recomputed against the running bytes")
+    parser.add_argument("--probe-log", type=Path, required=True, help="JSONL record of every GET issued by this run")
+    parser.add_argument("--coverage-out", type=Path, required=True, help="digests of the covered file set, before and after")
     args = parser.parse_args()
+
+    global PROBE
+    PROBE = GetProbe(args.probe_log)
 
     P = args.platform_url.rstrip("/")
     N = args.native_url.rstrip("/")
@@ -77,6 +128,11 @@ def main() -> int:
     complete_run, complete_id = args.complete_episode.split(":", 1)
     failed_run, failed_id = args.failed_episode.split(":", 1)
     results = Results()
+
+    manifest = json.loads(args.startup_manifest.read_text(encoding="utf-8"))
+    root = Path(manifest["history"]["resolved_recording_root"])
+    covered_before = coverage_snapshot(root, [(complete_run, complete_id), (failed_run, failed_id)])
+    baseline_before = archive_digest(root)
 
     def detail_for(episode_id: str, run_id: str) -> dict[str, Any]:
         status, body = get_json(f"{P}/api/v1/episodes/{episode_id}?run_id={run_id}")
@@ -326,6 +382,34 @@ def main() -> int:
     results.add("platform detail stays light compared with the native whole-record dump",
                 status == 200 and light * 5 < len(native_detail), {"platform_bytes": light, "native_bytes": len(native_detail)})
 
+    # ---- the report is bound to the frozen bytes it is checking -----------------
+    binding = source_digest.bind(Path(manifest["platform_source"]["backend_root"]), manifest)
+    results.add("running tree equals the frozen startup manifest",
+                binding["match"] and binding["recorded_file_count"] == binding["recomputed_file_count"],
+                {"recorded": binding["recorded_aggregate"], "recomputed": binding["recomputed_aggregate"],
+                 "files": binding["recomputed_file_count"], "changed_or_missing_paths": binding["changed_or_missing_paths"]})
+    results.add("history source bytes equal the manifest hash",
+                hashlib.sha256(args.source_config.read_bytes()).hexdigest()
+                == manifest["history"]["source_file_sha256"],
+                {"manifest": manifest["history"]["source_file_sha256"][:16]})
+    results.add("candidate reports the resolved root and the boundary rule",
+                src.get("recording_root_resolved") == str(root) and "resolve" in src.get("path_boundary", ""),
+                {"resolved": src.get("recording_root_resolved"), "boundary": src.get("path_boundary")})
+    results.add("real archive needs no symlink exclusions",
+                detail_for(complete_id, complete_run)["media_summary"]["excluded_count"] == 0,
+                detail_for(complete_id, complete_run)["media_summary"]["symlink_or_escape_excluded"])
+    status, anomalies = get_json(f"{P}/api/v1/episodes/{complete_id}/streams/observations-index/records"
+                                 f"?run_id={complete_run}&event_seq_from=1&event_seq_to=5&limit=5")
+    results.add("streams without event_seq are excluded and counted under a range, never invented",
+                anomalies["records"] == [] and anomalies["filtering"]["event_seq_range"]["active"] is True
+                and anomalies["filtering"]["event_seq_range"]["excluded_without_valid_event_seq"] > 0
+                and "no sequence number is invented" in anomalies["filtering"]["note"],
+                {"excluded": anomalies["filtering"]["event_seq_range"]["excluded_without_valid_event_seq"],
+                 "anomalies": anomalies["filtering"]["event_seq_range"]["anomalies"][:2]})
+    status, wall = records(complete_id, complete_run, "events", "&time_base=wall_utc&time_from=1")
+    results.add("a calendar time base refuses numeric bounds instead of comparing strings",
+                status == 400 and code_of(wall) == "time_base_not_numeric", {"status": status, "code": code_of(wall)})
+
     # ---- nothing was written ----------------------------------------------------
     _, native_after = get_json(f"{N}/api/v1/health")
     results.add("declaring native instance is unchanged by the whole read pass",
@@ -335,37 +419,54 @@ def main() -> int:
     results.add("declaring native instance still advertises no stop/end protocol",
                 "session_stop_protocol" not in blob and "recording_end_protocol" not in blob,
                 {"keys": sorted(capabilities) if isinstance(capabilities, dict) else type(capabilities).__name__})
-    agg = archive_digest(Path(source["recording_root"]), source["declared_scale"]["episodes_from_native_list"])
+    agg = archive_digest(root)
     results.add("archive raw files are byte-identical to the frozen baseline",
-                agg == source["archive_baseline"]["aggregate_sha256"], {"before": source["archive_baseline"]["aggregate_sha256"],
-                                                                        "after": agg})
+                agg == source["archive_baseline"]["aggregate_sha256"], {"before": baseline_before, "after": agg,
+                                                                       "matches_frozen_baseline": agg == source["archive_baseline"]["aggregate_sha256"],
+                                                                       "coverage": "every episode.json and episode_complete.json under the declared root"})
+    covered_after = coverage_snapshot(root, [(complete_run, complete_id), (failed_run, failed_id)])
+    drift = sorted(path for path in set(covered_before) | set(covered_after)
+                   if covered_before.get(path) != covered_after.get(path))
+    results.add("the covered file set is unchanged across this read pass",
+                drift == [], {"covered_files": len(covered_after),
+                              "covered_names": sorted({path.split('/')[-1] for path in covered_after}),
+                              "drift": drift,
+                              "not_covered": ["files outside these two records",
+                                              "the derived quality_report.json pre-image was never snapshotted, so no claim is made about it"]})
+    summary = PROBE.summary()
+    results.add("every request this run issued was GET",
+                summary["non_get"] == [] and summary["methods"] == ["GET"], summary)
+
+    args.coverage_out.parent.mkdir(parents=True, exist_ok=True)
+    args.coverage_out.write_text(json.dumps({"covered_files_before": len(covered_before),
+                                             "covered_files_after": len(covered_after),
+                                             "before": covered_before, "after": covered_after,
+                                             "drift": drift,
+                                             "archive_baseline_before": baseline_before,
+                                             "archive_baseline_after": agg,
+                                             "coverage_scope": "the two representative records plus every episode.json/episode_complete.json in the archive",
+                                             "explicitly_not_covered": ["derived quality_report.json pre-image (never snapshotted)",
+                                                                        "files of other episodes beyond the two identity files"]},
+                                            indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    PROBE.write_summary(args.probe_log.with_suffix(".json"))
 
     out = {"platform_url": P, "native_url": N, "source_id": source["source_id"],
+           "startup_manifest_digest": hashlib.sha256(args.startup_manifest.read_bytes()).hexdigest(),
+           "platform_source": {"recorded_aggregate": binding["recorded_aggregate"],
+                               "recomputed_aggregate": binding["recomputed_aggregate"],
+                               "match": binding["match"], "file_count": binding["recomputed_file_count"]},
+           "requests": {"total": summary["requests"], "methods": summary["methods"],
+                        "log": str(args.probe_log)},
+           "coverage": {"files": len(covered_after), "drift": drift, "artifact": str(args.coverage_out)},
            "complete_record": f"{complete_run}:{complete_id}", "failed_record": f"{failed_run}:{failed_id}",
            "checks": results.items, "passed": sum(1 for item in results.items if item["passed"]),
            "total": len(results.items),
-           "classification": "read-only historical slice; the archive is native-owned and was not written",
+           "classification": "read-only historical slice; requests issued by this run were GET only, and the covered file set was unchanged across the pass",
            "not_covered": ["synchronized 3D replay rendering", "new collection closure", "M1.5/M1 acceptance"]}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"passed": out["passed"], "total": out["total"], "out": str(args.out)}))
     return 0
-
-
-def archive_digest(root: Path, expected_episodes: int) -> str:
-    """Same recipe as the frozen baseline: every episode.json and episode_complete.json digest, folded."""
-    entries: dict[str, str] = {}
-    for run_dir in sorted(p for p in root.iterdir() if p.is_dir()):
-        episodes = run_dir / "episodes"
-        if not episodes.is_dir():
-            continue
-        for episode in sorted(p for p in episodes.iterdir() if p.is_dir()):
-            for name in ("episode.json", "episode_complete.json"):
-                path = episode / name
-                if path.is_file():
-                    entries[f"{run_dir.name}/{episode.name}/{name}"] = hashlib.sha256(path.read_bytes()).hexdigest()
-    folded = hashlib.sha256(json.dumps(entries, sort_keys=True).encode()).hexdigest()
-    return hashlib.sha256(folded.encode()).hexdigest()
 
 
 if __name__ == "__main__":

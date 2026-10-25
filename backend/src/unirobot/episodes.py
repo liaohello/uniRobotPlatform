@@ -41,12 +41,14 @@ STREAMS: dict[str, tuple[str, str, str]] = {
 }
 
 TIME_BASES = {
-    "wall_utc": ("wall_utc", "ISO-8601 Z, record arrival wall clock"),
-    "backend_monotonic_s": ("backend_monotonic_s", "seconds, native backend monotonic clock"),
-    "sim_time_s": ("sim_time_s", "seconds, simulator time"),
-    "measurement_time_s": ("measurement_time_s", "seconds, sensor measurement time (observation records)"),
-    "arrival_time_s": ("arrival_time_s", "seconds, sensor arrival time (observation records)"),
+    "wall_utc": ("wall_utc", "ISO-8601 Z, record arrival wall clock", False),
+    "backend_monotonic_s": ("backend_monotonic_s", "seconds, native backend monotonic clock", True),
+    "sim_time_s": ("sim_time_s", "seconds, simulator time", True),
+    "measurement_time_s": ("measurement_time_s", "seconds, sensor measurement time (observation records)", True),
+    "arrival_time_s": ("arrival_time_s", "seconds, sensor arrival time (observation records)", True),
 }
+
+ID_TOKEN = r"[A-Za-z0-9_-]{1,128}"
 
 ACTION_SEMANTICS = {
     "recorded_target": ["actuator_reference"],
@@ -88,7 +90,11 @@ class HistorySource(Contract):
 
 
 class EpisodeLocation:
-    """One Episode directory, addressed by its native (run_id, episode_id) pair."""
+    """One Episode directory, addressed by its native (run_id, episode_id) pair.
+
+    Every derived path is re-checked against this episode's resolved directory at the
+    moment it is used, so neither a symlink nor a stale index entry can read outside it.
+    """
 
     def __init__(self, source: HistorySource, root: Path, run_id: str, episode_id: str) -> None:
         self.source = source
@@ -96,15 +102,37 @@ class EpisodeLocation:
         self.run_id = run_id
         self.episode_id = episode_id
         self.directory = root / run_id / "episodes" / episode_id
+        if (self.directory.is_symlink() or not confined_within(root, self.directory)
+                or not confined_within(root, self.directory / "episodes")):
+            raise HistoryError("history_path_escape", "episode directory does not resolve inside the declared source root",
+                               409, {"episode_id": episode_id, "run_id": run_id})
+        self.directory_real = _real(self.directory)
+
+    def checked(self, relative: str, *, scope: str = "episode") -> Path:
+        target = self.directory / relative
+        boundary = self.directory_real
+        if scope == "assets":
+            assets = self.directory / "assets"
+            if assets.is_symlink() or not confined_within(self.directory_real, assets):
+                raise HistoryError("episode_asset_escape", "this episode's assets tree does not resolve inside the episode",
+                                   409, {"episode_id": self.episode_id})
+            boundary = _real(assets)
+        if (target.is_symlink() or not confined_within(self.directory_real, target)
+                or not confined_within(boundary, target)):
+            raise HistoryError("episode_asset_escape" if scope == "assets" else "episode_path_escape",
+                               "resolved path leaves the allowed boundary", 409,
+                               {"episode_id": self.episode_id, "relative_path": relative, "scope": scope})
+        return target
 
     def path_of(self, stream_id: str) -> Path:
-        return self.directory / STREAMS[stream_id][0]
+        return self.checked(STREAMS[stream_id][0])
 
     def relative_reference(self) -> dict[str, Any]:
         return {
             "source_id": self.source.source_id,
             "adapter_id": self.source.adapter_id,
             "recording_root": str(self.source.recording_root),
+            "recording_root_resolved": str(self.root),
             "run_id": self.run_id,
             "episode_id": self.episode_id,
             "episode_directory": str(self.directory),
@@ -120,11 +148,22 @@ def load_history_source(path: Path, root_override: str | os.PathLike[str] | None
     root = Path(root_override).expanduser() if root_override else Path(source.recording_root)
     if not root.is_dir():
         raise HistoryError("history_source_unavailable", f"recording root is not a readable directory: {root}", 503)
-    return source, root.resolve()
+    return source, _real(root)
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _real(path: Path) -> Path:
+    """Fully resolved path; symlink components are followed, which is what makes containment meaningful."""
+    return Path(os.path.realpath(path))
+
+
+def confined_within(boundary_real: Path, target: Path) -> bool:
+    """True when target resolves to something at or inside an already-resolved boundary."""
+    real = _real(target)
+    return real == boundary_real or boundary_real in real.parents
 
 
 def _sha256(body: bytes) -> str:
@@ -152,7 +191,7 @@ class EpisodeArchive:
     def __init__(self, source: HistorySource, root: Path, *, reference_model_sha256: str | None = None,
                  reference_scene_id: str | None = None) -> None:
         self.source = source
-        self.root = root
+        self.root = _real(root)
         self.reference_model_sha256 = reference_model_sha256
         self.reference_scene_id = reference_scene_id
         self._index: dict[str, list[str]] | None = None
@@ -161,20 +200,25 @@ class EpisodeArchive:
     # ---- index -----------------------------------------------------------------
 
     def _episode_index(self) -> dict[str, list[str]]:
+        """Index real directories only: a symlinked run, episodes or episode directory never enters the cache."""
         if self._index is None:
             index: dict[str, list[str]] = {}
-            for run_dir in sorted(p for p in self.root.iterdir() if p.is_dir()):
+            for run_dir in sorted(p for p in self.root.iterdir() if p.is_dir() and not p.is_symlink()
+                                  and confined_within(self.root, p)):
                 episodes = run_dir / "episodes"
-                if not episodes.is_dir():
+                if not episodes.is_dir() or episodes.is_symlink() or not confined_within(run_dir, episodes):
                     continue
-                for episode_dir in sorted(p for p in episodes.iterdir() if p.is_dir()):
+                for episode_dir in sorted(p for p in episodes.iterdir() if p.is_dir() and not p.is_symlink()
+                                          and confined_within(self.root, p)):
                     index.setdefault(episode_dir.name, []).append(run_dir.name)
             self._index = index
         return self._index
 
     def location(self, episode_id: str, run_id: str | None = None) -> EpisodeLocation:
-        if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", episode_id):
+        if not re.fullmatch(ID_TOKEN, episode_id):
             raise HistoryError("episode_id_invalid", "episode id is not a native id token", 404)
+        if run_id and not re.fullmatch(ID_TOKEN, run_id):
+            raise HistoryError("run_id_invalid", "run id is not a native id token", 400)
         candidates = self._episode_index().get(episode_id, [])
         if run_id:
             candidates = [item for item in candidates if item == run_id]
@@ -185,6 +229,7 @@ class EpisodeArchive:
             # The same display/episode id under more than one run must never cross-read.
             raise HistoryError("episode_id_ambiguous", "episode id exists under multiple runs; run_id is required", 409,
                                {"episode_id": episode_id, "runs": candidates})
+        # Re-validated on every call: a cached index entry cannot skip the read-time boundary check.
         location = EpisodeLocation(self.source, self.root, candidates[0], episode_id)
         if not location.directory.is_dir():
             raise HistoryError("episode_not_found", "episode directory is not readable", 404)
@@ -192,7 +237,12 @@ class EpisodeArchive:
 
     def _run_manifest(self, run_id: str) -> dict[str, Any]:
         if run_id not in self._manifest_cache:
-            value, _ = _load_json(self.root / run_id / "manifest.json")
+            path = _real(self.root) / run_id / "manifest.json"
+            if (path.is_symlink() or not confined_within(self.root / run_id, path)
+                    or not confined_within(self.root, path)):
+                raise HistoryError("history_path_escape", "run manifest does not resolve inside the run directory",
+                                   409, {"run_id": run_id})
+            value, _ = _load_json(path)
             self._manifest_cache[run_id] = value or {}
         return self._manifest_cache[run_id]
 
@@ -266,6 +316,8 @@ class EpisodeArchive:
             "native_release_id": self.source.native_release_id,
             "native_contract_version": self.source.contract_version,
             "recording_root": str(self.source.recording_root),
+            "recording_root_resolved": str(self.root),
+            "path_boundary": "every derived path is re-resolved and must stay inside the declared root and, for episode contents, inside that episode's resolved directory",
             "access": self.source.access,
             "declaring_instance": self.source.declaring_instance,
             "archive_baseline": self.source.archive_baseline,
@@ -426,7 +478,7 @@ class EpisodeArchive:
                 continue
             present: set[str] = set()
             for _, line in _iter_lines(path):
-                for base, (field, _) in TIME_BASES.items():
+                for base, (field, _, _) in TIME_BASES.items():
                     if f'"{field}"' in line:
                         present.add(base)
                 break
@@ -436,7 +488,7 @@ class EpisodeArchive:
     def streams_view(self, location: EpisodeLocation) -> list[dict[str, Any]]:
         out = []
         for stream_id, (relative, fmt, meaning) in STREAMS.items():
-            path = location.directory / relative
+            path = location.path_of(stream_id)
             entry: dict[str, Any] = {"stream_id": stream_id, "relative_path": relative, "format": fmt,
                                      "semantics": meaning, "available": path.is_file()}
             if not path.is_file():
@@ -464,11 +516,20 @@ class EpisodeArchive:
         return out
 
     def _media_summary(self, location: EpisodeLocation, checksums: dict | None) -> dict[str, Any]:
-        assets = location.directory / "assets"
         kinds: dict[str, Any] = {}
-        if assets.is_dir():
-            for kind_dir in sorted(p for p in assets.iterdir() if p.is_dir()):
-                files = sorted((p for p in kind_dir.rglob("*") if p.is_file()), key=lambda p: p.name)
+        excluded: list[dict[str, Any]] = []
+        try:
+            assets = location.checked("assets", scope="assets")
+        except HistoryError:
+            raise
+        if assets.is_dir() and not assets.is_symlink():
+            for kind_dir in sorted(p for p in assets.iterdir() if p.is_dir() and not p.is_symlink()):
+                files = []
+                for path in sorted((p for p in kind_dir.rglob("*") if p.is_file()), key=lambda p: p.name):
+                    try:
+                        files.append(location.checked(str(path.relative_to(location.directory)), scope="assets"))
+                    except HistoryError as exc:
+                        excluded.append({"relative_path": str(path.relative_to(location.directory)), "code": exc.code})
                 sample = []
                 for path in files[:MEDIA_SAMPLE]:
                     relative = str(path.relative_to(location.directory))
@@ -479,6 +540,8 @@ class EpisodeArchive:
                                         "sample_truncated": len(files) > len(sample),
                                         "declared_sha256_coverage": f"{sum(1 for item in sample if item['declared_sha256'])}/{len(sample)}"}
         return {"assets_root": "assets/", "kinds": kinds,
+                "symlink_or_escape_excluded": excluded,
+                "excluded_count": len(excluded),
                 "uri_convention": "assets/<kind>/<file>, served only from this episode directory",
                 "declared_sha256_source": "episode_complete.json checksums when present",
                 "verification": "digests are recomputed only for assets actually served by the asset endpoint"}
@@ -518,7 +581,7 @@ class EpisodeArchive:
                 "still_available": ["metadata", "events", "recorded transforms", "media assets that exist"]}
 
     def _association(self, location: EpisodeLocation) -> dict[str, Any]:
-        sidecar = location.directory / "platform_session.json"
+        sidecar = location.checked("platform_session.json")
         if sidecar.is_file():
             value, error = _load_json(sidecar)
             if value:
@@ -530,8 +593,8 @@ class EpisodeArchive:
                 "policy": "no platform configuration association is invented for a native record"}
 
     def _qualification(self, location: EpisodeLocation) -> dict[str, Any]:
-        value, _ = _load_json(location.directory / "assessments" / "eligibility.json")
-        report, _ = _load_json(location.directory / "quality_report.json")
+        value, _ = _load_json(location.checked("assessments/eligibility.json"))
+        report, _ = _load_json(location.checked("quality_report.json"))
         return {"declared_eligibility_present": bool(value), "training_qualified": (value or {}).get("training_qualified"),
                 "export_valid": (value or {}).get("export_valid"),
                 "quality_report_present": bool(report),
@@ -549,18 +612,23 @@ class EpisodeArchive:
             raise HistoryError("episode_stream_unsupported", f"unknown stream id: {stream_id}", 404,
                                {"supported": sorted(STREAMS)})
         relative, fmt, meaning = STREAMS[stream_id]
-        path = location.directory / relative
+        path = location.path_of(stream_id)
         if not path.is_file():
             raise HistoryError("episode_stream_unavailable", "this stream is not present in the record", 404,
                                {"stream_id": stream_id, "relative_path": relative})
         limit = max(1, min(limit, MAX_PAGE))
-        selected_field, _ = TIME_BASES[time_base] if time_base in TIME_BASES else (None, None)
         if time_base and time_base not in TIME_BASES:
             raise HistoryError("time_base_unsupported", f"unknown time base: {time_base}", 400,
                                {"supported": sorted(TIME_BASES)})
-        if time_base and (time_from is None and time_to is None):
+        selected_field, _, numeric_base = TIME_BASES[time_base] if time_base else (None, None, False)
+        if time_base and time_from is None and time_to is None:
             raise HistoryError("time_range_required", "time_base needs time_from or time_to in that base", 400)
-        window_active = selected_field is not None and (time_from is not None or time_to is not None)
+        if time_base and (time_from is not None or time_to is not None) and not numeric_base:
+            raise HistoryError("time_base_not_numeric",
+                               f"{time_base} is a calendar string, not a numeric clock; use a *_s base for numeric bounds",
+                               400, {"numeric_bases": sorted(key for key, (_f, _m, n) in TIME_BASES.items() if n)})
+        window_active = selected_field is not None
+        range_active = event_seq_from is not None or event_seq_to is not None
 
         records: list[dict[str, Any]] = []
         skipped_before = 0
@@ -568,6 +636,8 @@ class EpisodeArchive:
         corrupt: list[dict[str, Any]] = []
         truncated: list[int] = []
         missing_time_base = 0
+        excluded_invalid_seq = 0
+        seq_anomalies: list[dict[str, Any]] = []
 
         if fmt == "json":
             value, error = _load_json(path)
@@ -578,16 +648,25 @@ class EpisodeArchive:
         else:
             all_records = None  # streamed below
 
-        def accept(record: dict[str, Any]) -> bool:
-            nonlocal missing_time_base
-            seq = record.get("event_seq")
-            if event_seq_from is not None and isinstance(seq, int) and seq < event_seq_from:
-                return False
-            if event_seq_to is not None and isinstance(seq, int) and seq > event_seq_to:
-                return False
+        def accept(record: dict[str, Any], index: int) -> bool:
+            nonlocal missing_time_base, excluded_invalid_seq
+            if range_active:
+                seq = record.get("event_seq")
+                # A missing, non-integer or boolean sequence number is not a real event_seq.
+                # It is excluded and counted; the reader never invents one to fit the window.
+                if isinstance(seq, bool) or not isinstance(seq, int):
+                    excluded_invalid_seq += 1
+                    if len(seq_anomalies) < MAX_PAGE:
+                        seq_anomalies.append({"line_index": index, "reason": "event_seq_missing_or_not_integer",
+                                              "value_type": type(seq).__name__})
+                    return False
+                if event_seq_from is not None and seq < event_seq_from:
+                    return False
+                if event_seq_to is not None and seq > event_seq_to:
+                    return False
             if window_active:
                 stamp = record.get(selected_field)
-                if not isinstance(stamp, (int, float)):
+                if isinstance(stamp, bool) or not isinstance(stamp, (int, float)):
                     missing_time_base += 1
                     return False
                 if time_from is not None and stamp < time_from:
@@ -602,7 +681,7 @@ class EpisodeArchive:
                 if index < offset:
                     skipped_before += 1
                     continue
-                if not accept(record):
+                if not accept(record, index):
                     continue
                 if len(records) < limit:
                     records.append({"line_index": index, "record": record})
@@ -629,7 +708,7 @@ class EpisodeArchive:
                     if not isinstance(record, dict):
                         corrupt.append({"line_index": index, "error": "record_is_not_an_object"})
                         continue
-                    if not accept(record):
+                    if not accept(record, index):
                         continue
                     if len(records) >= limit:
                         break
@@ -661,7 +740,12 @@ class EpisodeArchive:
             "time": {"selected_time_base": time_base, "time_from": time_from, "time_to": time_to,
                      "units": "seconds for *_s, milliseconds for *_ms; wall_utc is ISO-8601 Z",
                      "records_without_the_selected_base": missing_time_base,
+                     "numeric_time_bases": sorted(key for key, (_f, _m, n) in TIME_BASES.items() if n),
                      "synchronized_across_streams": False},
+            "filtering": {"event_seq_range": {"from": event_seq_from, "to": event_seq_to, "active": range_active,
+                                             "excluded_without_valid_event_seq": excluded_invalid_seq,
+                                             "anomalies": seq_anomalies},
+                          "note": "when a range is active, records whose event_seq is missing, non-integer or boolean are excluded and counted; no sequence number is invented, and line_index is never used as a substitute"},
             "records": records,
             "integrity": {"corrupt_lines": corrupt, "lines_over_read_size_limit": truncated,
                           "declared_status": self._declared_status(location),
@@ -701,11 +785,7 @@ class EpisodeArchive:
         # Native stores and cites media as assets/<kind>/<file>; both that URI and the bare
         # kind/file remainder address the same file, and nothing outside assets/ is reachable.
         relative = Path(*parts) if parts[0] == "assets" else Path("assets").joinpath(*parts)
-        candidate = (location.directory / relative).resolve()
-        assets_root = (location.directory / "assets").resolve()
-        if not candidate.is_relative_to(assets_root):
-            raise HistoryError("episode_asset_escape", "asset resolves outside this episode's assets tree", 409,
-                               {"episode_id": episode_id, "hint": "raw jsonl streams are read through the streams endpoint"})
+        candidate = location.checked(relative.as_posix(), scope="assets")
         if not candidate.is_file():
             raise HistoryError("episode_asset_missing", "asset is not present in the record", 404, {"episode_id": episode_id})
         return location, candidate

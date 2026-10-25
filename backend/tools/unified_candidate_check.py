@@ -16,6 +16,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+import source_digest
+
 REQUIRED_PATHS = (
     "/api/v1/mobilecar/scene", "/api/v1/mobilecar/capabilities", "/api/v1/mobilecar/snapshot",
     "/api/v1/mobilecar/kinematics", "/api/v1/mobilecar/execution-recipe",
@@ -269,13 +271,21 @@ def main() -> int:
     database = Path(startup["database"]["path"])
     check("candidate database is isolated and was new", database.is_file() and not startup["database"]["existed_before"],
           str(database), results)
+    source_binding = source_digest.bind(Path(startup["platform_source"]["backend_root"]), startup)
+    check("candidate bytes equal the frozen startup manifest",
+          source_binding["match"] and source_binding["recorded_file_count"] == source_binding["recomputed_file_count"],
+          {"recorded": source_binding["recorded_aggregate"], "recomputed": source_binding["recomputed_aggregate"],
+           "files": source_binding["recomputed_file_count"],
+           "changed_or_missing_paths": source_binding["changed_or_missing_paths"]}, results)
 
     evidence = {
         "classification": "unified candidate; real native access is GET-only and execution qualification is unchanged",
         "listen": startup["listen"], "native_url": args.native_url,
         "startup_manifest_digest": hashlib.sha256(args.startup_manifest.read_bytes()).hexdigest(),
         "platform_source": {"file_count": startup["platform_source"]["file_count"],
-                            "aggregate": startup["platform_source"]["aggregate"]},
+                            "aggregate": startup["platform_source"]["aggregate"],
+                            "recomputed_aggregate": source_binding["recomputed_aggregate"],
+                            "matches_running_bytes": source_binding["match"]},
         "recipe": {"id": startup["recipe"]["recipe_id"], "fingerprint": startup["recipe"]["fingerprint"],
                    "required_protocols": startup["recipe"]["required_protocols"]},
         "geometry_bundle": {"path": startup["geometry_bundle"]["path"],

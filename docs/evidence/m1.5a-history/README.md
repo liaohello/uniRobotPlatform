@@ -6,7 +6,7 @@
 
 - 误发请求：`POST http://127.0.0.1:8792/api/v1/episodes/episode_27bfed5427684795b361cd2ec21e9aa7/validate`，发生在 2026-10-25 12:20:38（服务器本地时间）的一次人工探测中，不属于交付代码、61 项检查或任何复现脚本。
 - 实际副作用（native 自己的写路径）：该 Episode 目录下派生文件 `quality_report.json` 被重写，mtime `2026-10-25_12:20:38`，摘要 `53314c847d17f38da6b32587aaaeb830660f495bc5f2df45b57d3759efa303bd`。重写前的摘要未被快照，因此本证据册不声称其内容不变。
-- 原始记录复核未变：`episode.json` 摘要 `0dec88f47c9fa1dd…`、`episode_complete.json` 摘要 `b2923d0f9587fe04…`，与实现落地前采集的逐文件基线一致，mtime 仍为 2026-10-18；全归档 696 个 `episode.json`/`episode_complete.json` 折叠聚合摘要仍等于 `60c0c6963bc9ae8442bc3d9c9e5f0c33c19973cee966994365313b57ae9d6664`，逐文件差异 0 项。
+- 覆盖集合复核未变（范围仅此集合）：`episode.json` 摘要 `0dec88f47c9fa1dd…`、`episode_complete.json` 摘要 `b2923d0f9587fe04…`，与实现落地前采集的逐文件基线一致，mtime 仍为 2026-10-18；全归档 696 个 `episode.json`/`episode_complete.json` 折叠聚合摘要仍等于 `60c0c6963bc9ae8442bc3d9c9e5f0c33c19973cee966994365313b57ae9d6664`，逐文件差异 0 项。该表不含其它文件，因此本节不构成"整个归档未变"的证明；M1.5b 另以 946 文件覆盖集合做了事前记录与事后复核。
 - 运行时复核：`GET /api/v1/health` 前后一致（`run_9c88e3e3… / gen 1 / episode_43c22f95… / recording_status=IDLE`），未发生 STOP/RESET/录制/步进。
 - 后续约束：任何历史读取的验证只对 native 发 GET；需要 assess/validate 结论时应读取记录内已有的派生文件，或在隔离副本上验证，不触碰真实归档。
 
@@ -28,7 +28,7 @@
 | `history-startup.json` | 冻结启动清单：端口/native 地址/geometry bundle/Map catalog/recipe/独立 DB + 新增 `history` 块（来源文件摘要、`configured=true`、解析后的 recording root、`root_override=null`、声明规模、访问策略） |
 | `history-check.json` | 61/61 断言（第三节），含每条断言的 `name/passed/detail`，并记录所选真实 COMPLETE 与 FAILED 记录身份 |
 | `unified-on-history-candidate.json` | 同一候选上的 M1.4b 统一能力回归 27/27（geometry-2、Map/Route、Session/`current`、STOP/end 契约仍在同一 OpenAPI） |
-| `history-before-digests.json` | 逐文件 `episode.json`/`episode_complete.json` 摘要表（696 条），实现落地前采集，用于证明读取路径未写盘 |
+| `history-before-digests.json` | 逐文件 `episode.json`/`episode_complete.json` 摘要表（696 条），实现落地前采集；只证明平台读取路径未写这 696 个文件，不含其它文件，也不覆盖 native 自身派生文件的重写 |
 
 ## 三、必须分开读的三层结论
 

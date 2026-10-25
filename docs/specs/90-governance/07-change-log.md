@@ -10,6 +10,14 @@
 
 ## V0.8｜2026-10-25
 
+### 2026-10-25 M1.5b 历史 reader 只读整改、根目录隔离与可复现发布
+- 按 S22/DEC-059 把只读改成由构造保证：新增 `backend/tools/native_get_probe.py`（只有 GET 方法、无 method/body 形参、逐条写 JSONL 日志），历史检查与事实提取都经它发请求；冻结候选实测 51 次请求 methods 仅 `GET`、`non_get=[]`，另有 8 次 GET 用于事实提取；重算派生结论只允许在隔离副本上进行。
+- 统一受限路径解析（`episodes.py` 内 `_real` + `confined_within` 单一检查）：root/run/`episodes`/Episode 目录/run manifest/episode/tail/sidecar/assessments/固定流/`assets/` 的解析结果都必须位于对应边界；索引拒绝软链目录，读取时每次重新解析，缓存索引不能绕过；新增 `history_path_escape`、`episode_path_escape`，软链 assets 与越界资产返回 `episode_asset_escape`，媒体清单逐文件排除并计数。
+- `event_seq` 区间过滤修复：缺失、非整数与 bool 序号被排除且计数（`filtering.event_seq_range.anomalies[]` 带 `line_index/reason/value_type`），不补造序号；`observations-index/persist` 合法无 `event_seq` 时返回空页 + 计数；合法数据的 `offset/next_offset/has_more`、原生追加顺序与身份语义不变；`wall_utc` 拒绝数值边界（400 `time_base_not_numeric`），未知基仍 400 `time_base_unsupported`。
+- 表述纠正：撤回超出证据的"所有原始文件未变/全程仅 GET"写法。保留上一轮违规记录与 native 现有派生 `quality_report.json`（摘要 `53314c84…`，前置摘要未快照，不声称内容未变、不回滚）；不变性只对事前记录并事后复核的同一集合成立（696 个 `episode.json`/`episode_complete.json` 聚合 `60c0c696…`，本轮另覆盖 946 文件集合 `drift=[]`）。同时更正 `transforms.jsonl` 语义：实测为带 frame/时钟标记的变换观测，不是逐 body 位姿，故模型摘要相等仍不等于历史 3D 渲染可用。
+- 发布身份闭合：新增 `backend/tools/source_digest.py`（唯一实现，roots `src/unirobot`+`config`+`tools`），启动器写清单、两个检查工具重算并断言与清单相等；新不可变 release `m1p-20261025T053030Z-platform`（清单 sha256 `832bf518274600a9…`，源码聚合 `4090935b4c45c900…`，45 文件）常驻 `http://127.0.0.1:18964`，独立新 SQLite；旧 `m1k` 的 61/61 与 27/27 报告及 `58a737…`/`e86a709f…` 记录保留为原版本证据，不倒填。
+- 服务器验证：新候选读取检查 69/69（含 8 项新断言）与既有能力回归 28/28；冻结发布内聚焦 19 passed；平台全量 147 passed / 3 failed（同历史三项，链条 140/3 → 147/3）。机器目录新增 S22，现为 150 个文档节点、17 个补充来源；REQ 仍 89 项。本轮不是同步回放、不是归档全量验证，也不是正式 M1.5/M1 验收。
+
 ### 2026-10-25 M1.5a 真实历史 Episode/segment 只读 reader 首个切片
 - 按 S21/DEC-058 新增平台受限只读历史面：`backend/src/unirobot/episodes.py` 与五条 GET（列表 / 轻量详情 / 可用流 / 按流有界记录页 / Episode `assets/` 内媒体资产），统一 `unirobot-mobilecar-episode-read-1` 与 `read_only=true`；来源固定在 `backend/config/mobilecar-history-source.json`（`mobilecar-server-history-20261017` → `/home/liaozhengyan/Desktop/mobileCar/var/runs`，native `drvfix-20261019T044549Z-0a80415b2577`）。原始数据留在服务器，不搬运、不重写、不重算导出，不修改或重启 8792。
 - 完整性分四层：记录声明状态、`complete_tail` 存在性、tail 声明校验和条目、本次读取实际重算结果。实测发现 native tail 对自身 `episode.json` 的声明是**过期自校验**（抽样 16/16 条真实记录 `mismatch_present`，COMPLETE 记录声明 924 条摘要），平台如实报告且不改写生命周期状态；`FAILED`/`audit_status=INCOMPLETE` 记录标为 `incomplete_terminal_recorded` 且仍可读；`training_qualified=false` 不阻止原始读取。

@@ -112,7 +112,7 @@ M1 只要求其已声明必需流能重载和只读回放；缺失流、损坏�
 
 ## 平台历史只读 API（M1.5a 首个切片，S21/DEC-058）
 
-来源固定为一个明确声明（source_id、adapter、native release、实际 recording_root、声明规模与归档聚合基线），原始数据留在服务器，平台不搬运、不重写、不重算导出，也不为此修改或重启任何 native 实例。
+来源固定为一个明确声明（source_id、adapter、native release、实际 recording_root、声明规模与归档聚合基线），原始数据留在服务器，平台代码不搬运、不重写、不重算导出，也不为此修改或重启任何 native 实例。只读由构造保证而非约定：验证工具只能通过一个不接受 method/body 参数的 GET-only 入口访问 native，逐条留下请求日志；重算派生结论只允许在隔离副本上进行（M1.5b）。
 
 - 读取面只有五条 GET：Episode 列表（`limit` 上限 200、`offset`、`run_id`/`recording_status`/`episode_id` 过滤）、轻量详情、可用流目录、按流的有界记录页、该 Episode `assets/` 子树内的媒体资产。响应统一 `schema_version: unirobot-mobilecar-episode-read-1` 与 `read_only: true`；详情必须保持轻量，不把整份 JSONL 交给前端，也不建设通用数据查询框架。
 - 复合身份保留 `source/adapter + run_id + episode_id + recording_segment_id(+previous) + native contract_version + episode 目录原始引用`；episode 显示名不是全局键，同名跨 run 必须带 `run_id`，否则 409 `episode_id_ambiguous`。`backend_generation` 若只存在于记录 payload，则按 payload 如实标注，不伪装成顶层字段。
@@ -121,4 +121,8 @@ M1 只要求其已声明必需流能重载和只读回放；缺失流、损坏�
 - 3D 回放身份只取记录内 `manifest.json` 的 `model_id/model_sha256/scene_id/map_mode/truth_access/clocks` 与 `transforms.jsonl`；与当前 pin 可比对时标 `identity_verified_rendering_unverified`，无法证明时标 `restricted`。任何情况都不得把当前在线 geometry 或 Actual 自动套到历史 Episode。legacy 记录无平台 sidecar 时 `platform_association.known=false`，不伪造 ValidatedSnapshot/Session 关联。
 - 历史 API 不代理 native 的 `POST /episodes/{id}/validate`、assessment/eligibility 写操作、控制、RESET、录制、物理步进或任何重执行；`POST /api/v1/runs/{run_id}/stop` 仍不是机器人 STOP。资产路径拒绝绝对路径与 `..`，解析后必须落在该 Episode 的 `assets/` 子树内，软链越界与摘要不符分别 409。
 
-实现与真实数据证据见 [M1.5a 交付记录](../../backend-m1.5a-history-reader.md) 与 [M1.5a 证据册](../../evidence/m1.5a-history/README.md)：348 条记录索引与 native 列表一致、COMPLETE 与 FAILED/不完整记录分别读取、平台轻量详情 21 KB 对 native 整条 20.9 MB、归档聚合摘要读取前后不变。本节只冻结"首个只读切片"的契约；跨流同步游标对齐、渲染正确性与新采集闭环仍未完成。
+- 路径受限覆盖索引与读取两侧：run 目录、`episodes` 目录、Episode 目录、run `manifest.json`、episode/tail/sidecar、固定流文件与 `assets/` 的解析结果都必须落在对应边界内；目录级与文件级软链都不允许成为越界通道，缓存索引不得绕过读取时检查；越界分别报告 `history_path_escape`、`episode_path_escape`、`episode_asset_escape`，媒体清单逐文件排除并给出计数。只做最小公共路径检查，不搭建通用文件系统沙箱。
+- `event_seq` 区间过滤必须是合格性判定：区间启用时，缺失、非整数或 bool（bool 是 `int` 子类）序号一律排除并计数，绝不补造序号，也不得用行号替代；合法数据的分页、`next_offset`、原生追加顺序与身份语义不受影响。`observations-index`/`persist` 原生就不带 `event_seq`（后者用 `persist_sequence`），对它们设区间得到空页加计数属正常结果。数值时间边界只接受命名数值时间基，日历字符串基（`wall_utc`）返回 `time_base_not_numeric`。
+- 不变性声明的作用域：只有"事前记录摘要、事后复核同一集合"的文件才能称未变，且必须同时列出未覆盖范围；`episode.json`/`episode_complete.json` 的 696 文件聚合作为该集合的标识，不得扩写为整个归档不变。派生文件（如 native 自身 `validate` 重写的 `quality_report.json`）若缺少前置摘要，只报告现状，不声称内容未变、不猜测回滚。
+
+实现与真实数据证据见 [M1.5a 交付记录](../../backend-m1.5a-history-reader.md)、[M1.5b 整改记录](../../backend-m1.5b-history-readonly-hardening.md) 与 [M1.5a 证据册](../../evidence/m1.5a-history/README.md)、[M1.5b 证据册](../evidence/m1.5b-history-readonly-hardening/README.md)：348 条记录索引与 native 列表一致、COMPLETE 与 FAILED/不完整记录分别读取、平台轻量详情 21 KB 对 native 整条 20.9 MB；696 个身份文件聚合摘要与本轮 946 文件覆盖集合在同一次读取前后一致（其余文件在该时点没有前置摘要，属未覆盖）。本节只冻结"受限只读切片"的契约；跨流同步游标对齐、渲染正确性与新采集闭环仍未完成。

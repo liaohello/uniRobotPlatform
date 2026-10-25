@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -398,6 +399,121 @@ def test_history_source_without_readable_root_refuses_instead_of_faking(tmp_path
     response = client.get("/api/v1/episodes")
     assert response.status_code == 503
     assert response.json()["detail"]["code"] == "history_source_unavailable"
+
+
+def test_directory_symlinks_are_neither_indexed_nor_read(tmp_path):
+    root = tmp_path / "runs"
+    _episode(root, "run_aaa", "episode_one")
+    external = tmp_path / "external"
+    (external / "episode_sneaky").mkdir(parents=True)
+    (external / "episode_sneaky" / "episode.json").write_text(json.dumps({
+        "contract_version": "mobilecar-1.0", "run_id": "run_ccc", "episode_id": "episode_sneaky",
+        "recording_status": "COMPLETE", "audit_status": "COMPLETE", "segments": []}), encoding="utf-8")
+    (root / "run_ccc").mkdir()
+    (root / "run_ccc" / "episodes").symlink_to(external)
+
+    client = _client(root, tmp_path)
+    ids = {item["episode_id"] for item in client.get("/api/v1/episodes?limit=50").json()["episodes"]}
+    assert ids == {"episode_one"}
+    refused = client.get("/api/v1/episodes/episode_sneaky")
+    assert refused.status_code == 404 and refused.json()["detail"]["code"] == "episode_not_found"
+
+
+def test_symlinked_record_files_are_refused_at_read_time(tmp_path):
+    root = tmp_path / "runs"
+    directory = _episode(root, "run_aaa", "episode_one")
+    outside = tmp_path / "outside.json"
+    outside.write_text(json.dumps({"episode_id": "elsewhere", "recording_status": "COMPLETE"}), encoding="utf-8")
+    (directory / "episode.json").unlink()
+    (directory / "episode.json").symlink_to(outside)
+    client = _client(root, tmp_path)
+    refused = client.get("/api/v1/episodes/episode_one")
+    assert refused.status_code == 409 and refused.json()["detail"]["code"] == "episode_path_escape"
+
+
+def test_symlinked_run_manifest_is_refused(tmp_path):
+    root = tmp_path / "runs"
+    _episode(root, "run_aaa", "episode_one")
+    real = root / "run_aaa" / "manifest.json"
+    moved = tmp_path / "moved-manifest.json"
+    moved.write_text(real.read_text(encoding="utf-8"), encoding="utf-8")
+    real.unlink()
+    real.symlink_to(moved)
+    refused = _client(root, tmp_path).get("/api/v1/episodes/episode_one")
+    assert refused.status_code == 409 and refused.json()["detail"]["code"] == "history_path_escape"
+
+
+def test_symlinked_assets_tree_is_refused(tmp_path):
+    root = tmp_path / "runs"
+    directory = _episode(root, "run_aaa", "episode_one")
+    alien = tmp_path / "other-assets"
+    (alien / "rgb").mkdir(parents=True)
+    (alien / "rgb" / "foreign.png").write_bytes(PNG)
+    shutil.rmtree(directory / "assets")
+    (directory / "assets").symlink_to(alien)
+    client = _client(root, tmp_path)
+    refused = client.get("/api/v1/episodes/episode_one")
+    assert refused.status_code == 409 and refused.json()["detail"]["code"] == "episode_asset_escape"
+    catalog = client.get("/api/v1/episodes/episode_one/streams")
+    assert catalog.status_code == 409 and catalog.json()["detail"]["code"] == "episode_asset_escape"
+
+
+def test_cached_index_cannot_bypass_a_later_path_change(tmp_path):
+    from unirobot.episodes import EpisodeArchive, HistoryError, load_history_source
+    root = tmp_path / "runs"
+    directory = _episode(root, "run_aaa", "episode_one")
+    _client(root, tmp_path)
+    source, resolved = load_history_source(tmp_path / "history-source.json")
+    archive = EpisodeArchive(source, resolved)
+    assert archive.detail("episode_one")["identity"]["run_id"] == "run_aaa"
+
+    elsewhere = tmp_path / "elsewhere" / "episode_one"
+    elsewhere.mkdir(parents=True)
+    (elsewhere / "episode.json").write_text(json.dumps({
+        "contract_version": "mobilecar-1.0", "run_id": "run_aaa", "episode_id": "episode_one",
+        "recording_status": "COMPLETE", "audit_status": "COMPLETE", "segments": []}), encoding="utf-8")
+    shutil.rmtree(directory)
+    directory.symlink_to(elsewhere)
+
+    try:
+        archive.detail("episode_one")
+        raise AssertionError("a symlinked episode directory must not be readable through the cached index")
+    except HistoryError as exc:
+        assert exc.code == "history_path_escape", exc.code
+
+
+def test_event_seq_anomalies_are_excluded_and_counted_not_invented(tmp_path):
+    root = tmp_path / "runs"
+    _episode(root, "run_aaa", "episode_seq", events=[
+        {"contract_version": "mobilecar-1.0", "event_seq": 1, "event_type": "recording_start"},
+        {"contract_version": "mobilecar-1.0", "event_type": "feedback"},
+        {"contract_version": "mobilecar-1.0", "event_seq": "3", "event_type": "actuator_reference"},
+        {"contract_version": "mobilecar-1.0", "event_seq": True, "event_type": "requested"},
+        {"contract_version": "mobilecar-1.0", "event_seq": 4, "event_type": "episode_terminal"},
+    ])
+    page = _client(root, tmp_path).get(
+        "/api/v1/episodes/episode_seq/streams/events/records?event_seq_from=1&event_seq_to=10").json()
+    assert [item["record"]["event_seq"] for item in page["records"]] == [1, 4]
+    range_block = page["filtering"]["event_seq_range"]
+    assert range_block["active"] is True and range_block["excluded_without_valid_event_seq"] == 3
+    assert {item["value_type"] for item in range_block["anomalies"]} == {"NoneType", "str", "bool"}
+    assert all(isinstance(item["line_index"], int) for item in range_block["anomalies"])
+    assert "no sequence number is invented" in page["filtering"]["note"]
+    assert "line_index is never used as a substitute" in page["filtering"]["note"]
+    assert page["cursor"]["line_index_is_not_a_clock"] is True
+    assert page["paging"]["next_offset"] == 5 and page["paging"]["has_more"] is False
+
+
+def test_wall_utc_rejects_numeric_bounds(tmp_path):
+    root = tmp_path / "runs"
+    _episode(root, "run_aaa", "episode_one")
+    client = _client(root, tmp_path)
+    refused = client.get("/api/v1/episodes/episode_one/streams/events/records?time_base=wall_utc&time_from=1")
+    assert refused.status_code == 400
+    assert refused.json()["detail"]["code"] == "time_base_not_numeric"
+    assert "backend_monotonic_s" in refused.json()["detail"]["numeric_bases"]
+    listed = client.get("/api/v1/episodes/episode_one").json()
+    assert "wall_utc" in listed["time"]["available_time_bases"]["events"]["time_bases_in_first_record"]
 
 
 def test_openapi_exposes_the_history_slice_and_no_write_routes(tmp_path):

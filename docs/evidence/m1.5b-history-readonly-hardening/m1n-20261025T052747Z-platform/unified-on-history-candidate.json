@@ -1,0 +1,399 @@
+{
+  "checks": [
+    {
+      "detail": "mobilecar.g1.teleop",
+      "name": "unified candidate runs the production recipe",
+      "passed": true
+    },
+    {
+      "detail": {
+        "recording_begin": "m1-recording-1",
+        "session_binding": "m1-binding-1"
+      },
+      "name": "production recipe still declares only binding and begin",
+      "passed": true
+    },
+    {
+      "detail": [],
+      "name": "one OpenAPI exposes every surface",
+      "passed": true
+    },
+    {
+      "detail": [],
+      "name": "STOP and end schemas are published",
+      "passed": true
+    },
+    {
+      "detail": [],
+      "name": "current exposes stop and end availability",
+      "passed": true
+    },
+    {
+      "detail": "{\"summary\": \"Latched robot STOP for this Session's runtime identity\", \"description\": \"Sends the native latched STOP inside the lifecycle critical section and returns dispatch, parking and coverage evidence separately. It",
+      "name": "STOP endpoint names the process-stop endpoint it is not",
+      "passed": true
+    },
+    {
+      "detail": "{\"summary\": \"Stop and reliably finalize the recording segment this Session began\", \"description\": \"Identity-bound end of the Session's own recording segment. The receipt separates STOP dispatch, parking evidence, Recorde",
+      "name": "end endpoint documents the separate evidence layers",
+      "passed": true
+    },
+    {
+      "detail": [
+        "/api/v1/runs/{run_id}/stop",
+        "/api/v1/sessions/{session_id}/stop"
+      ],
+      "name": "process stop remains a distinct operation",
+      "passed": true
+    },
+    {
+      "detail": {
+        "schema": "unirobot-mobilecar-geometry-2",
+        "status": 200
+      },
+      "name": "scene read is geometry-2",
+      "passed": true
+    },
+    {
+      "detail": {
+        "bundle_sha256": "275389464eee2f3d",
+        "content_identity": "cb78996426040381"
+      },
+      "name": "geometry provenance names the frozen bundle and compiled scene",
+      "passed": true
+    },
+    {
+      "detail": 23,
+      "name": "geometry-2 publishes 23 assets",
+      "passed": true
+    },
+    {
+      "detail": {
+        "checked": 23,
+        "mismatched": 0
+      },
+      "name": "every asset byte stream matches its declared digest",
+      "passed": true
+    },
+    {
+      "detail": {},
+      "name": "real native declares no stop or end protocol",
+      "passed": true
+    },
+    {
+      "detail": {
+        "first": {
+          "data_source": "live_native_http",
+          "envelope_keys": [
+            "adapter_id",
+            "data",
+            "data_source",
+            "deployed_content_verified",
+            "interface_profile",
+            "platform_session_id",
+            "read_only",
+            "recording_required_for_motion",
+            "resource_identity",
+            "resource_matches_pin",
+            "retrieved_at",
+            "robot_id"
+          ],
+          "monotonic": 1079161.617896504,
+          "sim": 520436.76597527514,
+          "tick": "tick_052043677"
+        },
+        "second": {
+          "data_source": "live_native_http",
+          "envelope_keys": [
+            "adapter_id",
+            "data",
+            "data_source",
+            "deployed_content_verified",
+            "interface_profile",
+            "platform_session_id",
+            "read_only",
+            "recording_required_for_motion",
+            "resource_identity",
+            "resource_matches_pin",
+            "retrieved_at",
+            "robot_id"
+          ],
+          "monotonic": 1079161.658400413,
+          "sim": 520436.8059752747,
+          "tick": "tick_052043681"
+        }
+      },
+      "name": "actual state keeps advancing through the platform",
+      "passed": true
+    },
+    {
+      "detail": {
+        "digest": "7238f521667257e0",
+        "profile_id": "landerpi.kinematics.v1"
+      },
+      "name": "kinematics is served with a fixed profile and digest",
+      "passed": true
+    },
+    {
+      "detail": {
+        "count": 2,
+        "ids": [
+          "map_room_a_g3b_release_v1",
+          "map_room_b_g3b_release_v1"
+        ]
+      },
+      "name": "real map packages are listed as offline history",
+      "passed": true
+    },
+    {
+      "detail": {
+        "manifest_sha256": "aaee75864a1a1edc",
+        "source": "g3b_historical_offline",
+        "status": "available",
+        "test_only": false
+      },
+      "name": "map version is readable with fixed identity and offline provenance",
+      "passed": true
+    },
+    {
+      "detail": {
+        "digest": "01dcdb387aed81b5",
+        "read_bytes": 2786
+      },
+      "name": "map image bytes match the verified package digest",
+      "passed": true
+    },
+    {
+      "detail": {
+        "current_runtime_status": "not_checked",
+        "g1_recipe_model_match": false,
+        "g1_recipe_scene_match": false,
+        "g1_recipe_status": "failed",
+        "navigation_eligible": false,
+        "reasons": [
+          "map scene/model does not match the current G1 recipe",
+          "navigation runtime is not available",
+          "footprint/path/dynamic checks are unsupported"
+        ],
+        "unverified": [
+          "posegraph is hash-verified but not parsed",
+          "current runtime compatibility was not read"
+        ]
+      },
+      "name": "map version never claims navigation eligibility",
+      "passed": true
+    },
+    {
+      "detail": {
+        "detail": "route-4681ce699b7e402ebecbf71c240846d6",
+        "status": 201
+      },
+      "name": "route draft persists in the candidate namespace",
+      "passed": true
+    },
+    {
+      "detail": {
+        "detail": {
+          "version": "v1"
+        },
+        "status": 200
+      },
+      "name": "route version publishes immutably with display-only flags",
+      "passed": true
+    },
+    {
+      "detail": {
+        "advanced_to": 2,
+        "conflict_code": "route_draft_revision_conflict",
+        "conflict_status": 409
+      },
+      "name": "saving advances the revision and a now-stale base revision is refused",
+      "passed": true
+    },
+    {
+      "detail": {
+        "reasons": [
+          {
+            "key": "interface_profile",
+            "message": "native /api/v1/health self-report: observed g4a1-1.0; recipe expects g2a-1.0; this value is derived from config flags, not attested",
+            "scope": "configuration"
+          },
+          {
+            "key": "deployed_config_attestation",
+            "message": "native declared config manifest digest: Native HTTP does not attest the deployed config manifest; a healthy service cannot supply it",
+            "scope": "readiness"
+          },
+          {
+            "key": "scene_manifest_attestation",
+            "message": "native declared compiled scene manifest digest: Observed scene manifest digest 5969e260b5ca87849387e8827b3e83c332f845281d0d69c0f7b141a8c3f1bf2d is not attested; the pin only covers the scene XML file",
+            "scope": "readiness"
+          },
+          {
+            "key": "runtime_python_version",
+            "message": "native reported Python version vs recipe range: Native does not report a Python version",
+            "scope": "readiness"
+          },
+          {
+            "key": "runtime_package_versions",
+            "message": "native reported installed package versions vs requirements lock: Native does not report installed package versions",
+            "scope": "readiness"
+          },
+          {
+            "key": "session_binding_protocol",
+            "message": "native declared session binding protocol: Native declares no motion-free Session binding; required m1-binding-1. episodes/start performs RESET and recording",
+            "scope": "readiness"
+          },
+          {
+            "key": "recording_begin_protocol",
+            "message": "native declared recording begin protocol: Native has no recording begin without RESET; required m1-recording-1",
+            "scope": "readiness"
+          }
+        ],
+        "status": "failed"
+      },
+      "name": "configuration validation refuses for the real reason",
+      "passed": true
+    },
+    {
+      "detail": {
+        "code": "snapshot_not_found",
+        "status": 404
+      },
+      "name": "no Session can be created from an ineligible snapshot",
+      "passed": true
+    },
+    {
+      "detail": {
+        "end": 404,
+        "end_code": "session_not_found",
+        "stop": 404,
+        "stop_code": "session_not_found"
+      },
+      "name": "STOP and end refuse without reaching native",
+      "passed": true
+    },
+    {
+      "detail": {
+        "after": {
+          "arm_owner_session_id": null,
+          "backend_generation": 1,
+          "base_owner_session_id": null,
+          "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+          "recording_segment_id": null,
+          "recording_status": "IDLE",
+          "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+          "safety_latched": true,
+          "stopped": true
+        },
+        "before": {
+          "arm_owner_session_id": null,
+          "backend_generation": 1,
+          "base_owner_session_id": null,
+          "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+          "recording_segment_id": null,
+          "recording_status": "IDLE",
+          "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+          "safety_latched": true,
+          "stopped": true
+        }
+      },
+      "name": "native instance is untouched by the whole check",
+      "passed": true
+    },
+    {
+      "detail": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1n-20261025T052747Z-platform/report/history-052748.sqlite3",
+      "name": "candidate database is isolated and was new",
+      "passed": true
+    },
+    {
+      "detail": {
+        "changed_or_missing_paths": [],
+        "files": 45,
+        "recomputed": "bc33483d7f24e45e6ce80bb501125f51d1445836c07d7658a095fa74e002e350",
+        "recorded": "bc33483d7f24e45e6ce80bb501125f51d1445836c07d7658a095fa74e002e350"
+      },
+      "name": "candidate bytes equal the frozen startup manifest",
+      "passed": true
+    }
+  ],
+  "classification": "unified candidate; real native access is GET-only and execution qualification is unchanged",
+  "geometry_bundle": {
+    "asset_count": 23,
+    "bundle_json_sha256": "a5f4a90ca5988ba0e7e3accba2212b38939d8e420a3882b3f9cc7a344d9e20f3",
+    "bundle_sha256": "275389464eee2f3de0c2ddf96ae85acbedfd382c496a589ec41a3662ee31d171",
+    "compiled_scene_sha256": "a7b8b2c2d12d871306ec443989ec962ca1c4fe93641c3104a1dbcdb81a6ea109",
+    "content_identity_sha256": "cb7899642604038101c909cb9077c09bd2d4006f3d090c205696317f3a18a7cc",
+    "path": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-geometry-20261023T192202Z-cdfc7472e5de/geometry"
+  },
+  "listen": {
+    "host": "127.0.0.1",
+    "port": 18962,
+    "was_free_before_start": true
+  },
+  "maps": {
+    "listed": [
+      "map_room_a_g3b_release_v1",
+      "map_room_b_g3b_release_v1"
+    ],
+    "packages": [
+      "map_room_a_g3b_final",
+      "map_room_a_g3b_release_v1",
+      "map_room_a_v1",
+      "map_room_a_v2",
+      "map_room_a_v3",
+      "map_room_b_g3b_final",
+      "map_room_b_g3b_release_v1",
+      "map_room_b_v1",
+      "map_room_b_v2"
+    ],
+    "root": "/home/liaozhengyan/Desktop/mobileCar/var/maps"
+  },
+  "native_read_state": {
+    "after": {
+      "arm_owner_session_id": null,
+      "backend_generation": 1,
+      "base_owner_session_id": null,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "recording_segment_id": null,
+      "recording_status": "IDLE",
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "safety_latched": true,
+      "stopped": true
+    },
+    "before": {
+      "arm_owner_session_id": null,
+      "backend_generation": 1,
+      "base_owner_session_id": null,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "recording_segment_id": null,
+      "recording_status": "IDLE",
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "safety_latched": true,
+      "stopped": true
+    }
+  },
+  "native_url": "http://127.0.0.1:8792",
+  "not_covered": [
+    "positive begin/STOP/end lifecycle needs the test-only recipe against a mock native",
+    "physical parking confirmation, 8792 deployment, and any native write"
+  ],
+  "platform_source": {
+    "aggregate": "bc33483d7f24e45e6ce80bb501125f51d1445836c07d7658a095fa74e002e350",
+    "file_count": 45,
+    "matches_running_bytes": true,
+    "recomputed_aggregate": "bc33483d7f24e45e6ce80bb501125f51d1445836c07d7658a095fa74e002e350"
+  },
+  "recipe": {
+    "fingerprint": "4c3e5f42278b0997175f4cb1bcaeaf232aee5d4645d869239d65aef1bca35e9e",
+    "id": "mobilecar.g1.teleop",
+    "required_protocols": {
+      "recording_begin": "m1-recording-1",
+      "session_binding": "m1-binding-1"
+    }
+  },
+  "route": {
+    "published_version": "v1",
+    "route_id": "route-4681ce699b7e402ebecbf71c240846d6"
+  },
+  "startup_manifest_digest": "a36b798ef81fc80dd8043480f290ca064681d51a8389b604760254bc23a5b584"
+}

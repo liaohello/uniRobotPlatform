@@ -1528,6 +1528,11 @@
       "path": "90-governance/sources/S21-history-episode-read-slice.md",
       "sha256": "13147c106694266b963c624c1bd9dea2b8c1ad1288d6d565ab66d80432a31e72",
       "kind": "current_user_history_episode_read_slice_goal"
+    },
+    "S22": {
+      "path": "90-governance/sources/S22-history-readonly-hardening.md",
+      "sha256": "93b2406fa7b5fccf94f9653a12ebeb3020f5d80776ce47c194793bda2929f35e",
+      "kind": "current_user_history_readonly_hardening_goal"
     }
   },
   "visual_registry": "references/visual-assets.json"
