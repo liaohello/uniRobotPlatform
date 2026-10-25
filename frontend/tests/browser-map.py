@@ -253,6 +253,71 @@ async def live_flow(page):
     await page.locator('.scene-setup [data-route-open]').click()
     await page.wait_for_function(f"()=>document.querySelector('.scene-setup [data-route-id]').getAttribute('data-route-id')==='{route_id}'", timeout=25000)
 
+    # Deterministic async transaction behaviour: one selection is one transaction.
+    non_get_before = len([r for r in report['requests'] if r['method'] != 'GET'])
+    options_list = await page.locator('.scene-setup [data-map-option]').evaluate_all('els=>els.map(e=>e.getAttribute("data-map-option"))')
+    other = next(item for item in options_list if item != ROOM)
+
+    async def slow_version(route):
+        response = await route.fetch()
+        await asyncio.sleep(3.0)
+        await route.fulfill(response=response)
+    await page.route('**/api/v1/maps/**', slow_version)
+    await page.locator(f'.scene-setup [data-map-option="{other}"]').click()
+    await page.locator('.scene-setup [data-map-offline-switch]').click()
+    await asyncio.sleep(5.5)
+    check('a switch to the offline fixture wins against the still-pending map read',
+          await page.locator('.scene-setup [data-scene-map-mode]').get_attribute('data-scene-map-mode') == 'offline-test')
+    check('the late success cannot resurrect a backend map nor clear the offline state',
+          await page.locator('.scene-setup dl[data-map-source]').get_attribute('data-map-source') == 'offline_test_fixture'
+          and await page.locator('.scene-setup [data-map-offline="true"]').count() == 1
+          and await page.locator('.scene-setup [data-map-error]').count() == 0)
+
+    await page.unroute('**/api/v1/maps/**', slow_version)
+
+    async def corrupt_raster(route):
+        if urlsplit(route.request.url).path.endswith('/image'):
+            await route.fulfill(status=200, content_type='application/octet-stream', body='P5\n59 47\n255\n' + '0' * 40)
+        else: await route.continue_()
+    await page.route('**/api/v1/maps/**', corrupt_raster)
+    await page.locator(f'.scene-setup [data-map-option="{ROOM}"]').click()
+    await page.wait_for_selector('.scene-setup [data-map-error]', timeout=25000)
+    error_text = await page.locator('.scene-setup [data-map-error]').inner_text()
+    check('a raster failing digest validation reports the real pgm code', 'digest_mismatch' in error_text, error_text)
+    create_state = await page.locator('.scene-setup [data-route-create]').get_attribute('data-route-create')
+    save_reason = await page.locator('.scene-setup [data-route-save]').get_attribute('data-route-save-reason')
+    offline_shown = await page.locator('.scene-setup [data-map-offline="true"]').count()
+    check('write eligibility follows the failed validation of the map bound to this route',
+          create_state == 'blocked' and '校验失败' in save_reason, f'{create_state} · {save_reason}')
+    check('a failed backend map read stays visible instead of silently showing the offline fixture as usable',
+          bool(error_text) and offline_shown <= 1, error_text[:120])
+    check('no route write is issued after the validation failure',
+          len([r for r in report['requests'] if r['method'] != 'GET']) == non_get_before,
+          [f"{r['method']} {urlsplit(r['url']).path}" for r in report['requests'] if r['method'] != 'GET'][non_get_before:][:4])
+    await page.unroute('**/api/v1/maps/**', corrupt_raster)
+    await page.locator(f'.scene-setup [data-map-option="{ROOM}"]').click()
+    await page.wait_for_function("()=>document.querySelector('.scene-setup [data-image-verified]')?.getAttribute('data-image-verified')==='true'", timeout=25000)
+    check('a superseded failed validation does not stick after a clean re-read',
+          await page.locator('.scene-setup [data-map-error]').count() == 0
+          and await page.locator('.scene-setup [data-route-save]').get_attribute('data-route-save') == 'ready'
+          and await page.locator('.scene-setup [data-image-verified]').get_attribute('data-image-verified') == 'true')
+
+    # Publish semantics: the result names the server revision it came from.
+    await set_pose(page, ids[0], None, None, 45)
+    revision_before = await page.locator('.scene-setup [data-draft-revision]').get_attribute('data-draft-revision')
+    server_digest = await page.locator('.scene-setup [data-content-digest]').get_attribute('data-content-digest')
+    await page.locator('.scene-setup [data-route-publish]').click()
+    await page.wait_for_selector('.scene-setup [data-publish-note]', timeout=25000)
+    published = page.locator('.scene-setup [data-publish-note]')
+    publish_text = await published.inner_text()
+    check('publish names the exact server draft revision it published',
+          await published.get_attribute('data-publish-revision') == revision_before
+          and await published.get_attribute('data-publish-version') in ('v1', 'v2', 'v3'), f'{revision_before} · {publish_text[:80]}')
+    check('unsaved local edits are warned about instead of pretending to be published',
+          await published.get_attribute('data-publish-dirty') == 'true' and '没有被包含在本次发布' in publish_text, publish_text)
+    check('the published digest is the server draft digest, not the dirty local content',
+          await published.get_attribute('data-publish-digest') == server_digest, (await published.get_attribute('data-publish-digest'), server_digest))
+
     await page.get_by_role('button', name='Simulation', exact=True).click()
     text = await page.locator('main').inner_text()
     check('the 3D workbench states this candidate read contract is unusable instead of pretending to render',

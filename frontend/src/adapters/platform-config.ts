@@ -1,6 +1,7 @@
 // Same-origin client for the M1.2b platform configuration API.
-// Draft creation/save/validate and snapshot/Session reads only. No Session
-// create/start, motion, RESET, recording or native command endpoint is called.
+// Draft create/save/validate, snapshot and Session reads, Session prepare/start, and the
+// explicit recording lifecycle actions (begin, robot STOP, recording end). Motion, RESET,
+// teleop and native command endpoints are never called from here.
 export type CheckStatus = 'passed' | 'failed' | 'unsupported' | 'not_checked' | 'warning';
 export interface Check { key: string; status: CheckStatus; phase: 'configuration' | 'readiness'; scope: string; detail: string }
 export interface BlockingReason { key: string; scope: string; message: string }
@@ -85,8 +86,44 @@ export interface SessionCurrent {
   control_scope_granted: string[]; recording_required_for_motion: boolean; recording_begin_required: boolean;
   recording: CurrentRecording; owner: CurrentOwner; safety_latched: boolean;
   recording_ready: boolean; motion_ready: boolean; start_available: boolean; recording_begin_available: boolean;
+  stop_available: boolean; recording_end_available: boolean;
+  session_stop_protocol: string | null; recording_end_protocol: string | null;
+  last_stop_code: string | null; last_end_code: string | null; recording_integrity: string | null;
   blockers: StartBlock[];
 }
+export interface StopDispatchEvidence { dispatched: boolean; command_id: string | null; status: string; status_detail: string }
+export interface ParkingEvidence {
+  confirmed: boolean; waited_ms: number; timeout_ms: number; base_stopped: boolean | null; base_stop_latched: boolean | null;
+  base_velocity_m_s: number[]; arm_max_joint_velocity_rad_s: number | null; control_tick_id: string | null;
+  observed_at_backend_monotonic_s: number | null; scope_coverage: Record<string, string>;
+  observed_confirmed: boolean; coverage_complete: boolean; coverage_note: string;
+}
+export interface RecordingDrainEvidence { completed: boolean; fanout_drained: boolean; recorder_queue_empty: boolean; queued_events: number; dropped_events: number }
+export interface RecordingFinalizeEvidence {
+  completed: boolean; error: string | null; terminal_event_written: boolean; complete_tail: boolean;
+  recording_status: string; audit_status: string; event_count: number | null; dropped_events: number | null;
+  storage_ref: string | null; episode_complete_sha256: string | null; checksummed_artifacts: number; preserved_records: boolean;
+}
+export interface StopReceipt {
+  accepted: boolean; code: string; reason: string; protocol: string; request_id: string; replayed: boolean;
+  binding_id: string | null; session_id: string | null; config_fingerprint: string | null;
+  run_id: string; backend_generation: number; episode_id: string;
+  dispatch: StopDispatchEvidence; parking: ParkingEvidence;
+  owner_cleared_after_stop: boolean; safety_latched: boolean; recording_status: string; recording_segment_id: string | null;
+  recording_touched: boolean; motion_restored: boolean; observed_at: string;
+}
+export interface RecordingEndReceipt {
+  accepted: boolean; code: string; reason: string; protocol: string; request_id: string; replayed: boolean;
+  binding_id: string; session_id: string; config_fingerprint: string;
+  run_id: string; backend_generation: number; episode_id: string;
+  dispatch: StopDispatchEvidence; parking: ParkingEvidence;
+  recording_status: string; recording_segment_id: string | null; active_segment_id: string | null; binding_state: string;
+  drain: RecordingDrainEvidence; finalize: RecordingFinalizeEvidence;
+  integrity: 'complete' | 'incomplete_terminal_recorded' | 'finalize_failed_missing_tail' | 'unknown' | string;
+  owner_cleared_after_stop: boolean; safety_latched: boolean; recording_touched: boolean; motion_restored: boolean;
+  reset_issued: boolean; safety_cleared: boolean; owner_acquired: boolean; observed_at: string;
+}
+export interface LifecycleAttempt { at: string; request_id: string; result: string; code?: string; reason?: string }
 export interface SessionRecord {
   schema_version: string; session_id: string; state: 'prepared' | 'active' | 'closed' | 'failed';
   created_at: string; updated_at: string; snapshot_id: string;
@@ -97,6 +134,8 @@ export interface SessionRecord {
   blocking_reasons: BlockingReason[]; start_attempts?: StartAttempt[];
   started_at: string | null; start_receipt?: StartReceipt | null;
   recording_begin_attempts?: RecordingAttempt[]; recording_begin_receipt?: RecordingBeginReceipt | null;
+  stop_receipt?: StopReceipt | null; stop_attempts?: LifecycleAttempt[];
+  recording_end_receipt?: RecordingEndReceipt | null; recording_end_attempts?: LifecycleAttempt[];
   current?: SessionCurrent | null;
 }
 export interface SessionList { source: 'stored'; live: false; retrieved_at: string; sessions: SessionRecord[] }
@@ -164,6 +203,18 @@ export class PlatformConfigApi {
   }
   startSession(sessionId: string, signal: AbortSignal) {
     return request<SessionRecord>(`/api/v1/sessions/${encodeURIComponent(sessionId)}/start`, { method: 'POST' }, signal);
+  }
+  beginRecording(sessionId: string, operatorId: string, viewSource: string, signal: AbortSignal) {
+    return request<SessionEnvelope>(`/api/v1/sessions/${encodeURIComponent(sessionId)}/recording/begin`,
+      { method: 'POST', body: JSON.stringify({ operator_id: operatorId, view_source: viewSource }) }, signal);
+  }
+  stopSession(sessionId: string, requestId: string, signal: AbortSignal) {
+    return request<SessionEnvelope>(`/api/v1/sessions/${encodeURIComponent(sessionId)}/stop`,
+      { method: 'POST', body: JSON.stringify({ request_id: requestId, reason: 'OPERATOR_STOP' }) }, signal);
+  }
+  endRecording(sessionId: string, requestId: string, signal: AbortSignal) {
+    return request<SessionEnvelope>(`/api/v1/sessions/${encodeURIComponent(sessionId)}/recording/end`,
+      { method: 'POST', body: JSON.stringify({ request_id: requestId, reason: 'OPERATOR_FINISHED' }) }, signal);
   }
   executionRecipe(signal: AbortSignal) { return request<ExecutionRecipe>('/api/v1/mobilecar/execution-recipe', { method: 'GET' }, signal); }
   preflight(signal: AbortSignal) { return request<PreflightRecord>('/api/v1/mobilecar/preflight', { method: 'GET' }, signal); }

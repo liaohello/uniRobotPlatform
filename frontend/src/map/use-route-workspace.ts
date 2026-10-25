@@ -3,7 +3,7 @@ import { ApiError, describeApiError } from '../adapters/platform-config';
 import {
   PlatformNavigationApi, conflictOf, draftDtoToView, draftDtoToWorking, mapDtoToMetadata,
   summaryDtoToRef, versionDtoToView, workingToPayload,
-  type MapListDto, type MapVersionDto, type RevisionConflict, type RouteDraftDto, type RouteVersionView, type ServerDraftView,
+  type MapListDto, type MapRefDto, type MapVersionDto, type RevisionConflict, type RouteDraftDto, type RouteVersionView, type ServerDraftView,
 } from '../adapters/platform-navigation';
 import { PgmError, assertDims, assertDigest, parsePgm, rasterToPngDataUrl, sha256Hex } from './pgm';
 import {
@@ -13,10 +13,13 @@ import {
 
 export type LoadState = 'idle' | 'loading' | 'ready' | 'failed';
 export interface ImageEvidence {
+  mapId: string; mapVersion: string;
   declaredSha256: string; actualSha256: string; declaredBytes: number; receivedBytes: number;
   declaredWidth: number; declaredHeight: number; decodedWidth: number; decodedHeight: number; magic: string; maxval: number;
 }
 export interface VersionRefView { version: string; contentDigest: string; createdAt: string; waypointCount: number; mapRef: { mapId: string; version: string; frame: 'map' } }
+export interface WriteGate { enabled: boolean; reason: string }
+export interface PublishInfo { version: string; contentDigest: string; fromRevision: number; reused: boolean; localEditsExcluded: boolean }
 
 export interface RouteWorkspace {
   working: RouteDraft;
@@ -27,8 +30,9 @@ export interface RouteWorkspace {
   imageEvidence: ImageEvidence | null;
   serverDraft: ServerDraftView | null; draftError: string; conflict: RevisionConflict | null;
   versions: VersionRefView[]; versionsError: string;
-  viewed: RouteVersionView | null;
-  dirty: boolean; mapMismatch: boolean; errors: string[]; busy: string; offlineMode: boolean; publishNote: string;
+  viewed: RouteVersionView | null; publishInfo: PublishInfo | null;
+  dirty: boolean; mapMismatch: boolean; errors: string[]; busy: string; offlineMode: boolean;
+  gates: { create: WriteGate; save: WriteGate; publish: WriteGate; retry: WriteGate };
   useOfflineMap(): void;
   loadCatalog(): void;
   selectMap(mapId: string, version: string): void;
@@ -45,6 +49,8 @@ export interface RouteWorkspace {
   clearPointsForSelectedMap(): void;
   setWorking(draft: RouteDraft): void;
 }
+
+const gate = (enabled: boolean, reason: string): WriteGate => ({ enabled, reason });
 
 export function useRouteWorkspace(): RouteWorkspace {
   const api = useMemo(() => new PlatformNavigationApi(), []);
@@ -63,15 +69,17 @@ export function useRouteWorkspace(): RouteWorkspace {
   const [versions, setVersions] = useState<VersionRefView[]>([]);
   const [versionsError, setVersionsError] = useState('');
   const [viewed, setViewed] = useState<RouteVersionView | null>(null);
+  const [publishInfo, setPublishInfo] = useState<PublishInfo | null>(null);
   const [busy, setBusy] = useState('');
-  const [publishNote, setPublishNote] = useState('');
   const [offlineMode, setOfflineMode] = useState(true);
+  // One transaction per intent: the same serial and signal cover the version read, the raster
+  // bytes and every digest/geometry check, so a superseded choice can never land.
   const mapSerial = useRef(0);
   const routeSerial = useRef(0);
   const versionSerial = useRef(0);
-  const mapController = useRef<AbortController | null>(null);
-  const routeController = useRef<AbortController | null>(null);
-  const versionController = useRef<AbortController | null>(null);
+  const catalogSerial = useRef(0);
+  const controllers = useRef<AbortController[]>([]);
+  const track = (controller: AbortController) => { controllers.current.push(controller); return controller; };
 
   const errors = useMemo(() => routeErrors(working), [working]);
   const dirty = useMemo(() => !serverDraft
@@ -79,57 +87,108 @@ export function useRouteWorkspace(): RouteWorkspace {
   const mapMismatch = useMemo(() => working.waypoints
     .some((point) => point.mapId !== working.map.mapId || point.mapVersion !== working.map.version), [working]);
 
+  const verifiedMap = useMemo(() => {
+    if (!selectedMap?.authority || mapState !== 'ready' || mapError) return null;
+    const evidence = imageEvidence;
+    const declared = selectedMap.authority.image?.sha256 ?? '';
+    if (!evidence || !declared) return null;
+    const identityOk = evidence.mapId === selectedMap.mapId && evidence.mapVersion === selectedMap.version;
+    const digestOk = evidence.actualSha256 === declared;
+    const geometryOk = evidence.decodedWidth === selectedMap.widthPx && evidence.decodedHeight === selectedMap.heightPx;
+    return identityOk && digestOk && geometryOk ? evidence : null;
+  }, [selectedMap, imageEvidence, mapState, mapError]);
+
+  const posesValid = working.waypoints.length > 0 && errors.length === 0 && !mapMismatch;
+  const mapWriteReason = mapError ? `地图读取或校验失败：${mapError}`
+    : mapState === 'loading' ? '地图版本与栅格正在读取，写入等待本次选择完成'
+      : offlineMode ? '当前是离线测试地图，不是后端资源；先读取并选择真实地图版本'
+        : !verifiedMap ? '真实地图栅格尚未通过摘要与尺寸校验（或校验对象不是当前地图）'
+          : mapMismatch ? 'PointGoal 仍绑定旧地图，需显式清空后改用此地图' : '';
+  const gates = useMemo(() => {
+    const ready = posesValid && !mapWriteReason && busy === '';
+    const blockedReason = busy !== '' ? `${busy} 正在进行` : mapWriteReason || (posesValid ? '' : '需要至少一个 PointGoal，且每点位置与朝向有效');
+    return {
+      create: gate(ready && !serverDraft, serverDraft ? '已打开服务端 Route Draft' : blockedReason),
+      save: gate(ready && Boolean(serverDraft), serverDraft ? blockedReason : '先创建或按 route_id 打开服务端草案'),
+      publish: gate(ready && Boolean(serverDraft), serverDraft ? blockedReason : '先创建或按 route_id 打开服务端草案'),
+      retry: gate(Boolean(conflict) && conflict?.serverRevision !== null && posesValid && !mapWriteReason && busy === '',
+        conflict?.serverRevision === null ? '服务器未返回 current_revision' : blockedReason),
+    };
+  }, [busy, conflict, mapWriteReason, posesValid, serverDraft]);
+
   const loadCatalog = useCallback(() => {
-    const controller = new AbortController();
+    const serial = ++catalogSerial.current;
+    const controller = track(new AbortController());
     setCatalogState('loading'); setCatalogError('');
     void api.listMaps(controller.signal).then((value: MapListDto) => {
+      if (serial !== catalogSerial.current) return;
       setCatalog(value.maps);
       setCatalogMeta({ source: value.source, live: value.live, supported: value.supported, reason: value.reason, schemaVersion: value.schema_version });
       setCatalogState('ready');
-    }).catch((cause) => { setCatalogError(describeApiError(cause)); setCatalogState('failed'); });
+    }).catch((cause) => {
+      if (serial !== catalogSerial.current) return;
+      setCatalogError(describeApiError(cause)); setCatalogState('failed');
+    });
   }, [api]);
 
-  const readMap = useCallback((dto: MapVersionDto) => {
-    const serial = ++mapSerial.current;
-    mapController.current?.abort();
-    const controller = new AbortController();
-    mapController.current = controller;
-    setMapState('loading'); setMapError(''); setImageEvidence(null);
-    const metadata = mapDtoToMetadata(dto);
-    if (!dto.image) { setMapError('image_missing · 该地图版本未声明 image 资产'); setMapState('failed'); return; }
-    void api.mapImage(dto.map_id, dto.version, dto.image.sha256, controller.signal).then(async (raw) => {
+  /** The whole map read for one selection; resolves false when the selection was superseded or failed. */
+  const applyMap = useCallback((dto: MapVersionDto, serial: number, signal: AbortSignal): Promise<boolean> => {
+    const live = () => serial === mapSerial.current;
+    let metadata: MapMetadata;
+    try {
+      metadata = mapDtoToMetadata(dto);
+    } catch (cause) {
+      if (live()) { setMapError(cause instanceof Error ? `${cause.name} · ${cause.message}` : String(cause)); setMapState('failed'); }
+      return Promise.resolve(false);
+    }
+    if (!dto.image) { if (live()) { setMapError('image_missing · 该地图版本未声明 image 资产'); setMapState('failed'); } return Promise.resolve(false); }
+    return api.mapImage(dto.map_id, dto.version, dto.image.sha256, signal).then(async (raw) => {
       const actual = await sha256Hex(raw);
       assertDigest(actual, dto.image?.sha256 ?? '');
       const raster = parsePgm(raw);
       assertDims(raster, dto.width_px, dto.height_px);
-      if (serial !== mapSerial.current) return;
+      if (!live()) return false;
       const next: MapMetadata = { ...metadata, imageUrl: rasterToPngDataUrl(raster), widthPx: raster.width, heightPx: raster.height };
       setSelectedMap(next);
       setWorking((previous) => ({ ...previous, map: next }));
       setImageEvidence({
+        mapId: dto.map_id, mapVersion: dto.version,
         declaredSha256: dto.image?.sha256 ?? '', actualSha256: actual, declaredBytes: dto.image?.bytes ?? 0,
         receivedBytes: raw.length, declaredWidth: dto.width_px, declaredHeight: dto.height_px,
         decodedWidth: raster.width, decodedHeight: raster.height, magic: raster.magic, maxval: raster.maxval,
       });
-      setMapState('ready'); setOfflineMode(false);
+      setMapError(''); setMapState('ready'); setOfflineMode(false);
+      return true;
     }).catch((cause) => {
-      if (serial !== mapSerial.current) return;
+      if (!live()) return false;
       setMapError(cause instanceof PgmError ? `${cause.code} · ${cause.message}` : describeApiError(cause));
-      setMapState('failed');
+      setImageEvidence(null); setMapState('failed');
+      return false;
     });
   }, [api]);
 
   const selectMap = useCallback((mapId: string, version: string) => {
-    setBusy('map');
-    void api.getMapVersion(mapId, version, new AbortController().signal)
-      .then((dto) => { readMap(dto); setBusy(''); })
-      .catch((cause) => { setMapError(describeApiError(cause)); setMapState('failed'); setBusy(''); });
-  }, [api, readMap]);
+    const serial = ++mapSerial.current;
+    controllers.current.forEach((controller) => controller.abort());
+    controllers.current = [];
+    const controller = track(new AbortController());
+    setMapState('loading'); setMapError(''); setImageEvidence(null); setBusy('map');
+    void api.getMapVersion(mapId, version, controller.signal)
+      .then((dto) => (serial === mapSerial.current ? applyMap(dto, serial, controller.signal) : Promise.resolve(false)))
+      .catch((cause) => {
+        if (serial !== mapSerial.current) return;
+        setMapError(describeApiError(cause)); setImageEvidence(null); setMapState('failed');
+      })
+      .finally(() => { if (serial === mapSerial.current) setBusy(''); });
+  }, [api, applyMap]);
 
   const useOfflineMap = useCallback(() => {
-    mapSerial.current += 1; mapController.current?.abort();
-    setSelectedMap(OFFLINE_MAP); setWorking((previous) => ({ ...previous, map: OFFLINE_MAP }));
-    setMapState('idle'); setMapError(''); setImageEvidence(null); setOfflineMode(true);
+    mapSerial.current += 1; routeSerial.current += 1; versionSerial.current += 1;
+    controllers.current.forEach((controller) => controller.abort());
+    controllers.current = [];
+    setSelectedMap(OFFLINE_MAP);
+    setWorking((previous) => ({ ...previous, map: OFFLINE_MAP }));
+    setMapState('idle'); setMapError(''); setImageEvidence(null); setOfflineMode(true); setBusy('');
   }, []);
 
   const rememberRoute = (routeId: string | null) => {
@@ -140,16 +199,13 @@ export function useRouteWorkspace(): RouteWorkspace {
 
   const refreshVersionsOf = useCallback((routeId: string) => {
     const serial = ++versionSerial.current;
-    versionController.current?.abort();
-    const controller = new AbortController();
-    versionController.current = controller;
+    const controller = track(new AbortController());
     setVersionsError('');
     void api.listVersions(routeId, controller.signal).then((value) => {
       if (serial !== versionSerial.current) return;
       setVersions(value.versions.map(summaryDtoToRef));
     }).catch((cause) => {
       if (serial !== versionSerial.current) return;
-      // The candidate answers "no published versions yet" with 404 route_version_not_found.
       if (cause instanceof ApiError && cause.code === 'route_version_not_found') { setVersions([]); return; }
       setVersionsError(describeApiError(cause));
     });
@@ -157,36 +213,43 @@ export function useRouteWorkspace(): RouteWorkspace {
 
   const openRoute = useCallback((routeId: string) => {
     const serial = ++routeSerial.current;
-    routeController.current?.abort();
-    const controller = new AbortController();
-    routeController.current = controller;
+    const controller = track(new AbortController());
     setBusy('route-open'); setDraftError(''); setConflict(null);
     void api.getDraft(routeId, controller.signal).then(async (dto: RouteDraftDto) => {
       if (serial !== routeSerial.current) return;
-      const bound = mapRefOf(selectedMap ?? OFFLINE_MAP);
-      if (dto.map_ref.map_id !== bound.mapId || dto.map_ref.version !== bound.version) {
-        const mapDto = await api.getMapVersion(dto.map_ref.map_id, dto.map_ref.version, controller.signal);
+      const ref: MapRefDto = dto.map_ref;
+      const current = mapRefOf(selectedMap ?? OFFLINE_MAP);
+      if (ref.map_id !== current.mapId || ref.version !== current.version) {
+        const mapSerialForRoute = ++mapSerial.current;
+        const mapDto = await api.getMapVersion(ref.map_id, ref.version, controller.signal);
+        if (serial !== routeSerial.current || mapSerialForRoute !== mapSerial.current) return;
+        const ok = await applyMap(mapDto, mapSerialForRoute, controller.signal);
+        if (!ok) {
+          if (serial === routeSerial.current) { setDraftError(`路线绑定的地图 ${ref.map_id}/${ref.version} 读取或校验失败；不回退到其他地图`); setBusy(''); }
+          return;
+        }
         if (serial !== routeSerial.current) return;
-        readMap(mapDto);
         setWorking(draftDtoToWorking(dto, mapDtoToMetadata(mapDto)));
       } else {
         setWorking(draftDtoToWorking(dto, selectedMap ?? OFFLINE_MAP));
       }
-      if (serial !== routeSerial.current) return;
-      setServerDraft(draftDtoToView(dto)); setBusy('');
+      setServerDraft(draftDtoToView(dto));
+      setPublishInfo(null); setBusy('');
       rememberRoute(dto.route_id);
       refreshVersionsOf(dto.route_id);
     }).catch((cause) => { if (serial === routeSerial.current) { setDraftError(describeApiError(cause)); setBusy(''); } });
-  }, [api, refreshVersionsOf, readMap, selectedMap]);
+  }, [api, applyMap, refreshVersionsOf, selectedMap]);
+
+  const refuse = (reason: string) => setDraftError(`${reason}；写入未发出`);
 
   const createRoute = useCallback((name: string) => {
-    if (offlineMode) { setDraftError('离线测试地图不是后端资源；先读取并选择真实地图版本'); return; }
+    if (!gates.create.enabled) { refuse(gates.create.reason); return; }
     setBusy('route-create'); setDraftError('');
     void api.createDraft(workingToPayload(working, name), new AbortController().signal).then((dto) => {
       setWorking(draftDtoToWorking(dto, working.map)); setServerDraft(draftDtoToView(dto));
-      setConflict(null); setBusy(''); rememberRoute(dto.route_id); refreshVersionsOf(dto.route_id);
+      setConflict(null); setPublishInfo(null); setBusy(''); rememberRoute(dto.route_id); refreshVersionsOf(dto.route_id);
     }).catch((cause) => { setDraftError(describeApiError(cause)); setBusy(''); });
-  }, [api, offlineMode, refreshVersionsOf, working]);
+  }, [api, gates.create, refreshVersionsOf, working]);
 
   const writeSave = useCallback((baseRevision: number) => {
     if (!serverDraft) return;
@@ -200,14 +263,21 @@ export function useRouteWorkspace(): RouteWorkspace {
         const clash = conflictOf(cause);
         if (clash) {
           setConflict(clash);
-          setDraftError(`${clash.code}${clash.serverRevision === null ? '' : ` · current_revision=${clash.serverRevision}`} · ${clash.message}（本地编辑仍保留，未覆盖）`);
+          setDraftError(`${clash.code}${clash.serverRevision === null ? '' : ` · current_revision=${clash.serverRevision}`} · ${clash.message}（本地编辑仍保留，未覆盖服务器内容）`);
         } else setDraftError(describeApiError(cause));
         setBusy('');
       });
   }, [api, serverDraft, working]);
 
-  const saveRoute = useCallback(() => { if (serverDraft) writeSave(serverDraft.draftRevision); }, [serverDraft, writeSave]);
-  const retrySaveOnServer = useCallback(() => { if (conflict && conflict.serverRevision !== null) writeSave(conflict.serverRevision); }, [conflict, writeSave]);
+  const saveRoute = useCallback(() => {
+    if (!gates.save.enabled) { refuse(gates.save.reason); return; }
+    if (serverDraft) writeSave(serverDraft.draftRevision);
+  }, [gates.save, serverDraft, writeSave]);
+
+  const retrySaveOnServer = useCallback(() => {
+    if (!gates.retry.enabled || !conflict || conflict.serverRevision === null) { refuse(gates.retry.reason); return; }
+    writeSave(conflict.serverRevision);
+  }, [conflict, gates.retry, writeSave]);
 
   const reloadServerDraft = useCallback(() => {
     if (!serverDraft) return;
@@ -218,25 +288,26 @@ export function useRouteWorkspace(): RouteWorkspace {
   }, [api, serverDraft, working.map]);
 
   const publishRoute = useCallback(() => {
-    if (!serverDraft) return;
+    if (!serverDraft || !gates.publish.enabled) { refuse(gates.publish.reason); return; }
+    const fromRevision = serverDraft.draftRevision;
+    const localEditsExcluded = dirty;
     setBusy('route-publish'); setDraftError('');
-    void api.publishDraft(serverDraft.routeId, serverDraft.draftRevision, new AbortController().signal).then((result) => {
-      setViewed(versionDtoToView(result.route_version));
-      setPublishNote(result.reused ? 'reused · 内容与已发布版本相同，后端未新建版本' : 'published · 后端新建了不可变版本');
+    void api.publishDraft(serverDraft.routeId, fromRevision, new AbortController().signal).then((result) => {
+      const view = versionDtoToView(result.route_version);
+      setViewed(view);
+      setPublishInfo({ version: view.version, contentDigest: view.contentDigest, fromRevision, reused: result.reused, localEditsExcluded });
       setBusy('');
       refreshVersionsOf(serverDraft.routeId);
     }).catch((cause) => {
       const clash = conflictOf(cause);
       setDraftError(clash ? `${clash.code} · ${clash.message}` : describeApiError(cause)); setBusy('');
     });
-  }, [api, refreshVersionsOf, serverDraft]);
+  }, [api, dirty, gates.publish, refreshVersionsOf, serverDraft]);
 
   const viewVersion = useCallback((version: string) => {
     if (!serverDraft) return;
     const serial = ++versionSerial.current;
-    versionController.current?.abort();
-    const controller = new AbortController();
-    versionController.current = controller;
+    const controller = track(new AbortController());
     setBusy('version-view'); setVersionsError('');
     void api.getVersion(serverDraft.routeId, version, controller.signal).then((dto) => {
       if (serial !== versionSerial.current) return;
@@ -244,11 +315,10 @@ export function useRouteWorkspace(): RouteWorkspace {
     }).catch((cause) => { if (serial === versionSerial.current) { setVersionsError(describeApiError(cause)); setBusy(''); } });
   }, [api, serverDraft]);
 
-  const closeVersionView = useCallback(() => { versionSerial.current += 1; versionController.current?.abort(); setViewed(null); }, []);
+  const closeVersionView = useCallback(() => { versionSerial.current += 1; setViewed(null); }, []);
   const closeRoute = useCallback(() => {
-    routeSerial.current += 1; routeController.current?.abort();
-    versionSerial.current += 1; versionController.current?.abort();
-    setServerDraft(null); setViewed(null); setVersions([]); setConflict(null); setDraftError(''); setPublishNote('');
+    routeSerial.current += 1; versionSerial.current += 1;
+    setServerDraft(null); setViewed(null); setVersions([]); setConflict(null); setDraftError(''); setPublishInfo(null);
     setWorking((previous) => ({ ...previous, routeId: 'route-local-draft', draftRevision: 1 }));
     rememberRoute(null);
   }, []);
@@ -264,13 +334,15 @@ export function useRouteWorkspace(): RouteWorkspace {
   }, [openRoute]);
 
   useEffect(() => () => {
-    mapSerial.current += 1; routeSerial.current += 1; versionSerial.current += 1;
-    mapController.current?.abort(); routeController.current?.abort(); versionController.current?.abort();
+    mapSerial.current += 1; routeSerial.current += 1; versionSerial.current += 1; catalogSerial.current += 1;
+    controllers.current.forEach((controller) => controller.abort());
+    controllers.current = [];
   }, []);
 
   return {
     working, catalog, catalogMeta, catalogState, catalogError, selectedMap, mapState, mapError, imageEvidence,
-    serverDraft, draftError, conflict, versions, versionsError, viewed, dirty, mapMismatch, errors, busy, offlineMode, publishNote,
+    serverDraft, draftError, conflict, versions, versionsError, viewed, publishInfo,
+    dirty, mapMismatch, errors, busy, offlineMode, gates,
     useOfflineMap, loadCatalog, selectMap, createRoute, saveRoute, publishRoute, openRoute, reloadServerDraft,
     retrySaveOnServer, refreshVersions: () => (serverDraft ? refreshVersionsOf(serverDraft.routeId) : undefined),
     viewVersion, closeVersionView, closeRoute, clearPointsForSelectedMap, setWorking,

@@ -3,9 +3,11 @@
 GET is exposed for the existing read surface plus preflight, execution-recipe,
 kinematics, config snapshots, Sessions, the map catalog with fixed map versions and
 map raster images, and route drafts with immutable route versions. Platform Draft
-create/save/validate, Session prepare/start, route-draft create/save/publish are the
-only writes. Navigation execution, motion, STOP, RESET, recording begin/finalize and
-native command endpoints stay unproxied. There is no route collection GET upstream, so
+create/save/validate, Session prepare/start, route-draft create/save/publish and the
+three Session lifecycle actions (recording begin, robot STOP, recording end) are the
+only writes; each is an exact path, so no wildcard control path is reachable.
+Motion/teleop, RESET, /runs/{id}/stop, episode and native command endpoints stay
+unproxied. There is no route collection GET upstream, so
 none is exposed here. Method, path, status,
 error body and query string are preserved; no request body is invented.
 """
@@ -30,6 +32,9 @@ ROUTES=[
  (re.compile(r'^/api/v1/route-drafts/'+ID+r'$'),{'GET','PUT'}),
  (re.compile(r'^/api/v1/route-drafts/'+ID+r'/publish$'),{'POST'}),
  (re.compile(r'^/api/v1/sessions/'+ID+r'/start$'),{'POST'}),
+ (re.compile(r'^/api/v1/sessions/'+ID+r'/recording/begin$'),{'POST'}),
+ (re.compile(r'^/api/v1/sessions/'+ID+r'/stop$'),{'POST'}),
+ (re.compile(r'^/api/v1/sessions/'+ID+r'/recording/end$'),{'POST'}),
  (re.compile(r'^/api/v1/routes/'+ID+r'/versions$'),{'GET'}),
  (re.compile(r'^/api/v1/routes/'+ID+r'/versions/'+ID+r'$'),{'GET'}),
 ]

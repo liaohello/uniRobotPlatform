@@ -2,6 +2,17 @@
 
 此文件是前端交接记录，不定义第二套公共接口。权威语义仍在后端维护的 `docs/specs/30-contracts`，wire 以 backend 的 mobilecar / drafts / prepare 实现和实际 OpenAPI 为准。
 
+## 已接入（M1.5 · Session 录制生命周期界面与地图异步门控）
+
+- 平台生命周期端点按后端实际交付接线：`POST /api/v1/sessions/{id}/recording/begin`（body `operator_id`、`view_source`）、`POST /api/v1/sessions/{id}/stop`（body `request_id` 1–128、`reason=OPERATOR_STOP`）、`POST /api/v1/sessions/{id}/recording/end`（body `request_id`、`reason=OPERATOR_FINISHED`），协议 `m1-stop-1` / `m1-end-1`，见 backend `docs/backend-m1.4.md` 与该 release 的 OpenAPI。三者都返回 `{session, replayed}` 信封（新受理 201、同 `request_id` 重放 200）。
+- **请求体只有以上字段**：`binding_id / run_id / backend_generation / episode_id / recording_segment_id / config_fingerprint` 由平台从 Session 存档组装，前端不传也不覆盖；被守卫拒绝的请求（409 `stop_unsupported`、`recording_end_unsupported`、`session_not_stoppable`、`recording_not_begun`、`runtime_identity_changed`、`native_binding_unverified`、`recipe_changed`、`snapshot_not_eligible`）不写回执、不产生副作用。
+- `current` 新增消费：`stop_available`、`recording_end_available`、`session_stop_protocol`、`recording_end_protocol`、`last_stop_code`、`last_end_code`、`recording_integrity`；存档新增 `stop_receipt/stop_attempts`、`recording_end_receipt/recording_end_attempts`。可用性只读这些字段，不从 `motion_ready`/`recording_ready`、health 或本地状态推断。
+- 回执按层显示且各层只说明自己：受理（`accepted/code/replayed`）、STOP 下发（`dispatch.dispatched/status`）、停车反馈与覆盖（`parking.*` 含逐项 `scope_coverage` 与 `coverage_complete/coverage_note`）、Recorder 排空（`drain.*`，`fanout_drained` 只报广播滞后不参与门控）、finalize 落盘与 `integrity`。`accepted=true`、`base_stopped`、`complete_tail` 都不单独显示为成功；`coverage_complete=false` 明确“不宣称整机停稳”；`ended_parking_unconfirmed`、`end_finalize_failed`、`ended_incomplete_terminal`、`end_already_finalized` 各自的文案与色调不同。任务结果绝不由本界面宣称。
+- 幂等与未知结果：每次操作意图生成一个 `request_id`（`front-{action}-{uuid}`），超时/传输失败显示“结果未知”并只回读存档与 `current`，不自动重发；显式“用同一 request_id 重试”复用同一 id。切换 Session 会递增序号并 abort 在途请求，旧响应不能写入新选择。
+- 同源代理 `tools/serve-readonly.py` 只把上述三个精确路径加入白名单（`{'POST'}`，各自完整正则，无通配控制路径）；`/api/v1/runs/{id}/stop`、`/api/v1/commands`、`/api/v1/episodes`、`/api/v1/reset` 与任何 native 透传继续不代理，机器人 STOP 只走平台 Session 端点。
+- **仍未解除的阻塞**：当前运行的 18949 与 18953 的 OpenAPI 都不含 `/sessions/{id}/stop` 与 `/recording/end`，8792 未部署 native `m1h` 补丁，生产 recipe `mobilecar.g1.teleop` 只声明 `session_binding`+`recording_begin`；因此真实环境里 STOP/结束录制恒为 unsupported，前端按钮禁用并显示该原因。带成功回执的分层显示只在明确标注 `?fixture=synthetic-lifecycle` 的合成夹具中验证，不是真实 native、真实停车或 M1 验收证据。
+- 地图侧修复：一次地图选择 = 一个事务（`mapSerial` + 共享 `AbortController`），版本详情、PGM 字节、SHA-256 摘要与栅格尺寸校验串在同一条链上并全部在 `live()` 判定之后才写状态；切离线、开另一条路线、卸载都递增序号并 abort 在途控制器，晚到的成功/失败不覆盖新选择。写入资格统一为 `gates.{create,save,publish,retry}`，要求“当前路线绑定的真实地图”通过摘要+尺寸校验（`imageEvidence.mapId/mapVersion` 必须等于该地图，不只是非空）、不处于 loading/failed/offline、位置与朝向有效；关闭时动作显式拒绝并写“写入未发出”。发布结果绑定服务端修订：`data-publish-revision`/`data-publish-version`/`data-publish-digest`，存在未保存本地编辑时 `data-publish-dirty=true` 并明确提示本地编辑未被发布。
+
 ## 已接入（M1.3 候选 18953 · 真实地图与路线资源）
 
 - `GET /api/v1/maps` → `{schema_version:"unirobot-map-catalog-1", source:"local_map_packages", live:false, supported, reason, maps:MapVersionView[]}`；Room A/B 为 `g3b_historical_offline` 固定版本，`live=false`、`test_only=false`、`assets_verified=true`、`compatibility.g1_recipe_status=failed`、`navigation_eligible=false`、`current_runtime_status=not_checked`。
@@ -40,7 +51,7 @@
 | 配置 Draft | `draft_revision`、`execution_revision`、`fingerprint`、`recipe_fingerprint`、`validation.status/result`；保存只用 `base_revision` + `name/description` | 后端 `preset.recipe.editable_initial_state_fields=[]`；没有任意初态、场景编辑或机器人配置写入 |
 | 校验结果 | `checks[].{key,status,phase,scope,detail}`、`blocking_reasons`、`execution_eligible`、`validated_snapshot_id`、`reused` | “通过几项”只作摘要；执行资格只看 `execution_eligible`，Session 资格只看后端 Session 状态 |
 | 不可变快照 | `snapshot_id/snapshot_sha256/created_at`、checks、`validation_scope`、recipe、observation、kinematics | 快照只 INSERT；重复校验返回同一 id/sha；不把快照当执行许可 |
-| Session 读取 | `state`、`execution_eligible`、`start_available`、`native_binding`、`execution{source,observed_at,control_scope_granted,owner,recording_*,motion_*}`、`blocking_reasons`、`start_attempts`、`start_receipt`、`recording_begin_*` | 空列表、failed、unsupported 都是正常可解释结果；`GET /sessions` 只读动作存档，不刷新 native；不把 health、Owner、本地目标或夹具成功当作 Ready |
+| Session 读取 | `state`、`execution_eligible`、`start_available`、`native_binding`、`execution{source,observed_at,control_scope_granted,owner,recording_*,motion_*}`、`blocking_reasons`、`start_attempts`、`start_receipt`、`recording_begin_*`、`stop_receipt/stop_attempts`、`recording_end_receipt/recording_end_attempts`；`current` 的 `stop_available/recording_end_available/session_stop_protocol/recording_end_protocol/last_stop_code/last_end_code/recording_integrity` | 空列表、failed、unsupported 都是正常可解释结果；`GET /sessions` 只读动作存档，不刷新 native；不把 health、Owner、本地目标或夹具成功当作 Ready；生命周期可用性只看 `current` 的 available/协议声明字段 |
 | Session 创建 / Start | `POST /sessions` 使用 validated snapshot、execution_revision、fingerprint、幂等键；`POST /sessions/{id}/start` 无 body，前置回读 binding/身份/owner/recording/safety | 创建与 Start 分离；不自动创建、不自动 Start；超时显示结果未知并回读存档；409/失效/离线/拒绝原样显示；当前真实环境因快照不合格保持禁用 |
 | 新鲜度 | `execution.source/observed_at` 仅在 prepare/start/recording-begin 更新；`GET /mobilecar/preflight` 提供 `checked_at` 当前 native 只读观测 | 存档刷新与 native 观测刷新分开；binding/身份失效取消旧手势与本地目标并禁用 Start，同内容网格/相机/布局保留 |
 
@@ -51,8 +62,9 @@
 | 真实 Prepared Session 创建 / 显式 Start | 平台 18944 已实现创建/Start 与 `m1-binding-1` 校验，但运行中的 8792 未部署 native 补丁且 profile 为 G4A2；真实快照仍 `execution_eligible=false` | 创建按钮只在 validated+eligible 快照上启用；真实环境保持禁用。Start 仅在 prepared + `start_available` + binding verified + 身份新鲜时启用；本轮没有对真实环境发送创建/Start |
 | 真实校验通过 | 当前 native 为 `g4a1-1.0`，G1 recipe 期望 `g2a-1.0`；configuration 失败，readiness 多项 unsupported | 显示真实 `failed`、`execution_eligible=false`、`validated_snapshot_id=null`、`blocking_reasons` 和逐项检查；不重签、不伪造 Passed |
 | 运动学标定 / 原生 attestation | `orientation_xyzw=null`、`orientation_status=not_specified_in_source`；authority 为 `platform_reference_not_native_attested`；零位是用户照片位姿、未标定 | 明确显示“未声明/未标定”；位置 IK 仅本地预览，不代表姿态、碰撞、动力学或执行许可 |
-| 控制权 / 命令回执 | 尚无平台认可的 owner/lease、目标版本、命令受理/执行终态和 STOP | 不把原生 Owner 观察值当授权；提交执行、接管、停止保持禁用 |
-| 录制 / 回放 / 媒体 | 无 begin-without-RESET、可靠收尾、媒体 reader、连续 Episode | 录制、RESET、播放、媒体下载保持禁用；时间条只显示单帧/只读快照 |
+| 控制权 / 命令回执 | 平台 18949/18953 的 OpenAPI 尚无 `/sessions/{id}/stop` 与 `/recording/end`；8792 未部署 native `m1h` 补丁，生产 recipe 只声明 `session_binding`+`recording_begin`；无平台认可的目标版本与执行终态 | 机器人 STOP 界面只在 `current.session_stop_protocol` 有值且 `stop_available=true` 时启用；真实环境恒为禁用并显示“当前运行实例不支持该动作”。不把原生 Owner 观察值当授权，提交执行/接管保持禁用 |
+| 机器人真实停车 | `parking.coverage_complete` 在首版恒为 false（gripper 无独立反馈），真实 MuJoCo/真机停车未验证 | 成功回执也只按层显示；`coverage_complete=false` 明确“不宣称整机停稳”，UI 文案不由 `accepted` 或 `base_stopped` 单独推导 |
+| 录制 / 回放 / 媒体 | begin 已在 M1.2d/候选中可用；begin/STOP/end 界面已接线但真实收尾未执行；无媒体 reader、连续 Episode | begin/STOP/end 只由显式点击发出，不自动串联；回放、媒体下载、RESET 继续禁用；时间条只显示单帧/只读快照 |
 | 部署内容核验 | pin 的场景 XML 摘要和部署配置无法经 native HTTP 独立核验 | 快照的 unsupported 项按原义显示；不把 `resource_matches_pin` 或 health 在线提升为 Passed |
 | 地图来源（live SLAM / 导航栅格） | 18953 提供 G3B **历史离线**地图（`live=false`），没有 live SLAM 地图端点 | 只读取与显示固定历史版本；界面写明历史包不等于 live SLAM，摘要或尺寸不符即失败，不静默回退离线夹具 |
 | Route Draft / Route Version / 采用 | 草案与不可变版本 API 已可用；仍没有“采用此版本到配置”的端点，也没有路线目录列表 | 创建/读取/条件保存/发布/固定版本读取全部走后端；采用按钮禁用并说明原因；路线只能凭 `route_id` 打开 |

@@ -6,11 +6,24 @@ import {
   type BlockingReason, type Check, type DraftRecord, type ExecutionRecipe,
   type PreflightRecord, type SessionList, type SessionRecord, type SnapshotRecord,
 } from '../adapters/platform-config';
+import {
+  beginAvailability, codeHint, endAvailability, endLayers, lastAttempt, newRequestId,
+  stopAvailability, stopLayers, type Availability, type Layer, type LifecycleAction,
+} from './lifecycle';
 
 type Busy = '' | 'load' | 'create' | 'save' | 'validate' | 'snapshot' | 'session-create' | 'session-start';
 type CreateIntent = { key: string; snapshotId: string; executionRevision: number; fingerprint: string };
+type ActionMap<T> = Record<LifecycleAction, T>;
+const LIFECYCLE_ACTIONS: LifecycleAction[] = ['begin', 'stop', 'end'];
+const VIEW_SOURCE = 'third_person_3d';
 const ACTION_TIMEOUT_MS = 8000;
 const executionSourceText: Record<string, string> = { prepared: 'prepare 动作', native_start: '显式 Start', native_recording_begin: 'recording begin' };
+const lifecycleButton: Record<LifecycleAction, string> = { begin: '开始录制（显式 begin）', stop: '机器人 STOP（latch，不结束录制）', end: '结束录制（先 STOP 再收尾）' };
+const lifecycleSend: Record<LifecycleAction, string> = {
+  begin: 'POST /api/v1/sessions/{id}/recording/begin',
+  stop: 'POST /api/v1/sessions/{id}/stop',
+  end: 'POST /api/v1/sessions/{id}/recording/end',
+};
 function idempotencyKey(): string {
   return globalThis.crypto?.randomUUID?.() ?? `idem-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -56,8 +69,15 @@ function ReasonList({ reasons }: { reasons: BlockingReason[] }) {
     <b>{reason.key}</b><span>{reason.scope}</span><p>{reason.message}</p>
   </li>)}</ul>;
 }
-function KinematicsBlock() {
-  const w = useWorkbench(); const report = w.sample.live?.kinematics;
+const toneText: Record<Layer['tone'], string> = { ok: '成立', bad: '不成立', unknown: '未证明' };
+function LayeredReceipt({ kind, layers, synthetic }: { kind: LifecycleAction; layers: Layer[]; synthetic: boolean }) {
+  return <div className="session-receipt" data-receipt={kind} data-receipt-synthetic={String(synthetic)}>
+    <div className="session-receipt-head"><b>{kind === 'stop' ? '机器人 STOP 回执（分层）' : '结束录制回执（分层）'}</b><span>每层只说明自己，不合并成“全部成功”</span></div>
+    <ul className="receipt-layers">{layers.map((layer) => <li key={layer.key} data-receipt-layer={layer.key} data-layer-tone={layer.tone}>
+      <b>{layer.label}</b><span className={layer.tone}>{toneText[layer.tone]}</span><p>{layer.text}</p></li>)}</ul>
+  </div>;
+}
+function KinematicsBlock() {  const w = useWorkbench(); const report = w.sample.live?.kinematics;
   if (!report) return <div className="session-blocked neutral"><Icon name="info" size={15}/><div><b>冻结独立参考 profile</b><p>此来源不请求 live kinematics，也不把冻结 arm-spec 当作 live 回退。</p></div></div>;
   return <div className="session-kinematics" data-kinematics-status={report.status}>
     <dl className="session-fields">
@@ -150,6 +170,99 @@ export function SessionPanel() {
                 : currentError ? 'current 读取失败，已暂停 Start' : '';
   const selectedExecution = selectedSession?.execution;
   const ownerState = selectedCurrent?.owner.state ?? 'unknown';
+  const [lifecyclePending, setLifecyclePending] = useState<ActionMap<boolean>>({ begin: false, stop: false, end: false });
+  const [lifecycleError, setLifecycleError] = useState<ActionMap<string>>({ begin: '', stop: '', end: '' });
+  const [lifecycleUnknown, setLifecycleUnknown] = useState<{ action: LifecycleAction; message: string } | null>(null);
+  const [requestIds, setRequestIds] = useState<Partial<ActionMap<string>>>({});
+  const [operatorId, setOperatorId] = useState('front-operator');
+  const lifecycleSerial = useRef<ActionMap<number>>({ begin: 0, stop: 0, end: 0 });
+  const lifecycleController = useRef<Partial<ActionMap<AbortController>>>({});
+  const selectedSessionRef = useRef<string | null>(null); selectedSessionRef.current = selectedSessionId;
+  const lifecycleFixture = useMemo(() => new URLSearchParams(window.location.search).get('fixture') ?? '', []);
+  const beginReceipt = selectedSession?.recording_begin_receipt ?? null;
+  const stopReceipt = selectedSession?.stop_receipt ?? null;
+  const endReceipt = selectedSession?.recording_end_receipt ?? null;
+  const stopAttempt = lastAttempt(selectedSession?.stop_attempts);
+  const endAttempt = lastAttempt(selectedSession?.recording_end_attempts);
+  const actionLabel: Record<LifecycleAction, string> = { begin: '开始录制', stop: '机器人 STOP', end: '结束录制' };
+  // Availability is read only from current's own available/protocol fields; STOP never
+  // depends on motion_ready/recording_ready nor on the shared busy flag of ordinary actions.
+  function gateOf(action: LifecycleAction): Availability {
+    if (!selectedSession) return { available: false, reason: '未选择 Session：身份由平台 Session 组装，无 Session 就没有可执行的动作' };
+    if (currentError) return { available: false, reason: `current 读取失败（${currentError}）：不推断可用性，动作未发出` };
+    if (!selectedCurrent) return { available: false, reason: '尚未读取 current：不能使用存档字段推断生命周期可用' };
+    return action === 'begin' ? beginAvailability(selectedCurrent)
+      : action === 'stop' ? stopAvailability(selectedCurrent) : endAvailability(selectedCurrent);
+  }
+  const lifecycleGates: ActionMap<Availability> = { begin: gateOf('begin'), stop: gateOf('stop'), end: gateOf('end') };
+  function beginLifecycle(action: LifecycleAction) {
+    lifecycleController.current[action]?.abort();
+    const next = new AbortController(); lifecycleController.current[action] = next;
+    lifecycleSerial.current[action] += 1;
+    return { id: lifecycleSerial.current[action], signal: next.signal };
+  }
+  function lifecycleLive(action: LifecycleAction, id: number) {
+    return lifecycleSerial.current[action] === id;
+  }
+  async function runLifecycle(action: LifecycleAction, reuse = false) {
+    const target = selectedSession;
+    if (!target) { setLifecycleError((p) => ({ ...p, [action]: '未选择 Session：动作未发出' })); return; }
+    const gate = lifecycleGates[action];
+    if (!gate.available) { setLifecycleError((p) => ({ ...p, [action]: `${gate.reason}；动作未发出` })); return; }
+    const sessionId = target.session_id;
+    const requestId = action === 'begin' ? '' : reuse ? requestIds[action] ?? '' : newRequestId(action);
+    if (action !== 'begin' && reuse && !requestId) { setLifecycleError((p) => ({ ...p, [action]: '没有可复用的 request_id：该动作还没有待重试的意图' })); return; }
+    if (action !== 'begin') setRequestIds((p) => ({ ...p, [action]: requestId }));
+    const task = beginLifecycle(action);
+    setLifecyclePending((p) => ({ ...p, [action]: true }));
+    setLifecycleError((p) => ({ ...p, [action]: '' }));
+    if (reuse) setLifecycleUnknown(null);
+    const signal = AbortSignal.any([task.signal, AbortSignal.timeout(ACTION_TIMEOUT_MS)]);
+    try {
+      const envelope = action === 'begin' ? await api.beginRecording(sessionId, operatorId.trim() || 'front-operator', VIEW_SOURCE, signal)
+        : action === 'stop' ? await api.stopSession(sessionId, requestId, signal)
+        : await api.endRecording(sessionId, requestId, signal);
+      if (!lifecycleLive(action, task.id) || selectedSessionRef.current !== sessionId) return;
+      setSessions((list) => upsertSession(list, envelope.session));
+      if (action !== 'begin') setRequestIds((p) => ({ ...p, [action]: undefined }));
+      setLifecycleUnknown(null);
+      const receipt = action === 'stop' ? envelope.session.stop_receipt
+        : action === 'end' ? envelope.session.recording_end_receipt : envelope.session.recording_begin_receipt;
+      const code = 'code' in (receipt ?? {}) ? String((receipt as { code?: string }).code ?? '') : '';
+      setNotice(`${actionLabel[action]} 已返回（${envelope.replayed ? '同一 request_id 的重放，未二次下发' : '新受理'}）${code ? ` · code=${code}` : ''}；结论以下方分层回执为准，不由本行文字宣称。`);
+      await refreshCurrent(sessionId);
+    } catch (cause) {
+      if (!lifecycleLive(action, task.id)) return;
+      if (task.signal.aborted) return;
+      if (isTimeout(cause) || isAbort(cause)) {
+        setLifecycleUnknown({
+          action,
+          message: `${actionLabel[action]} 请求超时或传输中断，结果未知；已只读回读存档与 current，未自动重发控制动作。${action !== 'begin' ? `重试会复用同一 request_id${requestId ? `（${requestId}）` : ''}，服务器不会二次下发。` : ''}`,
+        });
+        await recoverOne(sessionId, task.signal);
+        await refreshCurrent(sessionId);
+        return;
+      }
+      const code = cause instanceof ApiError ? cause.code : '';
+      const extra = blockingReasonsOf(cause).map((reason) => reason.message).join('；');
+      setLifecycleError((p) => ({ ...p, [action]: `${describeApiError(cause)} · ${codeHint(code)}${extra ? ` · ${extra}` : ''}（被守卫拒绝的请求不写回执，也不产生副作用）` }));
+      if (action !== 'begin') setRequestIds((p) => ({ ...p, [action]: undefined }));
+      await recoverOne(sessionId, task.signal);
+    } finally {
+      if (lifecycleLive(action, task.id)) setLifecyclePending((p) => ({ ...p, [action]: false }));
+    }
+  }
+  useEffect(() => {
+    LIFECYCLE_ACTIONS.forEach((action) => {
+      lifecycleSerial.current[action] += 1;
+      lifecycleController.current[action]?.abort();
+      lifecycleController.current[action] = undefined;
+    });
+    setLifecyclePending({ begin: false, stop: false, end: false });
+    setLifecycleError({ begin: '', stop: '', end: '' });
+    setLifecycleUnknown(null); setRequestIds({});
+    // A new selection invalidates every in-flight lifecycle response.
+  }, [selectedSessionId]);
 
   function begin() {
     controller.current?.abort(); const next = new AbortController(); controller.current = next;
@@ -428,7 +541,7 @@ export function SessionPanel() {
   useEffect(() => {
     if (!live) return;
     void bootstrap();
-    return () => { controller.current?.abort(); sessionController.current?.abort(); currentController.current?.abort(); preflightController.current?.abort(); };
+    return () => { controller.current?.abort(); sessionController.current?.abort(); currentController.current?.abort(); preflightController.current?.abort(); LIFECYCLE_ACTIONS.forEach((action) => lifecycleController.current[action]?.abort()); };
     // The drawer is mounted per open; the polling sample must not restart the
     // configuration requests on every Actual tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -695,6 +808,36 @@ export function SessionPanel() {
                   <button disabled={currentBusy} onClick={() => void refreshCurrent(selectedSession.session_id)}>刷新 current</button>
                   <span className="session-inline-note">{startBlockedReason || 'Start 只建立 active 与授权范围；不获取 owner、不开始录制、不等于 motion_ready'}</span>
                 </div>
+                <div className="session-lifecycle-actions" data-lifecycle-block="true" data-lifecycle-fixture={lifecycleFixture}>
+                  <h5>录制生命周期 · begin / 机器人 STOP / 结束录制</h5>
+                  {lifecycleFixture && <div className="session-blocked neutral" data-lifecycle-synthetic-banner="true"><Icon name="info" size={15}/><div><b>合成生命周期夹具 ?fixture={lifecycleFixture}</b><p>这里的成功与失败响应都由测试夹具产生，只验证前端契约、门控与分层显示，不是真实 native、真实机器人停车或 M1 验收证据。</p></div></div>}
+                  <div className="session-inline">
+                    <label className="grow">operator_id（begin 请求体字段）<input aria-label="operator_id" maxLength={128} value={operatorId} onChange={(event) => setOperatorId(event.target.value)} disabled={lifecyclePending.begin}/></label>
+                    <span className="session-inline-note">view_source 固定发送 {VIEW_SOURCE}；binding / run / generation / episode / segment 由平台 Session 组装</span>
+                  </div>
+                  <div className="session-inline">{LIFECYCLE_ACTIONS.map((action) => <button key={action} className={action === 'stop' ? 'primary' : ''}
+                    data-lifecycle={action} data-lifecycle-ready={lifecycleGates[action].available ? 'ready' : 'blocked'} data-lifecycle-reason={lifecycleGates[action].reason}
+                    data-lifecycle-pending={String(lifecyclePending[action])} data-lifecycle-request-id={requestIds[action] ?? ''} data-lifecycle-send={lifecycleSend[action]}
+                    disabled={!lifecycleGates[action].available || lifecyclePending[action]} title={lifecycleGates[action].reason || lifecycleSend[action]}
+                    onClick={() => void runLifecycle(action)}>{lifecyclePending[action] ? `${actionLabel[action]} 请求中…` : lifecycleButton[action]}</button>)}</div>
+                  <p className="session-note" data-lifecycle-boundary="true">三个动作各自独立、都只由点击发出：不自动 begin、不自动 STOP、不自动结束录制。begin 不 Start、不 RESET；STOP 只是 latch 型机器人停车，不结束录制、不清安全锁、不获取 owner；结束录制先 STOP 再 finalize 本 Session 自己 begin 的 segment。机器人 STOP 走 {`POST /api/v1/sessions/{id}/stop`}，不是 {`POST /api/v1/runs/{id}/stop`}，也不是 native 命令或 RESET 路径。STOP 的可用性只看 current 的协议声明与 stop_available，不以 motion_ready / recording_ready 为前置，也不被其他动作的 pending 屏蔽。</p>
+                  {lifecycleUnknown && <div className="session-unknown" role="status" data-lifecycle-unknown={lifecycleUnknown.action} data-lifecycle-unknown-request={requestIds[lifecycleUnknown.action] ?? ''}>
+                    <b>结果未知</b><p>{lifecycleUnknown.message}</p>
+                    {lifecycleUnknown.action !== 'begin' && <button data-lifecycle-retry={lifecycleUnknown.action} disabled={lifecyclePending[lifecycleUnknown.action]} onClick={() => void runLifecycle(lifecycleUnknown.action, true)}>用同一 request_id 重试</button>}
+                    <button disabled={currentBusy} onClick={() => void refreshCurrent(selectedSession.session_id)}>只回读 current（不调用写端点）</button></div>}
+                  {LIFECYCLE_ACTIONS.map((action) => lifecycleError[action] ? <div key={action} className="session-error" role="alert" data-lifecycle-error={action}>{lifecycleError[action]}</div> : null)}
+                  {beginReceipt && <dl className="session-fields" data-lifecycle-begin-receipt="true" data-begin-segment={beginReceipt.recording_segment_id} data-begin-status={beginReceipt.recording_status}>
+                    <div><dt>begin 回执</dt><dd>status={beginReceipt.recording_status} · segment={beginReceipt.recording_segment_id} · capture_ready={String(beginReceipt.command_capture_ready)} · seq={beginReceipt.recording_start_event_seq} · durable={String(beginReceipt.durable_start_records)}</dd></div>
+                    <div><dt>begin 身份（平台组装）</dt><dd title={`${beginReceipt.run_id}/${beginReceipt.episode_id}`}>run={short(beginReceipt.run_id, 14)} · gen {beginReceipt.backend_generation} · episode={short(beginReceipt.episode_id, 12)} · binding={beginReceipt.binding_id}</dd></div>
+                  </dl>}
+                  {stopReceipt && <LayeredReceipt kind="stop" layers={stopLayers(stopReceipt)} synthetic={Boolean(lifecycleFixture)}/>}
+                  {endReceipt && <LayeredReceipt kind="end" layers={endLayers(endReceipt)} synthetic={Boolean(lifecycleFixture)}/>}
+                  {(stopAttempt || endAttempt) && <ul className="session-attempts">{[stopAttempt && <li key={`stop:${stopAttempt.at}`} data-lifecycle-attempt="stop" data-attempt-result={stopAttempt.result}><b>STOP {stopAttempt.result}</b><span>{stopAttempt.at}</span><p>code={stopAttempt.code ?? '—'} · request_id={stopAttempt.request_id} · {stopAttempt.reason ?? '—'}</p></li>,
+                    endAttempt && <li key={`end:${endAttempt.at}`} data-lifecycle-attempt="end" data-attempt-result={endAttempt.result}><b>结束 {endAttempt.result}</b><span>{endAttempt.at}</span><p>code={endAttempt.code ?? '—'} · request_id={endAttempt.request_id} · {endAttempt.reason ?? '—'}</p></li>]}</ul>}
+                  <p className="session-note" data-lifecycle-current-availability="true" data-current-stop-protocol={selectedCurrent?.session_stop_protocol ?? ''} data-current-end-protocol={selectedCurrent?.recording_end_protocol ?? ''}
+                    data-current-last-stop-code={selectedCurrent?.last_stop_code ?? ''} data-current-last-end-code={selectedCurrent?.last_end_code ?? ''} data-current-recording-integrity={selectedCurrent?.recording_integrity ?? ''}>
+                    current：stop_available={String(selectedCurrent?.stop_available)} · recording_end_available={String(selectedCurrent?.recording_end_available)} · 协议 {selectedCurrent?.session_stop_protocol ?? '未声明'} / {selectedCurrent?.recording_end_protocol ?? '未声明'} · last_stop_code={selectedCurrent?.last_stop_code ?? 'null'} · last_end_code={selectedCurrent?.last_end_code ?? 'null'} · recording_integrity={selectedCurrent?.recording_integrity ?? 'null'}。任务结果不由本界面宣称。</p>
+                </div>
                 <details className="session-details"><summary>历史 / 存档字段（不代表 current）</summary>
                   <dl className="session-fields">
                     <div><dt>存档身份</dt><dd title={`${selectedSession.native_identity.run_id} / ${selectedSession.native_identity.episode_id}`}>{short(selectedSession.native_identity.run_id, 16)} · gen {selectedSession.native_identity.backend_generation} · {short(selectedSession.native_identity.episode_id, 14)}</dd></div>
@@ -716,12 +859,14 @@ export function SessionPanel() {
                     <div><dt>created</dt><dd>{selectedSession.created_at} · updated {selectedSession.updated_at}</dd></div>
                     <div><dt>started_at</dt><dd>{selectedSession.started_at ?? 'null'}</dd></div>
                     <div><dt>start_receipt</dt><dd>{selectedSession.start_receipt ? `binding=${selectedSession.start_receipt.binding_id} · scope=${selectedSession.start_receipt.control_scope_granted.join(',')} · owner=${selectedSession.start_receipt.owner_state} · recording_ready=${String(selectedSession.start_receipt.recording_ready)} · motion_ready=${String(selectedSession.start_receipt.motion_ready)}` : 'null'}</dd></div>
-                    <div><dt>recording begin</dt><dd>{selectedSession.recording_begin_receipt ? `${selectedSession.recording_begin_receipt.recording_status} · segment=${selectedSession.recording_begin_receipt.recording_segment_id} · durable=${String(selectedSession.recording_begin_receipt.durable_start_records)}` : 'null（本轮不调用 begin）'}</dd></div>
+                    <div><dt>recording begin</dt><dd>{selectedSession.recording_begin_receipt ? `${selectedSession.recording_begin_receipt.recording_status} · segment=${selectedSession.recording_begin_receipt.recording_segment_id} · durable=${String(selectedSession.recording_begin_receipt.durable_start_records)}` : 'null（只有显式点击 begin 才会调用）'}</dd></div>
+                    <div><dt>stop 回执</dt><dd>{selectedSession.stop_receipt ? `${selectedSession.stop_receipt.code} · dispatched=${String(selectedSession.stop_receipt.dispatch.dispatched)} · parking_confirmed=${String(selectedSession.stop_receipt.parking.confirmed)} · coverage_complete=${String(selectedSession.stop_receipt.parking.coverage_complete)}` : 'null'}</dd></div>
+                    <div><dt>end 回执</dt><dd>{selectedSession.recording_end_receipt ? `${selectedSession.recording_end_receipt.code} · integrity=${selectedSession.recording_end_receipt.integrity} · drain=${String(selectedSession.recording_end_receipt.drain.completed)} · finalize=${String(selectedSession.recording_end_receipt.finalize.completed)}` : 'null'}</dd></div>
                   </dl>
                   {(selectedSession.start_attempts ?? []).length > 0 && <ul className="session-attempts">{selectedSession.start_attempts!.map((attempt, index) => <li key={`${attempt.at}:${index}`} data-start-attempt={attempt.result}><b>{attempt.result}</b><span>{attempt.at}</span><p>{attempt.blocking.map((item) => item.key).join(', ') || attempt.detail || '—'}</p></li>)}</ul>}
                   {(selectedSession.recording_begin_attempts ?? []).length > 0 && <ul className="session-attempts">{selectedSession.recording_begin_attempts!.map((attempt, index) => <li key={`${attempt.at}:${index}`} data-recording-attempt={attempt.result}><b>{attempt.result}</b><span>{attempt.at}</span><p>{attempt.reason || '—'}</p></li>)}</ul>}
                 </details>
-                <p className="session-note">active 不表示取得 Owner、正在录制或允许运动；这些分别看 Owner/lease、recording_ready、motion_ready。当前界面不会发送运动、STOP、RESET、recording begin/finalize。</p>
+                <p className="session-note">active 不表示取得 Owner、正在录制或允许运动；这些分别看 Owner/lease、recording_ready、motion_ready。本界面不发送运动、遥操作、RESET 或 native 命令；begin / 机器人 STOP / 结束录制只在 current 声明协议且 available=true 时、由显式点击发出。</p>
               </article> : <p className="session-note">请选择一个 Session 查看生命周期与回执。</p>}
             </>}
         </section>
@@ -732,7 +877,7 @@ export function SessionPanel() {
           {recipeError && <p className="session-note">execution-recipe 读取失败：{recipeError}</p>}
           <p className="session-note">TCP orientation=null 保留“未声明”语义；本地位置 IK 只是预览，不是标定姿态、规划或执行许可。</p>
         </section>
-        <p className="session-note">本轮仅允许平台草案创建/保存/校验及只读快照、Session。禁止运动、RESET、录制、回放和 native 命令。</p>
+        <p className="session-note">本轮允许的写请求只有：平台草案创建/保存/校验，以及 current 明确可用时的 recording begin、机器人 STOP、结束录制三个动作。禁止运动遥操作、RESET、native 命令、回放与训练；代理白名单也不包含它们。</p>
       </>}
     </div>
   </aside>;

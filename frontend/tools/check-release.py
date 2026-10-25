@@ -1,7 +1,7 @@
 """Run only on the authorized server, inside an already hash-frozen frontend release."""
 from pathlib import Path
 import argparse,datetime,functools,hashlib,http.server,json,os,socket,subprocess,sys,urllib.request
-p=argparse.ArgumentParser();p.add_argument('release',type=Path);p.add_argument('--environment',type=Path,required=True);p.add_argument('--node-bin',type=Path,required=True);p.add_argument('--browser-python',type=Path,required=True);p.add_argument('--reports',type=Path,required=True);p.add_argument('--port',type=int,required=True);p.add_argument('--read-only',action='store_true');p.add_argument('--upstream',default='http://127.0.0.1:18941');p.add_argument('--geometry',action='store_true');p.add_argument('--usability',action='store_true');p.add_argument('--config',action='store_true');p.add_argument('--session',action='store_true');p.add_argument('--map',action='store_true');p.add_argument('--map-mode',default='live',choices=('live','offline'));p.add_argument('--skip-readonly',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('release',type=Path);p.add_argument('--environment',type=Path,required=True);p.add_argument('--node-bin',type=Path,required=True);p.add_argument('--browser-python',type=Path,required=True);p.add_argument('--reports',type=Path,required=True);p.add_argument('--port',type=int,required=True);p.add_argument('--read-only',action='store_true');p.add_argument('--upstream',default='http://127.0.0.1:18941');p.add_argument('--geometry',action='store_true');p.add_argument('--usability',action='store_true');p.add_argument('--config',action='store_true');p.add_argument('--session',action='store_true');p.add_argument('--map',action='store_true');p.add_argument('--lifecycle',action='store_true');p.add_argument('--lifecycle-live',action='store_true');p.add_argument('--map-mode',default='live',choices=('live','offline'));p.add_argument('--skip-readonly',action='store_true');a=p.parse_args()
 r=a.release.resolve();front=r/'frontend';a.reports.mkdir(parents=True,exist_ok=False)
 def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 manifest=json.loads((r/'source-manifest.json').read_text())
@@ -37,6 +37,8 @@ try:
  if a.usability:run('usability-browser.log',[str(a.browser_python),str(front/'tests/browser-usability.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'usability'),'--release',manifest['release_id']])
  if a.config:run('config-browser.log',[str(a.browser_python),str(front/'tests/browser-config.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'config')])
  if a.map:run('map-browser.log',[str(a.browser_python),str(front/'tests/browser-map.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'map'),'--mode',a.map_mode])
+ if a.lifecycle:run('lifecycle-browser.log',[str(a.browser_python),str(front/'tests/browser-lifecycle.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'lifecycle'),'--mode','synthetic'])
+ if a.lifecycle_live:run('lifecycle-live-browser.log',[str(a.browser_python),str(front/'tests/browser-lifecycle.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'lifecycle-live'),'--mode','live'])
  if a.session:run('session-browser.log',[str(a.browser_python),str(front/'tests/browser-session.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'session')])
 finally:
  after=native();(a.reports/'listeners-after.txt').write_text(subprocess.check_output(['ss','-ltnp'],text=True));keys=('run_id','backend_generation','episode_id','recording_status')

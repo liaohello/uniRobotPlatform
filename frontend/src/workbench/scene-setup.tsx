@@ -17,14 +17,11 @@ export function SceneSetupView({ workspace }: { workspace: RouteWorkspace }) {
   const selected = draft.waypoints.find((point) => point.id === selectedId) ?? null;
   const server = workspace.serverDraft;
   const viewed = workspace.viewed;
-  const imageOk = Boolean(workspace.imageEvidence);
-  const canSubmit = draft.waypoints.length > 0 && workspace.errors.length === 0;
-  const canCreate = canSubmit && imageOk && !workspace.offlineMode && !server && workspace.busy === '';
-  const canWrite = canSubmit && Boolean(server) && !workspace.offlineMode && workspace.busy === '';
-  const createBlockedReason = workspace.offlineMode ? '当前是离线测试地图，不是后端资源'
-    : !imageOk ? '真实地图栅格尚未读取或校验通过'
-      : server ? '已打开服务端 Route Draft'
-        : !canSubmit ? '需要至少一个 PointGoal，且每点位置与朝向有效' : '';
+  const publish = workspace.publishInfo;
+  const evidence = workspace.imageEvidence;
+  const verifiedThisMap = Boolean(evidence && workspace.mapState === 'ready' && !workspace.mapError
+    && authority && evidence.mapId === map.mapId && evidence.mapVersion === map.version);
+  const gates = workspace.gates;
 
   useEffect(() => { workspace.loadCatalog(); }, []);
 
@@ -88,13 +85,15 @@ export function SceneSetupView({ workspace }: { workspace: RouteWorkspace }) {
               <div><dt>frames</dt><dd>{authority.frames.map}/{authority.frames.odom}/{authority.frames.base} · interface={authority.interfaceProfile ?? 'null'}</dd></div>
               <div><dt>坐标约定</dt><dd data-map-convention={authority.coordinateConvention.cellCenter}>{authority.coordinateConvention.origin} · col {authority.coordinateConvention.imageColumn} · row {authority.coordinateConvention.imageRow} · yaw {authority.coordinateConvention.yawPositive} {authority.coordinateConvention.yawRange}</dd></div>
               <div><dt>声明图像</dt><dd data-map-image-sha={authority.image?.sha256 ?? ''}>{authority.image ? `${short(authority.image.sha256, 16)} · ${authority.image.bytes} B · ${authority.image.mediaType ?? '—'}` : '未声明'}</dd></div>
-              <div><dt>实际图像</dt><dd data-image-verified={String(Boolean(imageOk))} data-image-sha={workspace.imageEvidence?.actualSha256 ?? ''}>
-                {workspace.imageEvidence ? `${short(workspace.imageEvidence.actualSha256, 16)} · ${workspace.imageEvidence.receivedBytes} B · ${workspace.imageEvidence.magic}/maxval ${workspace.imageEvidence.maxval} · ${workspace.imageEvidence.decodedWidth}×${workspace.imageEvidence.decodedHeight}` : '尚未读取或未通过校验'}
+              <div><dt>实际图像</dt><dd data-image-verified={String(verifiedThisMap)} data-image-sha={evidence?.actualSha256 ?? ''}
+                data-image-map={evidence ? `${evidence.mapId}/${evidence.mapVersion}` : ''} data-image-matches={evidence ? String(evidence.mapId === map.mapId && evidence.mapVersion === map.version) : 'false'}>
+                {evidence ? `${short(evidence.actualSha256, 16)} · ${evidence.receivedBytes} B · ${evidence.magic}/maxval ${evidence.maxval} · ${evidence.decodedWidth}×${evidence.decodedHeight} · 属于 ${evidence.mapId}/${evidence.mapVersion}` : '尚未读取或未通过校验'}
               </dd></div>
-              {workspace.mapError && <div className="session-error" role="alert" data-map-error>{workspace.mapError}</div>}
-              {!imageOk && <div className="session-blocked" data-map-unavailable="true"><Icon name="info" size={15}/><div><b>该地图栅格不可用</b><p>显示与路线写入保持禁用；不会静默回退到离线测试地图。</p></div></div>}
             </> : <div><dt>来源</dt><dd data-map-offline="true">离线测试来源（非 SLAM、非导航地图，不写入后端路线）</dd></div>}
           </dl>
+          {workspace.mapError && <div className="session-error" role="alert" data-map-error>{workspace.mapError}</div>}
+          {workspace.mapState === 'loading' && <p className="session-note" data-map-state="loading">本次地图选择（版本详情 + 栅格 + 摘要/尺寸校验）仍在进行，写入已禁用。</p>}
+          {!workspace.offlineMode && !verifiedThisMap && !workspace.mapError && workspace.mapState !== 'loading' && <div className="session-blocked" data-map-unavailable="true"><Icon name="info" size={15}/><div><b>该地图栅格未通过校验</b><p>{workspace.gates.create.reason}；显示与路线写入保持禁用，不会静默回退到离线测试地图。</p></div></div>}
         </section>
 
         <section>
@@ -110,18 +109,21 @@ export function SceneSetupView({ workspace }: { workspace: RouteWorkspace }) {
           </dl>
           <div className="scene-setup-actions">
             <label className="grow">路线名称<input aria-label="路线名称" value={name} onChange={(event) => setName(event.target.value)} disabled={workspace.busy !== ''}/></label>
-            <button className="primary" data-route-create={canCreate ? 'ready' : 'blocked'} disabled={!canCreate} title={createBlockedReason || 'POST /api/v1/route-drafts'} onClick={() => void workspace.createRoute(name)}>{workspace.busy === 'route-create' ? '创建中…' : '创建 Route Draft'}</button>
+            <button className="primary" data-route-create={gates.create.enabled ? 'ready' : 'blocked'} data-route-create-reason={gates.create.reason}
+              disabled={!gates.create.enabled} title={gates.create.reason || 'POST /api/v1/route-drafts'} onClick={() => void workspace.createRoute(name)}>{workspace.busy === 'route-create' ? '创建中…' : '创建 Route Draft'}</button>
           </div>
           {workspace.mapMismatch && <div className="session-blocked" role="alert" data-map-mismatch="true"><Icon name="info" size={15}/><div><b>PointGoal 仍绑定旧地图</b><p>{draft.waypoints.filter((point) => point.mapId !== map.mapId || point.mapVersion !== map.version).length} 个点的 mapId/mapVersion 与当前地图不一致；不会隐式套用，写入已禁用。<button disabled={workspace.busy !== ''} onClick={workspace.clearPointsForSelectedMap}>清空 PointGoal 以改用此地图</button></p></div></div>}
           <div className="scene-setup-actions">
-            <button data-route-save={canWrite ? 'ready' : 'blocked'} disabled={!canWrite} title={server ? `PUT base_revision=r${server.draftRevision}` : '先创建或打开服务端草案'} onClick={workspace.saveRoute}>{workspace.busy === 'route-save' ? '保存中…' : '保存草案（条件写）'}</button>
-            <button data-route-publish={canWrite ? 'ready' : 'blocked'} disabled={!canWrite} title={server ? `POST publish base_revision=r${server.draftRevision}` : '先创建或打开服务端草案'} onClick={workspace.publishRoute}>{workspace.busy === 'route-publish' ? '发布中…' : '发布 Route Version'}</button>
+            <button data-route-save={gates.save.enabled ? 'ready' : 'blocked'} data-route-save-reason={gates.save.reason} disabled={!gates.save.enabled}
+              title={server ? `PUT base_revision=r${server.draftRevision}${gates.save.reason ? ` · ${gates.save.reason}` : ''}` : gates.save.reason} onClick={workspace.saveRoute}>{workspace.busy === 'route-save' ? '保存中…' : '保存草案（条件写）'}</button>
+            <button data-route-publish={gates.publish.enabled ? 'ready' : 'blocked'} data-route-publish-reason={gates.publish.reason} disabled={!gates.publish.enabled}
+              title={server ? `POST publish base_revision=r${server.draftRevision}${gates.publish.reason ? ` · ${gates.publish.reason}` : ''}` : gates.publish.reason} onClick={workspace.publishRoute}>{workspace.busy === 'route-publish' ? '发布中…' : '发布 Route Version'}</button>
             <button disabled={workspace.busy !== '' || !server} onClick={workspace.refreshVersions}>刷新版本列表</button>
           </div>
           {workspace.conflict && <div className="session-blocked" role="alert" data-route-conflict={workspace.conflict.code}>
             <Icon name="info" size={15}/><div><b>修订条件不匹配（真实 409）</b><p>code={workspace.conflict.code} · current_revision={String(workspace.conflict.serverRevision)} · {workspace.conflict.message}。本地编辑仍保留，服务器内容未被覆盖。
               <button disabled={workspace.busy !== ''} onClick={workspace.reloadServerDraft} data-reload-server>重载服务器草案（放弃本地编辑）</button>
-              <button disabled={workspace.busy !== '' || workspace.conflict.serverRevision === null} onClick={workspace.retrySaveOnServer} data-retry-server>以服务器修订重试（用本地内容写入）</button></p></div></div>}
+              <button disabled={!gates.retry.enabled} data-retry-server={gates.retry.enabled ? 'ready' : 'blocked'} data-retry-reason={gates.retry.reason} onClick={workspace.retrySaveOnServer}>以服务器修订重试（用本地内容写入）</button></p></div></div>}
           {workspace.draftError && <div className="session-error" role="alert" data-route-error>{workspace.draftError}</div>}
           <div className="session-inline">
             <input aria-label="按 route_id 打开" placeholder="route-…" value={openId} onChange={(event) => setOpenId(event.target.value)} disabled={workspace.busy !== ''}/>
@@ -129,7 +131,13 @@ export function SceneSetupView({ workspace }: { workspace: RouteWorkspace }) {
             <button disabled={!server} onClick={workspace.closeRoute}>解除绑定</button>
           </div>
           <p className="session-note">后端没有路线目录 GET，因此只能凭 route_id 打开；创建后地址栏会带上 ?route=…，刷新页面即重新读取服务端草案与版本列表。</p>
-          {workspace.publishNote && <p className="session-note" data-publish-note={workspace.publishNote.startsWith('reused') ? 'reused' : 'published'}>{workspace.publishNote}</p>}
+          {publish && <p className="session-note" data-publish-note={publish.reused ? 'reused' : 'published'} data-publish-revision={String(publish.fromRevision)}
+            data-publish-version={publish.version} data-publish-digest={publish.contentDigest} data-publish-dirty={String(publish.localEditsExcluded)}>
+            {`发布结果对应服务端草案修订 r${publish.fromRevision} → 固定版本 ${publish.version}（content_digest ${short(publish.contentDigest, 16)}）${publish.reused ? ' · 服务器复用了已存在的该版本' : ''}。`}
+            {publish.localEditsExcluded
+              ? '注意：本地还有未保存的编辑，它们没有被包含在本次发布里；先“保存草案（条件写）”再重新发布。'
+              : '发布时本地内容与服务端草案一致。'}
+          </p>}
           <p className="session-note" data-route-errors={workspace.errors.length}>提交前检查：{workspace.errors.length ? workspace.errors.join('；') : '每点位置与朝向有效（不代表后端预检已通过；以 validation 为准）'}。</p>
         </section>
 

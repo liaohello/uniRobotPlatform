@@ -1,3 +1,66 @@
+# M1.5 地图异步事务、统一写入门控与 Session 录制生命周期界面（2026-10-25）
+
+本轮先修地图切片的两个真实缺陷（迟到响应覆盖新选择、写入只检查 `imageEvidence` 非空而忽略其地图身份），再把后端 M1.4 交付的 Session 录制生命周期（`recording/begin`、机器人 STOP、`recording/end`）接成可用界面。只修改 `frontend/`，本地提交不推送。生命周期成功路径只在明确标注 synthetic 的协议夹具中验证；真实候选仍未加载 STOP/end，动作恒为禁用。
+
+## 冻结版本与入口
+
+| 项 | 值 |
+|---|---|
+| 前端 release | `m1-front-geometry-20261025T025902Z-1301c33d7e3e` |
+| 输入 / 聚合 SHA-256 | 89 个输入；聚合 `1301c33d7e3edc5ccf1475e63921da697ea996f82d770fba0b84210625d89fd4`（本轮 3 次冻结：`…023139Z-020a19d95213`、`…024509Z-2d7f09001eb7`、最终 `…025902Z-1301c33d7e3e`，前两次是被测试夹具缺陷取代的中间产物，未被交付） |
+| 3D/Session 上游 | 18949 = `m1e-20261024T090448Z-platform`（geometry-2，OpenAPI 不含 stop/end） |
+| 地图/路线上游 | 18953 = `m1g-20261024T113913Z-platform`（真实 map/route，同样不含 stop/end） |
+| 本轮预览 | 18969 → 18949（PID 1890720，3D/Session/生命周期）与 18970 → 18953（PID 2168685，真实地图/路线），同一冻结 dist；本轮为迭代测试缺陷而启动的中间预览 18963/18964/18965/18966/18967/18968 已逐个按 `/proc/<pid>/cmdline` 身份核对后停止，未触碰他人进程 |
+| 保留服务 | 18958 → 18953、18957 → 18949、18951 → 18949、18950 → 18944、18946 → 18943 与 18943/18944/18949/18953 后端全部未停止、未重启；本轮没有启动或停止任何 native/物理实例 |
+| 真实 native | 8792 仍 `drvfix`/G4A2/PID 941842；两轮 pass 前后 `run_9c88e3e…` / generation 1 / `episode_43c22f…` / recording=IDLE 一致，`native_mutations_sent=false`、`new_physics_process_started=false` |
+| 环境 | cec-sim，Node 20.20.2 / npm 10.8.2，锁摘要 `1bb055b6e003c960…`，Chromium ANGLE SwiftShader |
+| 证据 | `reports/m1-front-geometry-20261025T025902Z-1301c33d7e3e/`（Pass A）与 `…-1301c33d7e3e-18953/`（Pass B），含 build/unit/unit.json/environment/preview/native-read-only/listeners-before|after 与各套件目录（browser.json + 截图） |
+
+## 实现一：一次地图选择 = 一个事务
+
+- `useRouteWorkspace` 用 `mapSerial` + 一组被跟踪的 `AbortController` 把“版本详情 → PGM 字节 → SHA-256 摘要 → 栅格尺寸 → 状态写入”串成同一序号下的单次事务；每一步之后都重新判定 `live()`，序号已被取代时既不写成功也不写失败。
+- 切换地图、`改用离线测试地图`、按 `route_id` 打开另一条路线、卸载抽屉都会递增地图/路线/版本/目录序号并 abort 在途控制器：旧的失败响应不会清除新状态，旧的成功响应也不会把已放弃的地图重新画出来或把离线模式翻回后端地图。
+- `openRoute` 里路线绑定地图的读取同样在该事务内完成；读取或校验失败就显式报错且不回退到其他地图。
+
+## 实现二：统一写入资格与发布语义
+
+- `ImageEvidence` 现在带 `mapId/mapVersion` 与声明/实际的摘要、字节数、声明/解码尺寸；`verifiedMap` 只在“证据属于当前所选真实地图 + 摘要与声明一致 + 解码尺寸与声明一致 + `mapState=ready` 且无错误”时成立。
+- 创建、条件保存、发布、409 以服务器修订重试全部读同一个 `gates` 对象（离线 / 正在读取 / 读取或校验失败 / 未通过校验 / 位置或朝向无效 / PointGoal 仍绑定旧地图 / 已有 in-flight 写入 分别给出原因），界面按钮 `disabled` 并显示 `data-*-reason`；每个动作内部再判一次资格，不合格就写“…；写入未发出”而不是发出请求。不再存在“只检查 `imageEvidence` 非空”的旁路。
+- 发布结果与服务器修订绑定：`data-publish-revision`（发布所用的 `draft_revision`）、`data-publish-version`、`data-publish-digest`、`data-publish-dirty`；本地仍有未保存编辑时明确提示“它们没有被包含在本次发布里”。真实 409（`route_draft_revision_conflict` + `current_revision`）、稳定 waypoint ID、yaw 必填与不可变旧版本全部保留。
+
+## 实现三：begin / 机器人 STOP / 结束录制接线
+
+- 平台客户端按后端 OpenAPI 新增 `beginRecording`（body 仅 `operator_id`、`view_source`）、`stopSession`、`endRecording`（body 仅 `request_id` + `reason`），三者都返回 `{session, replayed}`；代理白名单只加这三条精确 POST 路径，`/runs/{id}/stop`、`/api/v1/commands`、`/api/v1/episodes`、`/api/v1/reset` 与 native 透传继续不代理。
+- 三个动作各自独立、都只由点击发出；`src/workbench/lifecycle.ts` 只从 `current` 的 `session_stop_protocol`/`recording_end_protocol` + `stop_available`/`recording_end_available`/`recording_begin_available` 判定可用性，绝不从 `motion_ready`/`recording_ready`、health 或本地状态推断；机器人 STOP 也不受其他动作的 pending 影响（浏览器测试用一次 in-flight 的 `current` 读取验证 STOP 仍可用）。
+- 每个操作意图生成一次 `request_id`（`front-{action}-{uuid}`），超时/断流只追加“结果未知”并回读存档与 `current`，不自动重发；显式“用同一 request_id 重试”复用同一 id，服务器以 200 + `replayed` 返回。切换 Session 递增该动作序号并 abort 在途请求，旧响应不会写进当前选择（界面回执只来自该 Session 自己的存档文档）。
+- 回执分层显示：受理 / STOP 下发 / 停车反馈与覆盖 / 停车结论 / Recorder 排空 / finalize 落盘 / 录制完整性 / 动作结论 / 副作用边界（`recording_touched`、`reset_issued`、`safety_cleared`、`owner_acquired`、`motion_restored`）。`accepted=true`、`base_stopped`、`complete_tail` 都不单独显示为成功；`coverage_complete=false` 明确“不宣称整机停稳”；`ended_parking_unconfirmed`、`end_finalize_failed`、`ended_incomplete_terminal`、`end_already_finalized`、`stop_unsupported`、`session_not_stoppable`、`result_unknown` 各有不同文案与色调；`fanout_drained` 只报广播滞后、不参与门控。任务结果绝不由本界面宣称。
+
+## 服务器结果（构建、类型检查、测试、浏览器全部在 cec-sim）
+
+| 套件 | Pass A（18949） | Pass B（18953） |
+|---|---|---|
+| `npm run build`（含 `tsc --noEmit`） | 通过 | 通过 |
+| `npm test` | 78 passed / 0 failed（含新增 `tests/lifecycle.test.ts` 12 项） | 78 passed / 0 failed |
+| browser-readonly / frozen | 32 / 29 | 跳过 |
+| browser-geometry / usability | 23 / 100 | 跳过 |
+| browser-config | 51 | 跳过 |
+| browser-session | 38 | 跳过 |
+| browser-map `--mode offline` | 15 | — |
+| browser-map `--mode live` | — | 56（真实地图端到端 + 新增迟到地图详情、切离线抢占、校验失败后写入未发出、发布对应服务端修订与未保存编辑提示） |
+| browser-lifecycle `--mode synthetic` | 44（标注 synthetic 的有状态协议夹具：分层回执、request_id 复用与重放、结果未知回读、四种结束结论、关闭 Session 拒绝、旧响应不可覆盖、in-flight current 不屏蔽 STOP） | 跳过 |
+| browser-lifecycle `--mode live` | 5（真实环境按钮禁用且零写请求） | 未运行：该候选拒绝 3D 读取契约，Session 抽屉不渲染生命周期控件 |
+
+Pass B 实况（18953 真实地图/路线）：`map_room_a_g3b_release_v1/v1` 的 P5 栅格仍为 2786 字节、实际 SHA-256 `01dcdb387aed81b521cba6d31bb5d403d9db1de84b35546c4e34988191069d71` 与声明一致。专用测试路线 `route-959df16e0e49467a8cfd2d20f136193f`：创建 r1 → 保存 r2 → 发布 v1 `7677c869…50b3` → 重排后 r3 → 发布 v2 `3fd8a4c0…4f53`，v1 摘要不变；外部 PUT 后旧修订保存得到真实 409 `route_draft_revision_conflict · current_revision=4`；本轮新增的确定性检查把版本详情+栅格读取人为延迟 3 秒后切到离线测试地图，晚到的成功响应既没有把后端地图画回来也没有清除离线状态；把栅格替换为摘要不符的字节后 `digest_mismatch` 显式显示，创建/保存/发布全部 blocked 且写请求数为 0（7 个非 GET 请求全部属于该测试路线的 route-drafts POST/PUT/publish，交付样本路线 v1/v2 摘要未被改写）；在存在未保存本地编辑时发布，`data-publish-revision=4`、`data-publish-dirty=true` 并提示“没有被包含在本次发布里”，发布摘要等于服务端草案摘要而非本地内容。
+
+Pass A 实况（18949）：`browser-lifecycle --mode live` 断言真实 `GET /sessions` 仍为 `source=stored`、Session 数为 0，因此生命周期控件根本不渲染，全部非 GET 请求为 0；合成夹具（44 项）覆盖：begin/STOP/end 各自独立、`request_id` 只在同一意图重试时复用（服务器 200 + `replayed`）、STOP 超时后“结果未知”且只回读不重发、切换 Session 后旧响应不覆盖当前选择、`coverage_complete=false` 显示“不宣称整机停稳”、`ended / ended_parking_unconfirmed / end_finalize_failed / ended_incomplete_terminal / end_already_finalized` 四种结论互不相同、`stop_unsupported` 与关闭 Session 的 409/禁用理由如实显示、in-flight 的 `current` 读取不屏蔽机器人 STOP。`browser-session`（38）、`browser-config`（51）、`browser-readonly`（32）、`frozen browser-workbench`（29）、`browser-geometry`（23）、`browser-usability`（100）、`browser-map --mode offline`（15）在同一冻结 dist 上全部通过，TCP/Joint、Ghost、Actual、布局、全屏与持续拖动行为未回归。8792 只在 pass 前后各读一次 health：`run_9c88e3e3…` / generation 1 / `episode_43c22f95…` / `recording_status=IDLE` 一致，`native_mutations_sent=false`、`new_physics_process_started=false`。
+
+## 仍未执行
+
+1. 统一候选未运行：服务器上有新的后端冻结 release（`m1j-20261025T0*Z-platform`）在源码中同时注册 `/sessions/{id}/stop`、`/recording/end`、maps/routes 与 `mobilecar_geometry`，但没有任何在监听实例提供它；18949 与 18953 的 OpenAPI 都不含 STOP/end。因此“同一冻结前端 + 同一上游”的 3D/几何、地图路线、配置/current、可用性联合回归本轮仍未执行，等后端把统一候选起起来后补跑；本轮不拼接两个上游的结果当作联合验收。
+2. 真实机器人 STOP 的物理停车、`parking.confirmed=true` 的真机语义、gripper 覆盖（后端首版恒 `not_observed`）、真实录制 finalize 与数据集/回放侧的完整性核对全部未验证。
+3. 8792 未部署 native `m1h` 补丁；生产 recipe 只声明 `session_binding`+`recording_begin`，所以真实环境 STOP/end 恒为 unsupported。
+4. 导航采用与执行、运动遥操作、RESET、训练与回放界面不在本轮范围；夹具成功不代表任何真实动作发生。
+
 # M1.3 真实地图与带朝向 Route Draft/Version 端到端接线（2026-10-24）
 
 本轮把 Scene Setup 从“会话内本地存储”接到后端候选 18953（`m1g-20261024T113913Z-platform`）真实交付的 Map/Route 资源：地图目录、固定版本、按摘要读取的 PGM 栅格，以及 Route Draft 创建/读取/条件保存/发布与不可变版本读取。DTO 全部按 18953 实际 OpenAPI 与 `CT-NAVIGATION-ROUTE` V0.6 映射，未自造 wire；导航采用与执行仍按后端 `navigation_eligible/adoption_supported/execution_supported=false` 禁用。只修改 `frontend/`，未推送。
