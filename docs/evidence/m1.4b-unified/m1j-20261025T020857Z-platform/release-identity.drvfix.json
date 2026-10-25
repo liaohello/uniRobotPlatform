@@ -1,0 +1,129 @@
+{
+  "baseline": {
+    "assembly_status": "assembled only; drvfix+m1h was never started, integration-tested or attested as a running instance",
+    "content_evidence": {
+      "assets/landerpi/source_description/urdf/mecanum.xacro": "4460617c equals drvfix, differs from a5cef52 (eb180228)",
+      "src/mobilecar/app.py": "base bd29d065 is identical in drvfix and a5cef52; patched copy 7c41b67d matches the patched worktree",
+      "src/mobilecar/backends/mujoco/backend.py": "108dc2d5 equals drvfix, differs from a5cef52 (de7a889d)",
+      "src/mobilecar/ui/static/app.js": "ada45e4d equals drvfix, absent from the a5cef52 worktree",
+      "src/mobilecar/ui/static/g4a2.html": "35086272 equals drvfix, differs from a5cef52 (e7afd22b)"
+    },
+    "measured_content_source": "server release copy drvfix-20261019T044549Z-0a80415b2577",
+    "patch": {
+      "artifact": "docs/evidence/m1.4-stop-end/m1i-20261024T163746Z-platform/native-m1h.patch",
+      "files": 10,
+      "native_repository_state": "uncommitted, unpushed; git index untouched",
+      "sha256": "d182801df7381bc45717ff40b0d61df28b5437e92f6ee5528127bdf6d231a99f"
+    },
+    "patch_additions": {
+      "runtime_modules": [
+        "src/mobilecar/attestation.py",
+        "src/mobilecar/session_binding.py"
+      ],
+      "tests": [
+        "tests/integration/test_lifecycle_race.py",
+        "tests/integration/test_recording_end.py",
+        "tests/integration/test_session_binding.py"
+      ]
+    },
+    "recipe_pinned_commit": "a5cef52d932ba41424b4bcc134539914031fda39",
+    "repository": "mobileCar"
+  },
+  "candidate_id": "native-m1h-assembled-candidate",
+  "complete": false,
+  "count_invariant": {
+    "aggregate_covers_all_hashed": false,
+    "hashed_count_equals_entries": true
+  },
+  "digest_format": "sha256 of UTF-8 json.dumps({path: sha256}, sort_keys=True, separators=(\",\",\":\")) computed over ALL required paths; only emitted when none is missing",
+  "excluded": [
+    {
+      "prefix": "var/",
+      "reason": "runtime state (logs, reports) captured beside the release; not a release input"
+    },
+    {
+      "prefix": "runs/",
+      "reason": "recording output directories; excluded so output never enters source identity"
+    },
+    {
+      "prefix": "envs/",
+      "reason": "interpreter environment; pinned separately by requirements.lock plus the runtime self-report"
+    },
+    {
+      "prefix": "tools/",
+      "reason": "offline generators, not imported by the served runtime path under test"
+    },
+    {
+      "prefix": "scripts/",
+      "reason": "operator helpers, not runtime inputs"
+    },
+    {
+      "prefix": "provenance/",
+      "reason": "release bookkeeping written by native tooling; recorded elsewhere in the release report"
+    },
+    {
+      "prefix": "tests/",
+      "reason": "verification source, not a runtime input; patch-added tests are recorded under baseline.patch_additions.tests instead"
+    },
+    {
+      "prefix": "src/mobilecar/ui/static/app.js",
+      "reason": "generated browser bundle shipped inside the release; it is produced by the native UI build, not edited as source, so it is named here instead of silently counted as source identity"
+    },
+    {
+      "prefix": "requirements-g2b-lerobot.lock",
+      "reason": "training/LeRobot stack; this candidate never imports it"
+    },
+    {
+      "prefix": "docs/",
+      "reason": "native documentation, removed from the release copy; the three whitelisted doc paths are declared under required_groups.baseline_source.ignore_paths, so their absence here is a stated fact and not a silent filter"
+    }
+  ],
+  "group_entry_total": 161,
+  "groups": {
+    "baseline_source": {
+      "hashed": 152,
+      "missing": [],
+      "required": 152
+    },
+    "dependency_locks": {
+      "hashed": 3,
+      "missing": [],
+      "required": 3
+    },
+    "execution_configs": {
+      "hashed": 4,
+      "missing": [],
+      "required": 4
+    },
+    "patch_added_modules": {
+      "hashed": 0,
+      "missing": [
+        "src/mobilecar/attestation.py",
+        "src/mobilecar/session_binding.py"
+      ],
+      "required": 2
+    }
+  },
+  "hashed_count": 152,
+  "missing_required": [
+    {
+      "fault": "required path missing from release",
+      "group": "patch_added_modules",
+      "path": "src/mobilecar/attestation.py"
+    },
+    {
+      "fault": "required path missing from release",
+      "group": "patch_added_modules",
+      "path": "src/mobilecar/session_binding.py"
+    }
+  ],
+  "required_count": 154,
+  "root": "/home/liaozhengyan/Desktop/mobileCar/releases/drvfix-20261019T044549Z-0a80415b2577",
+  "root_kind": "native_release_copy",
+  "schema_version": "unirobot-release-identity-1",
+  "unique_required_count": 154,
+  "unlisted_under_watched_roots": [],
+  "watched_roots": [
+    "src/mobilecar"
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "schema_version": "unirobot-release-identity-1",
+  "candidate_id": "native-m1h-assembled-candidate",
+  "root_kind": "native_release_copy",
+  "purpose": "Release identity for the STOP/recording-end native candidate that has NOT been deployed or verified against a running instance. Required paths must exist; a missing path is a hard failure, never a silent omission.",
+  "baseline": {
+    "repository": "mobileCar",
+    "recipe_pinned_commit": "a5cef52d932ba41424b4bcc134539914031fda39",
+    "measured_content_source": "server release copy drvfix-20261019T044549Z-0a80415b2577",
+    "content_evidence": {
+      "src/mobilecar/backends/mujoco/backend.py": "108dc2d5 equals drvfix, differs from a5cef52 (de7a889d)",
+      "src/mobilecar/ui/static/g4a2.html": "35086272 equals drvfix, differs from a5cef52 (e7afd22b)",
+      "src/mobilecar/ui/static/app.js": "ada45e4d equals drvfix, absent from the a5cef52 worktree",
+      "assets/landerpi/source_description/urdf/mecanum.xacro": "4460617c equals drvfix, differs from a5cef52 (eb180228)",
+      "src/mobilecar/app.py": "base bd29d065 is identical in drvfix and a5cef52; patched copy 7c41b67d matches the patched worktree"
+    },
+    "assembly_status": "assembled only; drvfix+m1h was never started, integration-tested or attested as a running instance",
+    "patch": {
+      "artifact": "docs/evidence/m1.4-stop-end/m1i-20261024T163746Z-platform/native-m1h.patch",
+      "sha256": "d182801df7381bc45717ff40b0d61df28b5437e92f6ee5528127bdf6d231a99f",
+      "files": 10,
+      "native_repository_state": "uncommitted, unpushed; git index untouched"
+    },
+    "patch_additions": {
+      "runtime_modules": ["src/mobilecar/attestation.py", "src/mobilecar/session_binding.py"],
+      "tests": ["tests/integration/test_lifecycle_race.py", "tests/integration/test_recording_end.py", "tests/integration/test_session_binding.py"]
+    }
+  },
+  "digest_format": "sha256 of UTF-8 json.dumps({path: sha256}, sort_keys=True, separators=(\",\",\":\")) computed over ALL required paths; only emitted when none is missing",
+  "required_groups": {
+    "baseline_source": {
+      "pin_file": "config/mobilecar-g1-source.json",
+      "ignore_paths": [
+        "docs/interface_contract_v1.md",
+        "docs/runtime_api_v1.md",
+        "docs/server_execution_policy.md"
+      ]
+    },
+    "patch_added_modules": [
+      "src/mobilecar/attestation.py",
+      "src/mobilecar/session_binding.py"
+    ],
+    "dependency_locks": [
+      "requirements.lock",
+      "requirements-test.lock",
+      "pyproject.toml"
+    ],
+    "execution_configs": {
+      "entry_paths": [
+        "configs/default.yaml",
+        "configs/g4a2_server.yaml"
+      ]
+    }
+  },
+  "watched_roots": [
+    "src/mobilecar"
+  ],
+  "excluded": [
+    { "prefix": "var/", "reason": "runtime state (logs, reports) captured beside the release; not a release input" },
+    { "prefix": "runs/", "reason": "recording output directories; excluded so output never enters source identity" },
+    { "prefix": "envs/", "reason": "interpreter environment; pinned separately by requirements.lock plus the runtime self-report" },
+    { "prefix": "tools/", "reason": "offline generators, not imported by the served runtime path under test" },
+    { "prefix": "scripts/", "reason": "operator helpers, not runtime inputs" },
+    { "prefix": "provenance/", "reason": "release bookkeeping written by native tooling; recorded elsewhere in the release report" },
+    { "prefix": "tests/", "reason": "verification source, not a runtime input; patch-added tests are recorded under baseline.patch_additions.tests instead" },
+    { "prefix": "src/mobilecar/ui/static/app.js", "reason": "generated browser bundle shipped inside the release; it is produced by the native UI build, not edited as source, so it is named here instead of silently counted as source identity" },
+    { "prefix": "requirements-g2b-lerobot.lock", "reason": "training/LeRobot stack; this candidate never imports it" },
+    { "prefix": "docs/", "reason": "native documentation, removed from the release copy; the three whitelisted doc paths are declared under required_groups.baseline_source.ignore_paths, so their absence here is a stated fact and not a silent filter" }
+  ],
+  "production_pin_separation": "backend/config/mobilecar-g1-source.json (manifest_sha256 a01098040d953608004a34b3c76519d7884eaa4b2c95e36822bd4e7d283b911c, native_commit a5cef52) stays unchanged and is NOT this candidate's identity. The production recipe is not activated for this candidate until the baseline (a5cef52 vs drvfix) and the new pin are chosen."
+}

@@ -8,6 +8,17 @@
 
 [上级目录](README.md) · [总索引](../README.md)
 
+## V0.8｜2026-10-25
+
+### 2026-10-25 M1.4b 统一可联调候选与部署前发布身份
+
+- 统一候选 release `m1j-20261025T020857Z-platform`：`tools/launch_unified_gateway.py` 用一份启动清单在一个进程内同时提供 geometry-2 scene 与 23 资产、capabilities/snapshot/kinematics、Map/Route 资源、Draft/validate、Session/`current` 与 STOP/end schema；`tools/unified_candidate_check.py` 27/27 通过，正向生命周期 39/39。端口 18959/18954/18956 用前确认空闲、用后停止，未替换 18949/18953。
+- 几何读取兼容与执行资格分开记录：生产 recipe + 真实 8792 下 validate 真实失败、capabilities 不声明 stop/end 协议，prepared/Start/begin/STOP/end 继续按真实原因被拒；未换标签、未放宽 pin、未改生产 recipe/pin；`runs/{run_id}/stop` 仍与机器人 STOP 分离。
+- 候选身份澄清并更正 M1.4 文档：`c550a4e4…` 为旧白名单 155 中存在的 152 子集摘要，不覆盖 `attestation.py`/`session_binding.py`，不等于完整 release pin，也不表示 drvfix+m1h 已组装验证；198 行历史清单未改写。
+- 新增 `tools/release_identity.py` + `config/release-identity.native-m1h.json` + 回归 `tests/test_release_identity.py`：必需路径缺失即失败且不发布摘要，`extends` 闭包覆盖执行配置，受监视源码根的未列入文件被报告；m1h 副本 154/154、摘要 `41b9c80c…`，纯 drvfix 副本按预期失败，verify 复算匹配。
+- 维护流程顺序修正：先冻结 release/完整 pin/recipe/protocol/config/scene/lock 并核验，再进入已获授权窗口；生产 pin 更新不再排在 begin/STOP/end 成功之后。G1/G4A2、a5/drvfix 与新 pin 仍待用户决定，推荐不等于授权。
+- 服务器验证：平台全量 128 passed / 3 failed（同 `test_catalog_loads_real_tasks`、`test_every_task_has_existing_evidence`、`test_manifest_sources_exist` 历史布局失败，链条 74/3 → 90/3 → 98/3 → 108/3 → 123/3 → 128/3，均为读取仓库文档布局/外部工程资产的断言，在不含 `docs/` 的服务器 release 副本上必然失败）；机器目录新增 S20，补充来源 15 个、文档节点 150、REQ 仍 89。本轮不是部署、不是物理验证。
+
 ## V0.8｜2026-10-24
 
 - 按 S18 将 PointGoal/waypoint 朝向改为必填，明确 m/rad、map +X/+Y、yaw 正方向与归一化、地图 origin 为图像左下角、图像列 +X/行 -Y；未给 yaw 报错，显式 0 合法。

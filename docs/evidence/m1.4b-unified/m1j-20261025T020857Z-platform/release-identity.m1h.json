@@ -1,0 +1,272 @@
+{
+  "baseline": {
+    "assembly_status": "assembled only; drvfix+m1h was never started, integration-tested or attested as a running instance",
+    "content_evidence": {
+      "assets/landerpi/source_description/urdf/mecanum.xacro": "4460617c equals drvfix, differs from a5cef52 (eb180228)",
+      "src/mobilecar/app.py": "base bd29d065 is identical in drvfix and a5cef52; patched copy 7c41b67d matches the patched worktree",
+      "src/mobilecar/backends/mujoco/backend.py": "108dc2d5 equals drvfix, differs from a5cef52 (de7a889d)",
+      "src/mobilecar/ui/static/app.js": "ada45e4d equals drvfix, absent from the a5cef52 worktree",
+      "src/mobilecar/ui/static/g4a2.html": "35086272 equals drvfix, differs from a5cef52 (e7afd22b)"
+    },
+    "measured_content_source": "server release copy drvfix-20261019T044549Z-0a80415b2577",
+    "patch": {
+      "artifact": "docs/evidence/m1.4-stop-end/m1i-20261024T163746Z-platform/native-m1h.patch",
+      "files": 10,
+      "native_repository_state": "uncommitted, unpushed; git index untouched",
+      "sha256": "d182801df7381bc45717ff40b0d61df28b5437e92f6ee5528127bdf6d231a99f"
+    },
+    "patch_additions": {
+      "runtime_modules": [
+        "src/mobilecar/attestation.py",
+        "src/mobilecar/session_binding.py"
+      ],
+      "tests": [
+        "tests/integration/test_lifecycle_race.py",
+        "tests/integration/test_recording_end.py",
+        "tests/integration/test_session_binding.py"
+      ]
+    },
+    "recipe_pinned_commit": "a5cef52d932ba41424b4bcc134539914031fda39",
+    "repository": "mobileCar"
+  },
+  "candidate_id": "native-m1h-assembled-candidate",
+  "complete": true,
+  "count_invariant": {
+    "aggregate_covers_all_hashed": true,
+    "hashed_count_equals_entries": true
+  },
+  "digest_format": "sha256 of UTF-8 json.dumps({path: sha256}, sort_keys=True, separators=(\",\",\":\")) computed over ALL required paths; only emitted when none is missing",
+  "entries": {
+    "AGENTS.md": "5c94eb68abe0c4242cf36315d9c2c34900b65867d27116623a3c114d96904916",
+    "assets/landerpi/model/actuators.xml": "7517271893a210e7b0b47ce7b2b96138fedccd648fdc037e1488ada7202b3467",
+    "assets/landerpi/model/arm.xml": "794b0c38e0c696437c163681a3b1157726bbf651f3fc45594ad2d7318172ceee",
+    "assets/landerpi/model/arm_spec.json": "8d1dc917c7c76c58dcd96ab07525e247479d6295f427dd75c8ba3a13c0ecdfa9",
+    "assets/landerpi/model/assets.xml": "c5fd026be970e90c8b7694ce1aceda000d8cc8f78372f781f405199c74db131e",
+    "assets/landerpi/model/chassis.xml": "90c347efaf65a8acab6d08b16e5c27b343fca1d2a7d5096bc136aace22856e24",
+    "assets/landerpi/model/parameters.yaml": "9d75842ac24e30dd152898e68ae1bdf13caa21900cff91f2a3763b62f6bde593",
+    "assets/landerpi/model/robot.xml": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "assets/landerpi/model/robot_g3b_l_shape.xml": "53e0bd0f64f2db19a1cfd5d0a8653dba645786f840332028e5ea1881354d6180",
+    "assets/landerpi/model/robot_navigation_diagnostic.xml": "62bea46ce1468baf227a44e2ff71d509010e173337f1c875d2bd3c0399ab4241",
+    "assets/landerpi/model/sensors.xml": "c6d6b6d626568752c2c7b3c2bdbf7245dca5eb7cb034a5fbee482c25462f4c89",
+    "assets/landerpi/model/wheels.xml": "50fd78e6fdf72c333f1b2d7ca6258fb980c7682e6bc8779b784dcb4ea6173ed4",
+    "assets/landerpi/objects/cube_20mm.xml": "0f9d1e7e76e4bb9a3d1e8d5aa6b28ead5f240607348e83297a5ad52f4d0945ed",
+    "assets/landerpi/scenes/g3b_l_shape_wide_door.xml": "7b179822f27904f0d309bdfe1698fc509992dcd14411b9695e75844766cf78ae",
+    "assets/landerpi/scenes/mobile_pick.xml": "f94c2c1971b73df9bcaf771306a951e4f6b061c7a1af006bf7826658ccbb204a",
+    "assets/landerpi/scenes/navigation_diagnostic.xml": "d2d63d7e94adbc36fb7e6163a0bb754fbc0fb51db6d949d7acb54164e5cc6427",
+    "assets/landerpi/source_description/meshes/arm/camera_connect_link.STL": "1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212",
+    "assets/landerpi/source_description/meshes/arm/depth_cam_link.STL": "4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958",
+    "assets/landerpi/source_description/meshes/arm/gripper_link.STL": "31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a",
+    "assets/landerpi/source_description/meshes/arm/link1.STL": "7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894",
+    "assets/landerpi/source_description/meshes/arm/link2.STL": "553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5",
+    "assets/landerpi/source_description/meshes/arm/link3.STL": "cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd",
+    "assets/landerpi/source_description/meshes/arm/link4.STL": "158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa",
+    "assets/landerpi/source_description/meshes/arm/link5.STL": "c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7",
+    "assets/landerpi/source_description/meshes/gripper/gripper_base_link.STL": "46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8",
+    "assets/landerpi/source_description/meshes/gripper/gripper_left_link.STL": "9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f",
+    "assets/landerpi/source_description/meshes/gripper/gripper_right_link.STL": "5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598",
+    "assets/landerpi/source_description/meshes/gripper/guide_rod_link.STL": "d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a",
+    "assets/landerpi/source_description/meshes/gripper/left_jaw_link.STL": "47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5",
+    "assets/landerpi/source_description/meshes/gripper/right_jaw_link.STL": "37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c",
+    "assets/landerpi/source_description/meshes/mecanum/back_shell_black_link.STL": "a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049",
+    "assets/landerpi/source_description/meshes/mecanum/back_shell_middle_link.STL": "b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030",
+    "assets/landerpi/source_description/meshes/mecanum/base_link.STL": "9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223",
+    "assets/landerpi/source_description/meshes/mecanum/imu_link.STL": "2d3f2e16a2150d97c01ed0ff6101fb5815bfde44143871dc8368149cd024e222",
+    "assets/landerpi/source_description/meshes/mecanum/lidar_link.STL": "94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096",
+    "assets/landerpi/source_description/meshes/mecanum/wheel_left_back_link.STL": "22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2",
+    "assets/landerpi/source_description/meshes/mecanum/wheel_left_front_link.STL": "2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680",
+    "assets/landerpi/source_description/meshes/mecanum/wheel_right_back_link.STL": "68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8",
+    "assets/landerpi/source_description/meshes/mecanum/wheel_right_front_link.STL": "9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9",
+    "assets/landerpi/source_description/urdf/arm.urdf.xacro": "a3baed619f444995bc8f65569248f04d0ebabcdf23f4b55b00b597dceeab1981",
+    "assets/landerpi/source_description/urdf/gripper.urdf.xacro": "f4b0d9619019fe68266d9ad1686636130f47f7592aa83dd4e77153ad9ea76d05",
+    "assets/landerpi/source_description/urdf/mecanum.xacro": "4460617c1f56134516c36dacee44d68c9bab64e69c3274261f80a3d0f757e3f7",
+    "assets/landerpi/source_description/urdf/package.xml": "7b66f6185116ee8fa6522d25bc3cf1821fb2d0d0a9719490455c27cd0a4171bd",
+    "configs/default.yaml": "2304ef9f231c06133a2318e19f2ef1ef8bb2fc1dc9e1cf9b520ede61759191c8",
+    "configs/examples/capabilities_fixture.json": "2858093bb62db7048400a64b699f92cbc206c8ccbb69895ec63dcdeae8b8f978",
+    "configs/examples/command_set_base_twist.json": "38025389fcca3b5a21038aaa52a3b90e6ba7e74b0f21f135c7b4d3c005cca60e",
+    "configs/examples/event_fixture.json": "01d120b79a1ab646b3445bbec33324f7c176040f4dbfa490d0932b4aa7d8182c",
+    "configs/examples/scene_fixture.json": "0b859c63a19dd50030f1ed40cac2b545f8e75269b467eff8f9d015c21aaed046",
+    "configs/examples/sensor_observation_fixture.json": "c4a1425da33ad9a1cbdbc7d58df1f1916897e61039a8638f85a3ea1567f635d9",
+    "configs/examples/snapshot_fixture.json": "3a24f3594cdd8e2b04ec26d4a45e7619f14fb2ee223d8fa906bf524bdfdab028",
+    "configs/export/g2b_export_v1.yaml": "f885a7b8909bb5c669d88631a422ecb8321357cb60b448fbb8a01dbf6a95ce6f",
+    "configs/g2a_server.yaml": "e7f94a374aa081b487687bb2d433824eae598697bb571a6d21126b54cf5c3b3f",
+    "configs/g3a_server.yaml": "9e5cc30636d080fc44f0b6dce16a388316fe724bd3a9c0a18478cbf0af6aabf4",
+    "configs/g3b/cases_v1.yaml": "5360e73fcbf497ffc4af8352b39a3a3c4c1e215e9ebd215ed5dcd3a09de74b22",
+    "configs/g3b_server_room_a.yaml": "94c007048cd5e4d30757ea45edae1ed202a655733b0c5960f54a2a6cbf6c2daa",
+    "configs/g3b_server_room_b.yaml": "e9aaef127d0d2d877a4bf9202278dfdea7656a834f0b837a740590bd2a69b239",
+    "configs/g4a1/cases_v1.yaml": "8cfe68cf91167afe5ac561eaa1ad6fa92a6ae9935e35eccc4460f4e45f3926ad",
+    "configs/g4a1_server.yaml": "d8fc5f36b491e5244e00212b09d6b133353f66b2858df5f72712176823d25dfe",
+    "configs/g4a2/collection_plan_v1.yaml": "ace39b36748855c979a0c08f7c3e0e424ef08d3737ea620e51e58d64f714b21a",
+    "configs/g4a2/family_plan_draft_v1.yaml": "ec78fb742edcda4de64881f3db8b777207562bd56502304d68bc947b11d0febe",
+    "configs/g4a2/postures_v1.yaml": "9a9e7fb4844635e1182068414ce4a2a8d3eb4dfaedfaac674386f4a976e5d0f6",
+    "configs/g4a2_drive_validation.yaml": "40c20a11ff3b17b9f405fc6b2732f43cd4014f01c920799e19d015129ce00490",
+    "configs/g4a2_server.yaml": "6c455b2573a912c5cc2e4f258e678c9d902e3ac3b7ef3bf33b9611559e24a8a4",
+    "configs/profiles/g2a_action_teleop_v1.yaml": "4b037ff671fb766452630b234d5680383381a2e6597b5855a5d92131a5c9f7dc",
+    "configs/profiles/g2a_rgbd_5hz.yaml": "9473171d7460ba968813b40ad1cae2f392bbc168e85ef4524eced6f38b5e3042",
+    "configs/profiles/g3a_navigation_room_b.yaml": "178b46511aa6d92d6c6446f3b127f1115e9e08aab0465be151c16627b207e3ef",
+    "configs/profiles/g3a_navigation_v1.yaml": "c9de2351cee65908ed646b434278fa9eee3f0c6b90910146815d46241c6e51e1",
+    "configs/profiles/g3a_rgbd_diagnostic_compat_v1.yaml": "d00addc1a1cfdb85025be8f45a2c1aa5a658e76f75f6fe9245501fa1df7e73e9",
+    "configs/profiles/g3a_rgbd_diagnostic_room_b_compat.yaml": "26d1675f96ea83de41607f647b7b34e27a05e56663a7be71a62da9b190053716",
+    "configs/profiles/g3b_navigation_v1.yaml": "6ba7e6e409b368e913f46ed2cdd705d27aa6acfadbb5eb29b233453c204b6f50",
+    "configs/profiles/g4a1_action_v1.yaml": "4fc21f5ea16d636751a379bf71b6e4656511fc6082a2427491ce8369e11728af",
+    "configs/profiles/g4a1_observation_v1.yaml": "f466a438374d52927bf582a3fe0fb03e837e6472041f04a3e119ec41d8252fdd",
+    "configs/profiles/g4a1_quality_v1.yaml": "302e561cf118fff14f6f254f433b0cfd62b4a9d7ee12b3fa474cbb926e845c14",
+    "configs/profiles/g4a2_human_sixdim_v1.yaml": "17a2869113884fd2c8eae7497f7810d94477c8f33f4d80018739b5036a7653b0",
+    "configs/robots/landerpi_nominal.yaml": "2a290f7ebd278941901bcf2a6f3ae88a74a60be7bdc5719da47fd49ff9c487a8",
+    "pyproject.toml": "22e43712dde4222605d13125a8b72c92302068ef1f00b41f13d3ca878d8f0b21",
+    "requirements-test.lock": "a20823d9585cadace3311689aa0eb21220470902b45fee038e5e4014bc10bfe5",
+    "requirements.lock": "c1cad889649bcf3cdc56560c86019af1081c166b030021ad8ebf1679f1fc8439",
+    "src/mobilecar/__init__.py": "dc4f38f63cf68ac721a3feac5e8d6fe28ba4c72651690b087d20b860e020fe51",
+    "src/mobilecar/__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "src/mobilecar/app.py": "7c41b67d8030e00c11206caa4abf08a569e9c3b84201adcb8f6b9fd0fafc9ce4",
+    "src/mobilecar/attestation.py": "389458148be673c50d0c915c7ad9da453502998108260c4b2728d649405e9c4e",
+    "src/mobilecar/backends/__init__.py": "3256ed5e7284f68303073f021f947f8c8e823268934865dc21fbbaf2e76b383d",
+    "src/mobilecar/backends/common.py": "d2024019455ea07058abf3f388920fc219df4707df7b9185a6f6a42117734307",
+    "src/mobilecar/backends/factory.py": "ab76aa26b148619b13db3e07a7236fb607a407083bfd2f53f65e671e37d171d8",
+    "src/mobilecar/backends/mock/__init__.py": "f4cad9005e06886ad095bcb9ebc0df5c3420477c524ee91564abd3208b59ec40",
+    "src/mobilecar/backends/mock/backend.py": "5fdc76684d2cb546090b7f375fef3eaf38b46bf77a84d6e58e3564d704c33ecf",
+    "src/mobilecar/backends/modelgen/__init__.py": "936cde840519e3dd358b5355b32130f4fe09793dc137b22222aebd7ba56d7ab7",
+    "src/mobilecar/backends/modelgen/build_model.py": "6f516fd7da51c46bca66bcdaac8a85cfec9f6e91043b036b6618d968693d4563",
+    "src/mobilecar/backends/modelgen/joint_coordinates.py": "bce24c3b07e3cf6b72f8c877f8862ca0f9e75abddf6807285a7f85b0d7207afd",
+    "src/mobilecar/backends/modelgen/model/__init__.py": "5e9e5b3f4f65d4f67a9858de105a769b77ee7bca72ca4717b075d139318f72cc",
+    "src/mobilecar/backends/modelgen/model/arm.py": "fb3fd286a9103d8aa8c9d534239ffee53eb50b445de2d9364d09b0e71970c93f",
+    "src/mobilecar/backends/modelgen/model/source.py": "075d6b07b39fa24c5715e273a114ee9cac7842cfd33d00f288712a70f5c9a51a",
+    "src/mobilecar/backends/modelgen/parameters.py": "c2079c96797dc57167f89a1622a8f22cae398104f6667e61b782d39810ce070b",
+    "src/mobilecar/backends/mujoco/__init__.py": "904c102f0730ca25a0a746c277e42b862498526777cbb9be69ae6141840f299b",
+    "src/mobilecar/backends/mujoco/backend.py": "108dc2d56d3918b8d99560d12e34b3b942aea42313bab5b88cdcea9666deb47b",
+    "src/mobilecar/cli.py": "f90d689ab8dbe1c72f5d0e22afcecf02cd6e854024f1192515ad9936c3cc1f60",
+    "src/mobilecar/config.py": "091d4d2c987a8194d57f59734bf2b2c2e945bf522b73a2bc0e710f7275a0ea76",
+    "src/mobilecar/contracts/__init__.py": "67e642059b43c846201135adb412ae1dd90f4c664560360c3e82b951f3d8d587",
+    "src/mobilecar/contracts/g2a.py": "ee3a38e36eed5d9eb6e6bd213e69e5731481606e80bd2893a92135f815f3fac5",
+    "src/mobilecar/contracts/g3b.py": "51c98fac7718cc5558232c8d7c1436b4af26edc36070ff79caedbebdcf5db320",
+    "src/mobilecar/contracts/g4a1.py": "5d252077af4a50a8ff8f0e363b7072a6d3c916d557fb78d5eb1be647edab4d73",
+    "src/mobilecar/contracts/g4a2.py": "9725e0ac17a1623cf1f7a454786b471d3d7bb7047acce18dbbd1b9a8687885bf",
+    "src/mobilecar/contracts/models.py": "689bc5c7dea3186d23bea90a0880dc24b21e51494b8ecb21cc8871e3871f7c21",
+    "src/mobilecar/contracts/navigation.py": "6aa93a726d2aa6ce7ba054e4e0c7fd721b067e5f4c33f8e95d0dc2818e527e13",
+    "src/mobilecar/contracts/protocols.py": "b7d46b7ec6c5675f12d8d7fbb44229f601ca0c79047a11862f69ee42b99f01e1",
+    "src/mobilecar/control/__init__.py": "cee906170da077ad4018652196905eca2b42cd2b97e23a2bbd7bb40c5628c2f4",
+    "src/mobilecar/control/arm.py": "dc5decac1dbfbd4a6e7293a8eaae617e062d0e4cce8821386909297b43346d90",
+    "src/mobilecar/control/wheel.py": "a7a8f2db61582d591990f9d07d59f0769722ad343285e57ecd226348a1e4a23f",
+    "src/mobilecar/data/__init__.py": "258a0bef4d8f6b0dee5321b95b1436fee86a7de76586710f9d15e6c012e58ac1",
+    "src/mobilecar/data/__main__.py": "c0278bbeb6c3c3dd9adf9d4b7cc190d5b048ed52964add859af8de555b5b7d92",
+    "src/mobilecar/data/eligibility.py": "8acc3728c2fb1737a8b1077d58131ebbcdb35ca37ee21c300b26779002accc1b",
+    "src/mobilecar/data/export/__init__.py": "2d6d8bef03d0bc8cff72aa1e75b66bfb3df36465ae7f868afe411323d579f379",
+    "src/mobilecar/data/export/aligner.py": "20935783588765a8f4e39e2da11ff51974595de4cf4eb040846d2dbcfa40ee9d",
+    "src/mobilecar/data/export/lerobot_adapter.py": "9a91fe54566a6bac767a2f487415a6495113297bd3b0168793acfa98e870cca0",
+    "src/mobilecar/data/export/models.py": "a2c8454ee0e17443c138b21864c92dd033a56d1a77ea7db9baf825c00b124fdc",
+    "src/mobilecar/data/export/pipeline.py": "37cb8d56b8b1f06eb8bef003198b62499ce5e78bf2ac7909b5a858a023798f4d",
+    "src/mobilecar/data/export/qualification.py": "f29751a8ff6d4031866510f4b78f5cde45baabf0d3fc4d83c402f61073478d6d",
+    "src/mobilecar/data/export/reader.py": "0e0f58ddaf3b14803a9d1df2e51a714ffee26e5b0379f4bf1f4ad5e8aad58962",
+    "src/mobilecar/data/export/sidecar.py": "aefa7d4a0b0a66d6966c29b51cfaf3d3f7da7395e05a66086561d03b714ad5d7",
+    "src/mobilecar/data/g2a_quality.py": "90516cd4d92eb2f0b81b88965e874cd8c3774012fc96828411c6aff670a48084",
+    "src/mobilecar/data/g4a1_readiness.py": "99c4adbf3aeefae2e7311541073ff87d8a3a1ca178a6667fc9258309b1e956af",
+    "src/mobilecar/data/g4a2_export.py": "f2e8b4cf95b6c0535a03b2078165dc399c42cd1e738cbd80ce20356b9650ec52",
+    "src/mobilecar/data/g4a2_qualification.py": "2697214ea94c3d4b7532a322ed1ebddf793818fea892e8d3e422d136587b4d1a",
+    "src/mobilecar/data/oracle.py": "c5ed9c605cc37d269a147d44b31e705739efb2c657388cca6cb58d74483c5281",
+    "src/mobilecar/data/recorder.py": "16de4a54c517daa7ee2aa66b2c6e7e4d133406915c6729c99e23ccb3374ce3fb",
+    "src/mobilecar/data/replay.py": "8eb08f280d1eac1e3b5fca25b8ce21e10490c5ae9c5dbb6ea92b971693a227d0",
+    "src/mobilecar/data/validator.py": "cdc14555d5b4ef63b526e657c414a05af9561cc5b71ff27d09c1e6574339f9d9",
+    "src/mobilecar/distribution/__init__.py": "98f5c90a8e6ceb6620db1e67f011fdb2ad99c26f84fca92900d5c1c7b30d0cf8",
+    "src/mobilecar/distribution/fanout.py": "fe8c9ece61f998dc2bdc0c7f2b5d233db7eee18f7e85c23f8d28e9737333cd58",
+    "src/mobilecar/distribution/telemetry.py": "20824f1f27430da6e9687906ff75af7f41f67fdd3c3fac0aa1137787cb933fec",
+    "src/mobilecar/estimation/__init__.py": "58495e488daf2ca41a0f1baa38490ae8430a85d2fb272e2daf5751e450e76eb9",
+    "src/mobilecar/estimation/planar.py": "65111545f0cc64f45658ac165dc7ff75f198aa1681488ad22ef3467903edd448",
+    "src/mobilecar/estimation/runtime.py": "7d6bac989fc3f3438d028e47003a1ec80b6fdab6ae9db635f7f25b25efecbdf9",
+    "src/mobilecar/planning/__init__.py": "89214dc7439f2f8e479d49e311756fdbfb427cbc597aef87a9a850d68ca6c276",
+    "src/mobilecar/planning/ik.py": "dabf8944b2736d7a608f66aa0da5c1f47c0228f4af0ecb94937f169947ba643a",
+    "src/mobilecar/planning/trajectory.py": "edd7a35af4660f745c3ea7c3c5f8b87257c3b04e586f58af8c74ec89c6536472",
+    "src/mobilecar/ros_ipc/__init__.py": "4069e2efc4238440f191d9ee2e966936bdfac84c51171be12aa6ce8584943ba4",
+    "src/mobilecar/ros_ipc/codec.py": "275ea92fc60666527048e2b26a64ceeb707b781366c9b56ec7f27ec31762b8a5",
+    "src/mobilecar/ros_ipc/control.py": "19c8213a3475f484d4066c9e48c26389b8d867b1c07676f303217be75dd6f5a2",
+    "src/mobilecar/ros_ipc/server.py": "3b8b89b8204681396ea6e8124788d25a07e2edd6d1310fd7f66bc65a42f8b67d",
+    "src/mobilecar/sensors/__init__.py": "576dbcba7945e7f6494d7f1c5394f66fef5b239cc19a8980ece55074ae83e68a",
+    "src/mobilecar/sensors/contacts.py": "75338ade5a0a54b8342a985b985c4541b8c32c3409744056cbe9637f3b228484",
+    "src/mobilecar/sensors/scene.py": "efb2ccbed695d30d357a78e6d12335d4b294edbcd30449cbaf211a3c65ef02ef",
+    "src/mobilecar/session_binding.py": "c9f059b8cf0e79f95689b19278786fc338e72ea6dcb813872bf279b6d99f7df7",
+    "src/mobilecar/ui/__init__.py": "c3124f3a6d08021eb1dd3f0fb7fbffb9c8fffa2ef51a2e92ff72522381185237",
+    "src/mobilecar/ui/routes.py": "95ef8ae44a3bbc0fa4cf6d9113842e9f524215857cfba112c2bbd036befadeec",
+    "src/mobilecar/ui/static/g4a2.html": "350862729dcc2772f6ac69b876e4f3536350478fd582f62d39bc81705800123b",
+    "src/mobilecar/ui/static/g4a2.js": "381da5400659bcb0aca1a214ba24eae49f03e653bcf245f523870b026c9860c5",
+    "src/mobilecar/ui/static/index.html": "8d9d47690c675a827d14318a4a876fb0572fc2509b84ef06defa626a957d84ac",
+    "src/mobilecar/ui/static/style.css": "7b211a80108127659ab2fc481481fef0202ff26d251f62d6f76651e8f2fa832b",
+    "src/mobilecar/ui/web/api.js": "d86c42cd56eae708c6a904c4a9dc727fe95d64bb319c4ee48c7cced47da1390f",
+    "src/mobilecar/ui/web/main.js": "6d90228c28f484f8dace9fe5ddae2dd6780dde7478aacffca9a2c4a05095e3bd",
+    "src/mobilecar/ui/web/scene-view.js": "39145c4f349a3d6d6fa5154c0f6841603e907a736ede8fc01980fd54b9a5c2cb"
+  },
+  "excluded": [
+    {
+      "prefix": "var/",
+      "reason": "runtime state (logs, reports) captured beside the release; not a release input"
+    },
+    {
+      "prefix": "runs/",
+      "reason": "recording output directories; excluded so output never enters source identity"
+    },
+    {
+      "prefix": "envs/",
+      "reason": "interpreter environment; pinned separately by requirements.lock plus the runtime self-report"
+    },
+    {
+      "prefix": "tools/",
+      "reason": "offline generators, not imported by the served runtime path under test"
+    },
+    {
+      "prefix": "scripts/",
+      "reason": "operator helpers, not runtime inputs"
+    },
+    {
+      "prefix": "provenance/",
+      "reason": "release bookkeeping written by native tooling; recorded elsewhere in the release report"
+    },
+    {
+      "prefix": "tests/",
+      "reason": "verification source, not a runtime input; patch-added tests are recorded under baseline.patch_additions.tests instead"
+    },
+    {
+      "prefix": "src/mobilecar/ui/static/app.js",
+      "reason": "generated browser bundle shipped inside the release; it is produced by the native UI build, not edited as source, so it is named here instead of silently counted as source identity"
+    },
+    {
+      "prefix": "requirements-g2b-lerobot.lock",
+      "reason": "training/LeRobot stack; this candidate never imports it"
+    },
+    {
+      "prefix": "docs/",
+      "reason": "native documentation, removed from the release copy; the three whitelisted doc paths are declared under required_groups.baseline_source.ignore_paths, so their absence here is a stated fact and not a silent filter"
+    }
+  ],
+  "group_entry_total": 161,
+  "groups": {
+    "baseline_source": {
+      "hashed": 152,
+      "missing": [],
+      "required": 152
+    },
+    "dependency_locks": {
+      "hashed": 3,
+      "missing": [],
+      "required": 3
+    },
+    "execution_configs": {
+      "hashed": 4,
+      "missing": [],
+      "required": 4
+    },
+    "patch_added_modules": {
+      "hashed": 2,
+      "missing": [],
+      "required": 2
+    }
+  },
+  "hashed_count": 154,
+  "missing_required": [],
+  "release_digest": "41b9c80c5d03eb11a2ff5551407430559514353d1d8bee324f4ad9111a5e038a",
+  "required_count": 154,
+  "root": "/home/liaozhengyan/Desktop/mobileCar/releases/m1h-20261024T152235Z-native",
+  "root_kind": "native_release_copy",
+  "schema_version": "unirobot-release-identity-1",
+  "unique_required_count": 154,
+  "unlisted_under_watched_roots": [],
+  "watched_roots": [
+    "src/mobilecar"
+  ]
+}

@@ -68,6 +68,8 @@ M1.2c/M1.2d 已能准备 Session、显式 Start 并在无 RESET 的情况下开�
 
 native 工作树保持未提交、未推送，既有未提交补丁原样保留，本轮不产出也不复用新的生产 source pin；候选源码摘要记录为 `native-candidate-pins.json`：pin `c550a4e495680c8895ca28e92b6aac7de22727086aa351cbad8f42a1618549de`（生产 recipe 白名单 155 路径中该 release 副本内实际存在的 152 个；缺的 3 个是 native `docs/*.md`，非代码）。它与生产 pin `a01098040d953608004a34b3c76519d7884eaa4b2c95e36822bd4e7d283b911c`（`a5cef52` base）不可互换。
 
+**候选身份范围更正（2026-10-25）**：上述 `c550a4e4…` 只是生产 recipe 旧白名单 155 路径中该 release 副本内实际存在的 152 个路径的子集摘要，**不覆盖**补丁新增的执行模块 `src/mobilecar/attestation.py` 与 `src/mobilecar/session_binding.py`，因此**不能当完整 release pin**，也不表示 “drvfix + m1h 已组装验证”。该 release 经实测是 drvfix 内容叠加 m1h 补丁（`backends/mujoco/backend.py`、`ui/static/g4a2.html`、`ui/static/app.js`、`assets/landerpi/source_description/urdf/mecanum.xacro` 与 drvfix 一致而与 `a5cef52` 工作树不同），且从未作为该组合启动或验证过。完整、缺项必失败的发布身份见 [M1.4b](backend-m1.4b-unified-candidate.md) 第四、五节：`41b9c80c5d03eb11a2ff5551407430559514353d1d8bee324f4ad9111a5e038a`（154 个必需路径全部存在）。原 198 行清单与本节历史事实保持未改写。
+
 ## 七、服务器验证结果
 
 所有测试、构建与集成在服务器执行；本地未运行任何测试或构建。
@@ -121,11 +123,11 @@ test-only recipe（`mobilecar.g1.teleop.mock-testonly`，`recipe_revision: 2`，
 |---|---|---|---|---|---|
 | G1 + `a5cef52`+patch | 现有生产 pin 所在 base | 生产 recipe 不变 | STOP/end 仍 unsupported | 补丁基线漂移 | 维持现状即回滚完成 |
 | 独立 G4A2 recipe + `a5cef52`+patch | 与 8792 当前配方同族 | 需新 recipe 与 scene 摘要 | 候选协议可声明 | G1↔G4A2 口径未定 | 撤下 recipe，回到旧 pin |
-| **推荐（待决定）：独立 G4A2 recipe + `drvfix`+m1h patch** | 8792 现运行 `drvfix`，叠加 `native-m1h.patch` | 候选 pin `c550a4e4…`，需与新的部署 recipe 一并冻结 | STOP/end 可用，停车覆盖仍不完整 | 需维护窗口、需真实停车确认、需重算生产 pin | 保留 `drvfix` release 与 `g4a2_server.yaml`，重启回旧实例 |
+| **推荐（待决定）：独立 G4A2 recipe + `drvfix`+m1h patch** | 8792 现运行 `drvfix`，叠加 `native-m1h.patch` | 候选摘要 `c550a4e4…`（旧白名单子集，非完整 pin）+ 完整发布身份 `41b9c80c…`，需与新的部署 recipe 一并冻结 | STOP/end 可用，停车覆盖仍不完整 | 需维护窗口、需真实停车确认、需重算生产 pin | 保留 `drvfix` release 与 `g4a2_server.yaml`，重启回旧实例 |
 
 **推荐方案不是部署授权。** 仍待用户决定：① 部署配方口径（G1 还是独立 G4A2 recipe）；② 部署基线（是否以 `drvfix` 为底）；③ 新生产 source pin（须在维护窗口内对最终运行的 release 重新计算，本轮记录的是候选摘要，不替代它）。
 
-维护窗口步骤（本轮未执行）：冻结 release 与 recipe → 停 8792 前确认无活动录制 → 部署并只读核对 `capabilities` 协议声明 → 单次 begin/STOP/end 物理确认（记录 `parking` 覆盖与 `integrity`）→ 更新生产 pin 与 handoff → 异常时按回滚判据恢复旧 release。
+维护窗口顺序（2026-10-25 修正，本轮未执行；推导见 [M1.4b](backend-m1.4b-unified-candidate.md) 第六节）：① 窗口前先冻结最终 native release，用 `tools/release_identity.py` 生成并核验完整发布身份，确定 recipe/protocol 与 config/scene/lock 摘要，把新 pin 与 recipe 一并固化；② 第①步全部可复算后才进入已获授权的维护窗口；③ 停 8792 前确认无活动录制 → 部署 → 只读核对 `capabilities` 协议声明 → 单次 begin/STOP/end 物理确认（记录 `parking.coverage_complete`、`integrity` 与作用域覆盖）；④ 运行成功后只补记 pin 与运行 release 一致的核对结论，**不在成功之后才重算 pin**；⑤ 任一步失败按回滚判据恢复原 release。
 
 ## 十二、真实闭环仍缺
 

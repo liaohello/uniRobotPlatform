@@ -1,0 +1,12 @@
+{
+  "candidate_id": "native-m1h-assembled-candidate",
+  "changed_paths": [],
+  "expected_release_digest": "41b9c80c5d03eb11a2ff5551407430559514353d1d8bee324f4ad9111a5e038a",
+  "match": true,
+  "present_count": 154,
+  "recomputed_release_digest": "41b9c80c5d03eb11a2ff5551407430559514353d1d8bee324f4ad9111a5e038a",
+  "recorded_count": 154,
+  "removed_paths": [],
+  "root": "/home/liaozhengyan/Desktop/mobileCar/releases/m1h-20261024T152235Z-native",
+  "schema_version": "unirobot-release-identity-1"
+}
