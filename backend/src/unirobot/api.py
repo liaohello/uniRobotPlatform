@@ -49,6 +49,7 @@ from .routes import (
     RouteVersion, RouteVersionList, SaveRouteDraft,
 )
 from .episodes import EpisodeArchive, HistoryError, load_history_source
+from .frames import FrameLinkReader
 from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH, EPISODE_ROOT_OVERRIDE, HISTORY_SOURCE_PATH, MAP_CATALOG_PATH, MAPS_ROOT
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -254,6 +255,16 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
         return _archive(request).records(episode_id, stream_id, run_id=run_id, limit=limit, offset=offset,
                                         event_seq_from=event_seq_from, event_seq_to=event_seq_to,
                                         time_base=time_base, time_from=time_from, time_to=time_to)
+
+    @application.get("/api/v1/episodes/{episode_id}/frames")
+    def episode_frames(request: Request, episode_id: str, run_id: str | None = None,
+                       stream: str = Query("rgbd", pattern=r"^[A-Za-z0-9_-]{1,64}$"),
+                       limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
+                       time_base: str | None = None, time_from: float | None = None,
+                       time_to: float | None = None, sample_id: str | None = None) -> dict[str, Any]:
+        return FrameLinkReader(_archive(request)).frames(episode_id, run_id=run_id, stream=stream, limit=limit,
+                                                        offset=offset, time_base=time_base, time_from=time_from,
+                                                        time_to=time_to, sample_id=sample_id)
 
     @application.get("/api/v1/episodes/{episode_id}/assets/{asset_path:path}")
     def episode_asset(request: Request, episode_id: str, asset_path: str, run_id: str | None = None,

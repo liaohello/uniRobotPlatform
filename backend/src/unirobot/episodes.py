@@ -101,6 +101,9 @@ class EpisodeLocation:
         self.root = root
         self.run_id = run_id
         self.episode_id = episode_id
+        # Run identity first: an episode directory that resolves through a swapped run must
+        # be reported as a run identity problem, not as a successful containment.
+        self.run_directory = require_run_directory(root, run_id, detail={"episode_id": episode_id})
         self.directory = root / run_id / "episodes" / episode_id
         if (self.directory.is_symlink() or not confined_within(root, self.directory)
                 or not confined_within(root, self.directory / "episodes")):
@@ -164,6 +167,22 @@ def confined_within(boundary_real: Path, target: Path) -> bool:
     """True when target resolves to something at or inside an already-resolved boundary."""
     real = _real(target)
     return real == boundary_real or boundary_real in real.parents
+
+
+def require_run_directory(root: Path, run_id: str, *, detail: dict[str, Any] | None = None) -> Path:
+    """The run directory must itself be the declared native directory, not a link to another run.
+
+    A cached episode index holds name strings only, so after the cache is built `root/runA`
+    could be replaced by a symlink to a sibling `root/runB` that carries an episode of the
+    same id; containment alone is then satisfied and runB's bytes would be served under
+    runA's identity. Comparing the resolved run directory with its declared name closes that
+    window on every read, without turning the reader into a general filesystem sandbox.
+    """
+    run_dir = root / run_id
+    if run_dir.is_symlink() or _real(run_dir) != run_dir:
+        raise HistoryError("history_path_escape", "run directory is not the declared native run directory",
+                           409, {**(detail or {}), "run_id": run_id, "run_directory_is_symlink": run_dir.is_symlink()})
+    return run_dir
 
 
 def _sha256(body: bytes) -> str:
@@ -237,7 +256,7 @@ class EpisodeArchive:
 
     def _run_manifest(self, run_id: str) -> dict[str, Any]:
         if run_id not in self._manifest_cache:
-            path = _real(self.root) / run_id / "manifest.json"
+            path = require_run_directory(self.root, run_id) / "manifest.json"
             if (path.is_symlink() or not confined_within(self.root / run_id, path)
                     or not confined_within(self.root, path)):
                 raise HistoryError("history_path_escape", "run manifest does not resolve inside the run directory",

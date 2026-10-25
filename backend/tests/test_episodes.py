@@ -523,6 +523,7 @@ def test_openapi_exposes_the_history_slice_and_no_write_routes(tmp_path):
     history = sorted(key for key in paths if key.startswith("/api/v1/episodes"))
     assert history == ["/api/v1/episodes", "/api/v1/episodes/{episode_id}",
                        "/api/v1/episodes/{episode_id}/assets/{asset_path}",
+                       "/api/v1/episodes/{episode_id}/frames",
                        "/api/v1/episodes/{episode_id}/streams",
                        "/api/v1/episodes/{episode_id}/streams/{stream_id}/records"]
     for item in history:
