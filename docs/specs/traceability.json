@@ -1533,6 +1533,11 @@
       "path": "90-governance/sources/S22-history-readonly-hardening.md",
       "sha256": "8d648513e33309885bf4261854610c273a66381f3e13a10484a8d6b7390c660f",
       "kind": "current_user_history_readonly_hardening_goal"
+    },
+    "S23": {
+      "path": "90-governance/sources/S23-frame-linkage-slice.md",
+      "sha256": "233bdb2f7c183d0768e3bffb86458b21a37def08884ee8c24b2f76247b655208",
+      "kind": "current_user_frame_linkage_readonly_slice_goal"
     }
   },
   "visual_registry": "references/visual-assets.json"

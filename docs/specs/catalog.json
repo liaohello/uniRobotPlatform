@@ -1,7 +1,7 @@
 {
   "version": "0.8",
   "date": "2026-10-25",
-  "status": "V0.8：新增 S20/S21 与 S22 历史只读整改来源；150 个文档节点、17 个补充来源。",
+  "status": "V0.8：新增 S20/S21、S22 历史只读整改与 S23 真实帧关联切片来源；150 个文档节点、18 个补充来源。",
   "source_sha256": "995e4bf3c3fdc19f6874e1d221d5e52195db5f38e79fcac8c082b8ac9939119a",
   "packages": [
     {
@@ -1332,6 +1332,11 @@
       "path": "90-governance/sources/S22-history-readonly-hardening.md",
       "sha256": "8d648513e33309885bf4261854610c273a66381f3e13a10484a8d6b7390c660f",
       "kind": "current_user_history_readonly_hardening_goal"
+    },
+    "S23": {
+      "path": "90-governance/sources/S23-frame-linkage-slice.md",
+      "sha256": "233bdb2f7c183d0768e3bffb86458b21a37def08884ee8c24b2f76247b655208",
+      "kind": "current_user_frame_linkage_readonly_slice_goal"
     }
   },
   "page_design_index": "10-frontend/page-designs/README.md",

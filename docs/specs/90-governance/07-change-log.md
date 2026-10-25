@@ -10,6 +10,14 @@
 
 ## V0.8｜2026-10-25
 
+### 2026-10-25 M1.5c 真实帧关联切片与 run 身份边界
+
+- 新增来源 S23（真实帧关联切片与 run 目录身份边界实测）与决策 DEC-060（run 身份每次读取校验、关联只依据记录键、年龄不等于同步、切片不解锁历史 3D）。
+- [Episode/事件/标注契约](../30-contracts/03-episode-events-annotations.md)：历史只读面由五条 GET 扩为六条（新增 `GET /api/v1/episodes/{episode_id}/frames`，schema `unirobot-mobilecar-frame-link-1`）；路径受限条款补入 run 目录身份校验（缓存索引建立后不得用指向兄弟 run 的软链以原身份读取）；新增"图像—机器人状态帧关联切片"小节，固定角色与关联键、六种关联状态、显式选样规则（不插值、不状态保持、不按时间相近或行号）、差值只作为记录字段相减的年龄、`clock_sameness.verified_by_reader=false` 与媒体摘要仍属声明。
+- 实现：`backend/src/unirobot/episodes.py`（`require_run_directory`）、新增 `backend/src/unirobot/frames.py`、`backend/src/unirobot/api.py`（帧路由）；`tools/episode_history_check.py` 增加 17 项帧关联断言（总数 69→86）；新增 `backend/tests/test_frames.py`（12 项，含 run 目录替换夹具）。
+- 服务器验证：候选 `m1s-20261025T084308Z-platform`（`127.0.0.1:18966`，源码聚合 `932582d19de263ab…`，清单 sha256 `6872adad98dbc75f…`）读取检查 86/86、统一能力回归 28/28、聚焦 31 passed、全量 159 passed / 3 项历史失败；本轮经 `GetProbe` 发出的 59 条请求全为 GET；946 文件覆盖集合 `drift=[]`。同轮 `m1q-…`（18965）因检查工具断言写死页大小而中断，作为历史保留未回填。
+- 机器目录：补充来源 17 → 18 个，文档节点仍 150 个，REQ 仍 89 项。切片完成不等于统一历史游标可用、历史归档全量验证或 M1.5/M1 验收通过。
+
 ### 2026-10-25 M1.5b 历史 reader 只读整改、根目录隔离与可复现发布
 - 按 S22/DEC-059 把只读改成由构造保证：新增 `backend/tools/native_get_probe.py`（只有 GET 方法、无 method/body 形参、逐条写 JSONL 日志），历史检查与事实提取都经它发请求；冻结候选实测 51 次请求 methods 仅 `GET`、`non_get=[]`，另有 8 次 GET 用于事实提取；重算派生结论只允许在隔离副本上进行。
 - 统一受限路径解析（`episodes.py` 内 `_real` + `confined_within` 单一检查）：root/run/`episodes`/Episode 目录/run manifest/episode/tail/sidecar/assessments/固定流/`assets/` 的解析结果都必须位于对应边界；索引拒绝软链目录，读取时每次重新解析，缓存索引不能绕过；新增 `history_path_escape`、`episode_path_escape`，软链 assets 与越界资产返回 `episode_asset_escape`，媒体清单逐文件排除并计数。

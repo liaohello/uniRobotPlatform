@@ -1,0 +1,1 @@
+{"detail":{"code":"time_base_unsupported","message":"unknown frame time base: wall_utc","read_only":true,"supported":["capture_backend_monotonic_s","capture_sim_time_s","persist_backend_monotonic_s"],"note":"only bases present on the persisted frame records are selectable here"}}
