@@ -220,6 +220,7 @@ async def real_flow(page):
           == (detail['declared']['recording_status'] == 'COMPLETE'
               and all(item['relative_path'] in ('episode.json', 'episode_complete.json') for item in detail['integrity']['checksum_verification']['mismatched'])),
           (await attr(page, '[data-checksum-pattern]', 'data-checksum-pattern'), detail['integrity']['checksum_verification']['verdict']))
+    report['real']['complete_checksum_pattern'] = await attr(page, '[data-checksum-pattern]', 'data-checksum-pattern')
     check('uncovered scope is named, so absence is not read as verification',
           'files not opened by this request' in (await page.locator('[data-integrity-layer="uncovered"]').inner_text()))
     check('the interface never claims an all-complete verdict',
@@ -380,8 +381,8 @@ async def real_flow(page):
           or 'asset_uri' in (await page.locator('[data-media-none]').inner_text()),
           await attr(page, '[data-media-bound]', 'data-media-bound'))
     report['real']['streams'] = [s['stream_id'] for s in failed_detail['streams']]
-    report['real']['integrity'] = {'complete': detail['integrity']['status'], 'failed': failed_detail['integrity']['status'],
-                                   'complete_pattern': await attr(page, '[data-checksum-pattern]', 'data-checksum-pattern')}
+    report['real']['integrity'] = {'complete': detail['integrity']['status'], 'failed': failed_detail['integrity']['status']}
+    report['real']['failed_checksum_pattern'] = await attr(page, '[data-checksum-pattern]', 'data-checksum-pattern')
 
     missing = await page.request.get(a.url + '/api/v1/episodes/%s/streams/nope/records?run_id=%s' % (complete_ref['episode_id'], complete_ref['run_id']))
     body = await missing.json()
