@@ -154,7 +154,7 @@ async def main():
         page = await browser.new_page(viewport={'width': 1600, 'height': 1100}, device_scale_factor=1, timezone_id='America/Los_Angeles')
         page.on('pageerror', lambda error: report['errors'].append(str(error)))
         page.on('request', lambda req: report['requests'].append({'method': req.method, 'url': req.url, 'path': urlsplit(req.url).path}))
-        fx = {'sessions': {}, 'bodies': [], 'stop_mode': 'normal', 'end_mode': 'complete', 'current_delay': 0.0,
+        fx = {'sessions': {}, 'bodies': [], 'stop_mode': 'normal', 'end_mode': 'complete', 'current_delay': 0.0, 'get_delay': 0.0,
               'current_gets': 0, 'delay_seconds': 9.0}
         try:
             if a.mode == 'live':
@@ -171,6 +171,28 @@ async def main():
                 check('no lifecycle, motion, STOP, RESET or recording write request was sent', not forbidden, forbidden[:4])
                 other_writes = [f"{r['method']} {r['path']}" for r in report['requests'] if r['method'] != 'GET']
                 check('the live pass issues no write request at all', not other_writes, other_writes[:4])
+                refused = []
+                for method, path in (('POST', '/api/v1/runs/run-x/stop'), ('POST', '/api/v1/commands'), ('POST', '/api/v1/reset'),
+                                     ('POST', '/api/v1/episodes/stop'), ('POST', '/api/v1/session/stop'), ('POST', '/api/v1/recording/end'),
+                                     ('GET', '/api/v1/runs'), ('POST', '/api/v1/sessions/synth-x/start')):
+                    if path.endswith('/start'):
+                        continue  # the platform start path is allowlisted; never probe it with a write
+                    response = await page.request.fetch(a.url + path, method=method, data=b'{}' if method == 'POST' else None)
+                    body = (await response.text()).lower()
+                    refused.append({'method': method, 'path': path, 'status': response.status,
+                                    'gateway': 'allowlisted' in body or 'allowlisted' in (response.status_text or '').lower(),
+                                    'html_error_page': 'text/html' in (response.headers.get('content-type') or '')})
+                report['gateway_boundary'] = refused
+                check('the gateway refuses run-stop, commands, RESET, episodes and native control paths with its own error page instead of forwarding them',
+                      all(item['status'] in (404, 405) and item['gateway'] and item['html_error_page'] for item in refused), refused)
+                preflight = await (await page.request.get(a.url + '/api/v1/mobilecar/preflight')).json()
+                sessions_envelope = await (await page.request.get(a.url + '/api/v1/sessions')).json()
+                report['eligibility'] = {'read_contract_compatible': preflight.get('read_contract_compatible'),
+                                         'session_ready': preflight.get('session_ready'),
+                                         'sessions': len(sessions_envelope.get('sessions', [])),
+                                         'sessions_source': sessions_envelope.get('source')}
+                check('a real candidate without a usable read contract reports empty sessions instead of a fake Ready',
+                      sessions_envelope.get('sessions') == [] and sessions_envelope.get('live') is False, report['eligibility'])
                 if buttons:
                     for action in ('begin', 'stop', 'end'):
                         ready = await attr(page, f'[data-lifecycle="{action}"]', 'data-lifecycle-ready')
@@ -197,6 +219,8 @@ async def main():
                     if sid not in fx['sessions']: return await error(route, 404, 'session_not_found', 'synthetic missing session')
                     if method == 'GET':
                         fx['current_gets'] += 1
+                        if fx['get_delay']:
+                            await asyncio.sleep(fx['get_delay'])
                         if fx['current_delay']:
                             await asyncio.sleep(fx['current_delay']); fx['current_delay'] = 0.0
                         return await json_reply(route, 200, live(fx, sid))
@@ -377,6 +401,36 @@ async def main():
             await page.wait_for_selector('.session-drawer article[data-session-id="ps-synth-b"]', timeout=20000)
             check('the delayed reply only ever belongs to the Session archive it was read back from',
                   b_stop_id in (await layer(page, 'stop', 'accepted'))['text'], b_stop_id)
+
+            # Recovery read-back interleaved with a Session switch: the late archive refresh of the
+            # previous Session may reconcile the cache by id, but must not re-select it and must not
+            # launch a current refresh that preempts the new selection.
+            fx['stop_mode'] = 'delay'
+            fx['get_delay'] = 4.0
+            await page.locator('[data-session-id="ps-synth-a"]').click()
+            await page.wait_for_selector('.session-drawer article[data-session-id="ps-synth-a"]', timeout=20000)
+            await wait_gate(page, 'stop', 'ready')
+            await page.locator('[data-lifecycle="stop"]').click()
+            await page.wait_for_selector('[data-lifecycle-unknown="stop"]', timeout=25000)
+            gets_before = fx['current_gets']
+            a_stop_id = await attr(page, '[data-lifecycle="stop"]', 'data-lifecycle-request-id')
+            await page.locator('[data-session-id="ps-synth-b"]').click()
+            await page.wait_for_selector('.session-drawer article[data-session-id="ps-synth-b"]', timeout=20000)
+            await asyncio.sleep(fx['get_delay'] + 4.0)
+            fx['get_delay'] = 0.0
+            check('the recovery read-back of the previous Session cannot pull the selection back',
+                  await attr(page, '.session-drawer article', 'data-session-id') == 'ps-synth-b', a_stop_id)
+            check('the previous Session is still reconciled by id in the archive cache',
+                  fx['current_gets'] > gets_before, fx['current_gets'] - gets_before)
+            check('a finished stale recovery starts no current refresh for the new selection',
+                  await attr(page, '.session-drawer article', 'data-session-current-status') == 'started'
+                  and await attr(page, '.session-drawer .session-current', 'data-current-error') == ''
+                  and await attr(page, '[data-lifecycle="stop"]', 'data-lifecycle-request-id') == ''
+                  and await page.locator('[data-lifecycle-unknown]').count() == 0,
+                  await attr(page, '.session-drawer article', 'data-session-current-status'))
+            side = await layer(page, 'stop', 'side-effects')
+            check('any receipt shown belongs to the Session actually selected',
+                  'seg-ps-synth-b' in side['text'] and 'seg-ps-synth-a' not in side['text'], side['text'][:160])
 
             fx['current_delay'] = 3.0
             await page.get_by_role('button', name='刷新 current（只读）', exact=True).click()

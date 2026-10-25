@@ -175,8 +175,13 @@ export function SessionPanel() {
   const [lifecycleUnknown, setLifecycleUnknown] = useState<{ action: LifecycleAction; message: string } | null>(null);
   const [requestIds, setRequestIds] = useState<Partial<ActionMap<string>>>({});
   const [operatorId, setOperatorId] = useState('front-operator');
+  const selectionEpoch = useRef(0);
   const lifecycleSerial = useRef<ActionMap<number>>({ begin: 0, stop: 0, end: 0 });
   const lifecycleController = useRef<Partial<ActionMap<AbortController>>>({});
+  // A read-back that reconciles the archive is not part of the cancelled intent: it gets its own
+  // signal so switching Session can neither cancel it nor let it move the selection.
+  const recoveryControllers = useRef<AbortController[]>([]);
+  const recoverySignal = () => { const c = new AbortController(); recoveryControllers.current.push(c); return c.signal; };
   const selectedSessionRef = useRef<string | null>(null); selectedSessionRef.current = selectedSessionId;
   const lifecycleFixture = useMemo(() => new URLSearchParams(window.location.search).get('fixture') ?? '', []);
   const beginReceipt = selectedSession?.recording_begin_receipt ?? null;
@@ -210,10 +215,12 @@ export function SessionPanel() {
     const gate = lifecycleGates[action];
     if (!gate.available) { setLifecycleError((p) => ({ ...p, [action]: `${gate.reason}；动作未发出` })); return; }
     const sessionId = target.session_id;
+    const epoch = selectionEpoch.current;
     const requestId = action === 'begin' ? '' : reuse ? requestIds[action] ?? '' : newRequestId(action);
     if (action !== 'begin' && reuse && !requestId) { setLifecycleError((p) => ({ ...p, [action]: '没有可复用的 request_id：该动作还没有待重试的意图' })); return; }
     if (action !== 'begin') setRequestIds((p) => ({ ...p, [action]: requestId }));
     const task = beginLifecycle(action);
+    const mine = () => lifecycleLive(action, task.id) && selectionEpoch.current === epoch && selectedSessionRef.current === sessionId;
     setLifecyclePending((p) => ({ ...p, [action]: true }));
     setLifecycleError((p) => ({ ...p, [action]: '' }));
     if (reuse) setLifecycleUnknown(null);
@@ -222,37 +229,42 @@ export function SessionPanel() {
       const envelope = action === 'begin' ? await api.beginRecording(sessionId, operatorId.trim() || 'front-operator', VIEW_SOURCE, signal)
         : action === 'stop' ? await api.stopSession(sessionId, requestId, signal)
         : await api.endRecording(sessionId, requestId, signal);
-      if (!lifecycleLive(action, task.id) || selectedSessionRef.current !== sessionId) return;
-      setSessions((list) => upsertSession(list, envelope.session));
+      if (!mine()) return;
+      mergeSession(envelope.session);
       if (action !== 'begin') setRequestIds((p) => ({ ...p, [action]: undefined }));
       setLifecycleUnknown(null);
       const receipt = action === 'stop' ? envelope.session.stop_receipt
         : action === 'end' ? envelope.session.recording_end_receipt : envelope.session.recording_begin_receipt;
       const code = 'code' in (receipt ?? {}) ? String((receipt as { code?: string }).code ?? '') : '';
+      if (!mine()) return;
       setNotice(`${actionLabel[action]} 已返回（${envelope.replayed ? '同一 request_id 的重放，未二次下发' : '新受理'}）${code ? ` · code=${code}` : ''}；结论以下方分层回执为准，不由本行文字宣称。`);
-      await refreshCurrent(sessionId);
+      await refreshCurrent(sessionId, epoch);
     } catch (cause) {
       if (!lifecycleLive(action, task.id)) return;
       if (task.signal.aborted) return;
       if (isTimeout(cause) || isAbort(cause)) {
+        if (!mine()) return;
         setLifecycleUnknown({
           action,
           message: `${actionLabel[action]} 请求超时或传输中断，结果未知；已只读回读存档与 current，未自动重发控制动作。${action !== 'begin' ? `重试会复用同一 request_id${requestId ? `（${requestId}）` : ''}，服务器不会二次下发。` : ''}`,
         });
-        await recoverOne(sessionId, task.signal);
-        await refreshCurrent(sessionId);
+        await recoverOne(sessionId, recoverySignal(), { epoch });
+        if (!mine()) return;
+        await refreshCurrent(sessionId, epoch);
         return;
       }
       const code = cause instanceof ApiError ? cause.code : '';
       const extra = blockingReasonsOf(cause).map((reason) => reason.message).join('；');
+      if (!mine()) return;
       setLifecycleError((p) => ({ ...p, [action]: `${describeApiError(cause)} · ${codeHint(code)}${extra ? ` · ${extra}` : ''}（被守卫拒绝的请求不写回执，也不产生副作用）` }));
       if (action !== 'begin') setRequestIds((p) => ({ ...p, [action]: undefined }));
-      await recoverOne(sessionId, task.signal);
+      await recoverOne(sessionId, recoverySignal(), { epoch });
     } finally {
       if (lifecycleLive(action, task.id)) setLifecyclePending((p) => ({ ...p, [action]: false }));
     }
   }
   useEffect(() => {
+    selectionEpoch.current += 1;
     LIFECYCLE_ACTIONS.forEach((action) => {
       lifecycleSerial.current[action] += 1;
       lifecycleController.current[action]?.abort();
@@ -290,19 +302,27 @@ export function SessionPanel() {
     setSelectedSessionId((previous) => previous && envelope.sessions.some((item) => item.session_id === previous)
       ? previous : envelope.sessions.find((item) => item.state === 'prepared' || item.state === 'active')?.session_id ?? envelope.sessions[0]?.session_id ?? null);
   }
-  function applySession(next: SessionRecord) {
+  function mergeSession(next: SessionRecord) {
     setSessions((list) => upsertSession(list, next));
+  }
+  /** Only a result the user is actually aiming at may move the selection; read-backs update the cache by id. */
+  function applySession(next: SessionRecord) {
+    mergeSession(next);
     setSelectedSessionId(next.session_id);
   }
-  async function refreshCurrent(sessionId: string) {
+  async function refreshCurrent(sessionId: string, epoch?: number) {
     if (!live) return;
+    if (selectedSessionRef.current !== sessionId) return;
+    if (epoch !== undefined && epoch !== selectionEpoch.current) return;
     const task = beginCurrent(); setCurrentBusy(true); setCurrentError('');
     try {
       const value = await api.getSession(sessionId, task.signal);
       if (task.id !== currentSerial.current) return;
-      applySession(value);
+      if (epoch !== undefined && (epoch !== selectionEpoch.current || selectedSessionRef.current !== sessionId)) return;
+      mergeSession(value);
     } catch (cause) {
       if (isAbort(cause) || task.id !== currentSerial.current) return;
+      if (epoch !== undefined && (epoch !== selectionEpoch.current || selectedSessionRef.current !== sessionId)) return;
       setCurrentError(describeApiError(cause));
     } finally {
       if (task.id === currentSerial.current) setCurrentBusy(false);
@@ -315,8 +335,8 @@ export function SessionPanel() {
       const envelope = await api.listSessions(task.signal);
       if (task.id !== sessionSerial.current) return;
       applySessionList(envelope); setSessionsError('');
-      const selected = selectedRef.current;
-      if (selected && envelope.sessions.some((item) => item.session_id === selected)) void refreshCurrent(selected);
+      // Archive-only by contract: this button promises no native observation. `current` is a separate
+      // per-Session read, so refreshing the list must not schedule one for the selected Session.
     } catch (cause) {
       if (isAbort(cause) || task.id !== sessionSerial.current) return;
       setSessionsError(describeApiError(cause));
@@ -344,12 +364,15 @@ export function SessionPanel() {
     const next = { key: idempotencyKey(), snapshotId: snap.snapshot_id, executionRevision: snap.execution_revision, fingerprint: snap.fingerprint };
     createIntentRef.current = next; return next;
   }
-  async function recoverOne(sessionId: string, signal: AbortSignal): Promise<SessionRecord | null> {
+  async function recoverOne(sessionId: string, signal: AbortSignal, intent?: { select?: boolean; epoch?: number }): Promise<SessionRecord | null> {
     try {
       const value = await api.getSession(sessionId, signal);
-      applySession(value); return value;
+      const select = intent?.select === true && (intent?.epoch === undefined || intent.epoch === selectionEpoch.current)
+        && selectedSessionRef.current === sessionId;
+      if (select) applySession(value); else mergeSession(value);
+      return value;
     } catch (cause) {
-      if (!isAbort(cause)) setSessionsError(`Session 回读失败：${describeApiError(cause)}`);
+      if (!isAbort(cause) && (intent?.epoch === undefined || intent.epoch === selectionEpoch.current)) setSessionsError(`Session 回读失败：${describeApiError(cause)}`);
       return null;
     }
   }
@@ -358,6 +381,7 @@ export function SessionPanel() {
       setError(createBlockedReason || '当前不满足创建条件'); return;
     }
     const target = snapshot; const intent = intentFor(target);
+    const epoch = selectionEpoch.current;
     const task = begin(); setBusy('session-create'); setError(''); setNotice(''); setSessionUnknown(null);
     const actionSignal = AbortSignal.any([task.signal, AbortSignal.timeout(ACTION_TIMEOUT_MS)]);
     try {
@@ -365,9 +389,9 @@ export function SessionPanel() {
         execution_revision: target.execution_revision, fingerprint: target.fingerprint,
         validated_snapshot_id: target.validated_snapshot_id!, idempotency_key: intent.key,
       }, actionSignal);
-      if (!current(task.id)) return;
+      if (!current(task.id) || epoch !== selectionEpoch.current) return;
       applySession(envelope.session);
-      await refreshCurrent(envelope.session.session_id);
+      await refreshCurrent(envelope.session.session_id, epoch);
       setNotice(`prepared Session 已${envelope.replayed ? '通过幂等重放恢复' : '创建'}；不会自动 Start。`);
     } catch (cause) {
       if (task.signal.aborted) return;
@@ -379,6 +403,7 @@ export function SessionPanel() {
           applySessionList(list);
           const found = list.sessions.find((item) => item.snapshot_id === intent.snapshotId && item.fingerprint === intent.fingerprint && item.execution_revision === intent.executionRevision);
           if (found) {
+            if (epoch !== selectionEpoch.current) return;
             setSelectedSessionId(found.session_id); setSessionUnknown(null);
             setNotice('创建超时后通过存档回读恢复；未自动 Start。');
           } else setSessionUnknown({ kind: 'create', message: '创建超时，存档中尚未看到结果。可稍后刷新；重试会复用同一幂等键。' });
@@ -391,7 +416,8 @@ export function SessionPanel() {
         const detail = cause.detail as { session_id?: unknown } | null;
         const extra = blockingReasonsOf(cause);
         if (cause.code === 'session_conflict' && typeof detail?.session_id === 'string') {
-          await recoverOne(detail.session_id, task.signal);
+          await recoverOne(detail.session_id, recoverySignal(), { select: true, epoch });
+          if (epoch !== selectionEpoch.current) return;
           setNotice('该 runtime 已有 Session；已读取现有 Session，未自动 Start。');
         } else if (['snapshot_not_found', 'stale_execution_reference', 'recipe_changed', 'validation_incomplete'].includes(cause.code)) {
           setNeedsRevalidate(true);
@@ -408,20 +434,21 @@ export function SessionPanel() {
       setError(startBlockedReason || '当前不满足 Start 条件'); return;
     }
     const target = selectedSession;
+    const epoch = selectionEpoch.current;
     const task = begin(); setBusy('session-start'); setError(''); setNotice(''); setSessionUnknown(null);
     const actionSignal = AbortSignal.any([task.signal, AbortSignal.timeout(ACTION_TIMEOUT_MS)]);
     try {
       const next = await api.startSession(target.session_id, actionSignal);
-      if (!current(task.id)) return;
+      if (!current(task.id) || epoch !== selectionEpoch.current || selectedSessionRef.current !== target.session_id) return;
       applySession(next);
-      await refreshCurrent(next.session_id);
+      await refreshCurrent(next.session_id, epoch);
       setNotice(`Start 已确认（${next.state}）；active/started 不代表取得 owner、正在录制或 motion_ready。`);
     } catch (cause) {
       if (task.signal.aborted) return;
       if (isTimeout(cause) || isAbort(cause)) {
         setSessionUnknown({ kind: 'start', message: 'Start 请求超时，结果未知；正在回读 Session 存档。' });
-        const recovered = await recoverOne(target.session_id, task.signal);
-        if (!current(task.id)) return;
+        const recovered = await recoverOne(target.session_id, recoverySignal(), { epoch });
+        if (!current(task.id) || epoch !== selectionEpoch.current || selectedSessionRef.current !== target.session_id) return;
         if (recovered?.state === 'active') { setSessionUnknown(null); setNotice('Start 超时后回读为 active；未自动重发。'); }
         else setSessionUnknown({ kind: 'start', message: `Start 超时，回读状态为 ${recovered?.state ?? '不可用'}；未确认成功，也未自动重发。` });
         return;
@@ -429,10 +456,10 @@ export function SessionPanel() {
       if (cause instanceof ApiError) {
         const extra = blockingReasonsOf(cause);
         setError(`${describeApiError(cause)}${extra.length ? ` · ${extra.map((reason) => reason.message).join('；')}` : ''}`);
-        await recoverOne(target.session_id, task.signal);
+        await recoverOne(target.session_id, recoverySignal(), { epoch });
       } else {
         setError(describeApiError(cause));
-        await recoverOne(target.session_id, task.signal);
+        await recoverOne(target.session_id, recoverySignal(), { epoch });
       }
     } finally {
       if (current(task.id)) setBusy('');
@@ -541,7 +568,7 @@ export function SessionPanel() {
   useEffect(() => {
     if (!live) return;
     void bootstrap();
-    return () => { controller.current?.abort(); sessionController.current?.abort(); currentController.current?.abort(); preflightController.current?.abort(); LIFECYCLE_ACTIONS.forEach((action) => lifecycleController.current[action]?.abort()); };
+    return () => { controller.current?.abort(); sessionController.current?.abort(); currentController.current?.abort(); preflightController.current?.abort(); LIFECYCLE_ACTIONS.forEach((action) => lifecycleController.current[action]?.abort()); recoveryControllers.current.forEach((c) => c.abort()); };
     // The drawer is mounted per open; the polling sample must not restart the
     // configuration requests on every Actual tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps

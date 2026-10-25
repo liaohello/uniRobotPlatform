@@ -2,6 +2,14 @@
 
 此文件是前端交接记录，不定义第二套公共接口。权威语义仍在后端维护的 `docs/specs/30-contracts`，wire 以 backend 的 mobilecar / drafts / prepare 实现和实际 OpenAPI 为准。
 
+## 统一候选 18959 作为单一上游（2026-10-25 实测）
+
+- 后端统一候选已在服务器常驻：`http://127.0.0.1:18959`（PID 3608367，`tools/launch_unified_gateway.py`，后端 release `m1j-20261025T020857Z-platform`，平台源码 30 文件聚合 `26c60b76acbac68a…`）。同一进程同时提供 geometry-2 场景与 23 个网格资产、capabilities/snapshot/kinematics/preflight、maps/route-drafts/routes versions、Draft/validate/config-snapshots、Session envelope + `current`，以及 `POST /sessions/{id}/recording/begin|stop|recording/end`；实测 OpenAPI 37 个路径。
+- 前端只按 `GET /mobilecar/scene` 的 `schema_version=unirobot-mobilecar-geometry-2` 与 `geometry_binding/geometry_provenance` 判定挂载 3D；该上游的 `capabilities`/`snapshot` 仍是 `unirobot-mobilecar-read-1`（与后端文档一致，不是缺陷）。实测 `geometry_binding.content_matches=true`、`runtime_identity_matches=true`、`bundle_sha256=275389464eee2f3d…`、`content_identity_sha256=cb78996426040381…`。
+- **数据库边界**：18959 使用本轮新生成的独立 SQLite（`releases/m1j-…/report/unified-live-021657.sqlite3`，`existed_before=false`），因此 18949/18953 里的 `draft_id`/`route_id`/`snapshot_id` 在这里不存在。前端按真实 404 处理（`route_draft_not_found`、`route_version_not_found`、`draft_not_found`、`session_not_found`），不假造迁移、不自动重建旧资源，也不覆盖旧候选的库与交付路线；浏览器测试改为“存在则用样本路线，不存在则用同一 Room A 栅格的已知空闲坐标并如实断言 404”。
+- **真实动作仍不可用**：`preflight.read_contract_compatible=false`、`session_ready=false`，真实 validate 仍 `execution_eligible=false`，`GET /sessions` 为空；生产 recipe `mobilecar.g1.teleop` rev 3 的 `required_protocols` 仍只有 `session_binding`+`recording_begin`，8792 未部署候选补丁 → `current.session_stop_protocol/recording_end_protocol` 为空、`stop_available/recording_end_available=false`。端点 schema 存在或控件被禁用都不构成真实 STOP/end 成功；正向分层回执只在 `?fixture=synthetic-lifecycle` 合成夹具中验证。
+- 代理白名单不因统一候选而放宽：`/api/v1/runs`、`/api/v1/runs/{id}/stop`（该上游确实存在）、`/api/v1/commands`、`/api/v1/episodes`、`/api/v1/reset` 与 native 透传继续被网关以自身 HTML 错误页本地拒绝、不转发（浏览器 pass 逐条断言）。机器人 STOP 只走 `POST /api/v1/sessions/{id}/stop`。
+
 ## 已接入（M1.5 · Session 录制生命周期界面与地图异步门控）
 
 - 平台生命周期端点按后端实际交付接线：`POST /api/v1/sessions/{id}/recording/begin`（body `operator_id`、`view_source`）、`POST /api/v1/sessions/{id}/stop`（body `request_id` 1–128、`reason=OPERATOR_STOP`）、`POST /api/v1/sessions/{id}/recording/end`（body `request_id`、`reason=OPERATOR_FINISHED`），协议 `m1-stop-1` / `m1-end-1`，见 backend `docs/backend-m1.4.md` 与该 release 的 OpenAPI。三者都返回 `{session, replayed}` 信封（新受理 201、同 `request_id` 重放 200）。
@@ -11,6 +19,7 @@
 - 幂等与未知结果：每次操作意图生成一个 `request_id`（`front-{action}-{uuid}`），超时/传输失败显示“结果未知”并只回读存档与 `current`，不自动重发；显式“用同一 request_id 重试”复用同一 id。切换 Session 会递增序号并 abort 在途请求，旧响应不能写入新选择。
 - 同源代理 `tools/serve-readonly.py` 只把上述三个精确路径加入白名单（`{'POST'}`，各自完整正则，无通配控制路径）；`/api/v1/runs/{id}/stop`、`/api/v1/commands`、`/api/v1/episodes`、`/api/v1/reset` 与任何 native 透传继续不代理，机器人 STOP 只走平台 Session 端点。
 - **仍未解除的阻塞**：当前运行的 18949 与 18953 的 OpenAPI 都不含 `/sessions/{id}/stop` 与 `/recording/end`，8792 未部署 native `m1h` 补丁，生产 recipe `mobilecar.g1.teleop` 只声明 `session_binding`+`recording_begin`；因此真实环境里 STOP/结束录制恒为 unsupported，前端按钮禁用并显示该原因。带成功回执的分层显示只在明确标注 `?fixture=synthetic-lifecycle` 的合成夹具中验证，不是真实 native、真实停车或 M1 验收证据。
+- 异步归属规则（本轮补强）：路线写入（创建/条件保存/409 重试/发布/重载）绑定“发起时的上下文”（`epoch` + 当时的 `route_id` + 当时的 `mapId/mapVersion` + 挂载状态）。地图被成功采纳、切离线、打开另一条路线、`closeRoute` 解除绑定、组件卸载都会推进该上下文；迟到的响应一律不套用，包括不清除新请求的 `busy`、不写回 `?route=`，并显式提示“服务端可能已受理该写入，请重新读取”。AbortController 不被当作撤销服务端已受理写入的保证，因此这些请求故意不 abort。Session 侧同理：`recoverOne`/`refreshCurrent` 归属发起时的 `selectionEpoch` 与当前 `session_id`，只按 id 更新存档缓存（`mergeSession`），不改变当前选择，也不在新选择读取中插入覆盖性的 current 刷新；恢复读回使用独立信号，取消一次意图不连带取消对账读回。
 - 地图侧修复：一次地图选择 = 一个事务（`mapSerial` + 共享 `AbortController`），版本详情、PGM 字节、SHA-256 摘要与栅格尺寸校验串在同一条链上并全部在 `live()` 判定之后才写状态；切离线、开另一条路线、卸载都递增序号并 abort 在途控制器，晚到的成功/失败不覆盖新选择。写入资格统一为 `gates.{create,save,publish,retry}`，要求“当前路线绑定的真实地图”通过摘要+尺寸校验（`imageEvidence.mapId/mapVersion` 必须等于该地图，不只是非空）、不处于 loading/failed/offline、位置与朝向有效；关闭时动作显式拒绝并写“写入未发出”。发布结果绑定服务端修订：`data-publish-revision`/`data-publish-version`/`data-publish-digest`，存在未保存本地编辑时 `data-publish-dirty=true` 并明确提示本地编辑未被发布。
 
 ## 已接入（M1.3 候选 18953 · 真实地图与路线资源）

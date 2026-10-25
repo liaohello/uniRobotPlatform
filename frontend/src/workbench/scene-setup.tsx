@@ -125,6 +125,7 @@ export function SceneSetupView({ workspace }: { workspace: RouteWorkspace }) {
               <button disabled={workspace.busy !== ''} onClick={workspace.reloadServerDraft} data-reload-server>重载服务器草案（放弃本地编辑）</button>
               <button disabled={!gates.retry.enabled} data-retry-server={gates.retry.enabled ? 'ready' : 'blocked'} data-retry-reason={gates.retry.reason} onClick={workspace.retrySaveOnServer}>以服务器修订重试（用本地内容写入）</button></p></div></div>}
           {workspace.draftError && <div className="session-error" role="alert" data-route-error>{workspace.draftError}</div>}
+          {workspace.staleWriteHint && <div className="session-blocked" role="status" data-stale-write="true"><Icon name="info" size={15}/><div><b>迟到的路线写入结果已被忽略</b><p>{workspace.staleWriteHint}</p></div></div>}
           <div className="session-inline">
             <input aria-label="按 route_id 打开" placeholder="route-…" value={openId} onChange={(event) => setOpenId(event.target.value)} disabled={workspace.busy !== ''}/>
             <button disabled={workspace.busy !== '' || !openId.trim()} data-route-open onClick={() => workspace.openRoute(openId.trim())}>打开服务端草案</button>

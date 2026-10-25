@@ -27,6 +27,10 @@ SAMPLE_ROUTE = 'route-9e55257fc5d24a03a54986d9fcaa8a80'
 SAMPLE_DIGESTS = {'v1': 'a9ee5895be83db986da5ea830fb12beff74f657feeba80d9e3ef5844dd484e62',
                   'v2': '370d246234a251d7adc8b8f1205c745a2ca37ebf4ea50b1d7f64f5aabaa7871c'}
 ROOM = 'map_room_a_g3b_release_v1/v1'
+# Positions published as known-free on the Room A raster (same raster bytes the unified candidate
+# serves from its own map root). Used only when the upstream database has no delivered sample route:
+# the unified candidate runs its own SQLite, so the old route id is legitimately absent.
+FALLBACK_FREE_POSES = [(-0.825, 1.075), (-0.875, 1.075)]
 
 
 def check(name, condition, detail=None):
@@ -143,9 +147,18 @@ async def live_flow(page):
     await page.wait_for_function("()=>document.querySelector('.scene-setup [data-image-verified]')?.getAttribute('data-image-verified')==='true'", timeout=25000)
 
     ids = await editing_rules(page)
-    sample = await (await page.request.get(f'{a.url}/api/v1/routes/{SAMPLE_ROUTE}/versions/v2')).json()
-    poses = [(item['x_m'], item['y_m']) for item in sample['waypoints']]
-    check('known-free poses come from the read-only sample route', len(poses) == 2, poses)
+    sample_response = await page.request.get(f'{a.url}/api/v1/routes/{SAMPLE_ROUTE}/versions/v2')
+    if sample_response.status == 200:
+        poses = [(item['x_m'], item['y_m']) for item in (await sample_response.json())['waypoints']]
+        report['sample_route'] = {'present': True, 'status': 200, 'route_id': SAMPLE_ROUTE}
+    else:
+        poses = list(FALLBACK_FREE_POSES)
+        body = await sample_response.json()
+        detail = body.get('detail') if isinstance(body, dict) else None
+        report['sample_route'] = {'present': False, 'status': sample_response.status,
+                                  'code': detail.get('code') if isinstance(detail, dict) else str(detail)[:80],
+                                  'note': '统一候选使用独立 SQLite：旧候选路线不存在，按同一 Room A 栅格的已知空闲坐标放置，不假造迁移也不自动重建旧资源'}
+    check('known-free poses come from the upstream sample route or the documented raster positions', len(poses) == 2, poses)
     await set_pose(page, ids[0], poses[0][0], poses[0][1], 28.6438)
     await set_pose(page, ids[1], poses[1][0], poses[1][1], 0)
     written = await page.locator('.scene-setup [data-waypoint-id]').evaluate_all('els=>els.map(e=>[e.getAttribute("data-map-x"),e.getAttribute("data-map-y"),e.getAttribute("data-yaw-rad")])')
@@ -246,9 +259,25 @@ async def live_flow(page):
           and await page.locator('.scene-setup [data-image-verified]').get_attribute('data-image-verified') == 'true')
     await page.get_by_label('按 route_id 打开', exact=True).fill(SAMPLE_ROUTE)
     await page.locator('.scene-setup [data-route-open]').click()
-    await page.wait_for_function(f"()=>document.querySelector('.scene-setup [data-route-id]').getAttribute('data-route-id')==='{SAMPLE_ROUTE}'", timeout=25000)
-    check('a route_id opens explicitly because no route collection API exists',
-          await page.locator('.scene-setup [data-route-version-count]').get_attribute('data-route-version-count') == '2')
+    if report['sample_route']['present']:
+        await page.wait_for_function(f"()=>document.querySelector('.scene-setup [data-route-id]').getAttribute('data-route-id')==='{SAMPLE_ROUTE}'", timeout=25000)
+        check('a route_id opens explicitly because no route collection API exists',
+              await page.locator('.scene-setup [data-route-version-count]').get_attribute('data-route-version-count') == '2')
+    else:
+        await page.wait_for_selector('.scene-setup [data-route-error]', timeout=20000)
+        missing = await page.locator('.scene-setup [data-route-error]').inner_text()
+        check('a route id that only exists in another database fails with the real 404 code',
+              'route_draft_not_found' in missing, missing[:180])
+        check('the missing route cannot replace the current binding, map or versions',
+              await page.locator('.scene-setup [data-route-id]').get_attribute('data-route-id') == route_id
+              and await page.locator('.scene-setup [data-draft-bound]').get_attribute('data-draft-bound') == 'true'
+              and await page.locator('.scene-setup [data-route-version-count]').get_attribute('data-route-version-count') == '2',
+              await page.locator('.scene-setup [data-route-id]').get_attribute('data-route-id'))
+        check('the failed open leaves the ?route address pointing at the still-bound route',
+              route_id in page.url and SAMPLE_ROUTE not in page.url, page.url[:140])
+        await page.get_by_label('按 route_id 打开', exact=True).fill(route_id)
+        await page.locator('.scene-setup [data-route-open]').click()
+        await page.wait_for_function(f"()=>document.querySelector('.scene-setup [data-route-id]').getAttribute('data-route-id')==='{route_id}'", timeout=25000)
     await page.get_by_label('按 route_id 打开', exact=True).fill(route_id)
     await page.locator('.scene-setup [data-route-open]').click()
     await page.wait_for_function(f"()=>document.querySelector('.scene-setup [data-route-id]').getAttribute('data-route-id')==='{route_id}'", timeout=25000)
@@ -318,14 +347,58 @@ async def live_flow(page):
     check('the published digest is the server draft digest, not the dirty local content',
           await published.get_attribute('data-publish-digest') == server_digest, (await published.get_attribute('data-publish-digest'), server_digest))
 
+    # A route write the server already accepted is not undone by a client-side context change: the
+    # late response must neither restore the unbound route nor clear the newer context.
+    await set_pose(page, ids[1], None, None, 200)
+    revision_before_late = await page.locator('.scene-setup [data-draft-revision]').get_attribute('data-draft-revision')
+    async def late_save(route):
+        response = await route.fetch()
+        await asyncio.sleep(3.0)
+        await route.fulfill(response=response)
+    await page.route(f'**/api/v1/route-drafts/{route_id}', late_save)
+    await page.locator('.scene-setup [data-route-save]').click()
+    await page.wait_for_function("()=>document.querySelector('.scene-setup [data-route-save]').innerText.includes('保存中')", timeout=15000)
+    await page.locator('button:has-text("解除绑定")').click()
+    await page.wait_for_selector('.scene-setup [data-draft-bound="false"]', timeout=15000)
+    await asyncio.sleep(4.0)
+    check('the late save response cannot restore a route binding the user removed',
+          await page.locator('.scene-setup [data-draft-bound]').get_attribute('data-draft-bound') == 'false'
+          and await page.locator('.scene-setup [data-route-id]').get_attribute('data-route-id') == ''
+          and route_id not in page.url, page.url[:120])
+    stale = page.locator('.scene-setup [data-stale-write]')
+    check('the ignored late result is stated instead of silently dropped',
+          await stale.count() == 1 and '服务端可能已经受理' in await stale.inner_text(), (await stale.inner_text())[:160] if await stale.count() else 'missing')
+    check('the stale result leaves the newer context alone instead of clearing its busy state',
+          '正在进行' not in await page.locator('.scene-setup [data-route-save]').get_attribute('data-route-save-reason'),
+          await page.locator('.scene-setup [data-route-save]').get_attribute('data-route-save-reason'))
+    server_after_late = await (await page.request.get(f'{a.url}/api/v1/route-drafts/{route_id}')).json()
+    check('the server really accepted that write; only the stale UI application was dropped',
+          server_after_late['draft_revision'] == int(revision_before_late) + 1,
+          (revision_before_late, server_after_late['draft_revision']))
+    await page.unroute(f'**/api/v1/route-drafts/{route_id}', late_save)
+
+    scene_doc = await (await page.request.get(f'{a.url}/api/v1/mobilecar/scene')).json()
+    geometry_two = scene_doc.get('schema_version') == 'unirobot-mobilecar-geometry-2'
     await page.get_by_role('button', name='Simulation', exact=True).click()
     text = await page.locator('main').inner_text()
-    check('the 3D workbench states this candidate read contract is unusable instead of pretending to render',
-          '3D 数据源不可用' in text and ('envelope' in text or 'geometry' in text), text[:220])
+    if geometry_two:
+        await page.wait_for_function('window.__workbenchInspect && window.__workbenchInspect().scene.renderCount>0', timeout=60000)
+        await page.wait_for_function('window.__workbenchInspect().scene.pendingLoads===0', timeout=120000)
+        state = await page.evaluate('window.__workbenchInspect()')
+        report['scene'] = {'schema': scene_doc['schema_version'], 'mesh_assets': len(scene_doc['data']['mesh_assets']),
+                           'renderCount': state['scene']['renderCount'], 'pendingLoads': state['scene']['pendingLoads']}
+        check('the same upstream delivers all 23 geometry assets to the 3D workbench',
+              len(scene_doc['data']['mesh_assets']) == 23, len(scene_doc['data']['mesh_assets']))
+        check('the same upstream also serves the geometry-2 3D read, so map and 3D are accepted together',
+              state['scene']['pendingLoads'] == 0 and state['scene']['renderCount'] > 0, text[:200])
+    else:
+        check('the 3D workbench states this candidate read contract is unusable instead of pretending to render',
+              '3D 数据源不可用' in text and ('envelope' in text or 'geometry' in text), text[:220])
 
-    after = await (await page.request.get(f'{a.url}/api/v1/routes/{SAMPLE_ROUTE}/versions')).json()
-    digests = {item['version']: item['content_digest'] for item in after['versions']}
-    check('the delivered sample route v1/v2 are untouched', digests == SAMPLE_DIGESTS, digests)
+    if report['sample_route']['present']:
+        after = await (await page.request.get(f'{a.url}/api/v1/routes/{SAMPLE_ROUTE}/versions')).json()
+        digests = {item['version']: item['content_digest'] for item in after['versions']}
+        check('the delivered sample route v1/v2 are untouched', digests == SAMPLE_DIGESTS, digests)
 
 
 async def offline_flow(page):

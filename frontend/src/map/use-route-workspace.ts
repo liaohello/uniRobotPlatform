@@ -20,6 +20,8 @@ export interface ImageEvidence {
 export interface VersionRefView { version: string; contentDigest: string; createdAt: string; waypointCount: number; mapRef: { mapId: string; version: string; frame: 'map' } }
 export interface WriteGate { enabled: boolean; reason: string }
 export interface PublishInfo { version: string; contentDigest: string; fromRevision: number; reused: boolean; localEditsExcluded: boolean }
+/** The context a route write started in. A response may only apply while that context is still live. */
+export interface WriteContext { epoch: number; routeId: string | null; mapId: string; mapVersion: string; attached: boolean }
 
 export interface RouteWorkspace {
   working: RouteDraft;
@@ -31,7 +33,7 @@ export interface RouteWorkspace {
   serverDraft: ServerDraftView | null; draftError: string; conflict: RevisionConflict | null;
   versions: VersionRefView[]; versionsError: string;
   viewed: RouteVersionView | null; publishInfo: PublishInfo | null;
-  dirty: boolean; mapMismatch: boolean; errors: string[]; busy: string; offlineMode: boolean;
+  dirty: boolean; mapMismatch: boolean; errors: string[]; busy: string; offlineMode: boolean; staleWriteHint: string;
   gates: { create: WriteGate; save: WriteGate; publish: WriteGate; retry: WriteGate };
   useOfflineMap(): void;
   loadCatalog(): void;
@@ -71,6 +73,7 @@ export function useRouteWorkspace(): RouteWorkspace {
   const [viewed, setViewed] = useState<RouteVersionView | null>(null);
   const [publishInfo, setPublishInfo] = useState<PublishInfo | null>(null);
   const [busy, setBusy] = useState('');
+  const [staleWriteHint, setStaleWriteHint] = useState('');
   const [offlineMode, setOfflineMode] = useState(true);
   // One transaction per intent: the same serial and signal cover the version read, the raster
   // bytes and every digest/geometry check, so a superseded choice can never land.
@@ -80,6 +83,20 @@ export function useRouteWorkspace(): RouteWorkspace {
   const catalogSerial = useRef(0);
   const controllers = useRef<AbortController[]>([]);
   const track = (controller: AbortController) => { controllers.current.push(controller); return controller; };
+  // Once the server has accepted a route write, no client-side abort undoes it. What the client owns
+  // is the context: a response from a replaced map/route must not restore the old binding, swap in
+  // the old map, clear the in-flight state of a newer action, or rewrite the ?route= address.
+  const writeContext = useRef<WriteContext>({ epoch: 0, routeId: null, mapId: OFFLINE_MAP.mapId, mapVersion: OFFLINE_MAP.version, attached: true });
+  const startWrite = () => ({ ...writeContext.current });
+  const changeContext = (patch: Partial<Pick<WriteContext, 'routeId' | 'mapId' | 'mapVersion'>>) => {
+    writeContext.current = { ...writeContext.current, ...patch, epoch: writeContext.current.epoch + 1 };
+  };
+  const liveWrite = (started: WriteContext) => started.attached && writeContext.current.attached
+    && started.epoch === writeContext.current.epoch && started.routeId === writeContext.current.routeId
+    && started.mapId === writeContext.current.mapId && started.mapVersion === writeContext.current.mapVersion;
+  const dropStaleWrite = (action: string) => {
+    setStaleWriteHint(`${action} 的响应属于已被替换的地图/路线上下文：界面未套用该结果，当前选择与当前请求状态保持不变。服务端可能已经受理这次写入，请重新读取服务器内容后再确认。`);
+  };
 
   const errors = useMemo(() => routeErrors(working), [working]);
   const dirty = useMemo(() => !serverDraft
@@ -149,6 +166,7 @@ export function useRouteWorkspace(): RouteWorkspace {
       assertDims(raster, dto.width_px, dto.height_px);
       if (!live()) return false;
       const next: MapMetadata = { ...metadata, imageUrl: rasterToPngDataUrl(raster), widthPx: raster.width, heightPx: raster.height };
+      changeContext({ mapId: next.mapId, mapVersion: next.version });
       setSelectedMap(next);
       setWorking((previous) => ({ ...previous, map: next }));
       setImageEvidence({
@@ -186,9 +204,10 @@ export function useRouteWorkspace(): RouteWorkspace {
     mapSerial.current += 1; routeSerial.current += 1; versionSerial.current += 1;
     controllers.current.forEach((controller) => controller.abort());
     controllers.current = [];
+    changeContext({ mapId: OFFLINE_MAP.mapId, mapVersion: OFFLINE_MAP.version });
     setSelectedMap(OFFLINE_MAP);
     setWorking((previous) => ({ ...previous, map: OFFLINE_MAP }));
-    setMapState('idle'); setMapError(''); setImageEvidence(null); setOfflineMode(true); setBusy('');
+    setMapState('idle'); setMapError(''); setImageEvidence(null); setOfflineMode(true); setBusy(''); setStaleWriteHint('');
   }, []);
 
   const rememberRoute = (routeId: string | null) => {
@@ -214,7 +233,7 @@ export function useRouteWorkspace(): RouteWorkspace {
   const openRoute = useCallback((routeId: string) => {
     const serial = ++routeSerial.current;
     const controller = track(new AbortController());
-    setBusy('route-open'); setDraftError(''); setConflict(null);
+    setBusy('route-open'); setDraftError(''); setConflict(null); setStaleWriteHint('');
     void api.getDraft(routeId, controller.signal).then(async (dto: RouteDraftDto) => {
       if (serial !== routeSerial.current) return;
       const ref: MapRefDto = dto.map_ref;
@@ -233,6 +252,7 @@ export function useRouteWorkspace(): RouteWorkspace {
       } else {
         setWorking(draftDtoToWorking(dto, selectedMap ?? OFFLINE_MAP));
       }
+      changeContext({ routeId: dto.route_id });
       setServerDraft(draftDtoToView(dto));
       setPublishInfo(null); setBusy('');
       rememberRoute(dto.route_id);
@@ -244,22 +264,27 @@ export function useRouteWorkspace(): RouteWorkspace {
 
   const createRoute = useCallback((name: string) => {
     if (!gates.create.enabled) { refuse(gates.create.reason); return; }
-    setBusy('route-create'); setDraftError('');
+    const started = startWrite();
+    setBusy('route-create'); setDraftError(''); setStaleWriteHint('');
     void api.createDraft(workingToPayload(working, name), new AbortController().signal).then((dto) => {
-      setWorking(draftDtoToWorking(dto, working.map)); setServerDraft(draftDtoToView(dto));
+      if (!liveWrite(started)) { dropStaleWrite('创建 Route Draft'); return; }
+      setWorking(draftDtoToWorking(dto, working.map)); changeContext({ routeId: dto.route_id }); setServerDraft(draftDtoToView(dto));
       setConflict(null); setPublishInfo(null); setBusy(''); rememberRoute(dto.route_id); refreshVersionsOf(dto.route_id);
-    }).catch((cause) => { setDraftError(describeApiError(cause)); setBusy(''); });
+    }).catch((cause) => { if (!liveWrite(started)) { dropStaleWrite('创建 Route Draft'); return; } setDraftError(describeApiError(cause)); setBusy(''); });
   }, [api, gates.create, refreshVersionsOf, working]);
 
   const writeSave = useCallback((baseRevision: number) => {
     if (!serverDraft) return;
-    setBusy('route-save'); setDraftError('');
-    void api.saveDraft(serverDraft.routeId, { ...workingToPayload(working, working.label), base_revision: baseRevision }, new AbortController().signal)
+    const started = startWrite(); const routeId = serverDraft.routeId;
+    setBusy('route-save'); setDraftError(''); setStaleWriteHint('');
+    void api.saveDraft(routeId, { ...workingToPayload(working, working.label), base_revision: baseRevision }, new AbortController().signal)
       .then((dto) => {
+        if (!liveWrite(started) || dto.route_id !== routeId) { dropStaleWrite('保存草案'); return; }
         setWorking(draftDtoToWorking(dto, working.map)); setServerDraft(draftDtoToView(dto));
         setConflict(null); setBusy('');
       })
       .catch((cause) => {
+        if (!liveWrite(started)) { dropStaleWrite('保存草案'); return; }
         const clash = conflictOf(cause);
         if (clash) {
           setConflict(clash);
@@ -281,24 +306,29 @@ export function useRouteWorkspace(): RouteWorkspace {
 
   const reloadServerDraft = useCallback(() => {
     if (!serverDraft) return;
-    setBusy('route-reload'); setDraftError('');
-    void api.getDraft(serverDraft.routeId, new AbortController().signal).then((dto) => {
+    const started = startWrite(); const routeId = serverDraft.routeId;
+    setBusy('route-reload'); setDraftError(''); setStaleWriteHint('');
+    void api.getDraft(routeId, new AbortController().signal).then((dto) => {
+      if (!liveWrite(started) || dto.route_id !== routeId) { dropStaleWrite('重载服务器草案'); return; }
       setWorking(draftDtoToWorking(dto, working.map)); setServerDraft(draftDtoToView(dto)); setConflict(null); setBusy('');
-    }).catch((cause) => { setDraftError(describeApiError(cause)); setBusy(''); });
+    }).catch((cause) => { if (!liveWrite(started)) { dropStaleWrite('重载服务器草案'); return; } setDraftError(describeApiError(cause)); setBusy(''); });
   }, [api, serverDraft, working.map]);
 
   const publishRoute = useCallback(() => {
     if (!serverDraft || !gates.publish.enabled) { refuse(gates.publish.reason); return; }
     const fromRevision = serverDraft.draftRevision;
     const localEditsExcluded = dirty;
-    setBusy('route-publish'); setDraftError('');
-    void api.publishDraft(serverDraft.routeId, fromRevision, new AbortController().signal).then((result) => {
+    const started = startWrite(); const routeId = serverDraft.routeId;
+    setBusy('route-publish'); setDraftError(''); setStaleWriteHint('');
+    void api.publishDraft(routeId, fromRevision, new AbortController().signal).then((result) => {
+      if (!liveWrite(started) || result.route_version.route_id !== routeId) { dropStaleWrite('发布 Route Version'); return; }
       const view = versionDtoToView(result.route_version);
       setViewed(view);
       setPublishInfo({ version: view.version, contentDigest: view.contentDigest, fromRevision, reused: result.reused, localEditsExcluded });
       setBusy('');
-      refreshVersionsOf(serverDraft.routeId);
+      refreshVersionsOf(routeId);
     }).catch((cause) => {
+      if (!liveWrite(started)) { dropStaleWrite('发布 Route Version'); return; }
       const clash = conflictOf(cause);
       setDraftError(clash ? `${clash.code} · ${clash.message}` : describeApiError(cause)); setBusy('');
     });
@@ -318,7 +348,9 @@ export function useRouteWorkspace(): RouteWorkspace {
   const closeVersionView = useCallback(() => { versionSerial.current += 1; setViewed(null); }, []);
   const closeRoute = useCallback(() => {
     routeSerial.current += 1; versionSerial.current += 1;
+    changeContext({ routeId: null });
     setServerDraft(null); setViewed(null); setVersions([]); setConflict(null); setDraftError(''); setPublishInfo(null);
+    setBusy(''); setStaleWriteHint('');
     setWorking((previous) => ({ ...previous, routeId: 'route-local-draft', draftRevision: 1 }));
     rememberRoute(null);
   }, []);
@@ -334,6 +366,7 @@ export function useRouteWorkspace(): RouteWorkspace {
   }, [openRoute]);
 
   useEffect(() => () => {
+    writeContext.current = { ...writeContext.current, attached: false };
     mapSerial.current += 1; routeSerial.current += 1; versionSerial.current += 1; catalogSerial.current += 1;
     controllers.current.forEach((controller) => controller.abort());
     controllers.current = [];
@@ -342,7 +375,7 @@ export function useRouteWorkspace(): RouteWorkspace {
   return {
     working, catalog, catalogMeta, catalogState, catalogError, selectedMap, mapState, mapError, imageEvidence,
     serverDraft, draftError, conflict, versions, versionsError, viewed, publishInfo,
-    dirty, mapMismatch, errors, busy, offlineMode, gates,
+    dirty, mapMismatch, errors, busy, offlineMode, gates, staleWriteHint,
     useOfflineMap, loadCatalog, selectMap, createRoute, saveRoute, publishRoute, openRoute, reloadServerDraft,
     retrySaveOnServer, refreshVersions: () => (serverDraft ? refreshVersionsOf(serverDraft.routeId) : undefined),
     viewVersion, closeVersionView, closeRoute, clearPointsForSelectedMap, setWorking,

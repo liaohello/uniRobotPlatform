@@ -1,3 +1,58 @@
+# M1.5+ 异步上下文归属修复与 18959 单一上游联合验收（2026-10-25）
+
+本轮做两件事：把上一轮剩下的**异步上下文污染**修掉（路线写入的迟到响应可恢复已被解除的绑定；Session 恢复读回可把选择拉回旧 Session 并抢占新选择的 current 读取），并把前端预览指向**后端统一候选 18959 作为唯一上游**完成适用回归的联合验收。只修改 `frontend/`，本地提交不推送。联合验收不拼接 18949/18953 两个旧上游的结果。
+
+## 冻结版本与入口
+
+| 项 | 值 |
+|---|---|
+| 前端 release | `m1-front-geometry-20261025T044805Z-66976ad5df73`（本轮最终冻结；此前 `…035859Z`、`…041033Z`、`…042130Z`、`…043239Z` 是修测试夹具/等待条件过程中的中间产物，未交付） |
+| 统一上游 | `http://127.0.0.1:18959`，服务器 PID 3608367，`tools/launch_unified_gateway.py`，后端 release `m1j-20261025T020857Z-platform`（平台源码 30 文件聚合 `26c60b76acbac68a…`），geometry bundle `m1-geometry-20261023T192202Z-cdfc7472e5de`（23 资产，`bundle.json` `a5f4a90c…`），recipe `mobilecar.g1.teleop` rev 3，native 仅 GET 8792，独立 SQLite `releases/m1j-…/report/unified-live-021657.sqlite3`（`existed_before=false`） |
+| 上游实测契约 | OpenAPI 37 路径：geometry-2 场景（`data_source=live_native_http_with_verified_compiled_geometry`、`geometry_binding.content_matches=true`、`runtime_identity_matches=true`）+ maps/route-drafts/routes versions + Draft/validate/snapshot + Session envelope/`current` + `/sessions/{id}/stop`、`/recording/begin`、`/recording/end`；`capabilities`/`snapshot` 仍为 `unirobot-mobilecar-read-1`（与后端文档一致，前端只按 scene 的 `schema_version` 判定挂载 3D） |
+| 本轮预览 | 交付预览 18972 → 18959（PID 3830766，全套回归）与 18973 → 18959（PID 4174883，地图/路线）；对照 pass 预览 18975 → 18953（PID 24086）、18976 → 18949（PID 61336）；旧候选预览 18969 → 18949、18970 → 18953 保留未停止；本轮为迭代夹具等待条件而启动的中间预览（18963–18968、18971、18974 等）已逐个按 `/proc/<pid>/cmdline` 身份核对后停止；未启动、重启或停止任何后端/native 实例 |
+| 真实 native | 8792 仍 `drvfix`/G4A2/PID 941842；各 pass 前后 `run_9c88e3e…` / generation 1 / `episode_43c22f…` / recording=IDLE 一致，`native_mutations_sent=false`、`new_physics_process_started=false`；`preflight.read_contract_compatible=false`、`session_ready=false` |
+| 环境 | cec-sim，Node 20.20.2 / npm 10.8.2，锁摘要 `1bb055b6e003c960…`，Chromium ANGLE SwiftShader |
+| 证据 | 服务器 `reports/m1-front-geometry-20261025T044805Z-66976ad5df73-J-18959/`（全套回归）、`…-J2-18959/`（统一上游地图/路线）、`…-K-18953/`、`…-L-18949/` 四个报告目录，各含 build.log、unit.log、unit.json、environment.json、preview.json、native-read-only.json、listeners-before/after 与套件目录（browser.json/geometry.json/usability.json + 截图） |
+
+## 实现一：路线写入绑定到发起时的上下文
+
+- 新增 `WriteContext`（`epoch` + 当时的 `routeId` + 当时的 `mapId/mapVersion` + `attached`）：地图被成功采纳、切离线、`openRoute` 采纳新路线、创建成功绑定新 `route_id`、`closeRoute` 解除绑定、组件卸载都会推进 `epoch`；`createRoute` / `writeSave`（保存与 409 重试）/ `reloadServerDraft` / `publishRoute` 在 `.then`/`.catch` 里全部先判 `liveWrite(started)`，不合格就一个状态都不写——包括 `setBusy('')`（避免清掉新请求的进行中状态）与 `rememberRoute`（避免把 `?route=` 写回已解除的地址）。
+- 明确不把 AbortController 当撤销：这些写入控制器的请求**故意不被 abort**（abort 也不能撤销服务端已受理的写入），因此测试里迟到的 PUT 真的让服务器修订前进了一位，而前端只是忽略旧结果并显式提示“服务端可能已经受理，请重新读取”，见 `data-stale-write`。
+- 顺带修正上一轮遗留：地图读取失败时的错误块原来只在“当前显示地图有后端 authority”时渲染，失败后仍显示离线夹具就看不到错误；现在错误、进行中提示与栅格不可用块按真实状态渲染，且写入原因的优先级为“读取/校验失败 → 正在读取 → 离线 → 未通过校验 → 点位绑定不一致”，因此校验失败不会被“离线测试地图”这条较弱的理由掩盖。
+- 服务端一致性检查加严：保存与发布的响应若 `route_id` 与发起时不同（`dto.route_id !== routeId`）同样按迟到结果处理，不再信任“回来的就是我发出去的那条”。
+
+## 实现二：生命周期与读回归属于原选择代次
+
+- 新增 `selectionEpoch`：切换 Session 的副作用里与 `lifecycleSerial` 一起递增，表示“当前选择代次变了”。
+- `recoverOne` 与 `refreshCurrent` 不再顺带改变选择：新增 `mergeSession`（只按 `session_id` upsert 存档缓存），`applySession`（会改选择）只留给确实是用户目标的位置（创建成功、409 `session_conflict` 读取既有 Session、创建超时后凭快照回读并选中）。`refreshCurrent` 进入前就要求 `sessionId` 仍等于当前选择，且带 `epoch` 时在应用前再判一次代次。
+- 恢复读回改用独立信号 `recoverySignal()`：取消一次生命周期意图不应连带取消用于对账的存档读回；该读回完成后只有在 `mine()`（动作序号 + `selectionEpoch` + 当前 `session_id` 三者一致）仍然成立时才写 notice / 清回执 / 发起 current 刷新，否则只留下按 id 更新过的缓存。同意图 `request_id` 重试、结果未知只回读不自动重发、切换后旧响应不覆盖新选择这三条保持不变。
+- 修掉一处真实缺陷：`refreshSessions` 里“刷新存档后再读 current”用的是草案的 `selectedRef`，与 Session ID 永不相等（死代码）；被我误改成真的调用 `refreshCurrent` 后与按钮契约“刷新存档（不调用 native）”冲突，现按契约删除该调用——列表刷新只读 envelope。
+
+## 服务器结果（构建、类型检查、测试、浏览器全部在 cec-sim，同一冻结 dist）
+
+| 套件 | 统一上游 18959 | 对照 |
+|---|---|---|
+| `npm run build`（含 `tsc --noEmit`）/ `npm test` | 通过 / 78 passed | 同一冻结 release 在 K/L pass 复跑 |
+| browser-readonly / frozen workbench | 32 / 29 | — |
+| browser-geometry（23 资产、Ghost/Actual、Joint/TCP） | 23 | — |
+| browser-usability（布局、全屏、持续拖动、键盘） | 100 | — |
+| browser-config（真实 Draft/validate/快照/409/envelope/current） | 51 | — |
+| browser-session（标注 synthetic 的协议夹具） | 38 | — |
+| browser-lifecycle `--mode synthetic` | 48（新增恢复读回与切换交错、迟到恢复不启动覆盖新选择的 current 刷新） | — |
+| browser-lifecycle `--mode live` | 7（真实 `GET /sessions` 为 `source=stored, live=false, sessions=[]`、`read_contract_compatible=false`、`session_ready=false`，因此不渲染任何生命周期控件且整个 pass 零非 GET 请求；网关以自身 HTML 404 页面拒绝 `POST /runs/{id}/stop`、`POST /commands`、`POST /reset`、`POST /episodes/stop`、native `POST /session/stop`、native `POST /recording/end` 与 `GET /runs`，全部不转发） | — |
+| browser-map `--mode live` | 62（真实地图与路线端到端 + 迟到保存解除绑定 + 统一候选独立库里旧 `route_id` 的真实 404 `route_version_not_found`/`route_draft_not_found` 且不覆盖当前绑定/版本/地址 + 同一上游 geometry-2 场景挂载并加载全部 23 资产） | 18953 同一冻结前端 60 通过（样本路线存在分支）；18949 `--mode offline` 15 通过 |
+
+统一上游实况（18959）：Room A `map_room_a_g3b_release_v1/v1` 的 P5 栅格实际摘要 `01dcdb387aed81b521cba6d31bb5d403d9db1de84b35546c4e34988191069d71` 与声明一致、解码 59×47 一致；本轮在该上游创建的专用测试路线 `route-a71b8d509ac74a959cadd2e87b0733d4` 走完 r1→r2→发布 v1 `529d2b88…6219`→重排 r3→发布 v2 `754ab746…bff1`、真实 409 `route_draft_revision_conflict · current_revision=4` 与显式重载，8 个非 GET 请求全部是该路线的 route-drafts POST/PUT/publish。把 PUT 人为延迟 3 秒后点“解除绑定”：服务器仍把草案修订推进一位（GET 回读证实），而界面保持未绑定、`data-route-id` 为空、`?route=` 未被写回、新请求的 busy 未被清除，并显示 `data-stale-write`“服务端可能已受理”。同一上游的 geometry-2 场景在地图 pass 内挂载成功（`mesh_assets=23`、`renderCount=16`、`pendingLoads=0`），因此 3D/23 资产、持续 Actual、Joint/TCP/Ghost、布局与全屏可用性与地图/路线、Draft/validate/current 是在**同一个冻结前端、同一个上游**上分别通过的。旧候选交付的样本路线 `route-9e55257f…` 在 18959 上返回 `route_version_not_found`/`route_draft_not_found`，测试按“数据库独立、不迁移、不自动重建”如实断言；未对 18949/18953 的库、交付路线或正在运行的后端做任何写入。
+
+排查记录（避免把测试时序当成产品缺陷）：统一上游首轮 `browser-usability` 曾在“1920×1080 视口高度 ≥500px”一项失败（实测 319px）。用同一冻结 dist 对 18959 与 18949 两个预览做布局探针，面板几何逐位一致（1366×768 画布 678×319；1920×1080 画布 991×518，`.dv-view` 各面板高度相同，无 `.layout-warning`），说明不是上游差异也不是布局缺陷，而是该断言在窗口刚 resize、23 个网格资产仍有 44 项在途时测量到旧尺寸。测试改为轮询到连续两次画布矩形一致后再断言（阈值不变），地图 pass 的 3D 断言同样改为等待 `pendingLoads===0`；产品代码未因此放宽。
+
+## 仍未执行
+
+1. **真实 STOP / 结束录制 / begin 仍未验证**：18959 暴露了 `/sessions/{id}/stop`、`/recording/begin`、`/recording/end` 的 schema 与 `current` 字段，但 `preflight.read_contract_compatible=false`、真实 validate 仍 `execution_eligible=false`、`GET /sessions` 为空、生产 recipe 仍只声明 `session_binding`+`recording_begin`，8792 未部署候选补丁 → 三个动作在真实环境全部被拒或禁用。分层成功回执、`coverage_complete=false` 的“不宣称整机停稳”、四种结束结论与幂等重放只在明确标注 `?fixture=synthetic-lifecycle` 的合成夹具中验证。端点存在或控件禁用都不算真实 STOP/end 成功。
+2. 本轮没有创建、重启或停止任何后端/native 实例，没有发送真实运动、RESET、begin/STOP/end，也没有触碰 18949/18953/18943/18944 的库与服务。
+3. **M1 工作包 M1.5「只读回放」仍未开始**（见 [docs/handoff.md](../../docs/handoff.md) 的 M1.1～1.6 拆分）：Episode/segment/时间戳/动作单位的连续读取、时间轴同步、不推进在线物理的回放全部未实现；本轮标题里的 M1.5 只是前端交付轮次编号，不代表该工作包完成。
+4. 导航采用与执行、目标下发、热重规划、速度发布、训练与预测后续仍在 M1 之外；地图为 G3B 历史离线包，`assets_verified` 只表示声明资产逐字节核验，不等于 live SLAM 或整机导航资格。
+
 # M1.5 地图异步事务、统一写入门控与 Session 录制生命周期界面（2026-10-25）
 
 本轮先修地图切片的两个真实缺陷（迟到响应覆盖新选择、写入只检查 `imageEvidence` 非空而忽略其地图身份），再把后端 M1.4 交付的 Session 录制生命周期（`recording/begin`、机器人 STOP、`recording/end`）接成可用界面。只修改 `frontend/`，本地提交不推送。生命周期成功路径只在明确标注 synthetic 的协议夹具中验证；真实候选仍未加载 STOP/end，动作恒为禁用。

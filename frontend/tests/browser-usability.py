@@ -34,6 +34,21 @@ def check(name, condition, detail=None):
     checks.append(name)
 
 
+def settle_canvas(page, timeout_ms=20000):
+    """Wait until the dock has actually re-laid out after a viewport change: two consecutive canvas
+    rectangles must agree, so a layout assertion never measures a frame that is still resizing."""
+    previous = None
+    deadline = time.time() + timeout_ms / 1000.0
+    while time.time() < deadline:
+        current = page.evaluate("""()=>{const c=document.querySelector('.canvas-host canvas').getBoundingClientRect();
+          return {w:Math.round(c.width),h:Math.round(c.height),scrollH:document.documentElement.scrollHeight,innerH:window.innerHeight}}""")
+        if previous == current:
+            return current
+        previous = current
+        page.wait_for_timeout(150)
+    return previous
+
+
 def state(page):
     return page.evaluate('window.__workbenchInspect()')
 
@@ -498,10 +513,8 @@ with sync_playwright() as pw:
 
         # ---- 1920x1080 ----
         page.set_viewport_size({'width': 1920, 'height': 1080})
-        page.wait_for_timeout(700)
+        big_metrics = settle_canvas(page)
         big = state(page)
-        big_metrics = page.evaluate("""()=>{const c=document.querySelector('.canvas-host canvas').getBoundingClientRect();
-          return {w:c.width,h:c.height,scrollH:document.documentElement.scrollHeight,innerH:window.innerHeight}}""")
         report['sizes']['1920x1080'] = big_metrics
         page.screenshot(path=str(a.output / 'usability-1920.png'), full_page=True)
         check('1920x1080 canvas is large (>=500px tall)', big_metrics['h'] >= 500, big_metrics['h'])
