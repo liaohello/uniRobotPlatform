@@ -115,7 +115,7 @@ M1.4 文档把"更新生产 pin"排在 begin/STOP/end 物理确认之后，等�
 ## 八b、统一候选地址（交付给前端）
 
 - 基址：`http://127.0.0.1:18959`（服务器本机回环；前端沿用现有同源代理即可，无鉴权、不需要 `Authorization`）。
-- 该地址即本轮冻结 release `m1j-20261025T020857Z-platform` 的常驻进程（服务器实测：`PID 3608367`、`PPID 1`、`SID=PID` 即独立会话，启动时间 2026-10-25 10:16:57 本地；逐字命令行、工作目录、环境变量与只读探测结果记录在 `live-candidate-identity.json`，由 `m1j_live_identity.sh` 以 `ss`/`/proc`/GET 生成）。存活确认命令：服务器上 `ss -ltnp sport = :18959` 与 `pgrep -af launch_unified_gateway`。常驻启动脚本见 `m1j_live.sh`（端口被占用即拒绝，不替换已存活实例）。
+- 该地址即本轮冻结 release `m1j-20261025T020857Z-platform` 的常驻进程（服务器实测：`PID 3608367`、`PPID 1`、`SID=PID` 即独立会话，启动时间 2026-10-25 10:16:57 本地；逐字命令行、工作目录、环境变量与只读探测结果记录在 `live-candidate-identity.json`，由 `m1j_live_identity.sh` 以 `ss`/`/proc`/GET 生成）。存活确认命令：服务器上 `ss -ltnp sport = :18959` 与 `pgrep -af launch_unified_gateway`。常驻启动脚本见 `m1j_live.sh`（端口被占用即拒绝，不替换已存活实例；该脚本按存活进程的 `/proc` 命令行复现，实时启动当时是逐条交互执行的，不是当时的原始输入记录）。
 - 实际启动参数（服务器实测的进程命令行，逐字）：
 
   ```bash
