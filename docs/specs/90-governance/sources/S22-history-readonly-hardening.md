@@ -33,4 +33,4 @@
 
 ## 效力
 
-本来源为"只读必须由构造保证、路径边界必须覆盖索引与读取两侧、区间过滤不得宽待非法序号、发布必须报告绑定冻结字节"提供依据。实现与证据见 [M1.5b 交付记录](../../../backend-m1.5b-history-readonly-hardening.md) 与 [M1.5b 证据册](../../evidence/m1.5b-history-readonly-hardening/README.md)。
+本来源为"只读必须由构造保证、路径边界必须覆盖索引与读取两侧、区间过滤不得宽待非法序号、发布必须报告绑定冻结字节"提供依据。实现与证据见 [M1.5b 交付记录](../../../backend-m1.5b-history-readonly-hardening.md) 与 [M1.5b 证据册](../../../evidence/m1.5b-history-readonly-hardening/README.md)。

@@ -1330,7 +1330,7 @@
     },
     "S22": {
       "path": "90-governance/sources/S22-history-readonly-hardening.md",
-      "sha256": "93b2406fa7b5fccf94f9653a12ebeb3020f5d80776ce47c194793bda2929f35e",
+      "sha256": "8d648513e33309885bf4261854610c273a66381f3e13a10484a8d6b7390c660f",
       "kind": "current_user_history_readonly_hardening_goal"
     }
   },
