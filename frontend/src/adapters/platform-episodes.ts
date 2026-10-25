@@ -122,7 +122,7 @@ export interface RecordPageDto {
   };
 }
 
-/** Reads only. Five GET paths, exactly the ones the history candidate declares. */
+/** Reads only. The six GET paths of the history candidates, exactly the ones they declare. */
 export class PlatformEpisodeApi {
   async listEpisodes(params: { limit?: number; offset?: number; run_id?: string; recording_status?: string; episode_id?: string }, signal: AbortSignal) {
     return json<EpisodeListDto>(`/api/v1/episodes${query(params)}`, signal, EPISODE_READ_SCHEMA);
@@ -166,7 +166,8 @@ export interface StreamPageDto {
 async function errorBody(buffer: ArrayBuffer) {
   try { return JSON.parse(new TextDecoder().decode(buffer)); } catch { return null; }
 }
-async function json<T>(path: string, signal: AbortSignal, expectSchema: string): Promise<T> {
+/** Exported so the frame-link-1 client shares exactly one schema gate: no payload is rendered optimistically. */
+export async function json<T>(path: string, signal: AbortSignal, expectSchema: string): Promise<T> {
   const response = await fetch(path, { method: 'GET', signal, cache: 'no-store', headers: { Accept: 'application/json' } });
   const body = await response.json().catch(() => null);
   if (!response.ok) throw parseError(response.status, response.statusText, body);
@@ -180,7 +181,7 @@ export class EpisodeContractError extends Error {
   constructor(message: string, public readonly found: string) { super(`${message}（实际 schema_version=${found}）`); this.name = 'EpisodeContractError'; }
 }
 const enc = (value: string) => encodeURIComponent(value);
-function query(params: Record<string, string | number | undefined>) {
+export function query(params: Record<string, string | number | undefined>) {
   const parts: string[] = [];
   Object.entries(params).forEach(([key, value]) => { if (value !== undefined && value !== '') parts.push(`${key}=${enc(String(value))}`); });
   return parts.length ? `?${parts.join('&')}` : '';
@@ -274,10 +275,14 @@ export function timeFieldOf(record: Record<string, unknown>, base: string): Time
   return { base, present: true, display: raw.toFixed(6), unit: base.endsWith('_ms') ? '毫秒' : base.endsWith('_s') ? '秒' : '未声明单位', clockId: clock };
 }
 export function unitOf(base: string) { return base === 'wall_utc' ? 'ISO-8601 Z（UTC）' : base.endsWith('_ms') ? '毫秒' : base.endsWith('_s') ? '秒' : '未声明单位'; }
-/** The reader's own answer about which bases accept numeric bounds; the declared set is the
- *  fallback before a page has been read, never a name-by-name guess about wall_utc formatting. */
+/** The reader's own answer about which bases accept numeric bounds. An explicit empty array is a
+ *  statement, not a missing one: once a page has answered, that answer is authoritative and the
+ *  declared set is only used before any page exists. Falling back after `[]` would let the view
+ *  offer bounds the reader just said it does not accept. */
 export function numericBasesOf(page: RecordPageDto | null): string[] {
-  return page?.time?.numeric_time_bases?.length ? page.time.numeric_time_bases : [...DECLARED_NUMERIC_BASES];
+  const declared = page?.time?.numeric_time_bases;
+  if (Array.isArray(declared)) return declared;
+  return [...DECLARED_NUMERIC_BASES];
 }
 /**
  * Whether the current selection can seek numerically. The reason text is what the view shows, so a
@@ -413,6 +418,7 @@ const CODE_HINTS: Record<string, string> = {
   time_base_unsupported: '该时间基不是记录声明的命名时间基（supported 见响应）',
   time_base_not_numeric: '该时间基是日历字符串，不接受数值区间：改用响应列出的数值基，界面不猜日历格式',
   time_range_required: '给了 time_base 就必须给 time_from 或 time_to',
+  sample_id_invalid: 'sample_id 不是原生 id token（frame-link-1 拒绝含非法字符的 id，未扫描归档）',
   episode_asset_path_invalid: '资产路径必须是该 Episode 内的相对路径',
   episode_asset_missing: '该媒体在记录中不存在',
   episode_asset_escape: '解析后的路径离开了允许的范围，拒绝读取',

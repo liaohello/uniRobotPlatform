@@ -569,6 +569,62 @@ OBS = [{'sample_id': 'laser_1', 'sensor_kind': 'lidar', 'arrival_time_s': 1.0},
 SLOW = {'state': 'idle'}
 
 
+def frames_fixture(episode):
+    """A minimal synthetic frame-link-1 page: this suite is about episode-read-1, the pane only has to
+    be bound to a real schema instead of falling through to a 404."""
+    frame = {'sample_id': 'rgbd_fixture_1', 'stream_id': 'rgbd', 'linkage_status': 'matched', 'primary_roles_matched': 4,
+             'declared_reference_status': 'unresolved_reference',
+             'anchor': {'line_index': 0, 'relative_path': 'observations/persist.jsonl', 'persist_sequence': 1,
+                        'identity': {'run_id_matches': True, 'episode_id_matches': True}, 'clocks': {'capture_backend_monotonic_s': 10.0},
+                        'declared_keys': ['sample_id', 'rgb_uri'], 'reference_keys': {'capture_control_tick_id': 'tick_1', 'feedback_sample_id': 'joint_feedback_1'},
+                        'profile': {'profile_id': 'fixture-profile'}},
+             'media': {'declared_by': 'fixture', 'uri_convention': 'assets/<kind>/<file>', 'digest_verification': 'declared only',
+                       'items': [{'field': 'rgb_uri', 'uri': 'assets/rgb/good_rgb.png', 'availability': 'present', 'declared_sha256_by_row': 'a' * 64,
+                                  'declared_bytes_by_row': 3, 'bytes_on_disk': 3, 'agrees_with_observation_row': True, 'row_line_index': 1}]},
+             'state': {'status': 'matched', 'join_key': 'control_tick_id', 'key_value': 'tick_1',
+                       'source': {'stream_id': 'events', 'relative_path': 'events.jsonl', 'line_index': 1, 'event_seq': 2, 'event_type': 'feedback'},
+                       'recorded_fields': {'event_seq': 2}, 'recorded_state': {'base_position_world_sim_m': [0.1, 0.2, 0.05]},
+                       'declared_reference': {'feedback_sample_id': 'joint_feedback_1', 'row_status': 'unresolved_reference'},
+                       'recorder_declared_feedback': {'available': True, 'feedback_time_s': 9.997, 'feedback_clock': 'backend_monotonic'},
+                       'units': {'*_m': 'metres'}, 'carried_over_from_another_frame': False, 'interpolated': False, 'note': 'fixture state'},
+             'times': {'deltas': [{'label': 'state_event_minus_frame_capture', 'capture_value': 10.0, 'other_value': 9.997, 'value_s': -0.003,
+                                  'abs_value_ms': 3.0, 'direction': 'earlier', 'basis': 'fixture'}], 'declared_latency_ms': {},
+                       'age_of_state_relative_to_frame': {'abs_ms': 3.0, 'state_recorded_before_capture': True, 'display_hint': 'fixture'},
+                       'same_clock_verified': False},
+             'roles': [{'role': role, 'join_key': 'sample_id', 'key_value': 'rgbd_fixture_1', 'status': 'matched', 'expected_records': 1, 'matched_records': 1,
+                        'identity_mismatched_records': 0, 'sources': [{'stream_id': 'events', 'relative_path': 'events.jsonl', 'line_index': 1, 'record_position': 'events.jsonl#1', 'event_seq': 2}]}
+                       for role in ['image_observation', 'camera_transform', 'capture_timing_event', 'state_feedback_event']]
+                      + [{'role': 'feedback_observation_row', 'join_key': 'sample_id', 'key_value': 'joint_feedback_1', 'status': 'unresolved_reference',
+                          'expected_records': 1, 'matched_records': 0, 'identity_mismatched_records': 0}]}
+    return {'schema_version': 'unirobot-mobilecar-frame-link-1', 'read_only': True,
+            'source': {'source_id': SOURCE_ID, 'adapter_id': 'mobilecar', 'recording_root': '/fixture', 'access': 'read_only_files', 'platform_writes': False},
+            'retrieved_at': '2026-01-01T00:00:00Z',
+            'identity': {'run_id': 'run_a', 'episode_id': episode, 'episode_directory': f'/fixture/run_a/episodes/{episode}',
+                         'run_directory_identity': 'the run directory was re-validated as itself before this read', 'native_contract_version': 'mobilecar-1.0'},
+            'anchor': {'stream_id': 'observations-persist', 'relative_path': 'observations/persist.jsonl', 'semantics': 'one persisted image frame per record', 'requested_stream': 'rgbd'},
+            'paging': {'limit': 5, 'offset': 0, 'returned': 1, 'scanned_anchor_lines': 2, 'skipped_before_offset': 0, 'excluded_stream_mismatch': 0,
+                       'excluded_without_sample_id': 0, 'excluded_outside_time_window': 0, 'excluded_anchor_identity_mismatch': 0,
+                       'records_missing_selected_time_base': 0, 'next_offset': None, 'has_more': False},
+            'cursor': {'order': 'native_append_order_of_the_anchor_stream', 'line_index_is_not_a_clock': True, 'persist_sequence_is_the_recorders_own_counter': True,
+                       'first_line_index': 0, 'last_line_index': 0, 'first_persist_sequence': 1, 'last_persist_sequence': 1},
+            'time': {'selected_time_base': None, 'time_from': None, 'time_to': None, 'selectable_time_bases': ['capture_backend_monotonic_s'],
+                     'units': {'*_s': 'seconds'}, 'synchronized_across_streams': False,
+                     'clock_sameness': {'declared_by_recorder': True, 'verified_by_reader': False, 'note': 'naming is not verification'},
+                     'deltas_are_recorded_arithmetic': True, 'browser_arrival_order_is_not_used': True},
+            'linkage': {'roles': {role: {'source_stream': 'fixture', 'join_key': 'sample_id', 'meaning': f'fixture meaning {role}'}
+                                  for role in ['image_observation', 'camera_transform', 'capture_timing_event', 'state_feedback_event', 'feedback_observation_row']},
+                        'status_meaning': {'matched': 'every expected record was found by its recorded key',
+                                           'unresolved_reference': 'the frame declares a reference whose target record is not in this Episode'},
+                        'primary_roles': ['image_observation', 'camera_transform', 'capture_timing_event', 'state_feedback_event'],
+                        'selection_rules': {'joins': 'exact equality of the recorded join key'}, 'role_coverage_on_this_page': {}},
+            'summary': {'frames_returned': 1, 'frames_with_all_primary_roles_matched': 1, 'frames_with_some_primary_roles_missing': 0,
+                        'frames_with_no_primary_role_matched': 0, 'frames_without_a_linked_state': 0, 'frames_with_unresolved_feedback_reference': 1},
+            'frames': [frame], 'not_proven': ['rendered 3D replay'],
+            'three_d_replay': {'this_slice_does_not_enable_3d_replay': True, 'live_geometry_or_actual_may_be_applied': False,
+                               'transforms_are_full_per_body_pose_sequences': False},
+            'capability_limits': ['no replay execution']}
+
+
 async def synthetic_handler(route):
     request = route.request
     path = urlsplit(request.url).path
@@ -588,6 +644,8 @@ async def synthetic_handler(route):
             await asyncio.sleep(2.2)
             await route.fulfill(status=200, body=tiny_png(), content_type='image/png', headers={'X-Episode-Asset-Sha256': 'e' * 64}); return
         await route.fulfill(status=200, body=tiny_png(), content_type='image/png', headers={'X-Episode-Asset-Sha256': 'a' * 64, 'X-Episode-Run-Id': 'run_a'}); return
+    if path.endswith('/frames'):
+        await route.fulfill(json=frames_fixture(path.split('/episodes/')[1])); return
     if path.endswith('/records'):
         stream = path.split('/streams/')[1].split('/')[0]
         if stream == 'nope':

@@ -6,8 +6,11 @@ map raster images, and route drafts with immutable route versions. Platform Draf
 create/save/validate, Session prepare/start, route-draft create/save/publish and the
 three Session lifecycle actions (recording begin, robot STOP, recording end) are the
 only writes; each is an exact path, so no wildcard control path is reachable.
-The history reader is exposed as five exact GET paths only (episode-read-1: list, detail,
-stream catalogue, per-stream records, episode assets). Native episode validate/assessment,
+The history reader is exposed as six exact GET paths only: the five of episode-read-1 (list, detail,
+stream catalogue, per-stream records, episode assets) plus the one frame-link-1 path
+(/api/v1/episodes/{id}/frames). No wildcard episode route is added: the frames route is its own
+exact pattern, so no other sub-path of an episode becomes reachable through this gateway.
+Native episode validate/assessment,
 replay execution, motion/teleop, RESET, /runs/{id}/stop and native command endpoints stay
 unproxied: they are refused by this gateway itself, never forwarded. There is no route
 collection GET upstream, so
@@ -48,6 +51,9 @@ ROUTES=[
  (re.compile(r'^/api/v1/episodes/'+ID+r'/streams$'),{'GET'}),
  (re.compile(r'^/api/v1/episodes/'+ID+r'/streams/'+ID+r'/records$'),{'GET'}),
  (re.compile(r'^/api/v1/episodes/'+ID+r'/assets/'+ASSET+r'$'),{'GET'}),
+ # frame-link-1 adds exactly this one GET. It is deliberately not a wildcard under /episodes/{id}/:
+ # any other episode sub-path still falls through to the local refusal below.
+ (re.compile(r'^/api/v1/episodes/'+ID+r'/frames$'),{'GET'}),
 ]
 
 MAX_BODY=65536

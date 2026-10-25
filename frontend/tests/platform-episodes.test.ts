@@ -279,6 +279,24 @@ describe('seek context and 18964 read semantics', () => {
     // Before any page exists the gate falls back to the contract's numeric bases, not to guessing.
     expect(numericBasesOf(null)).toEqual(['backend_monotonic_s', 'sim_time_s', 'measurement_time_s', 'arrival_time_s']);
   });
+  it('treats an explicit empty numeric_time_bases array as the reader’s answer, not as missing data', () => {
+    const empty = pageFixture([{ line_index: 0, record: { persist_sequence: 1 } }],
+      { time: { units: 'seconds for *_s', records_without_the_selected_base: 0, synchronized_across_streams: false, numeric_time_bases: [], selected_time_base: null, time_from: null, time_to: null } } as Partial<RecordPageDto>);
+    // The bug this closes: a `.length ? … : fallback` read `[]` as absent and offered four bases back.
+    expect(numericBasesOf(empty)).toEqual([]);
+    expect(seekGate(empty, 'backend_monotonic_s').allowed).toBe(false);
+    expect(seekGate(empty, 'backend_monotonic_s').numericBases).toEqual([]);
+    expect(seekGate(empty, 'backend_monotonic_s').reason).toContain('numeric_time_bases=空');
+    expect(seekGate(empty, '').allowed).toBe(false);
+    // Absent is still the other statement: only a page that never answered may use the declared set.
+    const silent = pageFixture([], { time: { units: 'seconds', records_without_the_selected_base: 0, synchronized_across_streams: false, selected_time_base: null } } as Partial<RecordPageDto>);
+    expect(silent.time.numeric_time_bases).toBeUndefined();
+    expect(numericBasesOf(silent)).toEqual(['backend_monotonic_s', 'sim_time_s', 'measurement_time_s', 'arrival_time_s']);
+    // The refusal of a blank or non-finite box is untouched by this change.
+    expect(parseSeekValue('')).toEqual({ value: null, error: expect.stringContaining('不发送请求') });
+    expect(parseSeekValue('0')).toEqual({ value: 0, error: null });
+    expect(parseSeekValue('Infinity').value).toBeNull();
+  });
   it('keeps an empty filtered page distinct from a load failure', () => {
     const excluded = pageFixture([], {
       paging: { limit: 5, offset: 0, returned: 0, scanned_lines: 3038, skipped_before_offset: 0, next_offset: null, has_more: false },

@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from './Icon';
+import { FrameBrowser } from './frame-browser';
 import {
   PlatformEpisodeApi, ambiguousRuns, associationNotice, autoLoadRef, checksumFinding, describeHistoryError, emptyListKind,
   integrityFacets, isAmbiguous, mediaRefsOf, pageExplanation, pageKind, parseSeekValue, presentTimeBases, rowViews,
@@ -300,8 +301,8 @@ export function HistoryView({ api, onLeave }: { api: PlatformEpisodeApi; onLeave
 
   return <section className="history-view" aria-label="历史 Episode 只读浏览" data-history-view="true" data-read-only="true">
     <header className="scene-setup-header">
-      <div><h2>历史 Episode · 只读浏览与单流播放</h2>
-        <p>来源固定为 episode-read-1 的历史读取候选；这里只读录制事实。不发送动作、不推进在线物理、不改写原始记录，也不提供跨流同步或已验证的 3D 历史回放。</p></div>
+      <div><h2>历史 Episode · 只读浏览、单流播放与帧关联</h2>
+        <p>来源固定为历史读取候选：记录浏览走 episode-read-1，下方帧面板走 frame-link-1（一条锚点记录=一个持久化图像帧）。这里只读录制事实，不发送动作、不推进在线物理、不改写原始记录，也不提供跨流同步、已验证的 3D 历史回放或统一时间游标。</p></div>
       <div className="scene-setup-badges">
         <span className="chip strong" data-history-source={list?.source.source_id ?? detail?.source.source_id ?? 'unread'}>source {list?.source.source_id ?? detail?.source.source_id ?? '未读取'}</span>
         <span className="chip masked" data-cross-stream={records ? (records.time.synchronized_across_streams ? 'synchronised' : 'unsynchronised') : 'unknown'}>跨流未同步{synchronizedSuffix(records)}</span>
@@ -501,6 +502,7 @@ export function HistoryView({ api, onLeave }: { api: PlatformEpisodeApi; onLeave
         <p className="session-note history-footer">历史视图不挂载 3D 视口、不订阅 live 快照、没有 Target/Ghost，也不发送命令或物理步进；本页所有 GET 都由前端只读代理精确放行。</p>
       </section>
     </div>
+    <FrameBrowser api={api} episodeId={detail?.identity.episode_id ?? ''} runId={detail?.identity.run_id ?? null}/>
   </section>;
 }
 

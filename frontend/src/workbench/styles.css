@@ -493,4 +493,23 @@ button.primary{border-color:#3f6b78;background:#254652;color:#b8eef2}
 .media-ref b{color:#a9c2d3}
 .asset-frame{border:1px solid #2a3d4f;border-radius:5px;padding:6px;background:#141d26;display:grid;gap:5px;font-size:10px;color:#a9c2d3}
 .asset-frame img{max-width:100%;max-height:260px;image-rendering:pixelated;border:1px solid #2b3a48;background:#0d1319}
+/* frame tables reuse the record-table look without sharing its class name (the older suite
+   addresses `.history-record-table tbody` as exactly one element) */
+.frame-record-table{width:100%;border-collapse:collapse;font-size:10px;color:#b9c8d6}
+.frame-record-table th,.frame-record-table td{border-bottom:1px solid #223040;padding:3px 5px;text-align:left;vertical-align:top;word-break:break-word}
+.frame-record-table th{color:#8ba0b2;font-weight:600;background:#18222d}
+.frame-record-table tr.selected td{background:#1d2c3a;color:#e6eff6}
+.frame-record-table code{font-size:9.5px;background:#101820;padding:1px 3px;border-radius:3px;color:#9fb4c6}
+.frame-record-table small{display:block;color:#7d93a6;font-size:9px;line-height:1.45}
+.history-frame-pane .frame-grid td button{text-align:left;background:#18242f;border:1px solid #27394a;color:#c9d6e2;font-size:9.5px;word-break:break-all}
 .history-footer{color:#7d93a6;font-size:9.5px}
+/* ---------- frame-link-1 browsing (read-only) ---------- */
+.history-frame-pane{border:1px solid #24303d;border-radius:8px;background:#141c24;padding:9px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.history-frame-pane h3{margin:0;font-size:12px;color:#dce6ee}
+.history-frame-pane h4{margin:0;font-size:11px;color:#c9d6e2}
+.history-frame-pane .session-fields{font-size:10px}
+.frame-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:8px;align-items:start}
+.frame-grid .history-stream-pane{background:#151f28}
+.frame-grid .media-ref button{margin-top:2px}
+.history-frame-boundary{border:1px solid #4d3b2b;background:#241f18;border-radius:5px;padding:8px;color:#e0b783;font-size:10px;display:flex;gap:7px}
+.history-frame-boundary p{margin:3px 0 0;line-height:1.6;word-break:break-word}
