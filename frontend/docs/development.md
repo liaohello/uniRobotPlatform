@@ -6,7 +6,8 @@
 
 | 项 | 值 |
 |---|---|
-| 前端 release | `m1-front-geometry-20261025T044805Z-66976ad5df73`（本轮最终冻结；此前 `…035859Z`、`…041033Z`、`…042130Z`、`…043239Z` 是修测试夹具/等待条件过程中的中间产物，未交付） |
+| 前端 release | `m1-front-geometry-20261025T044805Z-66976ad5df73`，89 个输入，聚合 SHA-256 `66976ad5df73f50ac8eed6bae29b7b128adb18695dd964a899333d63e732d5bc`（`source-manifest.json` 逐文件摘要） |
+| 交付提交 | `b05178b`（本地，未推送）；此前 `…035859Z`、`…041033Z`、`…042130Z`、`…043239Z` 是修测试夹具/等待条件过程中的中间产物，未交付 |
 | 统一上游 | `http://127.0.0.1:18959`，服务器 PID 3608367，`tools/launch_unified_gateway.py`，后端 release `m1j-20261025T020857Z-platform`（平台源码 30 文件聚合 `26c60b76acbac68a…`），geometry bundle `m1-geometry-20261023T192202Z-cdfc7472e5de`（23 资产，`bundle.json` `a5f4a90c…`），recipe `mobilecar.g1.teleop` rev 3，native 仅 GET 8792，独立 SQLite `releases/m1j-…/report/unified-live-021657.sqlite3`（`existed_before=false`） |
 | 上游实测契约 | OpenAPI 37 路径：geometry-2 场景（`data_source=live_native_http_with_verified_compiled_geometry`、`geometry_binding.content_matches=true`、`runtime_identity_matches=true`）+ maps/route-drafts/routes versions + Draft/validate/snapshot + Session envelope/`current` + `/sessions/{id}/stop`、`/recording/begin`、`/recording/end`；`capabilities`/`snapshot` 仍为 `unirobot-mobilecar-read-1`（与后端文档一致，前端只按 scene 的 `schema_version` 判定挂载 3D） |
 | 本轮预览 | 交付预览 18972 → 18959（PID 3830766，全套回归）与 18973 → 18959（PID 4174883，地图/路线）；对照 pass 预览 18975 → 18953（PID 24086）、18976 → 18949（PID 61336）；旧候选预览 18969 → 18949、18970 → 18953 保留未停止；本轮为迭代夹具等待条件而启动的中间预览（18963–18968、18971、18974 等）已逐个按 `/proc/<pid>/cmdline` 身份核对后停止；未启动、重启或停止任何后端/native 实例 |
