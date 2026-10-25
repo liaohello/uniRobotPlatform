@@ -6,11 +6,11 @@
 
 | 项 | 值 |
 |---|---|
-| 前端 release | `m1-front-geometry-20261025T090454Z-0f79150a35a9`，100 个输入，聚合 SHA-256 `0f79150a35a9134eb0c575d9a6b131ceee0b9f74ca61cf39996c5297f578e522`（服务器逐文件重算与 `source-manifest.json` 一致） |
+| 前端 release | `m1-front-geometry-20261025T091617Z-455731a67ef6`，100 个输入，聚合 SHA-256 `455731a67ef6d239158dc984888f33ea90058188cfc840933ebbe264500d387f`（服务器逐文件重算与 `source-manifest.json` 一致） |
 | 提交 | `c9349c0`（实现）+ `654755f`（测试取值修正）+ 本记录提交，三者均已推送；远端 `refs/heads/codex/m12a-workbench` SHA 与本地一致（用仓库既有 `core.sshCommand`（`~/.ssh/liaoGithub`），未改 Git 配置、未 force、未建 tag、未推凭据或原始历史数据） |
 | 历史上游 | `http://127.0.0.1:18964` = 后端 `m1p-20261025T053030Z-platform`（M1.5b 只读整改候选，服务器 PID 2102683，清单 `832bf518274600a9…`、源码聚合 `4090935b4c45c900…`），只读 schema `unirobot-mobilecar-episode-read-1`；同进程继续提供 geometry-2 + 23 资产、Map/Route、Draft/validate、Session/`current`、STOP/end 契约 |
 | 保留上游 | 18960（`m1k`，上一轮历史验收处）与 18959（`m1j` 统一候选）、18949、18953、8792 全部保留，未启动/停止/替换；两代候选不互换、不推断，本轮只用实测的 18964 |
-| 本轮预览 | **交付预览 18986 → 18964**（PID 615818，服务最终冻结 dist，历史真实/地图/Session/配置 pass 的同一个预览）。18987/18988/18989 是同批次的其它验证 pass 预览、18981 是迭代用 scratch 预览（非冻结树），四者本轮结束时按登记身份逐一停止（round `m17-life/m17-3d/m17-offline/m17-scratch`）。既有交付服务 18974 → 18960、18972/18973 → 18959 保留未动 |
+| 本轮预览 | **交付预览 18986 → 18964**（PID 1174103，服务最终冻结 dist，历史真实/地图/Session/配置 pass 的同一个预览）。18987/18988/18989 是同批次的其它验证 pass 预览、18981 是迭代用 scratch 预览（非冻结树），四者本轮结束时按登记身份逐一停止（round `m17-life/m17-3d/m17-offline/m17-scratch`）。既有交付服务 18974 → 18960、18972/18973 → 18959 保留未动 |
 | 预览台账 | `~/Desktop/uniRobotPlatform/var/frontend-previews/registry.json`（`tools/preview-registry.py` 读写；每条含 pid、端口、release、上游、服务目录、完整 cmdline、内核 start tick、uid、round、状态与停止时刻） |
 | 真实 native | 8792 仍 PID 941842（`drvfix`/G4A2）。native 状态只经后端 `tools/native_get_probe.py` 的 `GetProbe` 读取，摘要 `{"methods":["GET"],"non_get":[]}`，`run_9c88e3e…` / `episode_43c22f…` / `recording_status=IDLE` 全程未变；日志 `/tmp/frontend-native-get-probe.jsonl`、`/tmp/frontend-native-get-probe-final.jsonl`。对 18964 的契约核对脚本 47 次请求也全是 GET |
 
@@ -61,11 +61,11 @@ development.md 记录过：`browser-readonly.py` 的 “runtime-only change keep
 
 ## 六、服务器验证（同一冻结 release，全部在服务器执行）
 
-冻结候选 `m1-front-geometry-20261025T090454Z-0f79150a35a9`（100 输入，聚合 `0f79150a35a9134eb0c575d9a6b131ceee0b9f74ca61cf39996c5297f578e522`；服务器逐文件重算通过）。四个批次各自独立 `--reports` 目录、独立预览，批次退出码全部为 0。
+冻结候选 `m1-front-geometry-20261025T091617Z-455731a67ef6`（100 输入，聚合 `455731a67ef6d239158dc984888f33ea90058188cfc840933ebbe264500d387f`；服务器逐文件重算通过，四个批次都先校验摘要再运行）。四个批次各自独立 `--reports` 目录、独立预览，批次退出码全部为 0。
 
 | pass | 上游 | 套件与结果 |
 |---|---|---|
-| m17-main | 18964 | `tsc --noEmit && vite build` 通过；vitest **97 passed / 0 failed**（含新增 6 项 seek/契约用例）；**历史真实 77 项全过（111 次浏览器请求，methods 只含 GET、non_get=0）**；地图 live 68；Session 38；配置 51 |
+| m17-main | 18964 | `tsc --noEmit && vite build` 通过；vitest **97 passed / 0 failed**（含新增 6 项 seek/契约用例）；**历史真实 77 项全过（110 次浏览器请求，methods 只含 GET、non_get=0）**；地图 live 68；Session 38；配置 51 |
 | m17-life | 18964 | 历史合成夹具 41 项（58 次历史请求，全为 GET，`non_get=0`）；生命周期合成 48；生命周期 live 读取 7 |
 | m17-3d | 18964 | 只读集成 32（含 runtime 相机保持断言）；冻结工作台 29；geometry 23；usability 100 |
 | m17-offline | 18949 | 地图离线模式 15 |
@@ -80,13 +80,15 @@ native 证据：四个批次的 `native-read-only.json` 全部 `before == after`
 
 `var/frontend-previews/registry.json` 记录本轮全部 12 个条目（含三个中止批次的补登记与停止）。处置全部通过 `preview-registry.py stop --pid … --round …`，每次先核对 cmdline、start tick、uid 与监听端口归属：
 
-- 保留：**18986 → 18964**（本轮交付预览，服务最终冻结 dist，PID 615818）；既有交付服务 18974 → 18960、18972/18973 → 18959 未触碰。
-- 已按身份停止：18982/18983/18984（中止批次补登记，round `m17-aborted`）；18987/18988/18989（上一版发布的验证预览，round `m17-life/m17-3d/m17-offline`）；18981（迭代用 scratch 预览，round `m17-scratch`）。全部 SIGTERM 生效、无 SIGKILL。
+- 保留：**18986 → 18964**（本轮交付预览，服务最终冻结 dist，PID 1174103）；既有交付服务 18974 → 18960、18972/18973 → 18959 未触碰。
+- 已按身份停止：18982/18983/18984（中止批次补登记，round `m17-aborted`）；18981（迭代 scratch 预览，round `m17-scratch`）；中间两版候选的 18986/18987/18988/18989 验证预览（round `m17-main/m17-life/m17-3d/m17-offline`，共 8 个 PID）；以及最终批次里除交付预览外的 18987/18988/18989 三个 pass 预览。合计 15 个登记 PID 全部 SIGTERM 生效、无 SIGKILL，台账里每条都留有 `stopped_at_utc`。
 - 两次拒绝路径实测：对未登记的 18964 后端 PID → `exactly one registry entry must match pid … found 0`；对 round 标签不符的登记 PID → `refusing: entry round=… is not the requested round=…`。未启动、未重启、未停止任何后端候选或 native。
 
 ## 八、中途返工（不倒填）
 
 本轮先后冻结并上传过三个候选：`…T085230Z-51f8bb44e864` 因 `check-release.py` 把相对 `--reports`/`--preview-registry` 交给以 `frontend/` 为 cwd 的子进程，登记步骤失败（四个批次未跑任何浏览器套件；已补登记并停止其 3 个预览）；`…T085438Z-fab8d858e141` 四个批次全部通过，但 `browser-history.py` 把 `report.real.complete_pattern` 记在 FAILED Episode 打开的时刻，标签与取值不符；修正取值点后重冻为最终交付的 `…T090454Z-0f79150a35a9` 并重跑四个批次。三代的 release 目录与报告都保留在服务器 `releases/`、`reports/` 下，不互相拼接结论。
+
+- 追加：README、`docs/backend-gaps.md` 的文档修订也在冻结清单输入之内，因此先提交文档、再冻结 `m1-front-geometry-20261025T091617Z-455731a67ef6`，四个批次全部在这最后一个候选上重跑（数字与上一候选逐项一致，不引用旧批次数值）。上一候选 `…T090454Z-0f79150a35a9` 的四批次记录同样全部通过，保留在服务器 `reports/` 下；本节引用的请求数（真实 pass 共 110 次 GET）取自最终候选。
 
 ## 九、边界与未覆盖
 
