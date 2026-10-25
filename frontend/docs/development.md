@@ -7,7 +7,7 @@
 | 项 | 值 |
 |---|---|
 | 前端 release | `m1-front-geometry-20261025T070938Z-7fc0e8e5f2a6`，98 个输入，聚合 SHA-256 `7fc0e8e5f2a67035f33149244c0157e1fb9471035bc13809546bf18766b9d03a`（`source-manifest.json` 逐文件摘要） |
-| 交付提交 | 本轮提交（本地，未推送），基线 HEAD `f25855f`、上一轮主实现 `b05178b` |
+| 交付提交 | `2599bd5`（本地，未推送），基线 HEAD `f25855f`、上一轮主实现 `b05178b` |
 | 历史上游 | `http://127.0.0.1:18960`，PID 1757266，后端 release `m1k-20261025T040435Z-platform`，`--history-source config/mobilecar-history-source.json`（source `mobilecar-server-history-20261017`，root `~/Desktop/mobileCar/var/runs`，native release `drvfix-20261019T044549Z-0a80415b2577`），独立 SQLite `report/history-041241.sqlite3`；同一进程继续提供 geometry-2 + 23 资产、Map/Route、Session/`current`、STOP/end 契约 |
 | 统一上游 | `http://127.0.0.1:18959`（PID 3608367）保持不变，作为回归与合成夹具 pass 的上游；该上游**没有** episode 读取路径，历史视图在它上面如实显示网关拒绝 |
 | 交付预览 | 18972 → 18959（全套回归）、18973 → 18959（地图/路线）为上一轮交付预览；本轮新增 **18974 → 18960**（历史 + 统一能力，PID 见 `var/preview-logs/preview-18974.log`），实测 `GET /api/v1/episodes?limit=1` 返回 `episode-read-1`，`POST /episodes/{id}/validate`、`POST /runs/{id}/stop`、`POST /commands` 均为网关本地 404 拒绝、不转发 |
