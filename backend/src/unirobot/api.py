@@ -50,6 +50,7 @@ from .routes import (
 )
 from .episodes import EpisodeArchive, HistoryError, load_history_source
 from .frames import FrameLinkReader
+from .history_pose import HistoryPoseReader
 from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH, EPISODE_ROOT_OVERRIDE, HISTORY_SOURCE_PATH, MAP_CATALOG_PATH, MAPS_ROOT
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -265,6 +266,24 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
         return FrameLinkReader(_archive(request)).frames(episode_id, run_id=run_id, stream=stream, limit=limit,
                                                         offset=offset, time_base=time_base, time_from=time_from,
                                                         time_to=time_to, sample_id=sample_id)
+
+    def _pose(request: Request) -> HistoryPoseReader:
+        if geometry is None:
+            raise HistoryError("history_model_bundle_not_configured",
+                               "no frozen compiled geometry bundle is configured for this process", 503,
+                               {"configure": "UNIROBOT_GEOMETRY_BUNDLE"})
+        return HistoryPoseReader(_archive(request), geometry, recipe.kinematics)
+
+    @application.get("/api/v1/episodes/{episode_id}/robot-state")
+    def episode_robot_state(request: Request, episode_id: str, run_id: str | None = None,
+                            sample_id: str | None = None) -> dict[str, Any]:
+        return _pose(request).robot_state(episode_id, run_id=run_id, sample_id=sample_id)
+
+    @application.get("/api/v1/episodes/{episode_id}/model/assets/{asset_id}")
+    def episode_model_asset(request: Request, episode_id: str, asset_id: str, run_id: str | None = None,
+                            sha256: str | None = Query(None, pattern=r"^[0-9a-f]{64}$")):
+        body, media_type, headers = _pose(request).model_asset(episode_id, asset_id, run_id=run_id, sha256=sha256)
+        return Response(body, media_type=media_type, headers=headers)
 
     @application.get("/api/v1/episodes/{episode_id}/assets/{asset_path:path}")
     def episode_asset(request: Request, episode_id: str, asset_path: str, run_id: str | None = None,

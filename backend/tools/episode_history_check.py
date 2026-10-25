@@ -346,12 +346,15 @@ def main() -> int:
     # ---- frame linkage on a real Episode (image to recorded state) ---------------
     status, frames = get_json(f"{P}/api/v1/episodes/{complete_id}/frames?run_id={complete_run}&limit=5")
     results.add("frame linkage answers with its own read-only schema",
-                status == 200 and frames["schema_version"] == "unirobot-mobilecar-frame-link-1"
+                status == 200 and frames["schema_version"] == "unirobot-mobilecar-frame-link-2"
                 and frames["read_only"] is True, {"status": status, "code": code_of(frames)})
     page = frames["frames"]
 
     def roles(frame: dict[str, Any]) -> dict[str, dict[str, Any]]:
         return {item["role"]: item for item in frame["roles"]}
+
+    def quantities(frame: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        return {item["key"]: item for item in frame["times"]["quantities"]}
 
     results.add("real persisted frames arrive in native append order with the recorder's own counter",
                 len(page) == 5
@@ -359,37 +362,85 @@ def main() -> int:
                 and all(isinstance(item["anchor"]["persist_sequence"], int) for item in page),
                 {"line_indexes": [item["anchor"]["line_index"] for item in page],
                  "persist_sequences": [item["anchor"]["persist_sequence"] for item in page]})
-    results.add("every returned frame joins its rgb and depth rows by the recorded sample_id",
+    results.add("every returned frame carries one rgb row and one depth row, judged by kind",
                 all(roles(item)["image_observation"]["status"] == "matched"
+                    and roles(item)["image_observation"]["matched_kinds"] == ["depth", "rgb"]
+                    and roles(item)["image_observation"]["missing_kinds"] == []
+                    and roles(item)["image_observation"]["duplicate_kinds"] == []
                     and len(roles(item)["image_observation"]["sources"]) == 2 for item in page),
-                frames["linkage"]["role_coverage_on_this_page"])
+                {"requirement": frames["linkage"]["roles"]["image_observation"]["requirement"],
+                 "coverage": frames["linkage"]["role_coverage_on_this_page"]["image_observation"]})
+    results.add("a repeated kind is judged by the required set rather than by a record count",
+                frames["linkage"]["status_precedence"].index("ambiguous_kind")
+                < frames["linkage"]["status_precedence"].index("partial")
+                and frames["linkage"]["status_meaning"]["ambiguous_kind"].startswith("a sensor_kind"),
+                {"precedence": frames["linkage"]["status_precedence"]})
     results.add("every returned frame reaches a transform row recorded for the same sample_id",
-                all(roles(item)["camera_transform"]["status"] == "matched" for item in page),
+                all(roles(item)["camera_transform"]["status"] == "matched"
+                    and roles(item)["camera_transform"]["candidate_records"] == 1 for item in page),
                 {"note": "the row names frame_id rgbd_optical and is not a per-body pose sequence"})
-    results.add("every returned frame reaches a recorded state event through its capture tick",
+    results.add("every returned frame reaches exactly one recorded state event through its capture tick",
                 all(roles(item)["state_feedback_event"]["status"] == "matched"
+                    and roles(item)["state_feedback_event"]["candidate_records"] == 1
+                    and item["state"]["single_state_selected"] is True
                     and roles(item)["state_feedback_event"]["sources"][0]["relative_path"] == "events.jsonl"
                     and all(source["identity"]["run_id_matches"] and source["identity"]["episode_id_matches"]
                             for role in roles(item).values() for source in role["sources"]) for item in page),
                 {"join_key": "control_tick_id",
                  "example_key": roles(page[0])["state_feedback_event"]["key_value"]})
-    ages = [item["times"]["age_of_state_relative_to_frame"] for item in page]
-    results.add("state age comes from recorded fields and is shown as an age, not as the same instant",
-                all(item is not None and 0.0 < item["abs_ms"] < 50.0 and item["state_recorded_before_capture"] is True
-                    for item in ages)
+    first_quantities = quantities(page[0])
+    state_keys = ("state_event_write_minus_frame_capture", "state_payload_feedback_time_minus_frame_capture",
+                  "recorder_declared_feedback_time_minus_frame_capture")
+    results.add("the three state-related stamps stay three named quantities instead of one age",
+                all(key in first_quantities for key in state_keys)
+                and len({round(first_quantities[key]["abs_ms"], 3) for key in state_keys}) == 3
+                and len({first_quantities[key]["source_record"] + first_quantities[key]["field"]
+                         for key in state_keys}) == 3
+                and all(first_quantities[key]["direction"] == "earlier" for key in state_keys),
+                {"event_write_ms": round(first_quantities[state_keys[0]]["abs_ms"], 6),
+                 "payload_sample_ms": round(first_quantities[state_keys[1]]["abs_ms"], 6),
+                 "recorder_declared_ms": round(first_quantities[state_keys[2]]["abs_ms"], 6),
+                 "fields": [first_quantities[key]["field"] for key in state_keys],
+                 "note": "measured on the real first frame: 2.885407 / 3.669841 / 3.668296 ms"})
+    results.add("the same state sample is separated from the event write by its own recorded difference",
+                abs(first_quantities["state_payload_feedback_time_minus_state_event_write"]["abs_ms"] - 0.784434) < 1e-4
+                and quantities(page[0])["timing_payload_capture_minus_anchor_capture"]["direction"] == "equal",
+                {"payload_minus_event_write_ms":
+                     round(first_quantities["state_payload_feedback_time_minus_state_event_write"]["abs_ms"], 6)})
+    sim_item = first_quantities["state_sim_time_minus_frame_capture_sim_time"]
+    results.add("sim time is reported on its own clock and never folded into the monotonic differences",
+                sim_item["clock"] == "sim" and sim_item["unit"] == "s"
+                and all(item["clock"] != "sim" for key, item in first_quantities.items()
+                        if key != "state_sim_time_minus_frame_capture_sim_time"),
+                {"sim_delta_s": sim_item["value"], "monotonic_event_delta_s":
+                    first_quantities["state_event_write_minus_frame_capture"]["value"]})
+    recorder = page[0]["times"]["recorder_declared"]
+    results.add("the recorder's own observation age is copied and compared, never merged with state stamps",
+                recorder["agrees_with_recomputation"] is True
+                and abs(recorder["fields"]["observation_age_ms"]
+                        - recorder["recomputed_arrival_minus_capture_ms"]) < 1e-6
+                and abs(recorder["fields"]["observation_age_ms"]
+                        - first_quantities["state_payload_feedback_time_minus_frame_capture"]["abs_ms"]) > 20.0
+                and "not the difference between a state sample" in recorder["observation_age_ms_note"],
+                {"observation_age_ms": recorder["fields"]["observation_age_ms"],
+                 "recomputed_arrival_minus_capture_ms": recorder["recomputed_arrival_minus_capture_ms"],
+                 "state_sample_minus_capture_ms":
+                     round(first_quantities["state_payload_feedback_time_minus_frame_capture"]["abs_ms"], 6)})
+    results.add("no page presents an age that mixes the state write stamp with the sample stamp",
+                all("age_of_state_relative_to_frame" not in item["times"] for item in page)
+                and "times.age_of_state_relative_to_frame" in frames["version_migration"]["removed_fields"]
                 and frames["time"]["synchronized_across_streams"] is False
                 and frames["time"]["clock_sameness"]["verified_by_reader"] is False
                 and all(item["state"]["interpolated"] is False and item["state"]["carried_over_from_another_frame"] is False
                         for item in page),
-                {"abs_ms": [round(item["abs_ms"], 6) for item in ages],
-                 "recorder_declared_feedback_ms": [
-                     round(next(d["abs_value_ms"] for d in item["times"]["deltas"]
-                                if d["label"] == "recorder_declared_feedback_time_minus_capture"), 6)
-                     for item in page]})
+                {"removed": frames["version_migration"]["removed_fields"],
+                 "writer_binding": frames["time"]["clock_sameness"]["writer_version_binding"]})
     media_items = [entry for item in page for entry in item["media"]["items"]]
     results.add("frame media uris resolve inside the episode and agree with their observation row",
                 all(entry["availability"] == "present" for entry in media_items)
                 and all(entry["agrees_with_observation_row"] is True for entry in media_items
+                        if entry["field"] in ("rgb_uri", "depth_uri"))
+                and all(entry["observation_row_candidates"] == 1 for entry in media_items
                         if entry["field"] in ("rgb_uri", "depth_uri")),
                 {"fields": sorted({entry["field"] for entry in media_items}), "count": len(media_items)})
     results.add("declared asset digests are carried as declarations, not as verified bytes",
@@ -405,17 +456,37 @@ def main() -> int:
                 {"coverage": reference,
                  "note": "this source declares joint_feedback ids for every frame but records such rows for only 3 of 303 frames"})
     status, one = get_json(f"{P}/api/v1/episodes/{complete_id}/frames?run_id={complete_run}&limit=1")
-    results.add("frame paging exposes a resolvable next_offset and has_more",
-                 status == 200 and one["paging"]["next_offset"] == 1 and one["paging"]["has_more"] is True, one["paging"])
+    results.add("has_more is decided by the next qualifying anchor, not by a prefiltered count",
+                 status == 200 and one["paging"]["next_offset"] == 1 and one["paging"]["has_more"] is True
+                 and one["paging"]["next_qualifying_anchor_line_index"] == 1
+                 and one["paging"]["post_page_records_examined"] == 1
+                 and one["paging"]["scan"]["whole_file_scanned"] is False, one["paging"])
+    results.add("line bookkeeping counts only the lines this scan actually read",
+                 one["paging"]["anchor_lines"]["lines_read"] == 2
+                 and one["paging"]["anchor_lines"]["blank_lines_skipped"] == 0
+                 and one["paging"]["anchor_lines"]["unparseable_lines_skipped"] == 0
+                 and one["paging"]["anchor_lines"]["oversize_lines_skipped"] == 0
+                 and one["paging"]["anchor_records_examined"] == 2,
+                 {"anchor_lines": one["paging"]["anchor_lines"],
+                  "note": "the real anchor file has no blank or unreadable lines; the counters are reported, not assumed"})
+    status, past_end = get_json(f"{P}/api/v1/episodes/{complete_id}/frames?run_id={complete_run}&offset=1000000")
+    results.add("reading past the end returns an empty page rather than inventing a last page",
+                 status == 200 and past_end["frames"] == [] and past_end["paging"]["has_more"] is False
+                 and past_end["paging"]["next_offset"] is None
+                 and past_end["paging"]["scan"]["whole_file_scanned"] is True,
+                 {"skipped_before_offset": past_end["paging"]["skipped_before_offset"],
+                  "anchor_lines_read": past_end["paging"]["anchor_lines"]["lines_read"]})
     status, picked = get_json(f"{P}/api/v1/episodes/{complete_id}/frames?run_id={complete_run}&sample_id={page[1]['sample_id']}")
     results.add("a single frame can be addressed by its recorded sample_id",
-                status == 200 and [item["sample_id"] for item in picked["frames"]] == [page[1]["sample_id"]],
+                status == 200 and [item["sample_id"] for item in picked["frames"]] == [page[1]["sample_id"]]
+                and picked["paging"]["excluded_by_sample_id_filter"] >= 1,
                 picked["paging"])
     status, window = get_json(f"{P}/api/v1/episodes/{complete_id}/frames?run_id={complete_run}&limit=5"
                               f"&time_base=capture_sim_time_s&time_from=0&time_to=1e9")
     results.add("a named frame time base filters without reordering",
                 status == 200 and len(window["frames"]) == 5
                 and window["paging"]["records_missing_selected_time_base"] == 0
+                and window["paging"]["excluded_outside_time_window"] == 0
                 and [item["anchor"]["line_index"] for item in window["frames"]]
                 == sorted(item["anchor"]["line_index"] for item in window["frames"]),
                 window["paging"])
@@ -427,20 +498,91 @@ def main() -> int:
     results.add("an unusable sample_id is refused rather than guessed", status == 400 and code_of(bad_token) == "sample_id_invalid", status)
     status, other_stream = get_json(f"{P}/api/v1/episodes/{complete_id}/frames?run_id={complete_run}&stream=lidar")
     results.add("a stream with no persisted frames returns an empty page rather than a substitute",
-                status == 200 and other_stream["frames"] == [] and other_stream["paging"]["next_offset"] is None,
+                status == 200 and other_stream["frames"] == [] and other_stream["paging"]["next_offset"] is None
+                and other_stream["paging"]["has_more"] is False,
                 other_stream["paging"])
     status, incomplete_frames = get_json(f"{P}/api/v1/episodes/{failed_id}/frames?run_id={failed_run}&limit=10")
     results.add("the incomplete real record exposes frame linkage in the documented vocabulary",
                 status == 200 and len(incomplete_frames["frames"]) == 4
-                and all(item["linkage_status"] in ("matched", "partial", "missing") for item in incomplete_frames["frames"]),
+                and all(item["linkage_status"] in ("matched", "partial", "missing") for item in incomplete_frames["frames"])
+                and all(role_status in frames["linkage"]["status_meaning"]
+                        for counts in incomplete_frames["linkage"]["role_coverage_on_this_page"].values()
+                        for role_status in counts),
                 {"statuses": [item["linkage_status"] for item in incomplete_frames["frames"]],
                  "coverage": incomplete_frames["linkage"]["role_coverage_on_this_page"]})
     results.add("frame linkage never opens the door to 3d replay or live substitution",
                 frames["three_d_replay"]["this_slice_does_not_enable_3d_replay"] is True
                 and frames["three_d_replay"]["live_geometry_or_actual_may_be_applied"] is False
                 and frames["three_d_replay"]["transforms_are_full_per_body_pose_sequences"] is False
+                and frames["three_d_replay"]["robot_pose_readiness_slice"].startswith("GET /api/v1/episodes")
                 and any("cross-episode cursor" in item for item in frames["capability_limits"]),
                 frames["three_d_replay"])
+
+    # ---- historical robot pose against the frozen model (readiness, not rendering) --
+    status, pose = get_json(f"{P}/api/v1/episodes/{complete_id}/robot-state?run_id={complete_run}"
+                            f"&sample_id={page[0]['sample_id']}")
+    results.add("pose preparation reads the recorded frame through the same linkage rules",
+                status == 200 and pose["schema_version"] == "unirobot-mobilecar-history-pose-1"
+                and pose["read_only"] is True and pose["frame"]["sample_id"] == page[0]["sample_id"]
+                and pose["frame"]["linkage_schema"] == "unirobot-mobilecar-frame-link-2",
+                {"status": status, "code": code_of(pose)})
+    results.add("the recorded run identity equals the frozen geometry bundle identity",
+                pose["model_resource"]["status"] == "match"
+                and all(item["equal"] for item in pose["model_resource"]["comparison"].values())
+                and pose["identity"]["recorded_run_manifest"]["model_sha256"]
+                == pose["model_resource"]["comparison"]["model_sha256"]["bundle"],
+                {"comparison": pose["model_resource"]["comparison"],
+                 "bundle_sha256": pose["model_resource"]["bundle_sha256"],
+                 "content_identity": pose["model_resource"]["content_identity_sha256"]})
+    pose_mapping = {item["target"]: item for item in pose["mapping"]}
+    results.add("the arm maps onto the bundle's five hinge joints with its attested index named",
+                pose_mapping["arm_joint_positions"]["status"] == "partially_verified"
+                and pose_mapping["arm_joint_positions"]["recorded_length"] == 5
+                and pose_mapping["arm_joint_positions"]["evidence"]["names_equal_to_bundle"] is True
+                and pose_mapping["arm_joint_positions"]["evidence"]["order_attested_at_index"] == 3
+                and pose_mapping["arm_joint_positions"]["no_default_applied"] is True,
+                {"bundle_joints": pose["model_resource"]["arm_hinge_joints"],
+                 "evidence": pose_mapping["arm_joint_positions"]["evidence"]})
+    results.add("unattested mappings are reported as gaps and never filled with defaults",
+                all(pose_mapping[target]["status"] in ("unverified", "missing")
+                    and pose_mapping[target]["no_default_applied"] is True and pose_mapping[target]["gap"]
+                    for target in ("base_position", "base_orientation", "gripper_joints", "tcp_site_position",
+                                   "camera_extrinsics", "dynamic_scene_objects"))
+                and all(target in pose["pose_readiness"]["blocking_fields"]
+                        for target in ("base_position", "gripper_joints")),
+                {"statuses": {target: pose_mapping[target]["status"] for target in
+                              ("base_position", "base_orientation", "gripper_joints", "tcp_site_position",
+                               "camera_extrinsics", "dynamic_scene_objects")},
+                 "note": "no historical position is recorded for dynamic scene objects, so none is invented"})
+    results.add("resource readiness is kept apart from rendering verification",
+                pose["pose_readiness"]["robot_state_can_be_rebuilt_without_assumptions"] is False
+                and pose["pose_readiness"]["mapping_valid_for_this_episode"] is True
+                and pose["rendering"]["verified"] is False and pose["rendering"]["frontend_assembly_done"] is False
+                and pose["state"]["recorded_payload"]["arm_model_qpos_rad"]
+                == page[0]["state"]["recorded_state"]["arm_model_qpos_rad"],
+                {"readiness": pose["pose_readiness"], "gaps": pose["not_proven"]})
+    results.add("pose time carries the same separated quantities as the frame page",
+                {item["key"] for item in pose["time"]["quantities"]} >= set(state_keys)
+                and pose["time"]["same_clock_verified"] is False
+                and pose["time"]["clock_sameness"]["writer_version_binding"]["synchronized_upgraded_by_numeric_closeness"] is False,
+                {"keys": [item["key"] for item in pose["time"]["quantities"]]})
+    mesh = pose["model_resource"]["assets"][0]
+    status, mesh_body, mesh_headers = raw(f"{P}/api/v1/episodes/{complete_id}/model/assets/{mesh['asset_id']}"
+                                f"?run_id={complete_run}&sha256={mesh['sha256']}")
+    results.add("the frozen bundle mesh is served without reading the live native scene",
+                 status == 200 and hashlib.sha256(mesh_body).hexdigest() == mesh["sha256"]
+                 and mesh_headers.get("x-unirobot-model-source") == "frozen_compiled_geometry_bundle"
+                 and mesh_headers.get("etag") == f'"sha256:{mesh["sha256"]}"',
+                 {"asset_id": mesh["asset_id"], "bytes_on_disk": mesh["bytes"],
+                  "asset_count": len(pose["model_resource"]["assets"])})
+    status, stale_mesh = get_json(f"{P}/api/v1/episodes/{complete_id}/model/assets/{mesh['asset_id']}"
+                                  f"?run_id={complete_run}&sha256={'0' * 64}")
+    results.add("a stale mesh digest is refused instead of silently serving a different revision",
+                 status == 409 and code_of(stale_mesh) == "history_asset_revision_changed", status)
+    status, absent_mesh = get_json(f"{P}/api/v1/episodes/{complete_id}/model/assets/no_such_asset?run_id={complete_run}")
+    results.add("an asset outside the frozen bundle is named as unavailable",
+                 status == 404 and code_of(absent_mesh) == "history_model_asset_unavailable"
+                 and mesh["asset_id"] in absent_mesh["detail"]["supported"], status)
 
     # ---- how the whole archive behaves, over a bounded sample -------------------
     status, sample = get_json(f"{P}/api/v1/episodes?limit=200")
@@ -472,9 +614,10 @@ def main() -> int:
     # ---- contract surface -------------------------------------------------------
     status, openapi = get_json(f"{P}/openapi.json")
     paths = {key: value for key, value in openapi["paths"].items() if key.startswith("/api/v1/episodes")}
-    results.add("OpenAPI exposes exactly the six read-only history paths",
-                len(paths) == 6 and all(set(value) == {"get"} for value in paths.values())
-                and "/api/v1/episodes/{episode_id}/frames" in paths, sorted(paths))
+    results.add("OpenAPI exposes exactly the eight read-only history paths",
+                len(paths) == 8 and all(set(value) == {"get"} for value in paths.values())
+                and {"/api/v1/episodes/{episode_id}/frames", "/api/v1/episodes/{episode_id}/robot-state",
+                     "/api/v1/episodes/{episode_id}/model/assets/{asset_id}"} <= set(paths), sorted(paths))
     results.add("no validate/assessment write is proxied",
                 not any("validate" in key or "assessment" in key or "eligibility" in key for key in paths), sorted(paths))
     status, native_detail, _ = raw(f"{N}/api/v1/episodes/{complete_id}")

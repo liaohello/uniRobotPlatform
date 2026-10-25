@@ -265,6 +265,13 @@ class EpisodeArchive:
             self._manifest_cache[run_id] = value or {}
         return self._manifest_cache[run_id]
 
+    def run_identity(self, run_id: str) -> dict[str, Any]:
+        """The identity the recorder itself wrote for this run, copied from its manifest."""
+        manifest = self._run_manifest(run_id)
+        keys = ("contract_version", "model_id", "model_sha256", "scene_id", "map_mode", "truth_access",
+                "clocks", "software", "created_wall_utc", "run_id")
+        return {key: manifest.get(key) for key in keys if key in manifest}
+
     # ---- list ------------------------------------------------------------------
 
     def list_episodes(self, *, limit: int = DEFAULT_PAGE, offset: int = 0, run_id: str | None = None,
