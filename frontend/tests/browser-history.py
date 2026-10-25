@@ -192,6 +192,14 @@ async def real_flow(page):
     check('source identity and archive baseline are shown as a change-detection reference',
           await attr(page, '[data-archive-sha]', 'data-archive-sha') == detail['source']['archive_baseline']['aggregate_sha256']
           and 'change-detection' in (await page.locator('[data-archive-sha]').inner_text()))
+    check('the resolved root and the path boundary rule are shown as the reader reports them',
+          await attr(page, '[data-source-root-resolved]', 'data-source-root-resolved') == detail['source']['recording_root_resolved']
+          and await attr(page, '[data-source-path-boundary]', 'data-source-path-boundary') == detail['source']['path_boundary'],
+          (await attr(page, '[data-source-path-boundary]', 'data-source-path-boundary'), detail['source'].get('path_boundary')))
+    check('the media summary declares its own truncation and asset exclusions',
+          await attr(page, '[data-media-excluded-count]', 'data-media-excluded-count') == str(detail['media_summary'].get('excluded_count'))
+          and '截断' in (await page.locator('[data-media-kinds]').inner_text()),
+          (await attr(page, '[data-media-excluded-count]', 'data-media-excluded-count'), detail['media_summary'].get('excluded_count')))
     check('history 3D limitation is stated before anything else and live geometry is refused',
           await attr(page, '[data-live-geometry-applied]', 'data-live-geometry-applied') == 'false'
           and await attr(page, '[data-three-d-status]', 'data-three-d-status') == detail['three_d_replay']['status']
@@ -270,6 +278,52 @@ async def real_flow(page):
           await attr(page, '[data-cursor-line-index-clock]', 'data-cursor-line-index-clock') == 'true'
           and 'line_index_is_not_a_clock=true' in (await page.locator('[data-cursor-line-index-clock]').inner_text()))
 
+    numeric = await read_direct(page, '/api/v1/episodes/%s/streams/events/records' % complete_ref['episode_id'], {'run_id': complete_ref['run_id'], 'limit': 1})
+    check('numeric seeking is gated by the numeric_time_bases the reader itself declares',
+          await attr(page, '[data-numeric-time-bases]', 'data-numeric-time-bases') == ','.join(numeric['time']['numeric_time_bases'])
+          and 'wall_utc' not in numeric['time']['numeric_time_bases']
+          and await attr(page, '[data-seek-gate]', 'data-seek-gate') == 'numeric',
+          (await attr(page, '[data-numeric-time-bases]', 'data-numeric-time-bases'), numeric['time']['numeric_time_bases']))
+    time_calls = lambda: len([r for r in report['requests'] if 'time_from' in r['url']])
+    requests_before = time_calls()
+    await page.locator('input[aria-label="定位时间值"]').fill('   ')
+    await page.locator('[data-history-seek]').click()
+    await page.wait_for_selector('[data-seek-error]', timeout=15000)
+    check('a whitespace-only seek box is refused instead of becoming time_from=0',
+          time_calls() == requests_before and '不发送请求' in (await page.locator('[data-seek-error]').inner_text()),
+          (await page.locator('[data-seek-error]').inner_text())[:120])
+    await page.locator('input[aria-label="定位时间值"]').fill('0')
+    await page.locator('[data-history-seek]').click()
+    await wait_records(page, "()=>(document.querySelector('[data-selected-time-base]')?.getAttribute('data-selected-time-base') ?? '')==='sim_time_s'")
+    zero_calls = [r['url'] for r in report['requests'] if 'time_from=0' in r['url']]
+    check('an explicit 0 is a legal seek value and is sent as time_from=0',
+          bool(zero_calls) and await attr(page, '[data-page-returned]', 'data-page-returned') != '0', zero_calls[-1:])
+    await page.locator('select[aria-label="时间基"]').select_option('wall_utc')
+    await wait_records(page, "()=>(document.querySelector('[data-display-time-base]')?.getAttribute('data-display-time-base') ?? '')==='wall_utc'")
+    check('wall_utc is refused for numeric seeking instead of guessing a calendar format',
+          await attr(page, '[data-seek-gate]', 'data-seek-gate') == 'refused'
+          and await page.locator('input[aria-label="定位时间值"]').is_disabled()
+          and await page.locator('[data-history-seek]').is_disabled()
+          and '日历' in (await attr(page, '[data-history-seek]', 'title') or ''))
+    await page.locator('select[aria-label="时间基"]').select_option('sim_time_s')
+    await wait_records(page, "()=>(document.querySelector('[data-display-time-base]')?.getAttribute('data-display-time-base') ?? '')==='sim_time_s'")
+    check('switching the time base drops the previous seek value, error and notice',
+          await page.locator('input[aria-label="定位时间值"]').input_value() == ''
+          and await attr_or_none(page, '[data-seek-error]', 'data-seek-error') is None
+          and await attr_or_none(page, '[data-history-notice]', 'data-history-notice') is None)
+    await page.locator('input[aria-label="定位时间值"]').fill('1.5')
+    await page.locator('[data-stream-option="control"]').click()
+    await wait_records(page, "()=>(document.querySelector('[data-stream-path]')?.getAttribute('data-stream-path') ?? '')==='control.jsonl'")
+    check('switching the stream drops the previous seek value and result notice',
+          await page.locator('input[aria-label="定位时间值"]').input_value() == ''
+          and await attr_or_none(page, '[data-history-notice]', 'data-history-notice') is None)
+    await open_episode(page, complete_ref['run_id'], complete_ref['episode_id'])
+    await page.locator('input[aria-label="定位时间值"]').fill('')
+    check('reopening the episode leaves no carry-over seek text, error or notice',
+          await page.locator('input[aria-label="定位时间值"]').input_value() == ''
+          and await attr_or_none(page, '[data-seek-error]', 'data-seek-error') is None
+          and await attr_or_none(page, '[data-history-notice]', 'data-history-notice') is None)
+
     await open_episode(page, failed_ref['run_id'], failed_ref['episode_id'])
     failed_detail = await read_direct(page, f"/api/v1/episodes/{failed_ref['episode_id']}", {'run_id': failed_ref['run_id']})
     expected_tail_tone = 'ok' if failed_detail['declared']['complete_tail_file_present'] else 'bad'
@@ -336,6 +390,98 @@ async def real_flow(page):
     unavailable = await attr_all(page, '[data-stream-option]', 'data-stream-available')
     check('stream availability is taken from the reader and rendered per stream', unavailable[0] == 'true' and len(unavailable) == len(failed_detail['streams']))
 
+    # The m1p candidate distinguishes "this stream legitimately has no event_seq" from a load
+    # failure; verify that against the record whose assets the probe already resolved.
+    await open_episode(page, complete_ref['run_id'], complete_ref['episode_id'])
+    await page.locator('select[aria-label="记录分页大小"]').select_option('50')
+    await page.locator('[data-stream-option="observations-index"]').click()
+    await wait_records(page, "()=>(document.querySelector('[data-stream-path]')?.getAttribute('data-stream-path') ?? '')==='observations/index.jsonl'")
+    range_page = await read_direct(page, '/api/v1/episodes/%s/streams/observations-index/records' % complete_ref['episode_id'],
+                                   {'run_id': complete_ref['run_id'], 'limit': 5, 'event_seq_from': 1, 'event_seq_to': 5})
+    await page.locator('input[aria-label="event_seq 起点"]').fill('1')
+    await page.locator('input[aria-label="event_seq 终点"]').fill('5')
+    await page.locator('[data-history-filter]').click()
+    await wait_records(page, "()=>(document.querySelector('[data-page-kind]')?.getAttribute('data-page-kind') ?? '')==='filtered-out-without-event-seq'")
+    excluded = range_page['filtering']['event_seq_range']['excluded_without_valid_event_seq']
+    check('an empty interval page is the reader’s exclusion count, not a failed load',
+          range_page['records'] == [] and range_page['filtering']['event_seq_range']['active'] is True and excluded > 0
+          and await attr(page, '[data-page-returned]', 'data-page-returned') == '0'
+          and await attr(page, '[data-filtering-excluded]', 'data-filtering-excluded') == str(excluded)
+          and await attr_or_none(page, '[data-records-error]', 'data-records-error') is None, (excluded,))
+    check('the explanation names the legitimate absence and refuses to invent a sequence number',
+          '合法地没有 event_seq' in await attr(page, '[data-page-explanation]', 'data-page-explanation')
+          and '不补造序号' in await attr(page, '[data-page-explanation]', 'data-page-explanation'))
+    check('excluded lines carry the reader’s own anomaly reasons and value types',
+          (await attr(page, '[data-filtering-anomaly-reasons]', 'data-filtering-anomaly-reasons')) == ','.join(a['reason'] for a in range_page['filtering']['event_seq_range']['anomalies'])
+          and int(await attr(page, '[data-filtering-anomalies]', 'data-filtering-anomalies')) == len(range_page['filtering']['event_seq_range']['anomalies']),
+          (await attr(page, '[data-filtering-anomalies]', 'data-filtering-anomalies'), len(range_page['filtering']['event_seq_range']['anomalies'])))
+    check('an empty page keeps the cursor unpositioned and playback unavailable',
+          await attr(page, '[data-cursor-line]', 'data-cursor-line') == 'null'
+          and await page.locator('[data-history-play]').is_disabled())
+    await page.locator('[data-history-filter-clear]').click()
+    await wait_records(page, "()=>(document.querySelector('[data-page-kind]')?.getAttribute('data-page-kind') ?? '')==='records'")
+    check('clearing the interval reads records again on the same stream',
+          await attr(page, '[data-filtering-active]', 'data-filtering-active') == 'false'
+          and int(await attr(page, '[data-page-returned]', 'data-page-returned')) > 0)
+    range_calls = len([r for r in report['requests'] if 'event_seq_from' in r['url']])
+    await page.locator('input[aria-label="event_seq 起点"]').fill('2.5')
+    await page.locator('[data-history-filter]').click()
+    await page.wait_for_selector('[data-filter-error]', timeout=15000)
+    check('a non-integer interval bound is refused locally and no request is sent',
+          len([r for r in report['requests'] if 'event_seq_from' in r['url']]) == range_calls
+          and '整数' in (await page.locator('[data-filter-error]').inner_text()))
+    await page.locator('input[aria-label="event_seq 起点"]').fill('')
+    await page.locator('[data-history-filter]').click()
+    await wait_records(page, "()=>(document.querySelector('[data-page-kind]')?.getAttribute('data-page-kind') ?? '')==='records'")
+
+    # observations-persist declares its media as rgb_uri / depth_uri / valid_mask_uri and has no
+    # asset_uri at all, so the viewer must follow those fields instead of guessing a filename.
+    persist_page = await read_direct(page, '/api/v1/episodes/%s/streams/observations-persist/records' % complete_ref['episode_id'],
+                                     {'run_id': complete_ref['run_id'], 'limit': 3})
+    first_persist = persist_page['records'][0]['record']
+    await page.locator('[data-stream-option="observations-persist"]').click()
+    await wait_records(page, "()=>(document.querySelector('[data-stream-path]')?.getAttribute('data-stream-path') ?? '')==='observations/persist.jsonl'")
+    check('persist media comes from the record’s own rgb/depth/mask fields, with no asset_uri invented',
+          all(first_persist.get(key) for key in ('rgb_uri', 'depth_uri', 'valid_mask_uri'))
+          and 'asset_uri' not in first_persist
+          and (await attr_all(page, '[data-record-row]', 'data-record-media-fields'))[0] == 'rgb_uri|depth_uri|valid_mask_uri'
+          and await attr_all(page, '[data-media-ref]', 'data-media-field') == ['rgb_uri', 'depth_uri', 'valid_mask_uri'],
+          await attr_all(page, '[data-media-ref]', 'data-media-field'))
+    check('persist declares no named numeric time base, so seeking stays refused instead of invented',
+          await attr(page, '[data-cursor-time-base]', 'data-cursor-time-base') == 'none'
+          and await attr(page, '[data-seek-gate]', 'data-seek-gate') == 'refused'
+          and await page.locator('input[aria-label="定位时间值"]').is_disabled()
+          and '无该时间字段' in (await page.locator('.history-record-table tbody tr').first.inner_text()))
+    await page.wait_for_function("()=>(document.querySelector('[data-asset-status]')?.getAttribute('data-asset-status') ?? '')==='bytes'", timeout=40000)
+    check('the rgb reference the record declares is what is read and decoded',
+          await attr(page, '[data-asset-uri]', 'data-asset-uri') == first_persist['rgb_uri']
+          and await attr(page, '[data-asset-field]', 'data-asset-field') == 'rgb_uri'
+          and await attr(page, '[data-asset-media-type]', 'data-asset-media-type') == 'image/png'
+          and await attr(page, '[data-asset-decoded]', 'data-asset-decoded') == 'ok',
+          (await attr(page, '[data-asset-field]', 'data-asset-field'), await attr(page, '[data-asset-decoded]', 'data-asset-decoded')))
+    asset_lines = [await attr_or_none(page, f'[data-asset-{name}-line]', f'data-asset-{name}-line') for name in ('declared', 'verified', 'integrity')]
+    check('declared digest, this-read verification and the integrity conclusion stay three separate statements',
+          all(line is not None for line in asset_lines)
+          and '完整性结论' in (await page.locator('[data-asset-integrity-line]').inner_text())
+          and '本次读取' in (await page.locator('[data-asset-verified-line]').inner_text())
+          and re.fullmatch(r'[0-9a-f]{64}', await attr(page, '[data-asset-sha]', 'data-asset-sha') or '') is not None)
+    await page.locator('[data-media-pick="%s"]' % first_persist['depth_uri']).click()
+    await page.wait_for_function("(uri)=>{const el=document.querySelector('[data-asset-uri]');return !!el && el.getAttribute('data-asset-uri')===uri && (document.querySelector('[data-asset-status]')?.getAttribute('data-asset-status') ?? '')==='bytes';}",
+                                 arg=first_persist['depth_uri'], timeout=40000)
+    check('the numpy depth asset is read as bytes and stated as not inline-displayable',
+          await attr(page, '[data-asset-field]', 'data-asset-field') == 'depth_uri'
+          and await attr(page, '[data-asset-media-type]', 'data-asset-media-type') == 'application/octet-stream'
+          and await attr(page, '[data-asset-not-inline]', 'data-asset-not-inline') == 'true'
+          and int(await attr(page, '[data-asset-bytes]', 'data-asset-bytes')) > 0)
+    await page.locator('[data-media-pick="%s"]' % first_persist['valid_mask_uri']).click()
+    await page.wait_for_function("(uri)=>{const el=document.querySelector('[data-asset-uri]');return !!el && el.getAttribute('data-asset-uri')===uri && (document.querySelector('[data-asset-decoded]')?.getAttribute('data-asset-decoded') ?? '')==='ok';}",
+                                 arg=first_persist['valid_mask_uri'], timeout=40000)
+    check('the valid-mask reference is read as its own asset, never reused from the rgb image',
+          await attr(page, '[data-asset-field]', 'data-asset-field') == 'valid_mask_uri'
+          and await attr(page, '[data-asset-uri]', 'data-asset-uri') == first_persist['valid_mask_uri'])
+    report['real']['persist_refs'] = [first_persist['rgb_uri'], first_persist['depth_uri'], first_persist['valid_mask_uri']]
+    report['real']['event_seq_filter'] = {'excluded': excluded, 'anomalies': len(range_page['filtering']['event_seq_range']['anomalies'])}
+
 
 # ---- synthetic ---------------------------------------------------------------------------------------
 
@@ -399,7 +545,10 @@ def records_payload(episode, stream, records, **patch):
              'stream': {'stream_id': stream, 'relative_path': f'{stream}.jsonl', 'format': 'jsonl', 'file_bytes': 10},
              'paging': {'limit': 5, 'offset': 0, 'returned': len(records), 'scanned_lines': len(records) + 1, 'skipped_before_offset': 0, 'next_offset': None, 'has_more': False},
              'cursor': {'order': 'native_append_order', 'first_line_index': 0, 'last_line_index': len(records) - 1, 'first_event_seq': 1, 'last_event_seq': len(records), 'line_index_is_not_a_clock': True},
-             'time': {'selected_time_base': None, 'time_from': None, 'time_to': None, 'units': 'seconds for *_s', 'records_without_the_selected_base': 0, 'synchronized_across_streams': False},
+             'time': {'selected_time_base': None, 'time_from': None, 'time_to': None, 'units': 'seconds for *_s', 'records_without_the_selected_base': 0,
+                      'numeric_time_bases': ['arrival_time_s', 'backend_monotonic_s', 'measurement_time_s', 'sim_time_s'], 'synchronized_across_streams': False},
+             'filtering': {'event_seq_range': {'from': None, 'to': None, 'active': False, 'excluded_without_valid_event_seq': 0, 'anomalies': []},
+                           'note': 'when a range is active, records whose event_seq is missing, non-integer or boolean are excluded and counted'},
              'records': [{'line_index': i, 'record': r} for i, r in enumerate(records)],
              'integrity': {'corrupt_lines': [], 'lines_over_read_size_limit': [], 'declared_status': {'recording_status': 'COMPLETE', 'audit_status': 'COMPLETE', 'declaration_only': True}, 'scope': 'records returned by this page only', 'not_verified': ['records outside this page']}}
     value.update(patch)
@@ -453,14 +602,34 @@ async def synthetic_handler(route):
                 await asyncio.sleep(1.8)
                 SLOW['state'] = 'done'
             base = query.get('time_base', [None])[0]
-            page = records_payload(path.split('/episodes/')[1].split('/')[0], 'events', EVENTS,
-                                   time={**records_payload('', '', [])['time'], 'selected_time_base': base, 'records_without_the_selected_base': 1 if base else 0})
+            rows = EVENTS
+            filtering = records_payload('', '', [])['filtering']
+            if 'event_seq_from' in query:
+                low, high = int(query['event_seq_from'][0]), int((query.get('event_seq_to') or ['999999'])[0])
+                rows = [item for item in EVENTS if low <= item['event_seq'] <= high]
+                filtering = {'event_seq_range': {'from': low, 'to': high, 'active': True, 'excluded_without_valid_event_seq': 0, 'anomalies': []}, 'note': filtering['note']}
+            page = records_payload(path.split('/episodes/')[1].split('/')[0], 'events', rows,
+                                   time={**records_payload('', '', [])['time'], 'selected_time_base': base, 'records_without_the_selected_base': 1 if base else 0},
+                                   filtering=filtering)
+            await route.fulfill(json=page); return
+        if 'event_seq_from' in query and stream == 'observations-index':
+            # The reader answers 200 with an empty page and the exclusion count for a stream whose
+            # native records legitimately carry no event_seq at all.
+            low, high = int(query['event_seq_from'][0]), int((query.get('event_seq_to') or ['999999'])[0])
+            episode = path.split('/episodes/')[1].split('/')[0]
+            page = records_payload(episode, 'observations-index', [],
+                                   paging={'limit': 5, 'offset': 0, 'returned': 0, 'scanned_lines': len(OBS), 'skipped_before_offset': 0, 'next_offset': None, 'has_more': False},
+                                   cursor={'order': 'native_append_order', 'first_line_index': None, 'last_line_index': None, 'first_event_seq': None, 'last_event_seq': None, 'line_index_is_not_a_clock': True},
+                                   filtering={'event_seq_range': {'from': low, 'to': high, 'active': True, 'excluded_without_valid_event_seq': len(OBS),
+                                                                   'anomalies': [{'line_index': i, 'reason': 'event_seq_missing_or_not_integer', 'value_type': 'NoneType'} for i in range(len(OBS))]},
+                                              'note': 'no sequence number is invented'})
+            page['stream']['relative_path'] = 'observations/index.jsonl'
             await route.fulfill(json=page); return
         if stream == 'observations-index':
             page = records_payload(path.split('/episodes/')[1].split('/')[0], 'observations-index', OBS)
             page['stream']['relative_path'] = 'observations/index.jsonl'
-            page['integrity'] = {**page['integrity'], 'corrupt_lines': [{'line_index': 1, 'error': 'json_invalid'}],
-                                 'lines_over_read_size_limit': [{'line_index': 1, 'bytes': 99}], 'not_verified': ['records outside this page', 'asset payloads referenced by these records']}
+            page['integrity'] = {**page['integrity'], 'corrupt_lines': [{'line_index': 1, 'error': 'json_invalid', 'column': 7}],
+                                 'lines_over_read_size_limit': [7, 9], 'not_verified': ['records outside this page', 'asset payloads referenced by these records']}
             await route.fulfill(json=page); return
         await route.fulfill(json=records_payload(path.split('/episodes/')[1].split('/')[0], stream, [])); return
     if path.endswith('/streams'):
@@ -560,10 +729,12 @@ async def synthetic_flow(page):
 
     await page.locator('[data-stream-option="observations-index"]').click()
     await wait_records(page, "()=>(document.querySelector('[data-stream-path]')?.getAttribute('data-stream-path') ?? '')==='observations/index.jsonl'")
-    check('corrupt and over-size lines are surfaced per page',
+    scope_text = await page.locator('[data-page-scope]').evaluate('e=>e.parentElement.innerText')
+    check('corrupt and over-size lines are surfaced per page with the reader’s own line numbers',
           await attr(page, '[data-corrupt-lines]', 'data-corrupt-lines') == '1'
-          and await attr(page, '[data-over-size-lines]', 'data-over-size-lines') == '1'
-          and 'asset payloads referenced by these records' in (await page.locator('[data-page-scope]').evaluate('e=>e.parentElement.innerText')))
+          and await attr(page, '[data-over-size-lines]', 'data-over-size-lines') == '2'
+          and '超限行 7,9' in scope_text and '@列 7' in scope_text
+          and 'asset payloads referenced by these records' in scope_text, scope_text[:220])
     check('a record without a media reference is stated, not filled with another sample',
           await attr(page, '[data-media-bound]', 'data-media-bound') == 'false'
           and 'asset_uri' in (await page.locator('[data-media-none]').inner_text()))
@@ -603,7 +774,53 @@ async def synthetic_flow(page):
     await page.wait_for_function("()=>(document.querySelector('[data-display-time-base]')?.getAttribute('data-display-time-base') ?? '')==='wall_utc'", timeout=20000)
     check('a text time base is not offered for numeric seeking instead of guessing a format',
           await page.locator('[data-history-seek]').is_disabled()
-          and '需要已声明的数值时间基' in (await page.locator('input[aria-label="定位时间值"]').get_attribute('placeholder') or ''))
+          and await page.locator('input[aria-label="定位时间值"]').is_disabled()
+          and '需要数值时间基' in (await page.locator('input[aria-label="定位时间值"]').get_attribute('placeholder') or ''))
+    check('the refusal lists the numeric bases the reader accepts instead of assuming one',
+          await attr(page, '[data-seek-gate]', 'data-seek-gate') == 'refused'
+          and 'numeric_time_bases=' in (await attr(page, '[data-history-seek]', 'title') or '')
+          and 'wall_utc' not in (await attr(page, '[data-numeric-time-bases]', 'data-numeric-time-bases') or ''))
+    await page.locator('select[aria-label="时间基"]').select_option('backend_monotonic_s')
+    await wait_records(page, "()=>(document.querySelector('[data-display-time-base]')?.getAttribute('data-display-time-base') ?? '')==='backend_monotonic_s'")
+    check('a numeric base re-enables the seek box that the calendar base disabled',
+          await attr(page, '[data-seek-gate]', 'data-seek-gate') == 'numeric'
+          and await page.locator('input[aria-label="定位时间值"]').is_enabled())
+    time_calls = len([r for r in report['requests'] if 'time_from' in r['url']])
+    await page.locator('input[aria-label="定位时间值"]').fill('   ')
+    await page.locator('[data-history-seek]').click()
+    await page.wait_for_selector('[data-seek-error]', timeout=15000)
+    check('a whitespace-only seek box sends no request and is not turned into 0',
+          len([r for r in report['requests'] if 'time_from' in r['url']]) == time_calls
+          and '不发送请求' in (await page.locator('[data-seek-error]').inner_text()))
+    await page.locator('input[aria-label="定位时间值"]').fill('0')
+    await page.locator('[data-history-seek]').click()
+    await page.wait_for_function("()=>(document.querySelector('[data-selected-time-base]')?.getAttribute('data-selected-time-base') ?? '')==='backend_monotonic_s'", timeout=20000)
+    check('an explicit 0 is a legal value and is sent as time_base + time_from=0',
+          any('time_base=backend_monotonic_s' in r['url'] and 'time_from=0' in r['url'] for r in report['requests']))
+    await page.locator('select[aria-label="时间基"]').select_option('sim_time_s')
+    await wait_records(page, "()=>(document.querySelector('[data-display-time-base]')?.getAttribute('data-display-time-base') ?? '')==='sim_time_s'")
+    check('changing the time base drops both the previous value and the previous refusal',
+          await page.locator('input[aria-label="定位时间值"]').input_value() == ''
+          and await attr_or_none(page, '[data-seek-error]', 'data-seek-error') is None)
+
+    # An empty result page must not keep the previous record's media on screen.
+    await page.locator('[data-stream-option="observations-index"]').click()
+    await wait_records(page, "()=>(document.querySelector('[data-stream-path]')?.getAttribute('data-stream-path') ?? '')==='observations/index.jsonl'")
+    await goto_index(page, 1)
+    await page.wait_for_function("()=>(document.querySelector('[data-asset-status]')?.getAttribute('data-asset-status') ?? '')==='bytes'", timeout=20000)
+    await page.locator('input[aria-label="event_seq 起点"]').fill('1')
+    await page.locator('input[aria-label="event_seq 终点"]').fill('2')
+    await page.locator('[data-history-filter]').click()
+    await wait_records(page, "()=>(document.querySelector('[data-page-kind]')?.getAttribute('data-page-kind') ?? '')==='filtered-out-without-event-seq'")
+    check('an empty page clears the media slot instead of keeping the previous record’s image',
+          await page.locator('[data-asset-uri]').count() == 0
+          and await attr(page, '[data-media-bound]', 'data-media-bound') == 'false'
+          and int(await attr(page, '[data-filtering-excluded]', 'data-filtering-excluded')) == len(OBS)
+          and await attr(page, '[data-cursor-line]', 'data-cursor-line') == 'null')
+    await page.locator('[data-history-filter-clear]').click()
+    await wait_records(page, "()=>(document.querySelector('[data-page-kind]')?.getAttribute('data-page-kind') ?? '')==='records'")
+    await page.locator('[data-stream-option="events"]').click()
+    await wait_records(page, "()=>(document.querySelector('[data-stream-path]')?.getAttribute('data-stream-path') ?? '')==='events.jsonl'")
 
     await page.locator('[data-episode-open="episode_ok"]').click()
     await page.wait_for_selector('[data-detail-episode="episode_ok"]', timeout=30000)

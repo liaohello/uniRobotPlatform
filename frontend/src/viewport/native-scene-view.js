@@ -47,6 +47,7 @@ export class SceneView {
     this.disposed = false;
     this.manifestRevision = 0;
     this.pendingLoads = 0;
+    this.fitTimer = null;
     this.failedAssets = new Set();
     this.container = container;
     this.onTargetDrag = onTargetDrag;
@@ -592,7 +593,9 @@ export class SceneView {
   _scheduleFit() {
     if (this.disposed || this.userHasNavigated) return;
     window.clearTimeout(this.fitTimer);
-    this.fitTimer = window.setTimeout(() => this.fitView(), 120);
+    // The timer id is cleared when it fires so `fitPending` stays a truthful "a fit can still move
+    // the camera" signal for the inspection hook; a stale id would report pending forever.
+    this.fitTimer = window.setTimeout(() => { this.fitTimer = null; this.fitView(); }, 120);
   }
 
   resize() {

@@ -12,6 +12,7 @@ export class SceneView {
  linkGroups: Map<string,{group: THREE.Group;link: SceneLink}>; worldGroups: Map<string,{group: THREE.Group;link: SceneLink}>; ghostGroups: Map<string,{group: THREE.Group;link: SceneLink}>;
  raycaster: THREE.Raycaster; pointer: THREE.Vector2; planObject: THREE.Line | null;
  pendingLoads: number; failedAssets: Set<string>; renderCount: number; lastFrameCostMs: number | null;
+ fitTimer: number | null; userHasNavigated?: boolean;
  _bindPointer(): void; _setPointer(event: PointerEvent): boolean; _requestRender(immediate?: boolean): void;
  _clearPlan(): void; _applyJointValues(joints: Record<string,number>, ghost?: boolean): void;
  _buildGeom(geom:SceneGeom,ghost:boolean):THREE.Group|null;

@@ -334,7 +334,7 @@ export class WorkbenchScene extends SceneView {
    const marker=this.actualTcp.getWorldPosition(new THREE.Vector3()).applyMatrix4(inverseRoot);
    const tip=this.sample.armSpec&&this.linkGroups.get(this.sample.armSpec.tcp.body)?.group;
    const fk=tip&&tip.localToWorld(new THREE.Vector3(...this.sample.armSpec!.tcp.position)).applyMatrix4(inverseRoot);
-   return {instanceId:this.instanceId,disposed:this.disposed,gizmoAxis:this.gizmo.axis,gizmoEnabled:this.gizmo.enabled,trace:this.trace.slice(),pendingLoads:this.pendingLoads,failedAssets:[...this.failedAssets],renderCount:this.renderCount,lastFrameCostMs:this.lastFrameCostMs,selected:this.selected,tool:this.tool,ghost:this.ghostRoot.visible,dragging:this.gizmo.dragging,orbitEnabled:this.controls.enabled,linkPoints,worldPoints,handles,rings,geoms,
+   return {instanceId:this.instanceId,disposed:this.disposed,gizmoAxis:this.gizmo.axis,gizmoEnabled:this.gizmo.enabled,trace:this.trace.slice(),pendingLoads:this.pendingLoads,fitPending:this.fitTimer!==null,autoFitSuppressed:this.userHasNavigated===true,failedAssets:[...this.failedAssets],renderCount:this.renderCount,lastFrameCostMs:this.lastFrameCostMs,selected:this.selected,tool:this.tool,ghost:this.ghostRoot.visible,dragging:this.gizmo.dragging,orbitEnabled:this.controls.enabled,linkPoints,worldPoints,handles,rings,geoms,
      tcp:{markerWorldSim:marker.toArray(),fkWorldSim:fk?fk.toArray():null,errorM:fk?fk.distanceTo(marker):null},
      viewport:{width:rect.width,height:rect.height},camera:this.camera.position.toArray(),cameraTarget:this.controls.target.toArray(),
      cameraAspect:this.camera.aspect,cameraDistance:this.camera.position.distanceTo(this.controls.target),

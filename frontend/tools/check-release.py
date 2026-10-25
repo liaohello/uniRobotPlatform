@@ -1,8 +1,8 @@
 """Run only on the authorized server, inside an already hash-frozen frontend release."""
 from pathlib import Path
 import argparse,datetime,functools,hashlib,http.server,json,os,socket,subprocess,sys,urllib.request
-p=argparse.ArgumentParser();p.add_argument('release',type=Path);p.add_argument('--environment',type=Path,required=True);p.add_argument('--node-bin',type=Path,required=True);p.add_argument('--browser-python',type=Path,required=True);p.add_argument('--reports',type=Path,required=True);p.add_argument('--port',type=int,required=True);p.add_argument('--read-only',action='store_true');p.add_argument('--upstream',default='http://127.0.0.1:18941');p.add_argument('--geometry',action='store_true');p.add_argument('--usability',action='store_true');p.add_argument('--config',action='store_true');p.add_argument('--session',action='store_true');p.add_argument('--map',action='store_true');p.add_argument('--lifecycle',action='store_true');p.add_argument('--lifecycle-live',action='store_true');p.add_argument('--map-mode',default='live',choices=('live','offline'));p.add_argument('--history',action='store_true');p.add_argument('--history-mode',default='real',choices=('real','synthetic'));p.add_argument('--skip-readonly',action='store_true');a=p.parse_args()
-r=a.release.resolve();front=r/'frontend';a.reports.mkdir(parents=True,exist_ok=False)
+p=argparse.ArgumentParser();p.add_argument('release',type=Path);p.add_argument('--environment',type=Path,required=True);p.add_argument('--node-bin',type=Path,required=True);p.add_argument('--browser-python',type=Path,required=True);p.add_argument('--reports',type=Path,required=True);p.add_argument('--port',type=int,required=True);p.add_argument('--read-only',action='store_true');p.add_argument('--upstream',default='http://127.0.0.1:18941');p.add_argument('--geometry',action='store_true');p.add_argument('--usability',action='store_true');p.add_argument('--config',action='store_true');p.add_argument('--session',action='store_true');p.add_argument('--map',action='store_true');p.add_argument('--lifecycle',action='store_true');p.add_argument('--lifecycle-live',action='store_true');p.add_argument('--map-mode',default='live',choices=('live','offline'));p.add_argument('--history',action='store_true');p.add_argument('--history-mode',default='real',choices=('real','synthetic'));p.add_argument('--skip-readonly',action='store_true');p.add_argument('--preview-registry',type=Path);p.add_argument('--preview-round',default='unregistered');a=p.parse_args()
+r=a.release.resolve();front=r/'frontend';a.environment=a.environment.resolve();a.reports.mkdir(parents=True,exist_ok=False)
 def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 manifest=json.loads((r/'source-manifest.json').read_text())
 for f in manifest['files']:
@@ -18,7 +18,10 @@ def run(name,cmd):
   subprocess.run(cmd,cwd=front,env=env,stdout=out,stderr=subprocess.STDOUT,check=True)
 def native():
  with urllib.request.urlopen('http://127.0.0.1:8792/api/v1/health',timeout=10) as response:return json.load(response)
-port_probe=socket.socket();port_probe.bind(('127.0.0.1',a.port));port_probe.close()
+port_probe=socket.socket()
+try:port_probe.bind(('127.0.0.1',a.port))
+except OSError as error:raise SystemExit(f'port {a.port} is not free ({error}); run tools/preview-registry.py free-port first and never reuse a delivered preview port')
+finally:port_probe.close()
 before=native()
 process_before=subprocess.check_output(['ss','-ltnp'],text=True)
 (a.reports/'listeners-before.txt').write_text(process_before)
@@ -28,8 +31,10 @@ run('unit.log',['npm','test','--','--maxWorkers=2','--reporter=default','--repor
 with (a.reports/'preview.log').open('w') as log:
  preview_command=([sys.executable,str(front/'tools/serve-readonly.py'),'--port',str(a.port),'--directory',str(front/'dist'),'--upstream',a.upstream] if a.read_only else [sys.executable,'-m','http.server',str(a.port),'--bind','127.0.0.1','--directory',str(front/'dist')])
  preview=subprocess.Popen(preview_command,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
-server={'pid':preview.pid,'port':a.port,'upstream':a.upstream,'release_id':manifest['release_id'],'directory':str(front/'dist'),'started_at_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+server={'pid':preview.pid,'port':a.port,'upstream':a.upstream,'release_id':manifest['release_id'],'directory':str(front/'dist'),'command':preview_command,'started_at_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
 (a.reports/'preview.json').write_text(json.dumps(server,indent=2)+'\n')
+if a.preview_registry:
+ run('preview-registry.log',[sys.executable,str(front/'tools/preview-registry.py'),'--registry',str(a.preview_registry),'register','--preview-json',str(a.reports/'preview.json'),'--round',a.preview_round])
 try:
  if not a.skip_readonly: run('browser.log',[str(a.browser_python),str(front/('tests/browser-readonly.py' if a.read_only else 'tests/browser-workbench.py')),'http://127.0.0.1:'+str(a.port),str(a.reports/'browser')])
  if a.read_only and not a.skip_readonly:run('frozen-browser.log',[str(a.browser_python),str(front/'tests/browser-workbench.py'),'http://127.0.0.1:'+str(a.port),str(a.reports/'frozen-browser')])

@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../src/adapters/platform-config';
 import {
-  EpisodeContractError, PlatformEpisodeApi, ambiguousRuns, associationNotice, checksumFinding, describeHistoryError,
-  emptyListKind, integrityFacets, isAmbiguous, mediaRefsOf, presentTimeBases, rowViews, streamViews, threeDNotice, timeFieldOf, unitOf,
+  EpisodeContractError, PlatformEpisodeApi, ambiguousRuns, associationNotice, autoLoadRef, checksumFinding, describeHistoryError,
+  emptyListKind, integrityFacets, isAmbiguous, mediaRefsOf, numericBasesOf, pageExplanation, pageKind, parseSeekValue,
+  presentTimeBases, rowViews, seekGate, streamViews, threeDNotice, timeFieldOf, unitOf,
   type EpisodeDetailDto, type EpisodeListDto, type RecordPageDto,
 } from '../src/adapters/platform-episodes';
 
@@ -214,7 +215,8 @@ describe('time, identity, media and 3D semantics', () => {
     expect(refs.map((ref) => ref.role)).toEqual(['primary', 'valid_mask']);
     expect(refs[0].declaredSha256).toBe('c'.repeat(64));
     expect(refs[0].kind).toBe('rgb');
-    expect(refs[1].hasDeclaredSha).toBe(false);
+    expect(refs[1].declaredSha256).toBeNull();
+    expect(refs[1].declaredShaSource).toContain('本条无声明摘要');
     expect(mediaRefsOf({ sample_id: 'laser_1' }, detailFixture())).toEqual([]);
   });
   it('states the history 3D limitation and the unknown legacy association', () => {
@@ -245,5 +247,96 @@ describe('time, identity, media and 3D semantics', () => {
     expect(page.integrity.declared_status?.declaration_only).toBe(true);
     expect(page.integrity.not_verified).toContain('records outside this page');
     expect(presentTimeBases(page.records.map((item) => item.record))).toEqual(['wall_utc', 'backend_monotonic_s']);
+  });
+});
+
+// The m1p candidate (18964) answers with two blocks the earlier candidate never sent:
+// `time.numeric_time_bases` and `filtering.event_seq_range`. These fix the adaptation to that
+// payload, not to a remembered shape.
+describe('seek context and 18964 read semantics', () => {
+  const numericTime = { units: 'seconds for *_s', records_without_the_selected_base: 0, synchronized_across_streams: false, numeric_time_bases: ['arrival_time_s', 'backend_monotonic_s', 'measurement_time_s', 'sim_time_s'] };
+  it('never turns a blank seek box into 0 and still accepts an explicit zero', () => {
+    expect(parseSeekValue('')).toEqual({ value: null, error: expect.stringContaining('不发送请求') });
+    expect(parseSeekValue('   ')).toEqual({ value: null, error: expect.stringContaining('不发送请求') });
+    expect(parseSeekValue('0')).toEqual({ value: 0, error: null });
+    expect(parseSeekValue(' 0.0 ')).toEqual({ value: 0, error: null });
+    expect(parseSeekValue('-2.5')).toEqual({ value: -2.5, error: null });
+    expect(parseSeekValue('abc').value).toBeNull();
+    expect(parseSeekValue('NaN').value).toBeNull();
+    expect(parseSeekValue('Infinity').value).toBeNull();
+    expect(parseSeekValue('abc').error).toContain('不代替为 0');
+  });
+  it('gates numeric seeking on the numeric_time_bases the reader declares', () => {
+    const page = pageFixture([{ line_index: 0, record: { sim_time_s: 1 } }], { time: { ...numericTime, selected_time_base: null, time_from: null, time_to: null } } as Partial<RecordPageDto>);
+    expect(numericBasesOf(page)).toEqual(['arrival_time_s', 'backend_monotonic_s', 'measurement_time_s', 'sim_time_s']);
+    expect(seekGate(page, '').allowed).toBe(false);
+    expect(seekGate(page, 'wall_utc').allowed).toBe(false);
+    expect(seekGate(page, 'wall_utc').reason).toContain('numeric_time_bases=');
+    expect(seekGate(page, 'sim_time_s').allowed).toBe(true);
+    // A narrower server list wins over the declared fallback set.
+    const narrow = pageFixture([], { time: { ...numericTime, selected_time_base: null, time_from: null, time_to: null, numeric_time_bases: ['sim_time_s'] } } as Partial<RecordPageDto>);
+    expect(seekGate(narrow, 'measurement_time_s').allowed).toBe(false);
+    // Before any page exists the gate falls back to the contract's numeric bases, not to guessing.
+    expect(numericBasesOf(null)).toEqual(['backend_monotonic_s', 'sim_time_s', 'measurement_time_s', 'arrival_time_s']);
+  });
+  it('keeps an empty filtered page distinct from a load failure', () => {
+    const excluded = pageFixture([], {
+      paging: { limit: 5, offset: 0, returned: 0, scanned_lines: 3038, skipped_before_offset: 0, next_offset: null, has_more: false },
+      filtering: { event_seq_range: { from: 1, to: 5, active: true, excluded_without_valid_event_seq: 3038, anomalies: [{ line_index: 0, reason: 'event_seq_missing_or_not_integer', value_type: 'NoneType' }] }, note: 'no sequence number is invented' },
+    } as Partial<RecordPageDto>);
+    expect(pageKind(excluded)).toBe('filtered-out-without-event-seq');
+    expect(pageExplanation(excluded)).toContain('合法地没有 event_seq');
+    expect(pageExplanation(excluded)).toContain('3038');
+    expect(pageExplanation(excluded)).toContain('不补造序号');
+    expect(pageExplanation(excluded)).toContain('也不判为读取失败');
+    const windowEmpty = pageFixture([], { filtering: { event_seq_range: { from: 90, to: 99, active: true, excluded_without_valid_event_seq: 0, anomalies: [] } } } as Partial<RecordPageDto>);
+    expect(pageKind(windowEmpty)).toBe('window-empty');
+    const pastEnd = pageFixture([], { paging: { limit: 5, offset: 900, returned: 0, scanned_lines: 12561, skipped_before_offset: 900, next_offset: null, has_more: false } } as Partial<RecordPageDto>);
+    expect(pageKind(pastEnd)).toBe('offset-past-end');
+    expect(pageKind(pageFixture([{ line_index: 0, record: {} }]))).toBe('records');
+    expect(pageKind(null)).toBe('unavailable');
+  });
+  it('reads the persist stream record references instead of asset_uri', () => {
+    const persistRecord = {
+      sample_id: 'rgbd_e3213e6cb64b4cd693c17d485d064d09', stream_id: 'observations-persist', kinds: ['rgb', 'depth'],
+      rgb_uri: 'assets/rgb/rgbd_e3213e6cb64b4cd693c17d485d064d09_rgb.png',
+      depth_uri: 'assets/depth/rgbd_e3213e6cb64b4cd693c17d485d064d09_depth_m.npy',
+      valid_mask_uri: 'assets/masks/rgbd_e3213e6cb64b4cd693c17d485d064d09_valid.png',
+      persist_sequence: 1, arrival_to_persist_ms: 12.5,
+    };
+    const refs = mediaRefsOf(persistRecord, detailFixture());
+    expect(refs.map((ref) => ref.field)).toEqual(['rgb_uri', 'depth_uri', 'valid_mask_uri']);
+    expect(refs.map((ref) => ref.role)).toEqual(['rgb', 'depth', 'valid_mask']);
+    expect(autoLoadRef(refs)?.uri).toBe('assets/rgb/rgbd_e3213e6cb64b4cd693c17d485d064d09_rgb.png');
+    expect(refs.find((ref) => ref.role === 'depth')?.autoLoad).toBe(false);
+    expect(refs.find((ref) => ref.role === 'depth')?.kind).toBe('depth');
+    // A record-supplied digest beats the truncated media_summary sample and says where it came from.
+    const withOwnDigest = { ...persistRecord, rgb_sha256: 'f'.repeat(64) };
+    const declared = mediaRefsOf(withOwnDigest, detailFixture())[0];
+    expect(declared.declaredSha256).toBe('f'.repeat(64));
+    expect(declared.declaredShaSource).toContain('记录自带 rgb_sha256');
+    // Null references stay null: no filename is derived from the sample id.
+    expect(mediaRefsOf({ sample_id: 'rgbd_abc', asset_uri: null, rgb_uri: null }, detailFixture())).toEqual([]);
+  });
+  it('reports stream unavailability, parse errors and truncated counts from the catalogue', () => {
+    const payload = { streams: [
+      { stream_id: 'events', relative_path: 'events.jsonl', format: 'jsonl', available: true, bytes: 10, records: 3 },
+      { stream_id: 'tail', relative_path: 'episode_complete.json', format: 'json', available: false, reason: 'stream_not_recorded_or_missing' },
+      { stream_id: 'initial-snapshot', relative_path: 'initial_snapshot.json', format: 'json', available: true, records: null, parse_error: 'json_line_too_large' },
+      { stream_id: 'control', relative_path: 'control.jsonl', format: 'jsonl', available: true, records: 50000, scan_truncated: true },
+    ] } as unknown as EpisodeDetailDto;
+    const views = streamViews(payload);
+    expect(views[1]).toMatchObject({ available: false, reason: 'stream_not_recorded_or_missing' });
+    expect(views[2].parseError).toBe('json_line_too_large');
+    expect(views[3].scanTruncated).toBe(true);
+  });
+  it('shows the new reader codes with the numeric list from the server', () => {
+    const notNumeric = new ApiError(400, 'time_base_not_numeric', 'wall_utc is a calendar string, not a numeric clock; use a *_s base for numeric bounds',
+      { code: 'time_base_not_numeric', numeric_bases: ['sim_time_s', 'measurement_time_s'] });
+    expect(describeHistoryError(notNumeric)).toContain('numeric_bases=sim_time_s,measurement_time_s');
+    expect(describeHistoryError(notNumeric)).toContain('界面不猜日历格式');
+    expect(describeHistoryError(new ApiError(404, 'episode_stream_unavailable', 'stream has no file in this record', {}))).toContain('按缺失显示');
+    expect(describeHistoryError(new ApiError(422, 'validation_error', 'Input should be less than or equal to 200', []))).toContain('请求未被执行');
+    expect(describeHistoryError(new ApiError(409, 'episode_path_escape', 'episode directory escapes the root', { relative_path: 'x/episode.json' }))).toContain('路径 x/episode.json');
   });
 });

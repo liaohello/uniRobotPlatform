@@ -14,6 +14,7 @@ import argparse, asyncio, copy, json, time, traceback
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.async_api import async_playwright
+from view_settle import camera_trace, settle_view
 
 p = argparse.ArgumentParser(); p.add_argument('url'); p.add_argument('output', type=Path); a = p.parse_args(); a.output.mkdir(parents=True, exist_ok=True)
 report = {'scope': 'synthetic stateful 18949 Session envelope/current fixture; no native prepared/Start acceptance', 'synthetic': True,
@@ -354,18 +355,22 @@ async def main():
             field = page.get_by_role('spinbutton', name='joint2 Target deg', exact=True)
             await field.fill('10'); await field.press('Tab')
             await page.wait_for_function('window.__workbenchInspect().target!==null', timeout=15000)
-            before = await page.evaluate('window.__workbenchInspect()')
+            before = await settle_view(page)
             fixture['current_mode'] = 'identity_changed'
             await page.get_by_role('button', name='Session 准备', exact=True).click()
             await page.wait_for_function("()=>document.querySelector('.session-drawer [data-session-count]')!==null", timeout=15000)
             await page.get_by_label('选择 Session', exact=True).select_option('ps-fixture-a')
             await page.wait_for_selector('.session-drawer article[data-session-id="ps-fixture-a"][data-session-invalidated="true"]', timeout=15000)
             await page.wait_for_function('window.__workbenchInspect().target===null', timeout=5000)
-            after = await page.evaluate('window.__workbenchInspect()')
+            at_flip = await page.evaluate('window.__workbenchInspect()')
+            after = await settle_view(page)
+            camera_trace(report, 'invalidation cancels the local target', before, at_flip, after)
             check('current identity change disables Start and reports invalidation', await page.locator('.session-drawer article').get_attribute('data-session-startable') == 'false'
                   and await page.locator('.session-drawer [data-session-start]').is_disabled()
                   and await page.locator('.session-drawer article').get_attribute('data-session-current-status') == 'identity_changed')
-            check('invalidation cancels the local target but keeps renderer, camera and layout', after['target'] is None and after['scene']['instanceId'] == before['scene']['instanceId'] and after['scene']['camera'] == before['scene']['camera'])
+            check('invalidation cancels the local target but keeps renderer, camera and layout', after['target'] is None and after['scene']['instanceId'] == before['scene']['instanceId'] and after['scene']['camera'] == before['scene']['camera'] and after['scene']['viewport'] == before['scene']['viewport'],
+                  {'before': before['scene']['camera'], 'at_flip': at_flip['scene']['camera'], 'after': after['scene']['camera'],
+                   'viewport_before': before['scene']['viewport'], 'viewport_after': after['scene']['viewport']})
             check('invalidation does not auto-resend Start', fixture['start_calls'][-1]['session_id'] == 'ps-fixture-a')
             await page.screenshot(path=str(a.output / 'session-invalidated.png'), full_page=True)
 

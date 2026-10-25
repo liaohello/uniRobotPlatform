@@ -11,10 +11,17 @@ export const EPISODE_READ_SCHEMA = 'unirobot-mobilecar-episode-read-1';
 /** `detail.time` names these bases; the reader rejects any other with 400 time_base_unsupported. */
 export const KNOWN_TIME_BASES = ['wall_utc', 'backend_monotonic_s', 'sim_time_s', 'measurement_time_s', 'arrival_time_s'] as const;
 export type TimeBase = (typeof KNOWN_TIME_BASES)[number];
+/**
+ * The reader answers numeric bounds on these bases only; `wall_utc` is a calendar string and it
+ * answers 400 time_base_not_numeric. A page carries the authoritative list in
+ * `time.numeric_time_bases`, so that value wins whenever the page is present.
+ */
+export const DECLARED_NUMERIC_BASES = ['backend_monotonic_s', 'sim_time_s', 'measurement_time_s', 'arrival_time_s'] as const;
 
 export interface EpisodeSource {
   source_id: string; adapter_id: string; robot_id?: string; native_release_id?: string;
-  native_contract_version?: string; recording_root: string; access: string; platform_writes: boolean;
+  native_contract_version?: string; recording_root: string; recording_root_resolved?: string;
+  path_boundary?: string; access: string; platform_writes: boolean;
   declaring_instance?: { base_url: string; config_file?: string; recording_root_in_config?: string; access?: string };
   archive_baseline?: { scope?: string; files_hashed?: number; aggregate_sha256?: string; meaning?: string };
 }
@@ -46,15 +53,17 @@ export interface StreamDto {
   stream_id: string; relative_path: string; format: string; semantics?: string;
   available?: boolean; bytes?: number | null; records?: number | null;
   records_counted?: boolean; records_over_read_size_limit?: number | null;
+  reason?: string; parse_error?: string | null; scan_truncated?: boolean;
 }
 export interface ChecksumEntryDto { relative_path: string; declared_sha256: string; actual_sha256?: string }
 export interface AssetSampleDto { relative_path: string; bytes?: number; declared_sha256?: string | null }
 export interface EpisodeDetailDto {
   schema_version: string; read_only: boolean; source: EpisodeSource; retrieved_at: string;
   identity: {
-    source_id: string; adapter_id: string; recording_root?: string; run_id: string; episode_id: string;
+    source_id: string; adapter_id: string; recording_root?: string; recording_root_resolved?: string;
+    run_id: string; episode_id: string;
     episode_directory?: string; native_contract_version?: string;
-    backend_generation?: { available: boolean; reason: string | null; distinct_values?: (number | string)[] | null; scope?: string };
+    backend_generation?: { available: boolean; reason: string | null; distinct_values?: (number | string)[] | null; values?: (number | string)[] | null; scope?: string };
     segments?: SegmentDto[]; episode_display_name_is_not_a_key?: boolean;
   };
   declared: {
@@ -83,14 +92,18 @@ export interface EpisodeDetailDto {
     model_match?: string | null; scene_match?: string | null; recorded_transforms_available?: boolean | null;
     live_geometry_or_actual_may_be_applied: boolean; reasons?: string[]; still_available?: string[];
   };
-  platform_association: { known: boolean; validated_snapshot_ref: string | null; platform_session_id: string | null; reason?: string | null; policy?: string };
+  platform_association: { known: boolean; validated_snapshot_ref: string | null; platform_session_id: string | null; reason?: string | null; policy?: string; source?: string; sidecar_error?: string | null };
   training_qualification?: { declared_eligibility_present?: boolean | null; training_qualified?: boolean | null; export_valid?: boolean | null; quality_report_present?: boolean | null; blocks_raw_read?: boolean; note?: string };
   media_summary?: {
     assets_root?: string; uri_convention?: string; declared_sha256_source?: string; verification?: string;
+    symlink_or_escape_excluded?: boolean; excluded_count?: number;
     kinds?: Record<string, { count?: number; bytes_total?: number; sample?: AssetSampleDto[]; sample_truncated?: boolean; declared_sha256_coverage?: string }>;
   };
   capability_limits?: string[];
-  run_id?: string;
+}
+export interface EventSeqFilterDto {
+  from: number | null; to: number | null; active: boolean; excluded_without_valid_event_seq: number;
+  anomalies?: { line_index: number; reason: string; value_type: string }[];
 }
 export interface RecordPageDto {
   schema_version: string; read_only: boolean; source: EpisodeSource; retrieved_at: string;
@@ -98,14 +111,15 @@ export interface RecordPageDto {
   stream: { stream_id: string; relative_path: string; format: string; semantics?: string; file_bytes?: number | null };
   paging: EpisodePaging;
   cursor: { order?: string; first_line_index?: number | null; last_line_index?: number | null; first_event_seq?: number | null; last_event_seq?: number | null; line_index_is_not_a_clock: boolean };
-  time: { selected_time_base: string | null; time_from?: number | null; time_to?: number | null; units?: string; records_without_the_selected_base?: number | null; synchronized_across_streams: boolean };
+  time: { selected_time_base: string | null; time_from?: number | null; time_to?: number | null; units?: string; records_without_the_selected_base?: number | null; numeric_time_bases?: string[]; synchronized_across_streams: boolean };
+  filtering?: { event_seq_range?: EventSeqFilterDto; note?: string };
   records: { line_index: number; record: Record<string, unknown> }[];
   integrity: {
-    corrupt_lines?: { line_index: number; error?: string }[]; lines_over_read_size_limit?: { line_index: number; bytes?: number }[];
+    corrupt_lines?: { line_index: number; error?: string; column?: number }[];
+    lines_over_read_size_limit?: number[];
     declared_status?: { recording_status?: string | null; audit_status?: string | null; termination_reason?: string | null; declaration_only?: boolean };
     scope?: string; not_verified?: string[];
   };
-  capability_limits?: string[];
 }
 
 /** Reads only. Five GET paths, exactly the ones the history candidate declares. */
@@ -237,13 +251,14 @@ export function checksumFinding(detail: EpisodeDetailDto): { verdict: string; ve
   };
 }
 
-export interface StreamView { streamId: string; relativePath: string; format: string; available: boolean; bytes: number | null; records: number | null; recordsOverLimit: number | null; semantics: string; declaredBases: string[] | null }
+export interface StreamView { streamId: string; relativePath: string; format: string; available: boolean; bytes: number | null; records: number | null; recordsOverLimit: number | null; semantics: string; declaredBases: string[] | null; reason: string | null; parseError: string | null; scanTruncated: boolean }
 export function streamViews(payload: StreamPageDto | EpisodeDetailDto): StreamView[] {
   const declared = (payload as EpisodeDetailDto).time?.available_time_bases;
   return (payload.streams ?? []).map((s) => ({
     streamId: s.stream_id, relativePath: s.relative_path, format: s.format,
     available: s.available !== false, bytes: s.bytes ?? null, records: s.records ?? null,
     recordsOverLimit: s.records_over_read_size_limit ?? null, semantics: s.semantics ?? '',
+    reason: s.reason ?? null, parseError: s.parse_error ?? null, scanTruncated: s.scan_truncated === true,
     declaredBases: declared?.[s.stream_id]?.available ? declared?.[s.stream_id]?.time_bases_in_first_record ?? [] : null,
   }));
 }
@@ -259,6 +274,59 @@ export function timeFieldOf(record: Record<string, unknown>, base: string): Time
   return { base, present: true, display: raw.toFixed(6), unit: base.endsWith('_ms') ? '毫秒' : base.endsWith('_s') ? '秒' : '未声明单位', clockId: clock };
 }
 export function unitOf(base: string) { return base === 'wall_utc' ? 'ISO-8601 Z（UTC）' : base.endsWith('_ms') ? '毫秒' : base.endsWith('_s') ? '秒' : '未声明单位'; }
+/** The reader's own answer about which bases accept numeric bounds; the declared set is the
+ *  fallback before a page has been read, never a name-by-name guess about wall_utc formatting. */
+export function numericBasesOf(page: RecordPageDto | null): string[] {
+  return page?.time?.numeric_time_bases?.length ? page.time.numeric_time_bases : [...DECLARED_NUMERIC_BASES];
+}
+/**
+ * Whether the current selection can seek numerically. The reason text is what the view shows, so a
+ * non-numeric base is refused with the reader's list instead of an invented calendar format.
+ */
+export function seekGate(page: RecordPageDto | null, base: string): { allowed: boolean; reason: string; numericBases: string[] } {
+  const numeric = numericBasesOf(page);
+  if (!base) return { allowed: false, reason: '该流没有已声明的命名时间基：不能按时间定位（行号不是时间）。', numericBases: numeric };
+  if (!numeric.includes(base)) {
+    return { allowed: false, reason: `${base} 不是该 reader 接受的数值时间基（numeric_time_bases=${numeric.join(', ') || '空'}）：日历字符串的区间格式未在契约中声明，界面不猜格式。`, numericBases: numeric };
+  }
+  return { allowed: true, reason: '', numericBases: numeric };
+}
+/** Parse the seek box without ever turning a blank into 0. */
+export function parseSeekValue(text: string): { value: number | null; error: string | null } {
+  const trimmed = text.trim();
+  if (!trimmed) return { value: null, error: '定位值为空：不发送请求。要定位到 0 请显式输入 0。' };
+  const value = Number(trimmed);
+  if (!Number.isFinite(value)) return { value: null, error: `定位值必须是数值（当前 ${trimmed.slice(0, 24)} 不是有限数值）：不发送请求，也不代替为 0。` };
+  return { value, error: null };
+}
+export type PageKind = 'records' | 'filtered-out-without-event-seq' | 'window-empty' | 'offset-past-end' | 'unavailable';
+/**
+ * An empty page is not one statement. Under an active event_seq range the reader says the stream
+ * legitimately has no such field (observations-index/persist/transforms) and counts the excluded
+ * lines; that is a successful read, not a load failure.
+ */
+export function pageKind(page: RecordPageDto | null): PageKind {
+  if (!page) return 'unavailable';
+  if (page.records.length) return 'records';
+  const range = page.filtering?.event_seq_range;
+  if (range?.active && range.excluded_without_valid_event_seq > 0) return 'filtered-out-without-event-seq';
+  if (range?.active) return 'window-empty';
+  return 'offset-past-end';
+}
+export function pageExplanation(page: RecordPageDto): string {
+  const range = page.filtering?.event_seq_range;
+  const scanned = text(page.paging.scanned_lines);
+  switch (pageKind(page)) {
+    case 'filtered-out-without-event-seq':
+      return `event_seq 区间 ${text(range?.from)}–${text(range?.to)} 内没有合格记录：该流合法地没有 event_seq（原生 SensorObservation 不带该字段，persist 用 persist_sequence），${range?.excluded_without_valid_event_seq} 行因缺失/非整数/布尔被排除并计数（anomalies 示例 ${range?.anomalies?.length ?? 0} 条），不补造序号，也不判为读取失败。扫描行数 ${scanned}。`;
+    case 'window-empty':
+      return `event_seq 区间 ${text(range?.from)}–${text(range?.to)} 内没有匹配行（排除计数 ${text(range?.excluded_without_valid_event_seq)}，扫描 ${scanned} 行）：这是空结果页，不是错误。`;
+    case 'offset-past-end':
+      return `offset=${page.paging.offset} 之后没有返回记录（扫描 ${scanned} 行，has_more=${text(page.paging.has_more)}）：到数据末尾或 offset 越过末尾，不推断录制结束。`;
+    default:
+      return `本页返回 ${page.records.length} 条记录（扫描 ${scanned} 行）。`;
+  }
+}
 /** Which bases this page can actually seek on: the record's own fields, not an assumed clock. */
 export function presentTimeBases(records: Record<string, unknown>[]): string[] {
   const found = new Set<string>();
@@ -266,20 +334,35 @@ export function presentTimeBases(records: Record<string, unknown>[]): string[] {
   return [...found];
 }
 
-export interface MediaRef { uri: string; kind: string; role: 'primary' | 'valid_mask'; sampleId: string | null; declaredSha256: string | null; hasDeclaredSha: boolean }
-/** Media comes from the record's own `asset_uri` / `valid_mask_uri`; a declared digest only when the
- *  reader actually carried one (media_summary samples are truncated to 20 per kind). */
+export interface MediaRef { uri: string; kind: string; role: 'primary' | 'rgb' | 'depth' | 'valid_mask'; field: string; sampleId: string | null; declaredSha256: string | null; declaredShaSource: string; autoLoad: boolean }
+/**
+ * Media comes only from reference fields the record itself carries. The archive uses two shapes:
+ * `observations-index` writes `asset_uri` (null for sensors with no asset), while
+ * `observations-persist` writes `rgb_uri` / `depth_uri` / `valid_mask_uri` and no `asset_uri` at
+ * all. Nothing here synthesises a path from a sample id.
+ */
+const MEDIA_FIELDS: [string, MediaRef['role'], boolean][] = [
+  ['asset_uri', 'primary', true], ['rgb_uri', 'rgb', true], ['depth_uri', 'depth', false], ['valid_mask_uri', 'valid_mask', false],
+];
+const DECLARED_SHA_FIELDS: Record<string, string> = { asset_uri: 'asset_sha256', rgb_uri: 'rgb_sha256', depth_uri: 'depth_sha256', valid_mask_uri: 'valid_mask_sha256' };
 export function mediaRefsOf(record: Record<string, unknown>, payload: StreamPageDto | EpisodeDetailDto | null): MediaRef[] {
   const sampleId = typeof record.sample_id === 'string' ? record.sample_id : null;
   const refs: MediaRef[] = [];
-  ([['asset_uri', 'primary'], ['valid_mask_uri', 'valid_mask']] as const).forEach(([field, role]) => {
+  MEDIA_FIELDS.forEach(([field, role, autoLoad]) => {
     const uri = record[field];
     if (typeof uri !== 'string' || !uri) return;
-    const declared = declaredDigestOf(payload, uri);
-    refs.push({ uri, kind: kindOf(uri), role, sampleId, declaredSha256: declared, hasDeclaredSha: Boolean(declared) });
+    const fromRecord = typeof record[DECLARED_SHA_FIELDS[field]] === 'string' ? String(record[DECLARED_SHA_FIELDS[field]]) : null;
+    const fromSummary = declaredDigestOf(payload, uri);
+    refs.push({
+      uri, kind: kindOf(uri), role, field, sampleId, autoLoad,
+      declaredSha256: fromRecord ?? fromSummary,
+      declaredShaSource: fromRecord ? `记录自带 ${DECLARED_SHA_FIELDS[field]}` : fromSummary ? 'media_summary 样本清单' : '本条无声明摘要',
+    });
   });
   return refs;
 }
+/** The reference the cursor loads by default: the record's own primary image, never another record's. */
+export function autoLoadRef(refs: MediaRef[]): MediaRef | null { return refs.find((ref) => ref.autoLoad) ?? null; }
 function kindOf(uri: string) { const parts = uri.split('/'); return parts.length >= 2 ? parts[parts.length - 2] : 'asset'; }
 export function declaredDigestOf(payload: StreamPageDto | EpisodeDetailDto | null, uri: string): string | null {
   const kinds = payload?.media_summary?.kinds ?? {};
@@ -322,18 +405,28 @@ export function rowViews(dto: EpisodeListDto): RowView[] {
 
 const CODE_HINTS: Record<string, string> = {
   episode_not_found: '该身份在本 source 下没有 Episode 目录',
+  episode_id_invalid: 'episode_id 不符合 reader 接受的身份字符集，未打开任何目录',
+  run_id_invalid: 'run_id 不符合 reader 接受的身份字符集，未打开任何目录',
   episode_id_ambiguous: '同一 episode_id 出现在多个 run 下：显示名不是唯一键，必须带 run_id 才能读',
   episode_stream_unsupported: '该 stream 不由 reader 提供（supported 见响应）',
+  episode_stream_unavailable: '该流名受支持但此记录没有对应文件：按缺失显示，不生成替代内容',
   time_base_unsupported: '该时间基不是记录声明的命名时间基（supported 见响应）',
+  time_base_not_numeric: '该时间基是日历字符串，不接受数值区间：改用响应列出的数值基，界面不猜日历格式',
   time_range_required: '给了 time_base 就必须给 time_from 或 time_to',
   episode_asset_path_invalid: '资产路径必须是该 Episode 内的相对路径',
   episode_asset_missing: '该媒体在记录中不存在',
   episode_asset_escape: '解析后的路径离开了允许的范围，拒绝读取',
+  episode_path_escape: 'Episode 目录解析后不在声明的 recording_root 内，拒绝读取',
   episode_asset_type_unsupported: '该后缀不在 reader 提供的类型内',
   episode_asset_too_large: '资产超过单文件读取上限',
   episode_asset_digest_mismatch: '服务端重算摘要与请求声明的 sha256 不符，字节未返回',
   history_path_escape: 'Episode/manifest 路径不在声明的 recording_root 内',
-  http_422: '分页或参数超出 reader 允许的边界',
+  history_source_invalid: '平台侧历史来源配置无效（500），未打开任何归档',
+  history_source_unavailable: '平台侧历史来源不可用（503）',
+  history_source_not_configured: '该候选未配置历史来源：没有 episode 读取路径可用',
+  episode_record_corrupt: 'reader 无法解析该记录页（502），界面不显示部分结果',
+  validation_error: '参数超出 reader 允许的边界（如 limit>200、offset<0、sha256 非 64 位小写十六进制），请求未被执行',
+  gateway_unavailable: '只读代理无法连接上游：本地拒绝，未转发',
 };
 /** Codes are shown with the server's own words; supported lists are echoed from the payload. */
 export function describeHistoryError(cause: unknown): string {
@@ -342,9 +435,12 @@ export function describeHistoryError(cause: unknown): string {
   const detail = cause.detail as Record<string, unknown> | null;
   const supported = Array.isArray(detail?.supported) ? ` · supported=${(detail?.supported as unknown[]).join(',')}` : '';
   const runs = Array.isArray(detail?.runs) ? ` · 候选 run=${(detail?.runs as unknown[]).join(',')}` : '';
+  const numeric = Array.isArray(detail?.numeric_bases) ? ` · numeric_bases=${(detail?.numeric_bases as unknown[]).join(',')}` : '';
   const actual = typeof detail?.actual === 'string' ? ` · 实际摘要 ${short(detail.actual)}` : '';
+  const expected = typeof detail?.expected === 'string' ? ` · 声明摘要 ${short(detail.expected)}` : '';
   const suffix = typeof detail?.suffix === 'string' ? ` · 后缀 ${detail.suffix}` : '';
-  return `${cause.code} · ${cause.message}${supported}${runs}${actual}${suffix}${CODE_HINTS[cause.code] ? ` · ${CODE_HINTS[cause.code]}` : ''}`;
+  const relative = typeof detail?.relative_path === 'string' ? ` · 路径 ${detail.relative_path}` : '';
+  return `${cause.code} · ${cause.message}${supported}${runs}${numeric}${actual}${expected}${suffix}${relative}${CODE_HINTS[cause.code] ? ` · ${CODE_HINTS[cause.code]}` : ''}`;
 }
 export function isAmbiguous(cause: unknown) { return cause instanceof ApiError && cause.code === 'episode_id_ambiguous'; }
 export function ambiguousRuns(cause: unknown): string[] {
@@ -361,6 +457,7 @@ export function threeDNotice(detail: EpisodeDetailDto): { status: string; text: 
     text: `three_d_replay.status=${replay.status} · model ${text(replay.model_match)} / scene ${text(replay.scene_match)}（recorded ${short(replay.recorded_model_sha256)} vs reference ${short(replay.reference_model_sha256)}）；`
       + `recorded_transforms_available=${text(replay.recorded_transforms_available)}。身份摘要匹配不等于渲染正确性已验证，`
       + `live_geometry_or_actual_may_be_applied=${text(applied)}：本切片不套在线 geometry、Actual 或当前世界姿态，也不声称同步 3D 回放可用。`
+      + '后端已更正 transforms 的语义：它是带 frame/时钟标记的变换观测，不是逐 body 位姿序列，因此不能据此复原历史姿态。'
       + `${replay.still_available?.length ? ` 仍可提供：${replay.still_available.join('、')}。` : ''}${reasons ? ` 服务端原文：${reasons}` : ''}`,
   };
 }
@@ -369,8 +466,8 @@ export function trainingNotice(detail: EpisodeDetailDto): string {
   return `declared_eligibility_present=${text(q.declared_eligibility_present)} · training_qualified=${text(q.training_qualified)} · export_valid=${text(q.export_valid)} · quality_report_present=${text(q.quality_report_present)} · blocks_raw_read=${text(q.blocks_raw_read)}；${q.note ?? 'reader 未说明资格与读取的关系'}`;
 }
 export function associationNotice(detail: EpisodeDetailDto): string {
-  const a = detail.platform_association;
-  return `platform_association.known=${text(a?.known)} · validated_snapshot_ref=${text(a?.validated_snapshot_ref ?? null)} · platform_session_id=${text(a?.platform_session_id ?? null)} · reason=${text(a?.reason)}；${a?.policy ?? 'reader 未声明关联策略'}`;
+  const a = detail.platform_association ?? {};
+  return `platform_association.known=${text(a.known)} · validated_snapshot_ref=${text(a.validated_snapshot_ref ?? null)} · platform_session_id=${text(a.platform_session_id ?? null)} · reason=${text(a.reason)} · 依据=${text(a.source)}${a.sidecar_error ? ` · sidecar 读取错误=${a.sidecar_error}` : ''}；${a.policy ?? 'reader 未声明关联策略'}`;
 }
 const text = (value: unknown) => value === undefined || value === null || value === '' ? 'null' : String(value);
 const short = (value: string | null | undefined) => !value ? 'null' : value.length > 16 ? `${value.slice(0, 12)}…` : value;

@@ -3,6 +3,7 @@ import argparse,asyncio,copy,hashlib,json,time,traceback
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.async_api import async_playwright
+from view_settle import camera_trace, settle_view
 p=argparse.ArgumentParser();p.add_argument('url');p.add_argument('output',type=Path);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
 report={'scope':'real read-only GET integration + explicitly synthetic fault fixtures; NOT M1 control acceptance','checks':[],'errors':[],'requests':[],'assets':[],'snapshot_timings':[]}
 def check(name,condition):
@@ -121,18 +122,20 @@ async def main():
    # geometry-2: runtime-only changes keep content; resource changes replace it.
    for field in ('runtime','resource'):
     await edit(page)
-    # Let the post-reload auto-fit timer settle before comparing camera state.
-    await page.wait_for_timeout(700)
-    before_identity=await state(page)
+    # Both samples come from the shared quiescence gate: a pending 120 ms auto-fit debounce or a
+    # damped OrbitControls residual would otherwise be measured as an unsolicited camera change.
+    before_identity=await settle_view(page)
     fixture[field]+=1
     await page.wait_for_function('(r)=>window.__workbenchInspect && window.__workbenchInspect().live.resource.scene_id===r.scene && window.__workbenchInspect().actual.run_id===r.run && window.__workbenchInspect().target===null',arg={'scene':fixture_scene_id(),'run':'fixture-run-'+str(fixture['runtime'])},timeout=15000)
-    await loaded(page);after_identity=await state(page)
+    at_flip=await state(page)
+    await loaded(page);after_identity=await settle_view(page)
+    camera_trace(report,'identity transition keeps camera ('+field+')',before_identity,at_flip,after_identity)
     report.setdefault('identity_transitions',[]).append({'field':field,
      'before':{'instanceId':before_identity['scene']['instanceId'],'contentKey':before_identity['live']['contentKey'],'runtimeKey':before_identity['live']['runtimeKey'],'camera':before_identity['scene']['camera'],'cameraTarget':before_identity['scene']['cameraTarget'],'target':before_identity['target'] is not None},
      'after':{'instanceId':after_identity['scene']['instanceId'],'contentKey':after_identity['live']['contentKey'],'runtimeKey':after_identity['live']['runtimeKey'],'camera':after_identity['scene']['camera'],'cameraTarget':after_identity['scene']['cameraTarget'],'target':after_identity['target'] is not None,'sourceIdentity':after_identity['source']['identity']}})
     check(field+' identity change clears the old local Target',after_identity['target'] is None)
     if field=='runtime':
-     check('runtime-only change keeps verified content, renderer, camera and layout',after_identity['scene']['instanceId']==before_identity['scene']['instanceId'] and after_identity['live']['contentKey']==before_identity['live']['contentKey'] and after_identity['scene']['camera']==before_identity['scene']['camera'])
+     check('runtime-only change keeps verified content, renderer, camera and layout',after_identity['scene']['instanceId']==before_identity['scene']['instanceId'] and after_identity['live']['contentKey']==before_identity['live']['contentKey'] and after_identity['scene']['camera']==before_identity['scene']['camera'] and after_identity['scene']['viewport']==before_identity['scene']['viewport'])
     else:
      check('content change replaces the scene instead of reusing old meshes',after_identity['scene']['instanceId']!=before_identity['scene']['instanceId'] or after_identity['live']['contentKey']!=before_identity['live']['contentKey'])
    # Explicit initialization mismatch is rejected rather than mixed across requests.
