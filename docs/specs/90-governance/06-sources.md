@@ -112,3 +112,7 @@ S08/S09 原文件按字节归档；其中远程图片/仓库声明不构成本�
 ## V0.8 真实帧关联切片与 run 身份边界来源
 
 [S23](sources/S23-frame-linkage-slice.md)：本次用户 Goal 要求先最小修正 run 目录身份边界（缓存索引建立后把 `root/runA` 换成 root 内 `runB` 的软链时，不得再以 `runA` 身份读出 `runB`；每次构造读取位置都校验 run 目录身份，错误语义沿用既有码，只在隔离夹具构造该条件），再交付一条真实 Episode 的"图像—机器人状态关联 + 有界只读帧读取"切片，为统一历史时间游标提供可验证契约：关联只依据记录中存在的键，未解析的 `feedback_sample_id` 显式返回缺失，差值只作为记录字段相减的年龄呈现，不插值、不状态保持、不把命名同钟说成已验证同源，不扩展到历史 3D，也不宣称归档全量完整性或 M1.5/M1 验收。历史 S14～S22 原文与事实保持不变。来源字节哈希登记于 catalog.json 与 traceability.json。
+
+## V0.8 帧读取修正与历史姿态准备来源
+
+[S24](sources/S24-frame-reading-and-pose-preparation.md)：本次用户 Goal 要求修正帧关联的分页判定（`has_more` 不得混用预过滤计数与原始行号，必须由下一条合格锚点决定，`next_offset` 保持原始行号语义，坏行/超限行/空行如实计数且不静默给出末页）、收紧角色完整性判定（图像观测按必需 `sensor_kind` 与逐角色基数判定，重复候选给 `ambiguous_kind`/`ambiguous_candidates` 并全部列出，不得无说明取第一条；主角色完整性与 `unresolved_reference` 分开，不按时间相近补造状态）、分离时间语义（事件写入戳、状态负载采样戳、录制器声明反馈时间与采集/观测/落盘时延分别命名并给出来源记录、字段、单位、符号与含义，`observation_age_ms` 属管线延迟；`sim` 基与 backend monotonic 基不折算；说明同钟命名的证据强度与写入版本可绑定范围，不因数值相近升级 `synchronized=true`），并交付历史机器人 3D 所需的固定模型资源与姿态映射准备切片（复用不可变 geometry bundle，重核记录与 bundle 的模型/场景身份、资产摘要、关节名称与顺序、单位与根坐标映射；未证实的坐标或标定不补默认值，动态场景对象不伪造历史位姿；不代理当前 scene/snapshot 或 Actual；资源就绪与渲染验证分开）。历史 S14～S23 原文与事实保持不变。来源字节哈希登记于 catalog.json 与 traceability.json。

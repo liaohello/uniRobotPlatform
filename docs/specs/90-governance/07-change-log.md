@@ -10,6 +10,15 @@
 
 ## V0.8｜2026-10-25
 
+### 2026-10-25 M1.5d 帧读取分页/角色完整性修正、时间语义分离与历史姿态准备
+
+- 新增来源 S24（帧读取修正与历史姿态准备实测）与决策 DEC-061（分页由下一条合格锚点决定、角色完整性按必需 sensor_kind 与逐角色基数判定、三个时间量分离且版本迁移显式、同钟命名与写入版本绑定分开、姿态映射逐项可判定且不补默认值、资源就绪与渲染验证分离）。
+- [Episode/事件/标注契约](../30-contracts/03-episode-events-annotations.md)：帧关联小节改写为 `unirobot-mobilecar-frame-link-2` 的分页、角色完整性与时间语义规则（新增 `ambiguous_kind`/`ambiguous_candidates`、公开状态优先级、`anchor_lines`/`scan` 行计数、`times.quantities` 与 `times.recorder_declared`、移除 `age_of_state_relative_to_frame` 并说明迁移）；新增"历史机器人姿态与固定模型资源准备"小节，冻结两条新只读 GET（`robot-state` schema `unirobot-mobilecar-history-pose-1`、`model/assets/{asset_id}`）及其身份校验、映射状态词汇与不伪造规则；历史只读面由六条扩为八条 GET。
+- 实现：`backend/src/unirobot/frames.py`（分页 lookahead、`ROLE_REQUIREMENTS`、歧义状态与候选诊断、命名时间量与 `clock_sameness` 证据分层、schema 升版）、新增 `backend/src/unirobot/history_pose.py`（姿态映射与冻结 bundle 资产读取）、`backend/src/unirobot/episodes.py`（`run_identity()` 公共读取入口）、`backend/src/unirobot/api.py`（两条 GET）；`tools/episode_history_check.py` 断言由 86 增至 102。
+- 服务器验证：候选 `m1v-20261025T161014Z-platform`（`127.0.0.1:18969`，PID 3923606，源码聚合 `d022239329c0518d…` 47 文件，清单 sha256 `8e32f91f6cf2a24f…`）读取检查 102/102、统一能力回归 28/28、聚焦 39 passed、全量 167 passed / 3 项历史布局失败（`test_catalog.py::test_catalog_loads_real_tasks`、`test_catalog.py::test_every_task_has_existing_evidence`、`test_migrate.py::test_manifest_sources_exist`）；本轮经 `GetProbe` 发出的 64 条请求全为 GET，946 文件覆盖集合 `drift=[]`。同轮 `m1t-…`（18967）与 `m1u-…`（18968）因检查工具自身缺陷中断，保留为历史未回填。
+- 机器目录：补充来源 18 → 19 个，文档节点与 REQ 计数不变。切片完成不等于历史渲染通过、坐标与标定语义已获凭证、统一历史游标可用或 M1.5/M1 验收通过。
+
+
 ### 2026-10-25 M1.5c 真实帧关联切片与 run 身份边界
 
 - 新增来源 S23（真实帧关联切片与 run 目录身份边界实测）与决策 DEC-060（run 身份每次读取校验、关联只依据记录键、年龄不等于同步、切片不解锁历史 3D）。

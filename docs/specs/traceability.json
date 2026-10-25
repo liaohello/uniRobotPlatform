@@ -1538,6 +1538,11 @@
       "path": "90-governance/sources/S23-frame-linkage-slice.md",
       "sha256": "233bdb2f7c183d0768e3bffb86458b21a37def08884ee8c24b2f76247b655208",
       "kind": "current_user_frame_linkage_readonly_slice_goal"
+    },
+    "S24": {
+      "path": "90-governance/sources/S24-frame-reading-and-pose-preparation.md",
+      "sha256": "e450e0442a012eb7d57e8107cbb3852928e28affc136a12c2e2bfb69fc2fa1a3",
+      "kind": "current_user_frame_paging_time_semantics_and_pose_preparation_goal"
     }
   },
   "visual_registry": "references/visual-assets.json"
