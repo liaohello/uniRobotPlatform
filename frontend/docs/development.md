@@ -54,6 +54,10 @@
 
 被取代的本轮迭代（报告目录留在 `var/reports/`，其结果不计入交付）：`…070146Z-7aca643d37aa`（单测文案断言）、`…070330Z-ac5e5ad4df5c`（frames 停在“三个替代时间戳各占一行”）、`…070824Z-5571793b6cae`（frames 停在 v1 分页措辞）、`…071258Z-4ba2a2ff7934` 与 `…071607Z-d9cc1f2e9b21`（推进到 11→23 checks）、`…071719Z-64e7fc432718`（真实 33 checks 后撞 v1 空页期望；合成 13 checks 处暴露候选行夹具缺字段）、`…090207Z-34ba06783001`（合成 14 checks 处暴露“状态栏停在 reading”的产品缺陷，真实 28 checks 处暴露 live 场景资产边界判定过宽）。
 
+**交付预览上的一次性只读截图核对**（不属于冻结套件，只是对最终地址的实勘）：打开 `19013` → 历史 Episode → COMPLETE 记录 → 选第一帧，等到 `data-model-status=ready` 后取参考面画布。实测 `canvasInPane=1`、`canvasTotal=1`（整页只有参考面有画布），banner 原文为“固定模型参考；所选帧姿态尚未验证…”，驱动摘要为“已驱动 0 个关节值；未驱动 9 个目标；robot_state_can_be_rebuilt_without_assumptions=false”，45 条请求方法集合只有 `GET`。画面是底盘＋五关节臂＋静态世界方块（编译初始布局），网格字节来自历史资产端点。截图：`history-reference-canvas.png`、`history-model-pane.png`、`history-page-full.png`（服务器 `/tmp/m19shot/`，本机副本在 `Desktop/uniRobotPlatform/scratch/`）。
+
+**提交**：本地与远端同为 `ba4efc5fae8a430492e410f98e54a111b7430a34`（`origin/codex/m12a-workbench`，非 force、无 tag）；该提交的代码内容即上表冻结 release 的源码（`docs/development.md` 不参与快照哈希，提交时未改动任何被构建的文件）。
+
 预览台账清理：本轮 m19/m19b/m19c 与合成 m19d 的临时预览按 `registry.json` 条目逐条核对 pid + start_ticks + uid + 完整 cmdline + 监听归属后停止；`18986 → 18964` 交付预览与全部后端服务保持运行，最终交付预览 `19013` 保留。
 
 
