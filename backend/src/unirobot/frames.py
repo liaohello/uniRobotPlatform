@@ -125,11 +125,21 @@ TIMING_QUANTITIES: tuple[dict[str, str], ...] = (
      "meaning": "the recorder's own capture-to-disk latency for this frame"},
 )
 
-SIM_TIME_QUANTITY = {
-    "key": "state_sim_time_minus_frame_capture_sim_time", "record": "events state feedback payload",
-    "field": "sim_time_s", "relative_to": "persisted frame capture_sim_time_s", "unit": "s", "clock": "sim",
-    "meaning": "simulator-time separation, a different clock from every *_backend_monotonic_* quantity above",
-}
+# Two separate simulator-time quantities: the payload's own stamp and the event envelope's stamp.
+# A missing payload value is never filled from the envelope, because that would present an
+# envelope field under a payload label.
+SIM_TIME_QUANTITIES: tuple[dict[str, str], ...] = (
+    {"key": "state_sim_time_minus_frame_capture_sim_time", "record": "events state feedback payload",
+     "field": "sim_time_s", "relative_to": "persisted frame capture_sim_time_s", "unit": "s", "clock": "sim",
+     "missing_behaviour": "not emitted when the payload has no numeric sim_time_s",
+     "meaning": "simulator-time separation from the state sample the payload itself carries, a different clock "
+                "from every *_backend_monotonic_* quantity above"},
+    {"key": "state_event_envelope_sim_time_minus_frame_capture_sim_time",
+     "record": "events state feedback envelope", "field": "sim_time_s",
+     "relative_to": "persisted frame capture_sim_time_s", "unit": "s", "clock": "sim",
+     "missing_behaviour": "not emitted when the envelope has no numeric sim_time_s",
+     "meaning": "simulator time recorded on the event envelope; it is not the payload's sample stamp"},
+)
 
 # The recorder writes its own per-frame latency numbers; they are copied, never re-derived here.
 RECORDER_DECLARED_LATENCY_FIELDS = ("observation_age_ms", "arrival_to_persist_ms", "capture_to_persist_ms",
@@ -157,6 +167,14 @@ FRAME_LINK_VERSION_MIGRATION = {
                        "times.quantities keys state_event_write_minus_frame_capture, "
                        "state_payload_feedback_time_minus_frame_capture and "
                        "recorder_declared_feedback_time_minus_frame_capture instead"},
+    "corrections": [
+        "state_sim_time_minus_frame_capture_sim_time now names only the state feedback PAYLOAD stamp and is absent "
+        "when the payload carries no numeric sim_time_s; earlier builds of this version silently filled it from the "
+        "event envelope while still labelling the payload as the source",
+        "the envelope's own simulator time is a separate quantity, "
+        "state_event_envelope_sim_time_minus_frame_capture_sim_time",
+        "no quantity is ever filled from another record: absence is reported as absence",
+    ],
     "compatibility_note": "consumers must read schema_version: frame-link-1 and frame-link-2 pages are not the same contract",
 }
 
@@ -707,6 +725,7 @@ class FrameLinkReader:
         sim_capture = record.get("capture_sim_time_s")
         quantities: list[dict[str, Any]] = []
         meta = {item["key"]: item for item in TIMING_QUANTITIES}
+        sim_meta = {item["key"]: item for item in SIM_TIME_QUANTITIES}
 
         state_role = by_role["state_feedback_event"]
         for item in state_role["sources"]:
@@ -722,10 +741,15 @@ class FrameLinkReader:
             if between:
                 between["capture_value"] = projection.get("backend_monotonic_s")
                 quantities.append(between)
-            sim_delta = _delta(sim_capture, payload.get("sim_time_s") if _number(payload.get("sim_time_s"))
-                               else projection.get("sim_time_s"), SIM_TIME_QUANTITY, line_index=item["line_index"])
-            if sim_delta:
-                quantities.append(sim_delta)
+            # A payload stamp is never taken from the envelope: if the payload carries no numeric
+            # sim_time_s, that quantity is absent instead of being filled from another record.
+            for key, value in ((sim_meta["state_sim_time_minus_frame_capture_sim_time"]["key"], payload.get("sim_time_s")),
+                               (sim_meta["state_event_envelope_sim_time_minus_frame_capture_sim_time"]["key"],
+                                projection.get("sim_time_s"))):
+                delta = _delta(sim_capture, value if _number(value) else None, sim_meta[key],
+                               line_index=item["line_index"])
+                if delta:
+                    quantities.append(delta)
 
         for item in by_role["capture_timing_event"]["sources"]:
             payload = item.get("payload") or {}
@@ -768,6 +792,7 @@ class FrameLinkReader:
                 "state_time_quantity_keys": ["state_event_write_minus_frame_capture",
                                              "state_payload_feedback_time_minus_frame_capture",
                                              "recorder_declared_feedback_time_minus_frame_capture"],
+                "sim_time_quantity_keys": [item["key"] for item in SIM_TIME_QUANTITIES],
                 "same_clock_verified": False,
                 "removed_in_this_version": "age_of_state_relative_to_frame"}
 

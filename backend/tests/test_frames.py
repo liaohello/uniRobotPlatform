@@ -86,7 +86,8 @@ def _index_row(run: str, episode: str, sample: str, kind: str, capture: float, s
 def _write_frames(directory: Path, *, resolve_feedback=True, drop_depth_row=False, absent_asset=False,
                   escape_asset=False, foreign_row=False, no_state_event=False, write_persist=True,
                   blank_lines=False, corrupt_lines=False, duplicate_rgb_row=False,
-                  duplicate_state_event=False) -> None:
+                  duplicate_state_event=False, payload_sim_time="absent", arm_qpos=None,
+                  tcp_position=None, base_position=None) -> None:
     index_path = directory / "observations" / "index.jsonl"
     persist_path = directory / "observations" / "persist.jsonl"
     index_path.parent.mkdir(parents=True, exist_ok=True)
@@ -169,16 +170,20 @@ def _write_frames(directory: Path, *, resolve_feedback=True, drop_depth_row=Fals
         seq += 1
         if no_state_event and tick == TICK_2:
             continue
-        for qpos in ([ARM_MODEL_QPOS] + ([[0.09, 0.0, 0.0, -1.5, 0.0]] if duplicate_state_event and tick == TICK_2 else [])):
+        for qpos in ([arm_qpos or ARM_MODEL_QPOS]
+                     + ([[0.09, 0.0, 0.0, -1.5, 0.0]] if duplicate_state_event and tick == TICK_2 else [])):
             events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
                            "event_seq": seq, "event_type": "feedback", "wall_utc": "2026-10-17T16:10:29.730000Z",
                            "backend_monotonic_s": capture - 0.002, "sim_time_s": sim - 0.01, "control_tick_id": tick,
                            "payload": {"arm_model_qpos_rad": qpos,
                                        "wheel_velocity_rad_s": [0.0, 0.0, 0.0, 0.0],
-                                       "base_position_world_sim_m": [0.1, 0.2, 0.0],
+                                       "base_position_world_sim_m": base_position or [0.1, 0.2, 0.0],
                                        "base_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
-                                       "tcp_position_world_m": [0.3, 0.1, 0.2], "gripper_width_m": 0.02,
-                                       "feedback_time_monotonic": capture - 0.002}})
+                                       "tcp_position_world_m": tcp_position or [0.3, 0.1, 0.2],
+                                       "gripper_width_m": 0.02,
+                                       "feedback_time_monotonic": capture - 0.002,
+                                       **({"sim_time_s": 0.14} if payload_sim_time == "numeric" else
+                                          {"sim_time_s": "0.14"} if payload_sim_time == "string" else {})}})
             seq += 1
     (directory / "events.jsonl").write_text("".join(json.dumps(item) + "\n" for item in events), encoding="utf-8")
 
@@ -387,9 +392,13 @@ def test_state_times_separate_the_write_stamp_the_sample_stamp_and_the_declared_
     assert declared["field"] == "feedback_time_s"
     assert quantities["state_payload_feedback_time_minus_state_event_write"]["abs_ms"] == pytest.approx(0.0)
     assert quantities["timing_payload_capture_minus_anchor_capture"]["direction"] == "equal"
-    # A different clock base is never folded into the monotonic differences.
-    sim = quantities["state_sim_time_minus_frame_capture_sim_time"]
+    # A different clock base is never folded into the monotonic differences, and the envelope value
+    # is labelled as the envelope's own rather than as the payload's.
+    sim = quantities["state_event_envelope_sim_time_minus_frame_capture_sim_time"]
     assert sim["clock"] == "sim" and round(sim["abs_ms"], 3) == 10.0
+    assert sim["source_record"] == "events state feedback envelope"
+    assert "state_sim_time_minus_frame_capture_sim_time" not in quantities  # the payload has no sim_time_s
+    assert any("payload" in item for item in body["version_migration"]["corrections"])
     assert quantities["observation_measurement_minus_frame_capture"]["direction"] == "equal"
     assert quantities["observation_arrival_minus_frame_capture"]["direction"] == "later"
     assert quantities["persist_minus_capture"]["abs_ms"] == pytest.approx(100.0)
@@ -567,7 +576,13 @@ def _bundle(tmp_path: Path, *, model_sha256: str = MODEL_SHA256) -> Path:
     for index in range(1, 6):
         geoms = [mesh_geom(f"link{index}_mesh", "link1")] if index == 1 else [box_geom(f"link{index}_collision")]
         links.append(link(f"link{index}", links[-1]["name"], f"joint{index}", "hinge",
-                          [0.0, 1.0, 0.0], [0.0, 0.0, 0.07], geoms))
+                          [0.0, 0.0, 1.0], [0.1, 0.0, 0.0], geoms))
+    # A straight chain to the site's parent body: with every arm angle at zero the TCP position is a
+    # plain sum of x offsets, so the cross-check expectation is hand-computable and independent.
+    links.append(link("gripper_link", "link5", None, "fixed", [0.0, 0.0, 1.0], [0.1, 0.0, 0.0],
+                      [box_geom("gripper_collision")]))
+    links.append(link("guide_rod_link", "gripper_link", None, "fixed", [0.0, 0.0, 1.0], [0.1, 0.0, 0.0],
+                      [box_geom("guide_rod_collision")]))
     links.append(link("camera_connect_link", "link4", None, "fixed", [0.0, 0.0, 1.0],
                       [-0.03, 0.01, 0.04], [box_geom("camera_connect_collision")]))
     links.append(link("depth_cam_link", "camera_connect_link", None, "fixed", [0.0, 0.0, 1.0],
@@ -603,7 +618,8 @@ def _bundle(tmp_path: Path, *, model_sha256: str = MODEL_SHA256) -> Path:
     return directory
 
 
-def _pose_client(tmp_path, *, model_sha256: str = MODEL_SHA256, recorded_model_sha256: str = MODEL_SHA256):
+def _pose_client(tmp_path, *, model_sha256: str = MODEL_SHA256, recorded_model_sha256: str = MODEL_SHA256,
+                 **frame_options):
     root = tmp_path / "runs"
     directory = _episode(root, RUN, EPISODE)
     # The run manifest is where the recorder pins the model identity the pose slice must match.
@@ -615,7 +631,7 @@ def _pose_client(tmp_path, *, model_sha256: str = MODEL_SHA256, recorded_model_s
                      "clocks": ["sim", "backend_monotonic", "device", "wall_utc"],
                      "software": {"name": "mobilecar", "version": "0.1.0"}})
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-    _write_frames(directory)
+    _write_frames(directory, **frame_options)
     return _client(root, tmp_path, _bundle(tmp_path / "prepared", model_sha256=model_sha256))
 
 
@@ -689,3 +705,130 @@ def test_history_pose_reader_reuses_the_bundle_integrity_checks(tmp_path):
     bundle = GeometryBundle(directory)
     assert sorted(bundle.assets) == ["base_link", "link1"]
     assert bundle.provenance.resource_identity.model_id == MODEL_ID
+
+
+def test_a_missing_payload_sim_time_is_never_filled_from_the_envelope(tmp_path):
+    absent = _frames_client(tmp_path).get(f"/api/v1/episodes/{EPISODE}/frames").json()
+    keys = {item["key"] for item in absent["frames"][0]["times"]["quantities"]}
+    assert "state_event_envelope_sim_time_minus_frame_capture_sim_time" in keys
+    assert "state_sim_time_minus_frame_capture_sim_time" not in keys
+
+    numeric = _frames_client(tmp_path, payload_sim_time="numeric").get(f"/api/v1/episodes/{EPISODE}/frames").json()
+    quantities = {item["key"]: item for item in numeric["frames"][0]["times"]["quantities"]}
+    payload = quantities["state_sim_time_minus_frame_capture_sim_time"]
+    envelope = quantities["state_event_envelope_sim_time_minus_frame_capture_sim_time"]
+    assert payload["source_record"] == "events state feedback payload" and payload["abs_ms"] == pytest.approx(0.0)
+    assert envelope["source_record"] == "events state feedback envelope" and envelope["abs_ms"] == pytest.approx(10.0)
+    assert {item["field"] for item in (payload, envelope)} == {"sim_time_s"}
+
+    # A non-numeric payload stamp is absence, not a value to be recovered from the envelope.
+    text = _frames_client(tmp_path, payload_sim_time="string").get(f"/api/v1/episodes/{EPISODE}/frames").json()
+    keys = {item["key"] for item in text["frames"][0]["times"]["quantities"]}
+    assert "state_sim_time_minus_frame_capture_sim_time" not in keys
+    assert "state_event_envelope_sim_time_minus_frame_capture_sim_time" in keys
+
+
+KINEMATICS = json.loads((Path(__file__).resolve().parents[1] / "config"
+                         / "mobilecar-landerpi-kinematics-v1.json").read_text(encoding="utf-8"))
+
+
+def _pose_client_fk(tmp_path):
+    """A frame whose recorded TCP equals the frozen chain at zero joint angles, computed by hand."""
+    tcp = KINEMATICS["tcp"]
+    # The fixture chain is base_link -> link1..link5 -> gripper_link -> guide_rod_link, each link
+    # offset 0.1 m along x, and every arm angle is zero: the site's parent body therefore sits at
+    # x = 0.7 with the base at the origin, so the expected TCP is a plain sum, not an FK result.
+    expected = [0.7 + tcp["position_m"][0], tcp["position_m"][1], tcp["position_m"][2]]
+    return (_pose_client(tmp_path, arm_qpos=[0.0] * 5, tcp_position=expected, base_position=[0.0, 0.0, 0.0]),
+            expected)
+
+
+def test_arm_mapping_carries_the_source_chain_and_its_version_ceiling(tmp_path):
+    body = _pose_client(tmp_path).get(f"/api/v1/episodes/{EPISODE}/robot-state").json()
+    arm = next(item for item in body["mapping"] if item["target"] == "arm_joint_positions")
+    assert arm["draw_source"] == "model radians, applied directly to the hinge joints"
+    assert arm["requires_user_angle_conversion"] is False
+    assert "ARM_JOINTS = tuple" in arm["evidence"]["source_chain"]["joint_name_list"]
+    assert "qpos = model.jnt_qposadr" in arm["evidence"]["source_chain"]["qpos_is_name_addressed"]
+    assert "arm_model_qpos_rad" in arm["evidence"]["source_chain"]["feedback_serialisation"]
+    assert arm["evidence"]["names_equal_to_bundle"] is True
+    assert arm["evidence"]["source_chain"]["sixth_element_excluded"].startswith("GRIPPER_DRIVE")
+    binding = body["version_binding"]
+    assert binding["chain_verified_in_reference_source"] is True
+    assert binding["writer_identified"] is False
+    assert len(binding["frozen_release_snapshots_at_the_recording_hour"]) == 3
+    assert binding["record_carries_no"] == ["native release id", "build id", "git commit"]
+    assert "does not identify a single build" in binding["conclusion"]
+
+
+def test_model_angles_are_drawn_without_the_user_angle_step(tmp_path):
+    body = _pose_client(tmp_path).get(f"/api/v1/episodes/{EPISODE}/robot-state").json()
+    angles = body["model_vs_user_angles"]
+    assert angles["conversion_is_required_for_drawing"] is False
+    assert angles["config_joint_names_equal_bundle_arm_hinges"] is True
+    assert angles["user_angle_formula"]["used_for"] == "user-facing display and limit comparison only"
+    assert angles["zero_pose_authority"]["zero_status"] == "user_defined_photo_pose_not_hardware_500"
+    assert angles["zero_pose_authority"]["calibration_session"] == "uncalibrated"
+    assert angles["authority"] == "platform_reference_not_native_attested"
+    assert "-pi/2" in angles["record_index3_observation"]
+
+
+def test_per_part_readiness_separates_assembly_from_the_whole_robot(tmp_path):
+    body = _pose_client(tmp_path).get(f"/api/v1/episodes/{EPISODE}/robot-state").json()
+    parts = {item["capability"]: item for item in body["part_readiness"]}
+    assert set(parts) == {"fixed_model_reference_assembly", "arm_local_pose", "base_pose_placement",
+                          "gripper_visual_appearance", "tcp_position_marker", "tcp_orientation_frame",
+                          "camera_view_from_record", "dynamic_scene_objects_from_record",
+                          "wheel_pose_from_record"}
+    assert all(item["status"] in body["part_status_meaning"] for item in parts.values())
+    # A blocked part never blocks the fixed assembly, and the assembly is available without any pose input.
+    assert parts["fixed_model_reference_assembly"]["status"] == "ready"
+    assert parts["fixed_model_reference_assembly"]["pose_input_required"] is False
+    assert parts["arm_local_pose"]["status"] == "ready_with_caveats"
+    summary = body["capability_summary"]
+    assert summary["fixed_model_assembly_available"] is True
+    assert summary["whole_robot_pose_rebuildable"] is False
+    assert "never upgrades" in summary["escalation_forbidden"] and summary["defaults_forbidden"]
+    for capability in ("tcp_orientation_frame", "camera_view_from_record", "dynamic_scene_objects_from_record"):
+        assert parts[capability]["status"] == "blocked" and parts[capability]["gaps"], capability
+    assert all("frontend_rule" in item for item in parts.values())
+
+
+def test_tcp_cross_check_distinguishes_the_root_conventions(tmp_path):
+    client, expected = _pose_client_fk(tmp_path)
+    body = client.get(f"/api/v1/episodes/{EPISODE}/robot-state").json()
+    check = body["tcp_kinematic_cross_check"]
+    assert check["status"] == "computed" and check["verdict"] == "consistent"
+    assert check["recorded_tcp_position_m"] == pytest.approx(expected, abs=1e-12)
+    assert check["abs_error_m"] < 1e-9
+    assert check["joints_left_at_zero"] == [] and check["chain_links"][-1] == "guide_rod_link"
+    assert check["movable_joints_on_chain"] == ["base_free", "joint1", "joint2", "joint3", "joint4", "joint5"]
+    alternative = check["hypotheses"][1]
+    assert alternative["verdict"] == "inconsistent"
+    assert alternative["abs_error_m"] == pytest.approx(0.0556, abs=1e-9)   # the base body offset, once
+    assert check["supports"].startswith("kinematic consistency")
+    assert "does not calibrate hardware" in check["does_not_prove"]
+    mapping = {item["target"]: item for item in body["mapping"]}
+    assert mapping["arm_joint_positions"]["status"] == "verified"
+    assert mapping["base_position"]["status"] == "verified" and mapping["base_orientation"]["status"] == "verified"
+    assert mapping["tcp_site_position"]["status"] == "verified"
+    assert mapping["gripper_joints"]["status"] == "unverified" and mapping["camera_extrinsics"]["status"] == "missing"
+    parts = {item["capability"]: item for item in body["part_readiness"]}
+    assert parts["base_pose_placement"]["status"] == "ready_with_caveats"
+    assert parts["tcp_position_marker"]["status"] == "ready_with_caveats"
+    assert body["capability_summary"]["kinematic_agreement"] == "consistent"
+    assert body["capability_summary"]["whole_robot_pose_rebuildable"] is False
+
+
+def test_a_disagreeing_tcp_keeps_the_base_and_marker_conditional(tmp_path):
+    body = _pose_client(tmp_path).get(f"/api/v1/episodes/{EPISODE}/robot-state").json()
+    check = body["tcp_kinematic_cross_check"]
+    assert check["verdict"] == "inconsistent" and check["abs_error_m"] > 0.1
+    mapping = {item["target"]: item for item in body["mapping"]}
+    assert mapping["base_position"]["status"] == "unverified"
+    assert mapping["arm_joint_positions"]["status"] == "partially_verified"
+    parts = {item["capability"]: item for item in body["part_readiness"]}
+    assert parts["base_pose_placement"]["status"] == "conditional"
+    assert parts["tcp_position_marker"]["status"] == "conditional"
+    assert body["capability_summary"]["usable_now"] == ["fixed_model_reference_assembly", "arm_local_pose"]
+    assert "gripper_visual_appearance" in body["capability_summary"]["usable_only_with_the_named_caveat"]

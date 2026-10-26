@@ -407,13 +407,15 @@ def main() -> int:
                 and quantities(page[0])["timing_payload_capture_minus_anchor_capture"]["direction"] == "equal",
                 {"payload_minus_event_write_ms":
                      round(first_quantities["state_payload_feedback_time_minus_state_event_write"]["abs_ms"], 6)})
-    sim_item = first_quantities["state_sim_time_minus_frame_capture_sim_time"]
-    results.add("sim time is reported on its own clock and never folded into the monotonic differences",
-                sim_item["clock"] == "sim" and sim_item["unit"] == "s"
-                and all(item["clock"] != "sim" for key, item in first_quantities.items()
-                        if key != "state_sim_time_minus_frame_capture_sim_time"),
-                {"sim_delta_s": sim_item["value"], "monotonic_event_delta_s":
-                    first_quantities["state_event_write_minus_frame_capture"]["value"]})
+    sim_items = {key: item for key, item in first_quantities.items() if item["clock"] == "sim"}
+    results.add("both simulator-time stamps stay on the sim clock and nothing else is folded into it",
+                set(sim_items) == {"state_sim_time_minus_frame_capture_sim_time",
+                                   "state_event_envelope_sim_time_minus_frame_capture_sim_time"}
+                and all(item["unit"] == "s" for item in sim_items.values())
+                and len({item["source_record"] for item in sim_items.values()}) == 2
+                and all(item["clock"] != "sim" for key, item in first_quantities.items() if key not in sim_items),
+                {"sim_deltas_s": {key: item["value"] for key, item in sim_items.items()},
+                 "monotonic_event_delta_s": first_quantities["state_event_write_minus_frame_capture"]["value"]})
     recorder = page[0]["times"]["recorder_declared"]
     results.add("the recorder's own observation age is copied and compared, never merged with state stamps",
                 recorder["agrees_with_recomputation"] is True
@@ -536,7 +538,8 @@ def main() -> int:
                  "content_identity": pose["model_resource"]["content_identity_sha256"]})
     pose_mapping = {item["target"]: item for item in pose["mapping"]}
     results.add("the arm maps onto the bundle's five hinge joints with its attested index named",
-                pose_mapping["arm_joint_positions"]["status"] == "partially_verified"
+                pose_mapping["arm_joint_positions"]["status"] in ("verified", "partially_verified")
+                and isinstance(pose_mapping["arm_joint_positions"]["verified_basis"], list)
                 and pose_mapping["arm_joint_positions"]["recorded_length"] == 5
                 and pose_mapping["arm_joint_positions"]["evidence"]["names_equal_to_bundle"] is True
                 and pose_mapping["arm_joint_positions"]["evidence"]["order_attested_at_index"] == 3
@@ -544,12 +547,22 @@ def main() -> int:
                 {"bundle_joints": pose["model_resource"]["arm_hinge_joints"],
                  "evidence": pose_mapping["arm_joint_positions"]["evidence"]})
     results.add("unattested mappings are reported as gaps and never filled with defaults",
-                all(pose_mapping[target]["status"] in ("unverified", "missing")
-                    and pose_mapping[target]["no_default_applied"] is True and pose_mapping[target]["gap"]
-                    for target in ("base_position", "base_orientation", "gripper_joints", "tcp_site_position",
-                                   "camera_extrinsics", "dynamic_scene_objects"))
-                and all(target in pose["pose_readiness"]["blocking_fields"]
-                        for target in ("base_position", "gripper_joints")),
+                all(pose_mapping[target]["no_default_applied"] is True and pose_mapping[target]["gap"]
+                    for target in pose_mapping)
+                and all(pose_mapping[target]["status"] in ("unverified", "missing")
+                        for target in ("gripper_joints", "camera_extrinsics", "dynamic_scene_objects"))
+                and all(pose_mapping[target]["status"] in ("verified", "unverified")
+                        for target in ("base_position", "base_orientation", "tcp_site_position"))
+                and all(pose_mapping[target]["verified_basis"] for target in
+                        ("base_position", "base_orientation", "tcp_site_position")
+                        if pose_mapping[target]["status"] == "verified")
+                and "gripper_joints" in pose["pose_readiness"]["blocking_fields"]
+                and set(pose["pose_readiness"]["blocking_fields"]) <= {"gripper_joints", "camera_extrinsics",
+                                                                       "dynamic_scene_objects", "tcp_site_orientation",
+                                                                       "base_position", "base_orientation",
+                                                                       "tcp_site_position", "arm_joint_positions"}
+                and all(item["target"] not in pose["pose_readiness"]["blocking_fields"]
+                        for item in pose["mapping"] if item["status"] == "verified"),
                 {"statuses": {target: pose_mapping[target]["status"] for target in
                               ("base_position", "base_orientation", "gripper_joints", "tcp_site_position",
                                "camera_extrinsics", "dynamic_scene_objects")},
@@ -583,6 +596,76 @@ def main() -> int:
     results.add("an asset outside the frozen bundle is named as unavailable",
                  status == 404 and code_of(absent_mesh) == "history_model_asset_unavailable"
                  and mesh["asset_id"] in absent_mesh["detail"]["supported"], status)
+
+    # ---- M1.5e: kinematic cross-check, per-part readiness, sim source labelling ----
+    sim_keys = {item["key"]: item for item in page[0]["times"]["quantities"]
+                if "sim_time" in item["key"]}
+    results.add("both simulator-time stamps are reported with their own source record",
+                {"state_sim_time_minus_frame_capture_sim_time",
+                 "state_event_envelope_sim_time_minus_frame_capture_sim_time"} <= set(sim_keys)
+                and len({item["source_record"] for item in sim_keys.values()}) == len(sim_keys),
+                {key: item["source_record"] for key, item in sim_keys.items()})
+    cross = pose["tcp_kinematic_cross_check"]
+    results.add("recorded TCP is reproduced from recorded state through the frozen tree",
+                cross["status"] == "computed" and cross["verdict"] == "consistent"
+                and cross["abs_error_m"] < 1e-9 and cross["joints_left_at_zero"] == [],
+                {"abs_error_m": cross["abs_error_m"], "recorded": cross["recorded_tcp_position_m"],
+                 "computed": cross["computed_tcp_position_m"], "chain": cross["chain_links"],
+                 "tolerance_m": cross["consistency_tolerance_m"]})
+    alternative = cross["hypotheses"][1]
+    results.add("the competing root convention is separated by exactly the base body offset",
+                alternative["verdict"] == "inconsistent"
+                and abs(alternative["abs_error_m"] - 0.0556) < 1e-6,
+                {"abs_error_m": alternative["abs_error_m"], "hypothesis": alternative["hypothesis"]})
+    verified_targets = {item["target"]: item["status"] for item in pose["mapping"]}
+    results.add("reproduction upgrades only the fields it depends on and leaves the rest unproven",
+                all(verified_targets[target] == "verified" for target in
+                    ("arm_joint_positions", "base_position", "base_orientation", "tcp_site_position"))
+                and verified_targets["gripper_joints"] == "unverified"
+                and verified_targets["camera_extrinsics"] == "missing"
+                and verified_targets["dynamic_scene_objects"] == "missing",
+                {"statuses": verified_targets})
+    arm_mapping = next(item for item in pose["mapping"] if item["target"] == "arm_joint_positions")
+    results.add("the arm mapping cites the name-addressed source chain and its version ceiling",
+                "ARM_JOINTS = tuple" in arm_mapping["evidence"]["source_chain"]["joint_name_list"]
+                and "qpos = model.jnt_qposadr" in arm_mapping["evidence"]["source_chain"]["qpos_is_name_addressed"]
+                and arm_mapping["evidence"]["source_chain"]["sixth_element_excluded"].startswith("GRIPPER_DRIVE")
+                and pose["version_binding"]["writer_identified"] is False
+                and len(pose["version_binding"]["frozen_release_snapshots_at_the_recording_hour"]) == 3,
+                {"chain": arm_mapping["evidence"]["source_chain"],
+                 "binding": pose["version_binding"]["conclusion"]})
+    angles = pose["model_vs_user_angles"]
+    results.add("model radians draw the arm without the user-angle step",
+                angles["conversion_is_required_for_drawing"] is False
+                and angles["config_joint_names_equal_bundle_arm_hinges"] is True
+                and arm_mapping["requires_user_angle_conversion"] is False
+                and angles["zero_pose_authority"]["zero_status"] == "user_defined_photo_pose_not_hardware_500"
+                and angles["zero_pose_authority"]["calibration_session"] == "uncalibrated",
+                {"authority": angles["authority"], "user_formula_used_for":
+                    angles["user_angle_formula"]["used_for"]})
+    capabilities = {item["capability"]: item for item in pose["part_readiness"]}
+    summary = pose["capability_summary"]
+    results.add("readiness is per part, and a whole-robot gap never blocks the fixed assembly",
+                capabilities["fixed_model_reference_assembly"]["status"] == "ready"
+                and capabilities["fixed_model_reference_assembly"]["pose_input_required"] is False
+                and capabilities["arm_local_pose"]["status"] == "ready_with_caveats"
+                and capabilities["base_pose_placement"]["status"] == "ready_with_caveats"
+                and capabilities["camera_view_from_record"]["status"] == "blocked"
+                and capabilities["dynamic_scene_objects_from_record"]["status"] == "blocked"
+                and all(item["status"] in pose["part_status_meaning"] for item in capabilities.values())
+                and all("frontend_rule" in item for item in capabilities.values()),
+                {"statuses": {name: item["status"] for name, item in capabilities.items()},
+                 "usable_now": summary["usable_now"],
+                 "usable_with_caveat": summary["usable_only_with_the_named_caveat"],
+                 "blocked": summary["blocked"]})
+    results.add("the summary keeps assembly, partial pose and whole-robot rebuild three separate claims",
+                summary["fixed_model_assembly_available"] is True
+                and summary["whole_robot_pose_rebuildable"] is False
+                and "never upgrades" in summary["escalation_forbidden"]
+                and pose["rendering"]["verified"] is False and pose["rendering"]["frontend_assembly_done"] is False
+                and "does not calibrate hardware" in cross["does_not_prove"],
+                {"kinematic_agreement": summary["kinematic_agreement"],
+                 "abs_tcp_error_m": summary["abs_tcp_error_m"]})
 
     # ---- how the whole archive behaves, over a bounded sample -------------------
     status, sample = get_json(f"{P}/api/v1/episodes?limit=200")
