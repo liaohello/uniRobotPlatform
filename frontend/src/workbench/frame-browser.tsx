@@ -1,19 +1,23 @@
 /**
- * Frame-linked browsing for one Episode: the image, the robot state linked to that same frame, and
- * the provenance plus recorded-time differences behind both.
+ * Frame-linked browsing for one Episode on the frame-link-2 contract: the image, the robot state
+ * linked to that same frame, the provenance and the named recorded-time quantities behind both.
  *
  * Reads only (the single `frames` GET plus the existing `assets` GET). The pane owns its serials: an
  * Episode/run switch, a page, filter or time-window change, a frame move or an unmount drops every
  * older response and every older asset decode, and a frame whose media is not `present` never keeps
- * the previous frame's image. Nothing here touches live Actual/Target, the 3D viewport or control.
+ * the previous frame's image. Nothing here touches live Actual/Target or control; the model surface
+ * below is the fixed reference, whose pose is only ever moved by joints the mapping gate allows.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
+import { HistoryModelPane } from './history-model-pane';
 import { describeHistoryError, type PlatformEpisodeApi } from '../adapters/platform-episodes';
 import {
-  NO_FRAME_CONTEXT, declaredLatencyOf, deltaRowsOf, frameAutoLoadRef, frameBoundaryNotice, frameMediaRefs, framePageExplanation,
-  framePageKind, frameSelectableBases, frameStopNote, frameWindowGate, linkageScopeText, mediaDeclarationText, provenanceRowsOf,
-  readFramesPage, roleRowsOf, selectionRulesText, stateAgeOf, stateRowsOf,
+  NO_FRAME_CONTEXT, ambiguousRoleCount, clockSamenessText, frameAutoLoadRef, frameBoundaryNotice, frameMediaRefs,
+  framePageExplanation, framePageKind, frameSelectableBases, frameStopNote, frameWindowGate, linkageScopeText,
+  mediaDeclarationText, provenanceRowsOf, quantityRowsOf, readFramesPage, recorderDeclaredOf, roleCoverageText,
+  roleRowsOf, selectionRulesText, stateQuantityKeysOf, stateRowsOf, stateSelectionOf, statusPrecedenceText,
+  timeSemanticsText, versionMigrationText,
   type FrameDto, type FramePageDto, type FrameReadContext,
 } from '../adapters/platform-frames';
 
@@ -68,7 +72,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
     void readFramesPage({
       episodeId, runId, limit: size, offset,
       ...(ctx.sampleId ? { sampleId: ctx.sampleId } : {}),
-      ...(ctx.base ? { timeBase: ctx.base, ...(ctx.from !== null ? { timeFrom: ctx.from } : {}), ...(ctx.to !== null ? { timeTo: ctx.to } : {}) } : {}),
+      ...(ctx.base ? { timeBase: ctx.base, ...(ctx.from !== null ? { timeFrom: ctx.from } : {}), ...(ctx.to !== null ? { timeTo: ctx.to } : {})} : {}),
     }, track(new AbortController()).signal)
       .then((dto) => {
         if (!live(token, target)) return;
@@ -98,7 +102,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
   }, [episodeId, runId]);
   useEffect(() => () => { controllers.current.forEach((controller) => controller.abort()); controllers.current = []; revoke(urlRef.current); }, []);
 
-  /** Image, linked state and provenance all follow this one frame object. */
+  /** Image, linked state, provenance and the reference surface all follow this one frame object. */
   function bindFrame(frame: FrameDto | null, explicitField?: string | null) {
     if (!frame) { clearMedia(); return; }
     void loadFrameMedia(frame, explicitField ?? null);
@@ -151,10 +155,11 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
     if (next >= 0 && next < frames.length) { const frame = frames[next]; setIndex(next); bindFrame(frame); return; }
     const ctx = contextRef.current;
     if (next >= frames.length && page.paging.has_more) {
+      // v2 keeps next_offset in the anchor file's own line space and re-tests every condition from there.
       readPage(page.paging.next_offset ?? page.paging.offset + page.paging.returned, limitRef.current, ctx, { advancedFromHasMore: true });
       return;
     }
-    if (next >= frames.length) { setPlaying(false); setNotice('本页最后一帧之后服务端 has_more=false：界面停止推进。这只说明本次读取到此为止，不推断录制结束，也不声称已遍历全部帧。'); return; }
+    if (next >= frames.length) { setPlaying(false); setNotice(`本页最后一帧之后服务端 has_more=${String(page.paging.has_more)}（whole_file_scanned=${String(page.paging.scan?.whole_file_scanned)}）：界面停止推进。这只说明本次读取到此为止，不推断录制结束，也不声称已遍历全部帧。`); return; }
     if (page.paging.offset > 0) {
       readPage(Math.max(0, page.paging.offset - limitRef.current), limitRef.current, ctx, { landOn: 'last', notice: '回到上一页的最后一帧（offset 由服务端分页决定；窗口与筛选条件保持不变）。' });
       return;
@@ -202,43 +207,63 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
   const frames = page?.frames ?? [];
   const frame = frames[index] ?? null;
   const rows = stateRowsOf(frame);
-  const deltas = deltaRowsOf(frame);
+  const stateSelection = stateSelectionOf(frame);
+  const quantities = quantityRowsOf(frame);
+  const recorder = recorderDeclaredOf(frame);
   const roles = roleRowsOf(frame, page?.linkage);
   const refs = frameMediaRefs(frame);
-  const age = stateAgeOf(frame, page);
   const gate = frameWindowGate(page, windowText.base, Boolean(windowText.from.trim() || windowText.to.trim()));
   const selectable = frameSelectableBases(page);
   const kind = framePageKind(page, context);
+  const paged = page?.paging;
   const feedback = frame?.state?.recorder_declared_feedback;
   const activeWindow = context.base ? `${context.base} ${text(context.from)}–${text(context.to)}` : 'none';
+  const migration = versionMigrationText(page);
+  const ambiguous = ambiguousRoleCount(frame);
 
   return <section className="history-frame-pane" aria-label="历史帧关联浏览" data-frame-view="true" data-read-only="true"
     data-frame-bound={String(Boolean(page))} data-frame-schema={page?.schema_version ?? 'unread'}
     data-frame-episode={episodeId || 'none'} data-frame-run={runId ?? 'null'}>
     <h3>帧关联浏览 · 图像 — 关联机器人状态 — 来源与时间 <small data-frame-current-sample={frame?.sample_id ?? '—'}>{frame ? frame.sample_id : '未绑定帧'}</small></h3>
-    <p className="session-note">一条锚点记录 = 一个持久化图像帧；图像、状态与来源都由下面选中的同一帧驱动。这里不执行回放、不推进物理、不发送控制，也不做跨流同步或历史 3D。</p>
+    <p className="session-note">一条锚点记录 = 一个持久化图像帧；图像、状态、来源与下面的模型参考都由这同一帧驱动。这里不执行回放、不推进物理、不发送控制，也不做跨流同步。</p>
     {!episodeId && <p className="session-note" data-frame-empty="true">未选择 Episode：先在上方打开一个 Episode，本面板按详情返回的身份（source/run/episode）读取帧页。</p>}
     {error && <div className="session-error" role="alert" data-frame-error>{error}</div>}
 
     {page && <>
-      <dl className="session-fields frame-summary" data-frame-page-kind={kind} data-frame-returned={String(page.paging.returned)}
-        data-frame-offset={String(page.paging.offset)} data-frame-limit={String(page.paging.limit)} data-frame-next-offset={text(page.paging.next_offset)}
-        data-frame-has-more={String(page.paging.has_more)} data-frame-scanned={String(page.paging.scanned_anchor_lines)}
-        data-frame-excluded-window={String(page.paging.excluded_outside_time_window)} data-frame-excluded-stream={String(page.paging.excluded_stream_mismatch)}
-        data-frame-excluded-identity={String(page.paging.excluded_anchor_identity_mismatch)} data-frame-missing-time-base={String(page.paging.records_missing_selected_time_base)}
-        data-frame-skipped-before={String(page.paging.skipped_before_offset)} data-frame-excluded-no-sample={String(page.paging.excluded_without_sample_id)}
+      <dl className="session-fields frame-summary" data-frame-page-kind={kind} data-frame-returned={String(paged?.returned)}
+        data-frame-offset={String(paged?.offset)} data-frame-limit={String(paged?.limit)} data-frame-next-offset={text(paged?.next_offset)}
+        data-frame-has-more={String(paged?.has_more)} data-frame-next-qualifying={text(paged?.next_qualifying_anchor_line_index)}
+        data-frame-examined={String(paged?.anchor_records_examined)} data-frame-post-examined={String(paged?.post_page_records_examined)}
+        data-frame-lines-read={String(paged?.anchor_lines?.lines_read)} data-frame-lines-blank={String(paged?.anchor_lines?.blank_lines_skipped)}
+        data-frame-lines-oversize={String(paged?.anchor_lines?.oversize_lines_skipped)} data-frame-lines-unparseable={String(paged?.anchor_lines?.unparseable_lines_skipped)}
+        data-frame-lines-nonobject={String(paged?.anchor_lines?.non_object_lines_skipped)} data-frame-lines-prefiltered={String(paged?.anchor_lines?.prefiltered_lines_skipped)}
+        data-frame-whole-file-scanned={String(paged?.scan?.whole_file_scanned)}
+        data-frame-excluded-window={String(paged?.excluded_outside_time_window)} data-frame-excluded-stream={String(paged?.excluded_stream_mismatch)}
+        data-frame-excluded-identity={String(paged?.excluded_anchor_identity_mismatch)} data-frame-missing-time-base={String(paged?.records_missing_selected_time_base)}
+        data-frame-skipped-before={String(paged?.skipped_before_offset)} data-frame-excluded-no-sample={String(paged?.excluded_without_sample_id)}
+        data-frame-excluded-by-sample={String(paged?.excluded_by_sample_id_filter)}
         data-frame-no-total="true" data-frame-window-base={text(page.time.selected_time_base)} data-frame-window-from={text(page.time.time_from)} data-frame-window-to={text(page.time.time_to)}
         data-frame-context-sample={context.sampleId ?? 'none'} data-frame-context-window={activeWindow}
         data-frame-cursor-order={text(page.cursor.order)} data-frame-line-index-clock={String(page.cursor.line_index_is_not_a_clock)}
         data-frame-persist-counter={String(page.cursor.persist_sequence_is_the_recorders_own_counter)}
         data-frame-sync-streams={String(page.time.synchronized_across_streams)} data-frame-deltas-arithmetic={String(page.time.deltas_are_recorded_arithmetic)}
         data-frame-arrival-order-unused={String(page.time.browser_arrival_order_is_not_used)}
+        data-frame-migration-from={text(page.version_migration?.from_schema)} data-frame-migration-to={text(page.version_migration?.to_schema)}
         data-frame-anchor={page.anchor.relative_path} data-frame-anchor-stream={page.anchor.stream_id} data-frame-requested-stream={text(page.anchor.requested_stream)}>
+        <div><dt>版本迁移（响应原文）</dt><dd data-frame-version-migration={`${migration.head}；移除：${migration.removed.join('；') || 'reader 未列出'}；${migration.note}`}>
+          {migration.head}
+          <ul>{migration.changed.map((line) => <li key={line}>{line}</li>)}</ul>
+          {migration.removed.map((line) => <li key={line} data-frame-removed-field="true"><b>已移除字段</b> {line}</li>)}
+          <em>{migration.note}</em></dd></div>
         <div><dt>锚点与游标</dt><dd>锚点流={page.anchor.stream_id} → {page.anchor.relative_path}（requested_stream={text(page.anchor.requested_stream)}）· {text(page.anchor.semantics)} · 顺序={text(page.cursor.order)} · <b>line_index 不是时钟（{String(page.cursor.line_index_is_not_a_clock)}）</b> · persist_sequence 是记录者自己的计数器 · 本页 {frames.length ? `首/末行 ${text(page.cursor.first_line_index)}/${text(page.cursor.last_line_index)} · 首/末 persist_sequence ${text(page.cursor.first_persist_sequence)}/${text(page.cursor.last_persist_sequence)}` : '无行'}</dd></div>
-        <div><dt>分页计数（响应原样）</dt><dd>limit={page.paging.limit} · offset={page.paging.offset} · returned={page.paging.returned} · scanned_anchor_lines={page.paging.scanned_anchor_lines} · skipped_before_offset={page.paging.skipped_before_offset} · next_offset={text(page.paging.next_offset)} · has_more={String(page.paging.has_more)} · 排除：stream 不符 {page.paging.excluded_stream_mismatch} / 无 sample_id {page.paging.excluded_without_sample_id} / 窗口外 {page.paging.excluded_outside_time_window} / 身份不符 {page.paging.excluded_anchor_identity_mismatch} · 缺所选时间基 {page.paging.records_missing_selected_time_base} 条 · <b data-frame-total-forbidden="true">响应不提供总帧数，界面不显示也不推算“共 N 帧”</b></dd></div>
+        <div><dt>分页与读到的行（响应原样）</dt><dd>limit={paged?.limit} · offset={paged?.offset} · returned={paged?.returned} · has_more={String(paged?.has_more)} · next_offset={text(paged?.next_offset)} · next_qualifying_anchor_line_index={text(paged?.next_qualifying_anchor_line_index)} · anchor_records_examined={paged?.anchor_records_examined} · post_page_records_examined={paged?.post_page_records_examined} · whole_file_scanned={text(paged?.scan?.whole_file_scanned)}<br/>
+          已读行 {paged?.anchor_lines?.lines_read}（空行 {paged?.anchor_lines?.blank_lines_skipped}／超限 {paged?.anchor_lines?.oversize_lines_skipped}／坏行 {paged?.anchor_lines?.unparseable_lines_skipped}／非对象 {paged?.anchor_lines?.non_object_lines_skipped}／预过滤 {paged?.anchor_lines?.prefiltered_lines_skipped}）· skipped_before_offset={paged?.skipped_before_offset} · 排除：stream 不符 {paged?.excluded_stream_mismatch}／无 sample_id {paged?.excluded_without_sample_id}／sample 条件 {paged?.excluded_by_sample_id_filter}／窗口外 {paged?.excluded_outside_time_window}／身份不符 {paged?.excluded_anchor_identity_mismatch} · 缺所选时间基 {paged?.records_missing_selected_time_base} 条<br/>
+          <span data-frame-offset-semantics={text(paged?.offset_semantics)}>{text(paged?.offset_semantics)}</span> · <span data-frame-scan-note={text(paged?.scan?.note)}>{text(paged?.scan?.note)}</span> · <b data-frame-total-forbidden="true">响应不提供总帧数，界面不显示也不推算“共 N 帧”</b></dd></div>
         <div><dt>时间基与单位</dt><dd data-frame-selectable-bases={selectable.join(',')} data-frame-units={Object.entries(page.time.units ?? {}).map(([k, v]) => `${k}:${v}`).join(',')}
-          >可选数值基（只来自本页）={selectable.join('、') || 'reader 未声明（空数组就是本页的答案，不回退默认基）'} · 本次 selected_time_base={text(page.time.selected_time_base)} · 窗口 {text(page.time.time_from)}–{text(page.time.time_to)} · 单位约定 {Object.entries(page.time.units ?? {}).map(([k, v]) => `${k}→${v}`).join('，') || '未声明'} · synchronized_across_streams={String(page.time.synchronized_across_streams)}</dd></div>
+          >可选数值基（只来自本页）={selectable.join('、') || 'reader 未声明（空数组就是本页的答案，不回退默认基）'} · 本次 selected_time_base={text(page.time.selected_time_base)} · 窗口 {text(page.time.time_from)}–{text(page.time.time_to)} · 单位约定 {Object.entries(page.time.units ?? {}).map(([k, v]) => `${k}→${v}`).join('，') || '未声明'} · synchronized_across_streams={String(page.time.synchronized_across_streams)} · same_clock_verified={text(page.time.same_clock_verified)}</dd></div>
+        <div><dt>同钟声明与能证明什么</dt><dd data-frame-clock-sameness={clockSamenessText(page)}>{clockSamenessText(page)}</dd></div>
         <div><dt>关联口径（本页）</dt><dd data-frame-linkage-scope={linkageScopeText(page, frame)}>{linkageScopeText(page, frame)}</dd></div>
+        <div><dt>角色覆盖（本页）与状态优先级</dt><dd data-frame-role-coverage={roleCoverageText(page)}>{roleCoverageText(page)}</dd><dd data-frame-status-precedence={statusPrecedenceText(page)}>{statusPrecedenceText(page)}</dd></div>
         <div><dt>选样规则（响应原文）</dt><dd data-frame-selection-rules={selectionRulesText(page)}>{selectionRulesText(page)}</dd></div>
         <div><dt>本页结果</dt><dd data-frame-page-explanation={framePageExplanation(page, context)}>{framePageExplanation(page, context)}</dd></div>
       </dl>
@@ -248,7 +273,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
           onClick={() => { setPlaying(!playing); if (!playing) setNotice('播放只按界面节奏在本页已读取的帧上前进（到页末按 next_offset 继续）；不发命令、不推进物理，也不宣称录制帧率或跨流同步。'); }}>{playing ? '⏸ 暂停' : '▶ 播放'}</button>
         <button data-frame-prev onClick={() => step(-1)}>◀ 上一帧</button>
         <button data-frame-next onClick={() => step(1)}>下一帧 ▶</button>
-        <label>每页帧数<select aria-label="帧分页大小" value={limit} onChange={(event) => { const size = Number(event.target.value); setLimit(size); limitRef.current = size; readPage(0, size, contextRef.current, { notice: `改变每页帧数后从 offset=0 重读（保持 sample_id 与时间窗口条件）。` }); }}>{FRAME_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
+        <label>每页帧数<select aria-label="帧分页大小" value={limit} onChange={(event) => { const size = Number(event.target.value); setLimit(size); limitRef.current = size; readPage(0, size, contextRef.current, { notice: '改变每页帧数后从 offset=0 重读（保持 sample_id 与时间窗口条件）。' }); }}>{FRAME_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
         <label>节奏<select aria-label="界面帧步进节奏" value={cadence} onChange={(event) => setCadence(Number(event.target.value))}>{CADENCES.map((option) => <option key={option.ms} value={option.ms}>{option.label}</option>)}</select></label>
         <span className="chip masked" data-frame-playback-cadence-ui-only="true">节奏只控制界面推进，不是录制帧率</span>
       </div>
@@ -277,14 +302,18 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
           <h4>本页帧与角色状态</h4>
           <div className="history-cursor" data-frame-index={index} data-frame-sample={frame?.sample_id ?? 'none'}
             data-frame-line={text(frame?.anchor.line_index)} data-frame-persist-seq={text(frame?.anchor.persist_sequence)}
-            data-frame-linkage-status={frame?.linkage_status ?? 'none'} data-frame-primary-matched={text(frame?.primary_roles_matched)}
-            data-frame-declared-ref={frame?.declared_reference_status ?? 'none'} data-frame-state-status={text(frame?.state?.status)}>
-            当前：本页第 {frames.length ? index + 1 : 0}/{frames.length} 帧（不是全局序号）· line_index={text(frame?.anchor.line_index)} · persist_sequence={text(frame?.anchor.persist_sequence)} · linkage_status={text(frame?.linkage_status)} · primary_roles_matched={text(frame?.primary_roles_matched)} · declared_reference_status={text(frame?.declared_reference_status)}
+            data-frame-linkage-status={frame?.linkage_status ?? 'none'} data-frame-primary-matched={(frame?.primary_roles_matched ?? []).join('|')}
+            data-frame-primary-ambiguous={(frame?.primary_roles_ambiguous ?? []).join('|')} data-frame-ambiguous-count={String(ambiguous)}
+            data-frame-declared-ref={frame?.declared_reference_status ?? 'none'} data-frame-state-status={text(frame?.state?.status)}
+            data-frame-single-state={text(frame?.state?.single_state_selected)} data-frame-state-candidates={text(frame?.state?.candidate_records)}>
+            当前：本页第 {frames.length ? index + 1 : 0}/{frames.length} 帧（不是全局序号）· line_index={text(frame?.anchor.line_index)} · persist_sequence={text(frame?.anchor.persist_sequence)} · linkage_status={text(frame?.linkage_status)} · primary_roles_matched=[{(frame?.primary_roles_matched ?? []).join(',') || '空'}] · primary_roles_ambiguous=[{(frame?.primary_roles_ambiguous ?? []).join(',') || '空'}] · declared_reference_status={text(frame?.declared_reference_status)} · state single={text(frame?.state?.single_state_selected)}/{text(frame?.state?.candidate_records)} 候选
           </div>
           <table className="frame-record-table"><thead><tr><th>line</th><th>persist_seq</th><th>sample_id</th><th>关联</th><th>feedback 引用</th><th>媒体 availability</th></tr></thead>
             <tbody>{frames.map((item, position) => <tr key={`${item.sample_id}-${item.anchor.line_index}`} data-frame-row={item.sample_id} className={position === index ? 'selected' : ''}
               data-row-line={String(item.anchor.line_index)} data-row-persist-seq={text(item.anchor.persist_sequence)} data-row-status={item.linkage_status}
-              data-row-primary={String(item.primary_roles_matched)} data-row-declared-ref={item.declared_reference_status} data-row-identity={String(item.anchor.identity?.run_id_matches) + '/' + String(item.anchor.identity?.episode_id_matches)}
+              data-row-primary={(item.primary_roles_matched ?? []).join('|')} data-row-ambiguous={(item.primary_roles_ambiguous ?? []).join('|') || 'none'}
+              data-row-declared-ref={item.declared_reference_status} data-row-identity={String(item.anchor.identity?.run_id_matches) + '/' + String(item.anchor.identity?.episode_id_matches)}
+              data-row-single-state={text(item.state?.single_state_selected)} data-row-candidates={text(item.state?.candidate_records)}
               data-row-media={item.media.items.map((media) => `${media.field}:${media.availability}`).join('|')}>
               <td>{item.anchor.line_index}</td><td>{text(item.anchor.persist_sequence)}</td>
               <td><button data-frame-pick={item.sample_id} onClick={() => { setIndex(position); bindFrame(item); }}>{item.sample_id}</button></td>
@@ -295,11 +324,15 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
           {!frames.length && <p className="session-note" data-frame-list-empty="true">本页没有帧：表格不显示任何行，图像面板保持空，不用上一页的帧填充。</p>}
           <ul className="receipt-layers" data-role-layers="true">{roles.map((role) => <li key={role.role} data-frame-role={role.role} data-role-primary={String(role.primary)} data-role-status={role.status}>
             <b>{role.role}{role.primary ? '（主角色）' : '（帧声明的引用，不计入主角色）'}</b>
-            <span className={role.status === 'matched' ? 'ok' : role.status === 'unresolved_reference' || role.status === 'partial' ? 'unknown' : 'bad'}>{role.status}</span>
-            <p>join_key={role.joinKey} · key_value={role.keyValue} · expected={role.expected} / matched={role.matched} / 身份不符={role.mismatched} · 命中位置 {role.positions} · 角色定义：{role.semantics}</p>
+            <span className={role.status === 'matched' ? 'ok' : role.status === 'unresolved_reference' || role.status === 'partial' || role.status.startsWith('ambiguous') ? 'unknown' : 'bad'}>{role.status}</span>
+            <p>join_key={role.joinKey} · key_value={role.keyValue} · 候选={role.candidates} / matched={role.matched} / 身份不符={role.mismatched} · 命中位置 {role.positions}</p>
+            <p data-role-requirement={role.requirement}>完整性要求：{role.requirement}</p>
+            <p data-role-kinds={role.kinds} data-role-inventory={role.inventory}>kind 判定：{role.kinds} · 清单 {role.inventory}</p>
+            <p data-role-ambiguous={role.ambiguous}>歧义候选：{role.ambiguous}</p>
+            <p>角色定义：{role.semantics}</p>
             <p>{role.statusMeaning}{role.reason ? ` ${role.reason}` : ''}</p></li>)}</ul>
           {page.time.clock_sameness && <p className="session-note" data-clock-sameness-verified={String(page.time.clock_sameness.verified_by_reader)} data-clock-sameness-declared={String(page.time.clock_sameness.declared_by_recorder)}>
-            clock_sameness：declared_by_recorder={text(page.time.clock_sameness.declared_by_recorder)} · verified_by_reader={text(page.time.clock_sameness.verified_by_reader)} · {page.time.clock_sameness.note ?? 'reader 未说明'}</p>}
+            clock_sameness：declared_by_recorder={text(page.time.clock_sameness.declared_by_recorder)} · verified_by_reader={text(page.time.clock_sameness.verified_by_reader)} · {page.time.clock_sameness.verified_claim ?? 'reader 未说明'}</p>}
         </section>
 
         <section className="history-stream-pane" data-frame-state-pane="true">
@@ -309,33 +342,39 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
             <p className="session-note" data-frame-state-join={frame.state.join_key} data-frame-state-key={text(frame.state.key_value)}
               data-frame-state-status={frame.state.status} data-frame-carried-over={String(frame.state.carried_over_from_another_frame)}
               data-frame-interpolated={String(frame.state.interpolated)} data-frame-event-seq={text(frame.state.source?.event_seq)}
+              data-frame-single-state={text(frame.state.single_state_selected)} data-frame-state-candidates={text(frame.state.candidate_records)}
+              data-frame-state-empty-payload={String(!frame.state.recorded_state)}
               data-frame-record-position={frame.state.source ? `${frame.state.source.relative_path}#${frame.state.source.line_index}` : 'none'}>
-              join_key={frame.state.join_key} · key_value={text(frame.state.key_value)} · status={frame.state.status} · event_seq={text(frame.state.source?.event_seq)} · 记录位置={frame.state.source ? `${frame.state.source.relative_path}#${frame.state.source.line_index}` : '无命中记录'} · carried_over_from_another_frame={String(frame.state.carried_over_from_another_frame)}（不继承别的帧）· interpolated={String(frame.state.interpolated)}（不插值）<br/>{frame.state.note ?? 'reader 未声明该状态的含义'}</p>
+              join_key={frame.state.join_key} · key_value={text(frame.state.key_value)} · status={frame.state.status} · candidate_records={text(frame.state.candidate_records)} · single_state_selected={text(frame.state.single_state_selected)} · event_seq={text(frame.state.source?.event_seq)} · 记录位置={frame.state.source ? `${frame.state.source.relative_path}#${frame.state.source.line_index}` : '无命中记录'} · carried_over_from_another_frame={String(frame.state.carried_over_from_another_frame)}（不继承别的帧）· interpolated={String(frame.state.interpolated)}（不插值）<br/>{frame.state.note ?? 'reader 未声明该状态的含义'}</p>
+            {stateSelection && !stateSelection.hasRecordedState && <p className="session-blocked" role="note" data-frame-state-none-selected="true">
+              <Icon name="info" size={15}/><span>本帧没有单一选中的状态记录（single_state_selected={stateSelection.singleSelected}，候选 {stateSelection.candidateRecords} 条）：界面不挑第一条、不补 0、不沿用上一帧状态，下面的数值面板保持空。{stateSelection.note}</span></p>}
+            {stateSelection && stateSelection.candidates.length > 0 && <ul className="receipt-layers" data-state-candidates="true">{stateSelection.candidates.map((candidate, position) => <li key={`${candidate.position}-${position}`} data-state-candidate={candidate.position}>
+              <b>候选 {candidate.position}</b><span>{candidate.identity}</span><small>payload 字段：{candidate.payload || 'reader 未返回'}</small></li>)}</ul>}
             <table className="frame-record-table"><thead><tr><th>字段（recorded_state 原值）</th><th>值</th><th>单位</th></tr></thead>
               <tbody>{rows.map((row) => <tr key={row.key} data-state-row={row.key} data-state-unit={row.unit} data-state-declared-unit={String(!row.unit.startsWith('未在 units 表'))}>
                 <td>{row.label}<small>{row.note}</small></td><td><code>{row.value}</code></td><td>{row.unit}</td></tr>)}</tbody></table>
-            {!rows.length && <p className="session-note" data-state-none="true">{`状态记录 status=${text(frame.state.status)}：本帧没有可显示的 recorded_state 字段（缺失原因见上面的角色口径），不补 0、不用别的帧的状态顶替。`}</p>}
+            {!rows.length && <p className="session-note" data-state-none="true">{`状态记录 status=${text(frame.state.status)} · single_state_selected=${text(frame.state.single_state_selected)}：本帧没有可显示的 recorded_state 字段（缺失原因见上面的角色口径），不补 0、不用别的帧的状态顶替。`}</p>}
             <p className="session-note" data-declared-reference={text(frame.state.declared_reference?.row_status)}>帧声明的 feedback 引用：feedback_sample_id={text(frame.state.declared_reference?.feedback_sample_id)} · row_status={text(frame.state.declared_reference?.row_status)}。这与上面四个主角色是否 matched 分开显示：引用未解析不等于完全没有状态。</p>
-            <p className="session-note" data-feedback-declared-available={String(Boolean(feedback?.available))} data-feedback-declared-time={text(feedback?.feedback_time_s ?? null)} data-feedback-declared-clock={text(feedback?.feedback_clock)}>
-              原始反馈时间（另列，不与时间差合并）：available={text(feedback?.available)} · feedback_time_s={text(feedback?.feedback_time_s ?? null)} · feedback_clock={text(feedback?.feedback_clock)} · 记录者声明的采集钟={feedback?.capture_clocks_declared ? Object.entries(feedback.capture_clocks_declared).map(([k, v]) => `${k}=${v}`).join(',') : '未声明'} · {feedback?.meaning ?? 'reader 未说明其含义'}</p>
+            <p className="session-note" data-feedback-declared-available={String(Boolean(feedback?.available))} data-feedback-declared-time={text(feedback?.feedback_time_s ?? null)} data-feedback-declared-clock={text(feedback?.feedback_clock)} data-feedback-timing-status={text(feedback?.timing_event_status)}>
+              原始反馈时间（另列，不与时间差合并）：available={text(feedback?.available)} · timing_event_status={text(feedback?.timing_event_status)} · feedback_time_s={text(feedback?.feedback_time_s ?? null)} · feedback_clock={text(feedback?.feedback_clock)} · 记录者声明的采集钟={feedback?.capture_clocks_declared ? Object.entries(feedback.capture_clocks_declared).map(([k, v]) => `${k}=${v}`).join(',') : '未声明'} · {feedback?.meaning ?? 'reader 未说明其含义'}</p>
           </>}
         </section>
 
         <section className="history-stream-pane" data-frame-time-pane="true">
-          <h4>时间与来源（记录字段相减，不是同步证明）</h4>
-          {!frame && <p className="session-note" data-frame-time-empty="true">未绑定帧：没有时间差可显示。</p>}
+          <h4>时间与来源（每条都是两个记录字段之差）</h4>
+          {!frame && <p className="session-note" data-frame-time-empty="true">未绑定帧：没有时间量可显示。</p>}
           {frame && <>
-            <p className="session-note" data-age-ms={age?.absMs ?? 'none'} data-age-before-capture={age?.beforeCapture ?? 'none'} data-age-hint={age?.hint ?? 'none'}
-              data-same-clock-verified={String(frame.times.same_clock_verified)}>
-              {age ? `关联状态事件时间差：${age.absMs} ms（state_recorded_before_capture=${age.beforeCapture}）· 显示口径：${age.hint} · same_clock_verified=${String(frame.times.same_clock_verified)}。这个数字是两条记录字段相减得到的关联时间差，不是物理状态采样延迟，也不解释为同一时刻。` : '本帧没有 age_of_state_relative_to_frame 字段：不自行相减。'}</p>
-            <p className="session-note" data-declared-latency={declaredLatencyOf(frame)}>记录自述的延迟字段：{declaredLatencyOf(frame)}</p>
-            <table className="frame-record-table"><thead><tr><th>差值（显示口径）</th><th>值</th><th>原始两端值</th></tr></thead>
-              <tbody>{deltas.map((delta, position) => <tr key={`${delta.label}-${position}`} data-delta-row={delta.label} data-delta-abs-ms={delta.absMs} data-delta-direction={delta.direction}
-                data-delta-position={delta.position || 'none'} data-delta-capture={delta.captureValue} data-delta-other={delta.otherValue}>
-                <td>{delta.display}<small>{delta.note}</small><small>basis：{delta.basis}</small></td>
-                <td>{delta.valueS} s（绝对值 {delta.absMs} ms · {delta.direction}）</td>
-                <td>采集端 {delta.captureValue} ／ 对照端 {delta.otherValue}{delta.position ? ` · ${delta.position}` : ''}</td></tr>)}</tbody></table>
-            {!deltas.length && <p className="session-note" data-delta-none="true">本帧没有可显示的差值记录（times.deltas 为空）：不自行相减，也不显示推断的时间差。</p>}
+            <p className="session-note" data-time-semantics={timeSemanticsText(frame)}>{timeSemanticsText(frame)}</p>
+            <p className="session-note" data-state-quantity-keys={stateQuantityKeysOf(frame)}>{stateQuantityKeysOf(frame)}</p>
+            <p className="session-note" data-recorder-declared={recorder.text} data-recorder-agrees={recorder.agrees}>
+              录制器自述的时延字段（原样复制，界面不重测、不折算成状态年龄）：{recorder.text}<br/><em>{recorder.note}</em></p>
+            <table className="frame-record-table"><thead><tr><th>时间量（显示口径）</th><th>值</th><th>来源记录／字段／相对什么／单位／钟</th></tr></thead>
+              <tbody>{quantities.map((row, position) => <tr key={`${row.key}-${position}`} data-quantity-row={row.key} data-quantity-abs-ms={row.absMs} data-quantity-direction={row.direction}
+                data-quantity-unit={row.unit} data-quantity-position={row.position || 'none'} data-quantity-capture={row.captureValue ?? ''} data-quantity-clock={row.clock}>
+                <td>{row.display}<small>{row.meaning}</small><small>{row.note}</small></td>
+                <td>{row.value} {row.unit}（绝对值 {row.absMs} ms · {row.direction}）</td>
+                <td><small>{row.sourceRecord} · field={row.field} · relative_to={row.relativeTo} · {row.position || '无行号'}</small></td></tr>)}</tbody></table>
+            {!quantities.length && <p className="session-note" data-quantity-none="true">本帧没有 times.quantities 条目：不自行相减，也不显示推断的时间差。</p>}
           </>}
           <dl className="session-fields">{provenanceRowsOf(page, frame).map((row) => <div key={row.key} data-provenance-row={row.key}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl>
         </section>
@@ -346,9 +385,9 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
           {!refs.length && <p className="session-note" data-frame-media-none="true">{frame ? '本帧 media.items 没有引用：不显示图像，也不按 sample_id 拼文件名。' : '未绑定帧。'}</p>}
           {refs.map((ref) => <div key={`${ref.field}-${ref.uri}`} className="media-ref" data-frame-media-ref={ref.uri} data-media-field={ref.field} data-media-availability={ref.availability}
             data-media-declared-sha={ref.declaredSha256 ?? 'null'} data-media-declared-bytes={ref.declaredBytes} data-media-bytes-on-disk={ref.bytesOnDisk}
-            data-media-agrees-with-row={ref.agreesWithRow} data-media-row-line={ref.rowLineIndex}>
+            data-media-agrees-with-row={ref.agreesWithRow} data-media-row-lines={ref.rowLines} data-media-row-candidates={ref.rowCandidates} data-media-rows-conflict={ref.rowsConflict}>
             <b>{ref.field} · {ref.kind}</b><span>{ref.uri}</span>
-            <small>声明摘要：{ref.declaredSha256 ? shortOr(ref.declaredSha256) : 'null'}（来自观测行，记录声明而非本次重算）· 声明字节={ref.declaredBytes} · 磁盘字节={ref.bytesOnDisk} · 与观测行 uri 一致={ref.agreesWithRow}（行 line_index={ref.rowLineIndex}）</small>
+            <small>声明摘要：{ref.declaredSha256 ? shortOr(ref.declaredSha256) : 'null'}（来自观测行，记录声明而非本次重算）· 声明字节={ref.declaredBytes} · 磁盘字节={ref.bytesOnDisk} · 与观测行 uri 一致={ref.agreesWithRow}（候选 {ref.rowCandidates} 条，行 {ref.rowLines}，行间冲突={ref.rowsConflict}）</small>
             <small>{ref.note}</small>
             <button data-frame-media-pick={ref.field} disabled={!ref.loadable || (asset.status === 'loading' && asset.uri === ref.uri)} title={ref.loadable ? '按该引用读取字节' : '该引用不可读取，界面不绕过'} onClick={() => bindFrame(frame, ref.field)}>按此引用读取</button>
           </div>)}
@@ -375,8 +414,11 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
         </section>
       </div>
 
+      <HistoryModelPane episodeId={episodeId} runId={runId} sampleId={frame?.sample_id ?? null}/>
+
       <div className="history-frame-boundary" data-frame-boundary="true" data-3d-disabled={String(page.three_d_replay.this_slice_does_not_enable_3d_replay)}
         data-live-geometry-applied={String(page.three_d_replay.live_geometry_or_actual_may_be_applied)} data-transforms-full-pose={String(page.three_d_replay.transforms_are_full_per_body_pose_sequences)}
+        data-pose-slice={text(page.three_d_replay.robot_pose_readiness_slice)}
         data-not-proven={JSON.stringify(page.not_proven ?? [])} data-capability-limits={(page.capability_limits ?? []).join('|')}>
         <Icon name="info" size={15}/><div><b>这一片段的边界（先说这个）</b><p>{frameBoundaryNotice(page)}</p></div></div>
     </>}

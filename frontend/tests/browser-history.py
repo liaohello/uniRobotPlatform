@@ -12,7 +12,8 @@
                     real archive is not touched by this mode at all.
 
 Both modes assert that the browser issues no non-GET request, that the gateway refuses native
-episode validate/assessment, control and run-stop paths locally, that no 3D canvas or live
+episode validate/assessment, control and run-stop paths locally, that no canvas exists outside the
+fixed model reference pane and no
 Target/Ghost is mounted in the history view, and that live polling never rewrites history DOM.
 """
 import argparse, asyncio, json, re, struct, traceback, zlib
@@ -570,58 +571,88 @@ SLOW = {'state': 'idle'}
 
 
 def frames_fixture(episode):
-    """A minimal synthetic frame-link-1 page: this suite is about episode-read-1, the pane only has to
-    be bound to a real schema instead of falling through to a 404."""
-    frame = {'sample_id': 'rgbd_fixture_1', 'stream_id': 'rgbd', 'linkage_status': 'matched', 'primary_roles_matched': 4,
-             'declared_reference_status': 'unresolved_reference',
+    """A minimal synthetic frame-link-2 page: this suite is about episode-read-1, so the pane only has
+    to bind to the current schema instead of falling through. The full v2 field-by-field comparison,
+    the ambiguity shapes and the fixed model reference live in tests/browser-frames.py."""
+    frame = {'sample_id': 'rgbd_fixture_1', 'stream_id': 'rgbd', 'linkage_status': 'matched',
+             'primary_roles_matched': ['image_observation', 'camera_transform', 'capture_timing_event', 'state_feedback_event'],
+             'primary_roles_ambiguous': [], 'declared_reference_status': 'unresolved_reference',
              'anchor': {'line_index': 0, 'relative_path': 'observations/persist.jsonl', 'persist_sequence': 1,
                         'identity': {'run_id_matches': True, 'episode_id_matches': True}, 'clocks': {'capture_backend_monotonic_s': 10.0},
                         'declared_keys': ['sample_id', 'rgb_uri'], 'reference_keys': {'capture_control_tick_id': 'tick_1', 'feedback_sample_id': 'joint_feedback_1'},
                         'profile': {'profile_id': 'fixture-profile'}},
              'media': {'declared_by': 'fixture', 'uri_convention': 'assets/<kind>/<file>', 'digest_verification': 'declared only',
+                       'duplicate_row_rule': 'every candidate row for the kind is listed; none is silently chosen',
                        'items': [{'field': 'rgb_uri', 'uri': 'assets/rgb/good_rgb.png', 'availability': 'present', 'declared_sha256_by_row': 'a' * 64,
-                                  'declared_bytes_by_row': 3, 'bytes_on_disk': 3, 'agrees_with_observation_row': True, 'row_line_index': 1}]},
-             'state': {'status': 'matched', 'join_key': 'control_tick_id', 'key_value': 'tick_1',
+                                  'declared_bytes_by_row': 3, 'bytes_on_disk': 3, 'agrees_with_observation_row': True,
+                                  'observation_row_line_indexes': [1], 'observation_row_candidates': 1}]},
+             'state': {'status': 'matched', 'join_key': 'control_tick_id', 'key_value': 'tick_1', 'candidate_records': 1, 'single_state_selected': True,
                        'source': {'stream_id': 'events', 'relative_path': 'events.jsonl', 'line_index': 1, 'event_seq': 2, 'event_type': 'feedback'},
-                       'recorded_fields': {'event_seq': 2}, 'recorded_state': {'base_position_world_sim_m': [0.1, 0.2, 0.05]},
+                       'recorded_fields': {'event_seq': 2}, 'recorded_state': {'base_position_world_sim_m': [0.1, 0.2, 0.05]}, 'candidates': [],
                        'declared_reference': {'feedback_sample_id': 'joint_feedback_1', 'row_status': 'unresolved_reference'},
-                       'recorder_declared_feedback': {'available': True, 'feedback_time_s': 9.997, 'feedback_clock': 'backend_monotonic'},
+                       'recorder_declared_feedback': {'available': True, 'timing_event_status': 'matched', 'feedback_time_s': 9.997, 'feedback_clock': 'backend_monotonic'},
                        'units': {'*_m': 'metres'}, 'carried_over_from_another_frame': False, 'interpolated': False, 'note': 'fixture state'},
-             'times': {'deltas': [{'label': 'state_event_minus_frame_capture', 'capture_value': 10.0, 'other_value': 9.997, 'value_s': -0.003,
-                                  'abs_value_ms': 3.0, 'direction': 'earlier', 'basis': 'fixture'}], 'declared_latency_ms': {},
-                       'age_of_state_relative_to_frame': {'abs_ms': 3.0, 'state_recorded_before_capture': True, 'display_hint': 'fixture'},
+             'times': {'quantities': [{'key': 'state_event_write_minus_frame_capture', 'source_record': 'events state feedback envelope',
+                                       'field': 'backend_monotonic_s', 'relative_to': 'persisted frame capture_backend_monotonic_s', 'unit': 's',
+                                       'clock': 'named backend_monotonic by the record', 'meaning': 'fixture meaning', 'capture_value': 10.0,
+                                       'other_value': 9.997, 'value': -0.003, 'abs_ms': 3.0, 'direction': 'earlier', 'line_index': 1}],
+                       'recorder_declared': {'fields': {'observation_age_ms': 3.0}, 'observation_age_ms_note': 'fixture note',
+                                             'recomputed_arrival_minus_capture_ms': 3.0, 'agrees_with_recomputation': True},
+                       'state_time_quantity_keys': ['state_event_write_minus_frame_capture'], 'semantics_rule': 'fixture rule',
+                       'removed_in_this_version': {'times.age_of_state_relative_to_frame': 'read times.quantities instead'},
                        'same_clock_verified': False},
-             'roles': [{'role': role, 'join_key': 'sample_id', 'key_value': 'rgbd_fixture_1', 'status': 'matched', 'expected_records': 1, 'matched_records': 1,
-                        'identity_mismatched_records': 0, 'sources': [{'stream_id': 'events', 'relative_path': 'events.jsonl', 'line_index': 1, 'record_position': 'events.jsonl#1', 'event_seq': 2}]}
+             'roles': [{'role': role, 'join_key': 'sample_id', 'key_value': 'rgbd_fixture_1', 'status': 'matched',
+                        'requirement': {'exact_records': 1, 'rule': 'exactly one record for this key'}, 'candidate_records': 1, 'matched_records': 1,
+                        'identity_mismatched_records': 0, 'missing_kinds': [], 'duplicate_kinds': [], 'unexpected_kinds': [], 'kind_inventory': None,
+                        'candidate_line_indexes': [1], 'ambiguous_records': None,
+                        'sources': [{'stream_id': 'events', 'relative_path': 'events.jsonl', 'line_index': 1, 'record_position': 'events.jsonl#1', 'event_seq': 2}]}
                        for role in ['image_observation', 'camera_transform', 'capture_timing_event', 'state_feedback_event']]
                       + [{'role': 'feedback_observation_row', 'join_key': 'sample_id', 'key_value': 'joint_feedback_1', 'status': 'unresolved_reference',
-                          'expected_records': 1, 'matched_records': 0, 'identity_mismatched_records': 0}]}
-    return {'schema_version': 'unirobot-mobilecar-frame-link-1', 'read_only': True,
+                          'requirement': {'exact_records': 1, 'rule': 'one row equal to the declared feedback id'}, 'candidate_records': 0, 'matched_records': 0,
+                          'identity_mismatched_records': 0, 'missing_kinds': [], 'duplicate_kinds': [], 'unexpected_kinds': [], 'kind_inventory': None,
+                          'candidate_line_indexes': [], 'ambiguous_records': None}]}
+    return {'schema_version': 'unirobot-mobilecar-frame-link-2', 'read_only': True,
             'source': {'source_id': SOURCE_ID, 'adapter_id': 'mobilecar', 'recording_root': '/fixture', 'access': 'read_only_files', 'platform_writes': False},
             'retrieved_at': '2026-01-01T00:00:00Z',
             'identity': {'run_id': 'run_a', 'episode_id': episode, 'episode_directory': f'/fixture/run_a/episodes/{episode}',
                          'run_directory_identity': 'the run directory was re-validated as itself before this read', 'native_contract_version': 'mobilecar-1.0'},
             'anchor': {'stream_id': 'observations-persist', 'relative_path': 'observations/persist.jsonl', 'semantics': 'one persisted image frame per record', 'requested_stream': 'rgbd'},
-            'paging': {'limit': 5, 'offset': 0, 'returned': 1, 'scanned_anchor_lines': 2, 'skipped_before_offset': 0, 'excluded_stream_mismatch': 0,
-                       'excluded_without_sample_id': 0, 'excluded_outside_time_window': 0, 'excluded_anchor_identity_mismatch': 0,
-                       'records_missing_selected_time_base': 0, 'next_offset': None, 'has_more': False},
+            'paging': {'limit': 5, 'offset': 0, 'returned': 1, 'has_more': False, 'next_offset': None, 'next_qualifying_anchor_line_index': None,
+                       'offset_semantics': 'raw line index after the last returned anchor', 'skipped_before_offset': 0, 'excluded_stream_mismatch': 0,
+                       'excluded_without_sample_id': 0, 'excluded_by_sample_id_filter': 0, 'excluded_outside_time_window': 0,
+                       'excluded_anchor_identity_mismatch': 0, 'records_missing_selected_time_base': 0, 'anchor_records_examined': 2,
+                       'post_page_records_examined': 1,
+                       'anchor_lines': {'lines_read': 2, 'blank_lines_skipped': 0, 'oversize_lines_skipped': 0, 'unparseable_lines_skipped': 0,
+                                         'non_object_lines_skipped': 0, 'prefiltered_lines_skipped': 0},
+                       'scan': {'whole_file_scanned': False, 'stopped_after_full_page_at_line_index': None, 'note': 'fixture scan'}},
             'cursor': {'order': 'native_append_order_of_the_anchor_stream', 'line_index_is_not_a_clock': True, 'persist_sequence_is_the_recorders_own_counter': True,
                        'first_line_index': 0, 'last_line_index': 0, 'first_persist_sequence': 1, 'last_persist_sequence': 1},
             'time': {'selected_time_base': None, 'time_from': None, 'time_to': None, 'selectable_time_bases': ['capture_backend_monotonic_s'],
-                     'units': {'*_s': 'seconds'}, 'synchronized_across_streams': False,
-                     'clock_sameness': {'declared_by_recorder': True, 'verified_by_reader': False, 'note': 'naming is not verification'},
+                     'units': {'*_s': 'seconds'}, 'synchronized_across_streams': False, 'same_clock_verified': False,
+                     'clock_sameness': {'fields_that_name_a_shared_base': ['fixture'], 'declared_by_recorder': True, 'verified_by_reader': False,
+                                        'verified_claim': 'naming is not verification',
+                                        'writer_version_binding': {'recorded': ['fixture'], 'not_recorded': ['the native build'], 'consequence': 'fixture',
+                                                                   'synchronized_upgraded_by_numeric_closeness': False}},
                      'deltas_are_recorded_arithmetic': True, 'browser_arrival_order_is_not_used': True},
             'linkage': {'roles': {role: {'source_stream': 'fixture', 'join_key': 'sample_id', 'meaning': f'fixture meaning {role}'}
                                   for role in ['image_observation', 'camera_transform', 'capture_timing_event', 'state_feedback_event', 'feedback_observation_row']},
-                        'status_meaning': {'matched': 'every expected record was found by its recorded key',
-                                           'unresolved_reference': 'the frame declares a reference whose target record is not in this Episode'},
+                        'status_meaning': {'matched': 'every record the role requires was found by its recorded key, once',
+                                           'unresolved_reference': 'the frame declares a reference whose target record is not in this Episode',
+                                           'ambiguous_kind': 'a sensor_kind the role requires was recorded more than once',
+                                           'ambiguous_candidates': 'more than one record claimed this role’s key'},
+                        'status_precedence': ['stream_absent', 'identity_mismatch', 'ambiguous_kind', 'ambiguous_candidates', 'partial', 'missing', 'unresolved_reference', 'matched'],
                         'primary_roles': ['image_observation', 'camera_transform', 'capture_timing_event', 'state_feedback_event'],
-                        'selection_rules': {'joins': 'exact equality of the recorded join key'}, 'role_coverage_on_this_page': {}},
+                        'selection_rules': {'joins': 'exact equality of the recorded join key', 'interpolation': 'none'},
+                        'role_coverage_on_this_page': {}},
             'summary': {'frames_returned': 1, 'frames_with_all_primary_roles_matched': 1, 'frames_with_some_primary_roles_missing': 0,
-                        'frames_with_no_primary_role_matched': 0, 'frames_without_a_linked_state': 0, 'frames_with_unresolved_feedback_reference': 1},
+                        'frames_with_no_primary_role_matched': 0, 'frames_with_ambiguous_primary_role': 0, 'frames_without_a_linked_state': 0,
+                        'frames_with_unresolved_feedback_reference': 1},
             'frames': [frame], 'not_proven': ['rendered 3D replay'],
+            'version_migration': {'from_schema': 'unirobot-mobilecar-frame-link-1', 'to_schema': 'unirobot-mobilecar-frame-link-2',
+                                  'changed': ['fixture'], 'removed_fields': {'times.age_of_state_relative_to_frame': 'read times.quantities instead'},
+                                  'compatibility_note': 'consumers must read schema_version'},
             'three_d_replay': {'this_slice_does_not_enable_3d_replay': True, 'live_geometry_or_actual_may_be_applied': False,
-                               'transforms_are_full_per_body_pose_sequences': False},
+                               'transforms_are_full_per_body_pose_sequences': False, 'robot_pose_readiness_slice': 'GET /api/v1/episodes/{episode_id}/robot-state'},
             'capability_limits': ['no replay execution']}
 
 
@@ -961,8 +992,13 @@ async def boundary_checks(page):
     check('the gateway refuses episode validate/assessment and every control or native path with its own error page',
           all(item['status'] in (404, 405) and item['gateway'] and item['html_error_page'] for item in refused),
           [item for item in refused if not (item['status'] in (404, 405) and item['gateway'] and item['html_error_page'])])
-    check('the history view never renders a 3D canvas or a Target/Ghost control',
-          await page.evaluate("()=>({canvas:document.querySelectorAll('canvas').length, target:document.querySelectorAll('[data-target-readout],[data-ghost-toggle],[data-workbench-tool]').length})") == {'canvas': 0, 'target': 0})
+    surfaces = await page.evaluate("()=>({canvas:document.querySelectorAll('canvas').length,inReference:document.querySelectorAll('[data-model-canvas-host] canvas').length,"
+                                   "target:document.querySelectorAll('[data-target-readout],[data-ghost-toggle],[data-workbench-tool]').length,"
+                                   "poseVerified:document.querySelector('[data-model-pane]')?.getAttribute('data-frame-pose-verified')??'absent'})")
+    check('the history view renders no canvas outside the fixed model reference and no Target/Ghost control',
+          surfaces['canvas'] == surfaces['inReference'] and surfaces['target'] == 0, surfaces)
+    check('whatever the history view draws, it never presents the selected frame’s pose as verified',
+          surfaces['poseVerified'] in ('false', 'absent'), surfaces)
 
 
 async def live_isolation(page):

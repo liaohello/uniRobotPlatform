@@ -51,8 +51,8 @@ python3 tests/browser-config.py http://127.0.0.1:18934 /tmp/config
 python3 tests/browser-session.py http://127.0.0.1:18934 /tmp/session
 python3 tests/browser-history.py http://127.0.0.1:18947 /tmp/history --mode real        # 真实历史记录：预览上游必须是 episode-read-1 候选
 python3 tests/browser-history.py http://127.0.0.1:18947 /tmp/history-synth --mode synthetic # 隔离故障夹具（page.route），不触碰归档
-python3 tests/browser-frames.py http://127.0.0.1:18947 /tmp/frames --mode real            # 帧关联：预览上游必须是 frame-link-1 候选（本轮为 18966）
-python3 tests/browser-frames.py http://127.0.0.1:18947 /tmp/frames-synth --mode synthetic  # 空时间基数组、缺媒体、迟到响应等合成夹具
+python3 tests/browser-frames.py http://127.0.0.1:18947 /tmp/frames --mode real            # 帧关联 + 固定模型参考：预览上游必须是 frame-link-2/history-pose-1 候选（本轮为 18969）
+python3 tests/browser-frames.py http://127.0.0.1:18947 /tmp/frames-synth --mode synthetic  # 空时间基数组、歧义候选、缺媒体、身份/摘要不符、迟到响应等合成夹具
 python3 tools/serve-readonly.py --directory dist --port 18947 --upstream http://127.0.0.1:18966
 ```
 
@@ -64,7 +64,7 @@ python3 tools/serve-readonly.py --directory dist --port 18947 --upstream http://
 
 ## 真实来源与平台配置
 
-`PlatformService` 只读 scene / capabilities / snapshot / kinematics / execution-recipe，资产使用 scene 提供的 URI 与 sha256 查询参数，经同源代理读取。默认请求完成后等待1秒，可选择2/5秒；不叠加请求，10秒超时，切源取消迟到结果。普通快照只更新 Actual，不重建renderer、覆盖本地 Target 或重置相机。世界物体只显示编译初态，没有实时物体真值。`PlatformConfigApi` 仅使用同源代理的白名单路径：Draft 创建/列表/读取/保存/validate、配置快照读取、Session 读取。历史 Episode 走独立的 `PlatformEpisodeApi`（episode-read-1 五条精确 GET：列表、详情、流目录、单流 records、assets 字节）与 `platform-frames` 客户端（frame-link-1 的一条 `GET /api/v1/episodes/{id}/frames`），只在“历史 Episode”视图内使用：该视图不挂载 3D、不订阅 live 轮询、没有可执行 Target/Ghost，只做单流分页浏览、按界面节奏的播放，以及“图像—关联机器人状态—来源与时间”的帧联动；跨流同步、历史 3D 回放与任何录制写入仍未接入。只读代理对历史一共只放行 6 条精确 GET（frame-link-1 的 `/frames` 是独立精确路由，未放宽为 `/episodes/{id}` 通配）。
+`PlatformService` 只读 scene / capabilities / snapshot / kinematics / execution-recipe，资产使用 scene 提供的 URI 与 sha256 查询参数，经同源代理读取。默认请求完成后等待1秒，可选择2/5秒；不叠加请求，10秒超时，切源取消迟到结果。普通快照只更新 Actual，不重建renderer、覆盖本地 Target 或重置相机。世界物体只显示编译初态，没有实时物体真值。`PlatformConfigApi` 仅使用同源代理的白名单路径：Draft 创建/列表/读取/保存/validate、配置快照读取、Session 读取。历史 Episode 走独立的 `PlatformEpisodeApi`（episode-read-1 五条精确 GET：列表、详情、流目录、单流 records、assets 字节）、`platform-frames` 客户端（frame-link-2 的一条 `GET /api/v1/episodes/{id}/frames`）和 `platform-history-pose` 客户端（history-pose-1 的两条 `GET /api/v1/episodes/{id}/robot-state`、`GET /api/v1/episodes/{id}/model/assets/{asset_id}`），只在“历史 Episode”视图内使用。该视图不订阅 live 轮询、没有可执行 Target/Ghost、不发送命令：它做单流分页浏览、按界面节奏的播放、“图像—关联机器人状态—来源与时间”的帧联动，以及一个**固定模型参考面**——放置树取自平台冻结 geometry bundle（`world_pose_semantics=compiled_initial_layout_not_live_object_state`），网格字节只按摘要从该 Episode 的历史资产端点读取，身份不符或摘要不符即拒绝装配；只有后端把某目标标为 `verified` 时，界面才用记录的模型弧度驱动那一部分，其余保持固定参考并原样显示数值。跨流同步、整车历史姿态与正式同步回放验收仍未达成，任何录制写入也不在本切片范围。只读代理对历史一共只放行 8 条精确 GET（`/frames`、`/robot-state` 与 `/model/assets/{id}` 各自是独立精确路由，未放宽为 `/episodes/{id}` 通配）。
 
 live Joint/TCP 候选使用 `GET /api/v1/mobilecar/kinematics` 的版本化元数据，并要求 execution-recipe 的模型 pin 与 profile digest 匹配；同时检查关节顺序、单位、TCP 父节点/site、相机父节点和 5 项实时一致性。元数据缺失或不匹配时禁用本地候选并显示具体原因，不自动回退。`orientation_xyzw=null` 只表示源未声明姿态。冻结样本使用自身独立参考 profile，并明确标注不是 live 元数据。见 [来源](docs/provenance.md) 和 [最小后端差距](docs/backend-gaps.md)。
 

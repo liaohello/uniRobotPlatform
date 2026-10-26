@@ -1,3 +1,62 @@
+# M1.9 frame-link-2 联调与历史固定模型参考装配（2026-10-26）
+
+本轮做三件事：把前端从 `unirobot-mobilecar-frame-link-1` 迁到服务器 18969 的**实际 frame-link-2 载荷**（不是只改 schema 字符串）；新增 `history-pose-1` 两条只读客户端与代理白名单，把所选帧的状态/映射/模型资产读通；并在历史视图里装配**固定模型参考面**——放置树来自平台冻结 geometry bundle、网格字节只按摘要走历史资产端点、只有后端标 `verified` 的目标才允许驱动关节。只修改 `frontend/`。
+
+**本轮成熟度分层（不合并宣称）**：① “v2 联调”已按 18969 实测接通并验证；② “固定模型装配”已接通（身份/摘要门控 + 参考渲染 + 资源释放）；③ “局部历史姿态”**未开放**——18969 的真实记录里 9 个映射目标无一为 `verified`（`arm_joint_positions` 仅 `partially_verified`），因此模型停在编译参考姿态，历史数值只作原值展示；驱动路径以明确标注 synthetic 的 `verified` 夹具验证；④ “正式同步回放验收”**未执行**，跨流同步、整车重建与 M1.5/M1 验收均未通过。
+
+## 冻结版本与上游
+
+| 项 | 值 |
+|---|---|
+| 前端 release | 见下节“同一冻结版本的实际验证”（本轮最终交付 release 与其逐项结果） |
+| 历史上游 | `http://127.0.0.1:18969` = 后端 `m1v-20261025T161014Z-platform`（M1.5d 候选，PID 3923606）：同一进程提供 episode-read-1 五条 GET + `frame-link-2` 的 `/frames` + `history-pose-1` 的 `/robot-state` 与 `/model/assets/{asset_id}`，以及 `geometry-2` 的 `/mobilecar/scene` |
+| 更新候选核对 | 后端已发布 M1.5e 候选 `m1x-20261026T065320Z-platform`（18970）。按“先核对契约再切换”要求做了只读比对：schema 仍是 `frame-link-2`/`history-pose-1`，但 `sim` 基差值已拆两条并新增 `sim_time_quantity_keys`、`version_migration.corrections`，`mapping` 增为 10 项且四项升为 `verified`，另出现 `part_readiness`/`capability_summary`/`arm_mapping_chain`/`version_binding`/`model_vs_user_angles`/`tcp_kinematic_cross_check`。**本轮不切换上游**：现有真实断言与驱动门控是按 18969 实测写死的，切换需要按 18970 事实重写并整套重跑；差异与需要补的三件事已记入 [backend-gaps](backend-gaps.md)。18969 仍是本 Goal 指定的主契约。 |
+| 保留服务 | 交付预览 **18986 → 18964** 与后端 18969/18966/18964/18960/18959/18953/18949、native 8792 全程未停、未替换；8792 仍只经 GET 探测 |
+
+## v2 契约迁移的实际内容
+
+- 时间：`times.deltas`/`declared_latency_ms`/`age_of_state_relative_to_frame` 的显示依赖**全部删除**，改为逐条渲染 `times.quantities`（每条列出 `source_record/field/relative_to/unit/clock/meaning/direction` 与两端原值），并用三个独立显示口径区分“状态事件写入时刻”“状态负载自述采样时刻”“录制器声明的反馈时间”，另列 sim 基量与 `persist−capture`、`arrival−capture` 两类管线量；`times.recorder_declared` 原样复制录制器自述字段并并列显示重算的 `arrival−capture` 与 `agrees_with_recomputation`，不折算成状态年龄；`version_migration` 的 `changed/removed_fields/compatibility_note` 直接呈现，旧 `age` 字段以“本版已移除”的形式说明替代键。未知 `schema_version`（含 frame-link-1 载荷）在共享 schema 门处抛 `EpisodeContractError`，不静默兼容。
+- 歧义与不补值：角色按 `requirement`（`required_kinds`+`kind_cardinality`、单记录角色 `exact_records`）判定，新增 `ambiguous_kind`/`ambiguous_candidates` 的状态含义、`status_precedence`、`kind_inventory`、`candidate_line_indexes`、`ambiguous_records` 全部列出；帧级 `primary_roles_matched` 改为角色名列表并显示 `primary_roles_ambiguous`；`media.items` 改用 `observation_row_line_indexes/observation_row_candidates/observation_rows_conflict`。`single_state_selected=false` 或 `recorded_state=null` 时状态表保持空，并显式说明“不挑第一条、不补 0、不沿用上一帧”，候选记录逐条列出行号与 payload 字段名。
+- 分页：改用 v2 的 `anchor_records_examined`、`post_page_records_examined`、`anchor_lines.*`、`next_qualifying_anchor_line_index`、`offset_semantics`、`scan.whole_file_scanned/note` 与 `excluded_by_sample_id_filter`；`frameStopNote` 不再复述 v1 的“has_more 混合候选行计数”缺陷（浏览器测试断言该措辞不得再出现），改为按 reader 自己的读到底/未扫全文语义说明，且翻页保持 `sample_id` 与时间窗口条件。
+
+## history-pose-1 客户端与固定模型参考
+
+- `readRobotState` 必带 `sample_id`（省略时 reader 会返回它自己的第一条记录），并在返回后核对 `identity.run_id/episode_id` 与 `frame.sample_id`；`readHistoryModelAsset` 带 `sha256`，服务端逐请求重算，摘要不符即 409 `history_asset_revision_changed`，`ETag "sha256:…"` 作为重算结果解析。代理新增两条精确 GET 路由，历史面合计 8 条精确 GET，episode 子路径未放宽为通配。
+- 参考视图复用 `SceneView`（Three.js 场景/相机/OrbitControls/资产摘要校验/fitView/dispose）+ 一个只做拾取的子类，不重写工作台、不挂 Target/Ghost/工具、不轮询 live snapshot。门控顺序：`model_resource.status==='match'` 且四项身份比较全等 → 冻结 bundle 的 23 个 `mesh_assets` 与历史清单资产逐个摘要相等 → 才装配；身份不符或摘要不符即 `blocked` 并说明条目、释放已建视图、不降级为占位几何。资源读取失败、409 内容变化、切换 Episode、迟到响应分别处理：manifest 只按 Episode 重建，逐帧步进仅重读 robot-state 并重新应用允许驱动的关节；旧字节读取不写入新表，卸载/换 Episode 释放几何/材质/上下文。
+- 驱动规则明说：只有该目标 `status=verified` 才按**记录原值的模型弧度**驱动对应铰链/滑动关节，绝不套用用户零位换算；`partially_verified/unverified/missing/not_required_for_pose/未知状态` 一律不驱动并逐条给出原因与 reader 原文 `gap`；`verified` 但值数与关节名数不符也不驱动。真实记录 `robot_state_can_be_rebuilt_without_assumptions=false` 与 `no fabricated dynamic object pose` 原样显示，动态物体不摆位。
+
+## 本轮测出并修掉的实际缺陷
+
+1. **参考视图永不装配（真实产品缺陷，浏览器检查测出）**：固定模型面板原先共用一组 `AbortController`，而帧步进/换 Episode 时的清理会把**同批**在途请求全部 abort——React  effects 的执行顺序是“清理全部 → 几何 setup 发出 bundle 请求 → 姿态 setup 再清理”，结果刚发出的 geometry-2 请求立即被自己面板取消，`data-model-status` 永远停在 `reading`。修法是几何与姿态各用独立控制器集合（`geometryControllers` / `poseControllers`），卸载时才一起取消。测试断言的是“装配确实发生”（`wait_model('ready')`、canvas 只在参考面内、23 个资产摘要行），不是把等待放宽。
+2. **帧步进后状态栏长期停在“正在读取”（真实产品缺陷，浏览器检查测出）**：`ready` 文案原先写在“装配/重建 bundle”分支内部，因此同一 Episode 内换帧时（`assemblyKey` 未变、视图复用）该分支被跳过，姿态已经读回、参考模型也已经重绑，`data-model-status` 却仍是 `reading`。修法是把状态写入移到装配判定之后：每次几何+姿态都到位就写 `ready`，link/world link 计数直接取冻结清单的 `data.links/data.world_links`，不引入新数值。测试等待的是这一状态确实到达（`wait_model('ready')`），并把超时改成带实际 `data-model-status` 与 `data-model-stage` 文本的断言，避免下一轮再靠猜。
+3. **旧候选的分页期望被当成新契约事实（测试侧，实测纠正）**：v1 时代“按 sample_id 打开后再点下一帧会读到空页”的断言在 18969 上不成立——实测该筛选页 `has_more=false`、`next_offset=null`、`anchor_records_examined=303`、`excluded_by_sample_id_filter=302`、`whole_file_scanned=true`，界面因此**不发下一次读取**并写“不推断录制结束，也不声称已遍历全部帧”。现在真实检查断言的是“点击后 /frames 请求数不变 + 计数与直接读取一致 + 页面上找不到 v1 那条混合行号警告”，空页渲染改由合成夹具与真实“窗口无命中”两条路径覆盖，不再要求真实归档凭空给一个空页。
+4. **测试自身的错误断言**（不是产品缺陷，一并记录以免被当成证据）：① 断言“age 字段已从载荷消失”时用 `json.dumps(times)` 做子串匹配，会把 `removed_in_this_version` 里对旧字段名的说明也算进去，改为按字典键判定并单独断言 DOM 里确有“本版移除字段”；② `recorder_declared` 的说明文字在 `<em>` 子节点里，断言却读了 `data-recorder-declared` 属性，改为读元素 innerText；③ JS 里 `String(3.0)='3'`，断言 `'3.0'` 永不成立，改为按实际数值形式比较；④ 合成夹具一度断言“整个页面从未请求 live snapshot”，与外壳后台监控本身的只读轮询冲突，改为只断言参考面自身声明不轮询且不含任何控制面元素；⑤ `single_state_selected=false` 的合成帧只改了 `candidate_records` 却没给两条 `candidates`，界面只能列出一行候选，改为按契约补 `line_index/record_position/event_seq` 两行；⑥ 收尾统计 episode 子路径时对 `/api/v1/episodes`（列表请求）也做了 `split('/episodes/')[1]`，改为先确认路径里确有该段；⑦ “模型字节绝不走 live 场景资产端点”的检查原先扫全量请求，外壳自己的 live 3D 视口在启动时合法地读过 `/mobilecar/scene/assets/…`，因此改为以“历史页打开的那一刻”为界（`report['history_from']`）只判定历史面板自身产生的请求——被隔离的是参考视图，不是整个应用。
+
+## 未覆盖与下一步
+
+- 不做点云/NumPy 数值解码、不做跨流或跨 Episode 统一游标、不接新采集闭环、不改 native/后端/公共契约；`robot-state` 未提供逐 link 位姿表，因此“完全由历史资源装配”的模型仍受限于平台 bundle 的放置树（已在 backend-gaps 记为需后端补的读取差距）。
+- 切换到 18970（M1.5e）需要：消费 `part_readiness/capability_summary` 的逐项 `frontend_rule`、按 root free joint 处理底盘位姿、显示 `sim_time_quantity_keys` 与 `corrections`，并用同一冻结 dist 重跑全部真实/合成检查。
+
+## 同一冻结版本的实际验证
+
+全部结果来自服务器（`ssh -i ~/.ssh/remoteServer -p 37694 liaozhengyan@39.96.32.164`）上对**同一个冻结 release** 的两趟检查，不拼接旧迭代计数。
+
+| 项 | 实测值 |
+|---|---|
+| 交付 release | `m1-front-geometry-20261026T092830Z-2d2c53330b76`（109 个源文件冻结 → 服务器 `npm run build` + vitest + Chromium） |
+| 上游 | `http://127.0.0.1:18969`（唯一主要上游，两趟共用） |
+| 常驻交付预览 | 服务器 `http://127.0.0.1:19013`，PID 481132，台账 round `m19d-deliver`（`var/frontend-previews/registry.json` 登记，状态 running）。实测：`GET /` 200 且返回 `uniRobot · 3D 工作台` 外壳、`GET /assets/index-nSk5gENy.js` 200 / 1,493,673 B、`GET /api/v1/mobilecar/scene` 透传 `unirobot-mobilecar-geometry-2`、`POST /api/v1/episodes/x/frames` 405（写方法不放行）。该地址属于授权服务器，本机隧道未核实，因此不写成本机可直接打开的链接 |
+| 真实 PASS A（exit 0） | 单元 142/142（45 suites，0 失败）；frames 61 checks（9 次 `/frames`、12 次 `/robot-state`、67 次资产/媒体 GET，方法只有 GET）；history 78；geometry 23；config 51；lifecycle 48；session 38 |
+| 合成 PASS B（exit 0） | 单元 142/142；frames 48 checks；history 42 checks——歧义、空时间基、404/409、错误 schema、迟到响应与 `verified` 驱动夹具全部在明确标注 synthetic 的本地路由拦截中执行 |
+| 真实记录 | COMPLETE `run_0104613ff7364ae78cf2f3946bd45f7b` / `episode_27bfed5427684795b361cd2ec21e9aa7`（每页 5 帧、代表帧 11 条 `times.quantities`、23 个资产逐个摘要相等、映射 `1/9`、`next_offset=5`）；FAILED `run_1f6fb34853f94130aadedb8fa486705b` / `episode_879cf70489064a3b83bb15b5395a8341`（4 帧四主角色全 `matched` + 4 条 `unresolved_reference`） |
+| native 只读证据 | `native-read-only.json`：before 与 after 同为 `run_9c88e3e36e7648a3852c9f590e43ed5f` / generation 1 / `episode_43c22f95536f4517be04e4b195d6d354` / `IDLE`，`native_mutations_sent=false`、`new_physics_process_started=false`；native 状态仅经 GetProbe 发 GET |
+| 截图 | 真实 PASS A：`front.png`、`side.png`、`oblique.png`、`front-viewport.png`、`side-viewport.png`、`oblique-viewport.png`、`tcp-local-preview.png`（geometry 渲染）＋ session/config 面板图；合成 PASS B：`synthetic.png`。两趟均无 `failure.png` |
+
+被取代的本轮迭代（报告目录留在 `var/reports/`，其结果不计入交付）：`…070146Z-7aca643d37aa`（单测文案断言）、`…070330Z-ac5e5ad4df5c`（frames 停在“三个替代时间戳各占一行”）、`…070824Z-5571793b6cae`（frames 停在 v1 分页措辞）、`…071258Z-4ba2a2ff7934` 与 `…071607Z-d9cc1f2e9b21`（推进到 11→23 checks）、`…071719Z-64e7fc432718`（真实 33 checks 后撞 v1 空页期望；合成 13 checks 处暴露候选行夹具缺字段）、`…090207Z-34ba06783001`（合成 14 checks 处暴露“状态栏停在 reading”的产品缺陷，真实 28 checks 处暴露 live 场景资产边界判定过宽）。
+
+预览台账清理：本轮 m19/m19b/m19c 与合成 m19d 的临时预览按 `registry.json` 条目逐条核对 pid + start_ticks + uid + 完整 cmdline + 监听归属后停止；`18986 → 18964` 交付预览与全部后端服务保持运行，最终交付预览 `19013` 保留。
+
+
 # M1.8 接通真实历史帧关联浏览，并修正明确空时间基数组的回退（2026-10-25）
 
 本轮做两件事：把后端 frame-link-1 的**一条真实 GET 接成可操作的“图像—关联机器人状态—来源与时间”帧联动浏览**（按服务端 `next_offset/has_more` 推进、按 `sample_id` 打开、按契约允许的时间窗口定位，全部由同一帧驱动）；并修掉 `numericBasesOf` 把服务端明确返回的 `numeric_time_bases=[]` 当成缺字段、回退四个声明基的真实缺陷。只修改 `frontend/`。**完成只表示“单 Episode 内的帧关联浏览切片”按实测载荷接通并通过，不表示跨流/跨 Episode 统一游标、历史 3D 回放或正式 M1.5/M1 验收通过。**

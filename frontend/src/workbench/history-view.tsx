@@ -302,7 +302,7 @@ export function HistoryView({ api, onLeave }: { api: PlatformEpisodeApi; onLeave
   return <section className="history-view" aria-label="历史 Episode 只读浏览" data-history-view="true" data-read-only="true">
     <header className="scene-setup-header">
       <div><h2>历史 Episode · 只读浏览、单流播放与帧关联</h2>
-        <p>来源固定为历史读取候选：记录浏览走 episode-read-1，下方帧面板走 frame-link-1（一条锚点记录=一个持久化图像帧）。这里只读录制事实，不发送动作、不推进在线物理、不改写原始记录，也不提供跨流同步、已验证的 3D 历史回放或统一时间游标。</p></div>
+        <p>来源固定为历史读取候选：记录浏览走 episode-read-1，下方帧面板走 frame-link-2（一条锚点记录=一个持久化图像帧），模型面板走 history-pose-1（固定模型参考 + 分部映射门控）。这里只读录制事实，不发送动作、不推进在线物理、不改写原始记录，也不提供跨流同步、已验证的 3D 历史回放或统一时间游标。</p></div>
       <div className="scene-setup-badges">
         <span className="chip strong" data-history-source={list?.source.source_id ?? detail?.source.source_id ?? 'unread'}>source {list?.source.source_id ?? detail?.source.source_id ?? '未读取'}</span>
         <span className="chip masked" data-cross-stream={records ? (records.time.synchronized_across_streams ? 'synchronised' : 'unsynchronised') : 'unknown'}>跨流未同步{synchronizedSuffix(records)}</span>

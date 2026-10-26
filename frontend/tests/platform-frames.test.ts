@@ -1,15 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EpisodeContractError } from '../src/adapters/platform-episodes';
 import {
-  FRAME_LINK_SCHEMA, declaredLatencyOf, deltaRowsOf, frameAutoLoadRef, frameBoundaryNotice, frameMediaRefs, framePageExplanation,
-  framePageKind, frameSelectableBases, frameStopNote, frameWindowGate, linkageScopeText, mediaDeclarationText, provenanceRowsOf,
-  readFramesPage, roleRowsOf, stateAgeOf, stateRowsOf, unitForField,
+  FRAME_LINK_SCHEMA, ambiguousRoleCount, clockSamenessText, frameAutoLoadRef, frameBoundaryNotice, frameMediaRefs,
+  framePageExplanation, framePageKind, frameSelectableBases, frameStopNote, frameWindowGate, linkageScopeText,
+  mediaDeclarationText, provenanceRowsOf, quantityRowsOf, readFramesPage, recorderDeclaredOf, roleCoverageText,
+  roleRowsOf, selectionRulesText, stateQuantityKeysOf, stateRowsOf, stateSelectionOf, statusPrecedenceText,
+  timeSemanticsText, versionMigrationText,
   type FrameDto, type FramePageDto,
 } from '../src/adapters/platform-frames';
 
-// The fixtures are shape copies of the `unirobot-mobilecar-frame-link-1` payloads this candidate
-// actually answered on 2026-10-25 (COMPLETE record page 1, FAILED record page 1, and the empty-page
-// counter sets). Only fields the reader returned are present; nothing is padded to ease a test.
+// The fixtures are shape copies of the `unirobot-mobilecar-frame-link-2` payloads the candidate on
+// 18969 actually answered on 2026-10-26 (COMPLETE record page 1, the FAILED record page, the
+// sample-filter page at offset=100, and the ambiguity/empty shapes of the isolated fixtures). Only
+// fields the reader returned are present; nothing is padded to make a test easier.
 const RUN = 'run_0104613ff7364ae78cf2f3946bd45f7b';
 const EPISODE = 'episode_27bfed5427684795b361cd2ec21e9aa7';
 const SAMPLE = 'rgbd_e3213e6cb64b4cd693c17d485d064d09';
@@ -20,6 +23,20 @@ const SOURCE = {
   access: 'read_only_files', platform_writes: false,
   path_boundary: 'every derived path is re-resolved and must stay inside the declared root',
 };
+const PAGING = {
+  limit: 3, offset: 0, returned: 3, has_more: true, next_offset: 3, next_qualifying_anchor_line_index: 3,
+  offset_semantics: 'next_offset is the raw line index after the last returned anchor in the anchor file',
+  skipped_before_offset: 0, excluded_anchor_identity_mismatch: 0, excluded_stream_mismatch: 0,
+  excluded_without_sample_id: 0, excluded_by_sample_id_filter: 0, excluded_outside_time_window: 0,
+  records_missing_selected_time_base: 0, anchor_records_examined: 4, post_page_records_examined: 1,
+  anchor_lines: { lines_read: 4, blank_lines_skipped: 0, oversize_lines_skipped: 0, unparseable_lines_skipped: 0, non_object_lines_skipped: 0, prefiltered_lines_skipped: 0 },
+  scan: { whole_file_scanned: false, stopped_after_full_page_at_line_index: 3, note: 'a full page stops at the first further qualifying anchor' },
+};
+const quantity = (key: string, extra: Record<string, unknown> = {}) => ({
+  key, source_record: 'events state feedback envelope', field: 'backend_monotonic_s', relative_to: 'persisted frame capture_backend_monotonic_s',
+  unit: 's', clock: 'named backend_monotonic by the record', meaning: 'fixture meaning', capture_value: 426494.351568496,
+  other_value: 426494.348683089, value: -0.0028854069532826543, abs_ms: 2.8854069532826543, direction: 'earlier', line_index: 27, ...extra,
+});
 const frameFixture = (patch: Partial<FrameDto> = {}): FrameDto => ({
   sample_id: SAMPLE, stream_id: 'rgbd',
   anchor: {
@@ -30,305 +47,351 @@ const frameFixture = (patch: Partial<FrameDto> = {}): FrameDto => ({
     reference_keys: { capture_control_tick_id: 'tick_000006551', feedback_sample_id: 'joint_feedback_000006551' },
     profile: { profile_id: 'g2a-rgbd-5hz-original', profile_version: '1.0', profile_sha256: '9'.repeat(64), interface_profile: 'g2a-1.0', kinds: ['rgb', 'depth'] },
   },
-  linkage_status: 'matched', primary_roles_matched: 4, declared_reference_status: 'unresolved_reference',
+  linkage_status: 'matched', primary_roles_matched: ['image_observation', 'camera_transform', 'capture_timing_event', 'state_feedback_event'],
+  primary_roles_ambiguous: [], declared_reference_status: 'unresolved_reference',
   media: {
     declared_by: 'the persisted frame record and its observation rows, copied verbatim',
     uri_convention: 'assets/<kind>/<file>, served only from this episode’s assets tree',
     digest_verification: 'declared only; recomputed when the asset endpoint serves the file',
+    duplicate_row_rule: 'every candidate row for the kind is listed; none is silently chosen',
     items: [
-      { field: 'rgb_uri', uri: `assets/rgb/${SAMPLE}_rgb.png`, row_line_index: 8, agrees_with_observation_row: true, declared_sha256_by_row: 'd'.repeat(64), declared_bytes_by_row: 32804, availability: 'present', bytes_on_disk: 32804 },
-      { field: 'depth_uri', uri: `assets/depth/${SAMPLE}_depth_m.npy`, row_line_index: 9, agrees_with_observation_row: true, declared_sha256_by_row: 'f'.repeat(64), declared_bytes_by_row: 1228928, availability: 'present', bytes_on_disk: 1228928 },
-      { field: 'valid_mask_uri', uri: `assets/masks/${SAMPLE}_valid.png`, row_line_index: 9, agrees_with_observation_row: true, declared_sha256_by_row: null, declared_bytes_by_row: null, availability: 'present', bytes_on_disk: 1002 },
+      { field: 'rgb_uri', uri: `assets/rgb/${SAMPLE}_rgb.png`, observation_row_line_indexes: [8], observation_row_candidates: 1, agrees_with_observation_row: true, declared_sha256_by_row: 'd'.repeat(64), declared_bytes_by_row: 32804, availability: 'present', bytes_on_disk: 32804 },
+      { field: 'depth_uri', uri: `assets/depth/${SAMPLE}_depth_m.npy`, observation_row_line_indexes: [9], observation_row_candidates: 1, agrees_with_observation_row: true, declared_sha256_by_row: 'f'.repeat(64), declared_bytes_by_row: 1228928, availability: 'present', bytes_on_disk: 1228928 },
+      { field: 'valid_mask_uri', uri: `assets/masks/${SAMPLE}_valid.png`, observation_row_line_indexes: [9], observation_row_candidates: 1, agrees_with_observation_row: true, declared_sha256_by_row: null, declared_bytes_by_row: null, availability: 'present', bytes_on_disk: 1002 },
     ],
   },
   state: {
     status: 'matched', join_key: 'control_tick_id', key_value: 'tick_000006551',
-    source: { stream_id: 'events', relative_path: 'events.jsonl', line_index: 27, event_seq: 28, event_type: 'feedback', record_position: 'events.jsonl#27' },
-    recorded_fields: { event_seq: 28, event_type: 'feedback', control_tick_id: 'tick_000006551', backend_monotonic_s: 426494.348683089, sim_time_s: 0.14, wall_utc: '2026-10-17T16:10:29.833599Z' },
+    source: { stream_id: 'events', relative_path: 'events.jsonl', line_index: 27, event_seq: 28, event_type: 'feedback' },
+    recorded_fields: { event_seq: 28, control_tick_id: 'tick_000006551', backend_monotonic_s: 426494.348683089, sim_time_s: 0.14, wall_utc: '2026-10-17T16:10:29.833599Z' },
     recorded_state: {
-      feedback_time_monotonic: 426494.347898655, sim_time_s: 0.14,
-      base_position_world_sim_m: [-0.00023473557897040777, -1.0145992864392481e-06, 0.053540585735473954],
-      base_quaternion_xyzw: [-2.027809601592562e-06, 9.433333536306481e-05, -3.230492476047126e-05, 0.9999999950267509],
-      base_twist_body_m_s: [-0.001086000533659529, -5.668342660618616e-05, 0.00030122515201245397],
-      wheel_velocity_rad_s: [-0.030412442759356704, -0.03446515577793489, -0.031348075259700646, -0.028323501529422878],
-      arm_model_qpos_rad: [4.731963891071609e-05, 0.0016603668666036813, 0.0014384481908740504, -1.5696750090681135, 1.1293487091102144e-06],
+      base_position_world_sim_m: [-0.00023473557897040777, -1.0145992864392481e-6, 0.053540585735473954],
+      base_quaternion_xyzw: [-2.027809601592562e-6, 9.433333536306481e-5, -3.230492476047126e-5, 0.9999999950267509],
+      base_twist_body_m_s: [-0.001086000533659529, -5.668342660618616e-5, 0.00030122515201245397],
+      wheel_velocity_rad_s: [-0.030412442759356704, -0.03446515577793489],
+      arm_model_qpos_rad: [4.731963891071609e-5, 0.0016603668666036813, 0.0014384481908740504, -1.5696750090681135, 1.1293487091102144e-6],
       gripper_width_m: 0.024999996765415464, tcp_position_world_m: [0.17753849921383363, 0.002461415763947755, 0.30179180035418635],
+      feedback_time_monotonic: 426494.347898655, sim_time_s: 0.14,
     },
+    candidate_records: 1, single_state_selected: true, candidates: [{ line_index: 27, record_position: 'events.jsonl#27', event_seq: 28, event_type: 'feedback', backend_monotonic_s: 426494.348683089, sim_time_s: 0.14, payload: {} }],
     declared_reference: { feedback_sample_id: 'joint_feedback_000006551', row_status: 'unresolved_reference' },
-    recorder_declared_feedback: { available: true, feedback_time_s: 426494.3479002, feedback_clock: 'backend_monotonic', capture_clocks_declared: { sim: 'sim', backend_monotonic: 'backend_monotonic', wall_utc: 'wall_utc' }, meaning: 'the recorder’s own declared feedback time for this frame, copied, not re-derived' },
-    units: { '*_rad': 'radians', '*_rad_s': 'radians per second', '*_m': 'metres', '*_nm': 'newton metres', '*_xyzw': 'quaternion x,y,z,w', '*_s': 'seconds' },
+    recorder_declared_feedback: { available: true, timing_event_status: 'matched', feedback_time_s: 426494.3479002, feedback_clock: 'backend_monotonic', capture_clocks_declared: { sim: 'sim', backend_monotonic: 'backend_monotonic', wall_utc: 'wall_utc' }, meaning: "the recorder's own declared feedback time for this frame, copied, not re-derived" },
+    units: { '*_rad': 'radians', '*_rad_s': 'radians per second', '*_m': 'metres', '*_xyzw': 'quaternion x,y,z,w', '*_s': 'seconds' },
     carried_over_from_another_frame: false, interpolated: false,
-    note: 'this is the state the recorder placed on the frame’s capture tick, not a verified same-instant sample of the scene',
+    note: "this is the state the recorder placed on the frame's capture tick, not a verified same-instant sample of the scene",
   },
   times: {
-    deltas: [
-      { label: 'state_event_minus_frame_capture', capture_value: 426494.351568496, other_value: 426494.348683089, value_s: -0.0028854069532826543, abs_value_ms: 2.8854069532826543, direction: 'earlier', basis: 'events record backend_monotonic_s minus persisted frame capture_backend_monotonic_s', meaning: 'recorded minus recorded, seconds', line_index: 27 },
-      { label: 'recorder_declared_feedback_time_minus_capture', capture_value: 426494.351568496, other_value: 426494.3479002, value_s: -0.003668295976240188, abs_value_ms: 3.668295976240188, direction: 'earlier', basis: 'rgbd_capture_timing payload feedback_time_s minus capture_backend_monotonic_s', meaning: 'recorded minus recorded, seconds' },
-      { label: 'observation_arrival_time_s_minus_frame_capture', capture_value: 426494.351568496, other_value: 426494.385019665, value_s: 0.03345116903074086, abs_value_ms: 33.45116903074086, direction: 'later', basis: 'observations index row arrival_time_s minus frame capture', sensor_kind: 'rgb', line_index: 8, meaning: 'recorded minus recorded, seconds' },
-      { label: 'some_future_difference', capture_value: 1, other_value: 2, value_s: 1, abs_value_ms: 1000, direction: 'later', basis: 'not described in the reader’s own words' },
+    quantities: [
+      quantity('state_event_write_minus_frame_capture'),
+      quantity('state_payload_feedback_time_minus_frame_capture', { source_record: 'events state feedback payload', field: 'feedback_time_monotonic', abs_ms: 3.669840982183814, value: -0.003669840982183814 }),
+      quantity('state_payload_feedback_time_minus_state_event_write', { source_record: 'events state feedback payload and envelope', relative_to: 'the same event record' }),
+      quantity('state_sim_time_minus_frame_capture_sim_time', { source_record: 'events state feedback payload', field: 'sim_time_s', clock: 'sim', unit: 's', value: 0, abs_ms: 0, direction: 'equal' }),
+      quantity('recorder_declared_feedback_time_minus_frame_capture', { source_record: 'events rgbd_capture_timing payload', field: 'feedback_time_s', line_index: 40, abs_ms: 3.668295976240188 }),
+      quantity('observation_arrival_minus_frame_capture', { source_record: 'observations index row', field: 'arrival_time_s', direction: 'later', value: 0.03345116903074086, abs_ms: 33.45116903074086, sensor_kind: 'rgb', line_index: 8 }),
+      quantity('persist_minus_capture', { source_record: 'persisted frame', field: 'persist_backend_monotonic_s', direction: 'later', value: 0.10002543800510466, abs_ms: 100.02543800510466, line_index: 0 }),
     ],
-    declared_latency_ms: { arrival_to_persist_ms: 66.5742689743638, capture_to_persist_ms: 100.02543800510466 },
-    age_of_state_relative_to_frame: { abs_ms: 2.8854069532826543, state_recorded_before_capture: true, display_hint: 'show as the age of the state; not a synchronised instant' },
+    recorder_declared: {
+      fields: { observation_age_ms: 33.45116903074086, arrival_to_persist_ms: 66.5742689743638, capture_to_persist_ms: 100.02543800510466, encode_ms: 25.350222014822066 },
+      observation_age_ms_note: "the recorder's observation_age_ms is its own capture-to-arrival figure for this frame, not the difference between a state sample and the capture",
+      recomputed_arrival_minus_capture_ms: 33.45116903074086, agrees_with_recomputation: true,
+    },
+    semantics_rule: 'each quantity is one named subtraction of two recorded fields; two records naming the same clock base are not merged into one instant',
+    state_time_quantity_keys: ['state_event_write_minus_frame_capture', 'state_payload_feedback_time_minus_frame_capture', 'recorder_declared_feedback_time_minus_frame_capture'],
+    removed_in_this_version: { 'times.age_of_state_relative_to_frame': 'read times.quantities keys instead' },
     same_clock_verified: false,
   },
   roles: [
-    { role: 'image_observation', join_key: 'sample_id', key_value: SAMPLE, status: 'matched', expected_records: 2, matched_records: 2, identity_mismatched_records: 0, sources: [{ stream_id: 'observations-index', relative_path: 'observations/index.jsonl', line_index: 8, record_position: 'observations/index.jsonl#8' }, { stream_id: 'observations-index', relative_path: 'observations/index.jsonl', line_index: 9, record_position: 'observations/index.jsonl#9' }] },
-    { role: 'camera_transform', join_key: 'sample_id', key_value: SAMPLE, status: 'matched', expected_records: 1, matched_records: 1, identity_mismatched_records: 0, sources: [{ stream_id: 'transforms', relative_path: 'transforms.jsonl', line_index: 0, record_position: 'transforms.jsonl#0' }] },
-    { role: 'capture_timing_event', join_key: 'payload.sample_id', key_value: SAMPLE, status: 'matched', expected_records: 1, matched_records: 1, identity_mismatched_records: 0, sources: [{ stream_id: 'events', relative_path: 'events.jsonl', line_index: 26, event_seq: 27, record_position: 'events.jsonl#26' }] },
-    { role: 'state_feedback_event', join_key: 'control_tick_id', key_value: 'tick_000006551', status: 'matched', expected_records: 1, matched_records: 1, identity_mismatched_records: 0, sources: [{ stream_id: 'events', relative_path: 'events.jsonl', line_index: 27, event_seq: 28, event_type: 'feedback', record_position: 'events.jsonl#27' }] },
-    { role: 'feedback_observation_row', join_key: 'sample_id', key_value: 'joint_feedback_000006551', status: 'unresolved_reference', expected_records: 1, matched_records: 0, identity_mismatched_records: 0 },
+    { role: 'image_observation', join_key: 'sample_id', key_value: SAMPLE, status: 'matched', meaning: 'the rgb and depth observation rows recorded for this frame',
+      requirement: { required_kinds: ['rgb', 'depth'], kind_cardinality: 1, rule: 'one row per required sensor_kind' },
+      candidate_records: 2, matched_records: 2, identity_mismatched_records: 0, required_kinds: ['rgb', 'depth'], matched_kinds: ['rgb', 'depth'], missing_kinds: [], duplicate_kinds: [], unexpected_kinds: [],
+      kind_inventory: { rgb: [8], depth: [9] }, candidate_line_indexes: [8, 9], ambiguous_records: null, reason: null,
+      sources: [{ stream_id: 'observations-index', relative_path: 'observations/index.jsonl', line_index: 8, record_position: 'observations/index.jsonl#8', declared_media: [{ uri: `assets/rgb/${SAMPLE}_rgb.png`, declared_sha256: 'd'.repeat(64), declared_bytes: 32804 }] }] },
+    { role: 'camera_transform', join_key: 'sample_id', key_value: SAMPLE, status: 'matched', requirement: { exact_records: 1, rule: 'exactly one transform row for this sample_id' }, candidate_records: 1, matched_records: 1,
+      kind_inventory: null, candidate_line_indexes: [12], missing_kinds: [], duplicate_kinds: [], unexpected_kinds: [], sources: [{ stream_id: 'transforms', relative_path: 'transforms.jsonl', line_index: 12, record_position: 'transforms.jsonl#12' }] },
+    { role: 'capture_timing_event', join_key: 'payload.sample_id', key_value: SAMPLE, status: 'matched', requirement: { exact_records: 1, rule: 'exactly one rgbd_capture_timing event' }, candidate_records: 1, matched_records: 1,
+      kind_inventory: null, candidate_line_indexes: [40], missing_kinds: [], duplicate_kinds: [], unexpected_kinds: [], sources: [{ stream_id: 'events', relative_path: 'events.jsonl', line_index: 40, record_position: 'events.jsonl#40' }] },
+    { role: 'state_feedback_event', join_key: 'control_tick_id', key_value: 'tick_000006551', status: 'matched', requirement: { exact_records: 1, rule: 'exactly one state event carrying this control_tick_id' }, candidate_records: 1, matched_records: 1,
+      kind_inventory: null, candidate_line_indexes: [27], missing_kinds: [], duplicate_kinds: [], unexpected_kinds: [], sources: [{ stream_id: 'events', relative_path: 'events.jsonl', line_index: 27, record_position: 'events.jsonl#27' }] },
+    { role: 'feedback_observation_row', join_key: 'sample_id', key_value: 'joint_feedback_000006551', status: 'unresolved_reference', requirement: { exact_records: 1, rule: 'one observation row equal to the declared feedback id' }, candidate_records: 0, matched_records: 0,
+      kind_inventory: null, candidate_line_indexes: [], missing_kinds: [], duplicate_kinds: [], unexpected_kinds: [], sources: [] },
   ],
   ...patch,
 });
 const pageFixture = (patch: Partial<FramePageDto> = {}): FramePageDto => ({
-  schema_version: FRAME_LINK_SCHEMA, read_only: true, source: SOURCE, retrieved_at: '2026-10-25T08:43:30Z',
-  identity: { run_id: RUN, episode_id: EPISODE, episode_directory: `/root/${RUN}/episodes/${EPISODE}`, run_directory_identity: 'the run directory was re-validated as itself before this read', native_contract_version: 'mobilecar-1.0' },
+  schema_version: FRAME_LINK_SCHEMA, read_only: true, source: SOURCE, retrieved_at: '2026-10-26T06:15:53.012634Z',
+  identity: { run_id: RUN, episode_id: EPISODE, episode_directory: '/x/y', run_directory_identity: 'the run directory was re-validated as itself before this read', native_contract_version: 'mobilecar-1.0' },
   anchor: { stream_id: 'observations-persist', relative_path: 'observations/persist.jsonl', semantics: 'one persisted image frame per record', requested_stream: 'rgbd' },
-  paging: { limit: 1, offset: 0, returned: 1, scanned_anchor_lines: 2, skipped_before_offset: 0, excluded_stream_mismatch: 0, excluded_without_sample_id: 0, excluded_outside_time_window: 0, excluded_anchor_identity_mismatch: 0, records_missing_selected_time_base: 0, next_offset: 1, has_more: true },
-  cursor: { order: 'native_append_order_of_the_anchor_stream', line_index_is_not_a_clock: true, persist_sequence_is_the_recorders_own_counter: true, first_line_index: 0, last_line_index: 0, first_persist_sequence: 1, last_persist_sequence: 1 },
-  time: {
-    selected_time_base: null, time_from: null, time_to: null,
-    selectable_time_bases: ['capture_backend_monotonic_s', 'capture_sim_time_s', 'persist_backend_monotonic_s'],
-    units: { '*_s': 'seconds', '*_ms': 'milliseconds', '*_rad': 'radians', '*_m': 'metres' },
-    synchronized_across_streams: false,
-    clock_sameness: { declared_by_recorder: true, verified_by_reader: false, note: 'naming is not verification that two writers shared one clock' },
-    deltas_are_recorded_arithmetic: true, browser_arrival_order_is_not_used: true,
-  },
+  paging: PAGING,
+  cursor: { order: 'native_append_order_of_the_anchor_stream', line_index_is_not_a_clock: true, persist_sequence_is_the_recorders_own_counter: true, first_line_index: 0, last_line_index: 2, first_persist_sequence: 1, last_persist_sequence: 3 },
+  time: { selected_time_base: null, time_from: null, time_to: null, selectable_time_bases: ['capture_backend_monotonic_s', 'capture_sim_time_s', 'persist_backend_monotonic_s'],
+    units: { '*_s': 'seconds', '*_ms': 'milliseconds', '*_rad': 'radians', '*_m': 'metres' }, synchronized_across_streams: false, same_clock_verified: false,
+    clock_sameness: { fields_that_name_a_shared_base: ['persisted frame clock and capture_clocks', 'state event backend_monotonic_s'], declared_by_recorder: true, verified_by_reader: false,
+      verified_claim: 'naming one clock base is not proof that two writers stamped it at one instant',
+      writer_version_binding: { recorded: ['run manifest contract_version'], not_recorded: ['the native build or release that wrote the archive'], consequence: 'cannot be cited as proof', synchronized_upgraded_by_numeric_closeness: false } },
+    deltas_are_recorded_arithmetic: true, browser_arrival_order_is_not_used: true },
   linkage: {
-    roles: {
-      image_observation: { source_stream: 'observations-index', join_key: 'sample_id', meaning: 'the rgb and depth observation rows recorded for this frame' },
-      camera_transform: { source_stream: 'transforms', join_key: 'sample_id', meaning: 'camera extrinsics recorded for this frame; not a per-body pose sequence' },
-      capture_timing_event: { source_stream: 'events', join_key: 'payload.sample_id', meaning: 'the recorder’s own capture-timing event for this frame' },
-      state_feedback_event: { source_stream: 'events', join_key: 'control_tick_id', meaning: 'recorded robot state feedback carried on the frame’s capture tick' },
-      feedback_observation_row: { source_stream: 'observations-index', join_key: 'sample_id', meaning: 'an observation row whose own sample_id equals the frame’s declared feedback_sample_id' },
-    },
-    status_meaning: {
-      matched: 'every expected record for the role was found by its recorded key',
-      partial: 'some but not all expected records for the role were found',
-      missing: 'no record for this role carried the key',
-      unresolved_reference: 'the frame declares a reference whose target record is not in this Episode',
-      identity_mismatch: 'a candidate record named a different run or Episode and was excluded',
-      stream_absent: 'the source stream is not recorded in this Episode',
-    },
+    roles: { image_observation: { source_stream: 'observations-index', join_key: 'sample_id', meaning: 'the rgb and depth observation rows' }, state_feedback_event: { source_stream: 'events', join_key: 'control_tick_id', meaning: 'recorded robot state feedback' } },
+    status_meaning: { matched: 'every record the role requires was found by its recorded key, once', partial: 'some but not all', missing: 'no record carried the key',
+      unresolved_reference: 'the frame declares a reference whose target record is not in this Episode', identity_mismatch: 'a candidate named a different run or Episode',
+      stream_absent: 'the source stream is not recorded', ambiguous_kind: 'a sensor_kind the role requires was recorded more than once', ambiguous_candidates: 'more than one record claimed this role’s key, so no single record can be reported' },
+    status_precedence: ['stream_absent', 'identity_mismatch', 'ambiguous_kind', 'ambiguous_candidates', 'partial', 'missing', 'unresolved_reference', 'matched'],
     primary_roles: ['image_observation', 'camera_transform', 'capture_timing_event', 'state_feedback_event'],
-    selection_rules: { joins: 'exact equality of the recorded join key named on each role', when_nothing_matches: 'the role is reported as missing, unresolved_reference or stream_absent', state_hold: 'not applied', interpolation: 'none', nearest_in_time: 'not used' },
-    role_coverage_on_this_page: { image_observation: { matched: 1 }, feedback_observation_row: { unresolved_reference: 1 } },
+    selection_rules: { joins: 'exact equality of the recorded join key', when_several_match: 'ambiguous_kind or ambiguous_candidates with every candidate line index listed; the first line in the file is not chosen',
+      completeness: 'judged by the required sensor_kind set and per-kind cardinality, never by a record count alone', state_hold: 'not applied: a frame never inherits another frame’s state',
+      interpolation: 'none', 'nearest_in_time': 'not used; numeric closeness is not treated as identity or as simultaneity', status_precedence: ['stream_absent', 'matched'] },
+    role_coverage_on_this_page: { image_observation: { matched: 3 }, state_feedback_event: { matched: 3 }, feedback_observation_row: { unresolved_reference: 3 } },
   },
-  summary: { frames_returned: 1, frames_with_all_primary_roles_matched: 1, frames_with_some_primary_roles_missing: 0, frames_with_no_primary_role_matched: 0, frames_without_a_linked_state: 0, frames_with_unresolved_feedback_reference: 1 },
-  frames: [frameFixture()],
-  not_proven: ['that two records naming the same clock base were stamped at the same instant', 'a cross-stream or cross-episode replay cursor', 'rendered 3D replay', 'archive-wide integrity'],
-  three_d_replay: { this_slice_does_not_enable_3d_replay: true, live_geometry_or_actual_may_be_applied: false, transforms_are_full_per_body_pose_sequences: false },
-  capability_limits: ['no replay execution', 'no cross-episode cursor', 'no native validate proxy', 'no control, RESET, recording or physics stepping'],
+  summary: { frames_returned: 3, frames_with_all_primary_roles_matched: 3, frames_with_some_primary_roles_missing: 0, frames_with_no_primary_role_matched: 0,
+    frames_with_ambiguous_primary_role: 0, frames_without_a_linked_state: 0, frames_with_unresolved_feedback_reference: 3 },
+  frames: [frameFixture(), frameFixture({ sample_id: 'rgbd_second' }), frameFixture({ sample_id: 'rgbd_third' })],
+  not_proven: ['that two records naming the same clock base were stamped by one writer at one instant'],
+  version_migration: { from_schema: 'unirobot-mobilecar-frame-link-1', to_schema: FRAME_LINK_SCHEMA,
+    changed: ['paging.has_more is decided by finding the next qualifying anchor line'], removed_fields: { 'times.age_of_state_relative_to_frame': 'it merged the state event’s write stamp with the state sample stamps' },
+    compatibility_note: 'consumers must read schema_version: frame-link-1 and frame-link-2 pages are not the same contract' },
+  three_d_replay: { this_slice_does_not_enable_3d_replay: true, live_geometry_or_actual_may_be_applied: false, transforms_are_full_per_body_pose_sequences: false, robot_pose_readiness_slice: 'GET /api/v1/episodes/{episode_id}/robot-state' },
+  capability_limits: ['no replay execution', 'no control, RESET, recording or physics stepping'],
   ...patch,
 });
 
-const calls: { url: string; init: RequestInit }[] = [];
-beforeEach(() => {
-  calls.length = 0;
-  globalThis.fetch = vi.fn(async (input: string, init: RequestInit = {}) => {
-    calls.push({ url: input, init });
-    if (input.includes('/frames')) return new Response(JSON.stringify(pageFixture()), { status: 200, headers: { 'content-type': 'application/json' } });
-    return new Response(JSON.stringify({ detail: { code: 'episode_not_found', message: 'no Episode directory', read_only: true } }), { status: 404, headers: { 'content-type': 'application/json' } });
-  }) as unknown as typeof fetch;
-});
+let urls: string[] = [];
+beforeEach(() => { urls = []; });
 afterEach(() => { vi.restoreAllMocks(); });
+function respondWith(payload: unknown, status = 200) {
+  globalThis.fetch = vi.fn(async (input: string) => { urls.push(input); return new Response(JSON.stringify(payload), { status, headers: { 'content-type': 'application/json' } }); }) as unknown as typeof fetch;
+}
 
-describe('frame-link-1 client', () => {
-  it('sends exactly one GET on the frames path with run_id kept explicit', async () => {
-    await readFramesPage({ episodeId: EPISODE, runId: RUN, limit: 5, offset: 1 }, new AbortController().signal);
-    expect(calls[0].url).toBe(`/api/v1/episodes/${EPISODE}/frames?run_id=${RUN}&limit=5&offset=1`);
-    expect(calls[0].init.method).toBe('GET');
-    expect((calls[0].init.headers as Record<string, string>).Accept).toBe('application/json');
+describe('frame-link-2 schema gate', () => {
+  it('pins the schema string to the candidate’s own version', () => {
+    expect(FRAME_LINK_SCHEMA).toBe('unirobot-mobilecar-frame-link-2');
   });
-  it('never sends a time bound without its base, nor a base without any bound', async () => {
-    await readFramesPage({ episodeId: EPISODE, runId: RUN, timeBase: 'capture_sim_time_s', timeFrom: 0, timeTo: null }, new AbortController().signal);
-    expect(calls[0].url).toContain('time_base=capture_sim_time_s');
-    expect(calls[0].url).toContain('time_from=0');
-    expect(calls[0].url).not.toContain('time_to');
-    // An explicit 0 is a value, not an absent one; a base alone would answer 400 time_range_required.
-    await readFramesPage({ episodeId: EPISODE, runId: RUN, timeBase: 'capture_sim_time_s' }, new AbortController().signal);
-    expect(calls[1].url).not.toContain('time_base');
-    expect(calls[1].url).not.toContain('time_from');
-    await readFramesPage({ episodeId: EPISODE, runId: RUN, timeFrom: 12, timeTo: 13 }, new AbortController().signal);
-    expect(calls[2].url).not.toContain('time_from');
+  it('refuses a frame-link-1 page instead of quietly rendering it as v2', async () => {
+    respondWith(pageFixture({ schema_version: 'unirobot-mobilecar-frame-link-1' }));
+    await expect(readFramesPage({ episodeId: EPISODE, runId: RUN, limit: 3, offset: 0 }, new AbortController().signal))
+      .rejects.toThrow(/frame-link-2/);
   });
-  it('drops a blank sample condition instead of asking for an empty id', async () => {
-    await readFramesPage({ episodeId: EPISODE, runId: RUN, sampleId: '' }, new AbortController().signal);
-    expect(calls[0].url).not.toContain('sample_id');
-    await readFramesPage({ episodeId: EPISODE, runId: RUN, sampleId: SAMPLE }, new AbortController().signal);
-    expect(calls[1].url).toContain(`sample_id=${SAMPLE}`);
-  });
-  it('refuses a payload that is not frame-link-1 instead of rendering it', async () => {
-    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ schema_version: 'unirobot-mobilecar-frame-link-2', read_only: true }), { status: 200, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
+  it('refuses an unknown future version with the found value named', async () => {
+    respondWith(pageFixture({ schema_version: 'unirobot-mobilecar-frame-link-3' }));
     await expect(readFramesPage({ episodeId: EPISODE, runId: RUN }, new AbortController().signal)).rejects.toBeInstanceOf(EpisodeContractError);
-    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ schema_version: FRAME_LINK_SCHEMA, read_only: false }), { status: 200, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch;
+    respondWith(pageFixture({ read_only: false }));
     await expect(readFramesPage({ episodeId: EPISODE, runId: RUN }, new AbortController().signal)).rejects.toThrow(/read_only/);
   });
 });
 
-describe('frame page reading without invented totals', () => {
-  it('takes the selectable bases from the page only, and an empty list is the page’s answer', () => {
-    expect(frameSelectableBases(pageFixture())).toEqual(['capture_backend_monotonic_s', 'capture_sim_time_s', 'persist_backend_monotonic_s']);
-    expect(frameSelectableBases(null)).toEqual([]);
-    const none = pageFixture({ time: { ...pageFixture().time, selectable_time_bases: [] } });
-    expect(frameSelectableBases(none)).toEqual([]);
-    expect(frameWindowGate(none, 'capture_sim_time_s', true).allowed).toBe(false);
-    expect(frameWindowGate(none, 'capture_sim_time_s', true).reason).toContain('selectable_time_bases=空');
+describe('frame-link-2 request shape', () => {
+  it('sends the identity, the page and the sample condition together', async () => {
+    respondWith(pageFixture());
+    await readFramesPage({ episodeId: EPISODE, runId: RUN, limit: 3, offset: 100, sampleId: SAMPLE }, new AbortController().signal);
+    const url = new URL(urls[0], 'http://preview.local');
+    expect(url.pathname).toBe(`/api/v1/episodes/${EPISODE}/frames`);
+    expect(url.searchParams.get('run_id')).toBe(RUN);
+    expect(url.searchParams.get('offset')).toBe('100');
+    expect(url.searchParams.get('sample_id')).toBe(SAMPLE);
   });
-  it('refuses a window that the contract cannot carry', () => {
+  it('never sends time_base without one of its own bounds', async () => {
+    respondWith(pageFixture());
+    await readFramesPage({ episodeId: EPISODE, runId: RUN, timeBase: 'capture_sim_time_s' }, new AbortController().signal);
+    expect(urls[0]).not.toContain('time_base');
+    await readFramesPage({ episodeId: EPISODE, runId: RUN, timeBase: 'capture_sim_time_s', timeTo: 12 }, new AbortController().signal);
+    expect(urls[1]).toContain('time_base=capture_sim_time_s');
+    expect(urls[1]).toContain('time_to=12');
+    expect(urls[1]).not.toContain('time_from');
+  });
+});
+
+describe('page reading and pagination', () => {
+  it('treats an empty selectable_time_bases as the page’s answer', () => {
+    expect(frameSelectableBases(pageFixture({ time: { ...pageFixture().time, selectable_time_bases: [] } }))).toEqual([]);
+    expect(frameSelectableBases(null)).toEqual([]);
+  });
+  it('gates the window with the reader’s own reasons', () => {
     const page = pageFixture();
-    expect(frameWindowGate(page, '', false).allowed).toBe(false);
-    expect(frameWindowGate(page, '', true).reason).toContain('不替这组秒数猜一个基');
-    expect(frameWindowGate(page, 'wall_utc', true).allowed).toBe(false);
+    expect(frameWindowGate(page, '', true).reason).toContain('frame-link-2 要求 time_base');
     expect(frameWindowGate(page, 'wall_utc', true).reason).toContain('不在本页声明的可选时间基里');
     expect(frameWindowGate(page, 'capture_sim_time_s', false).reason).toContain('time_range_required');
     expect(frameWindowGate(page, 'capture_sim_time_s', true).allowed).toBe(true);
   });
-  it('explains each empty page by its own counters and never states a total', () => {
-    const base = { limit: 2, offset: 1, returned: 0, scanned_anchor_lines: 303, skipped_before_offset: 1, excluded_stream_mismatch: 0, excluded_without_sample_id: 0, excluded_outside_time_window: 0, excluded_anchor_identity_mismatch: 0, records_missing_selected_time_base: 0, next_offset: null, has_more: false };
-    const empty = (patch: Partial<FramePageDto['paging']>, frames: FrameDto[] = []) => pageFixture({ paging: { ...base, ...patch }, frames });
-    expect(framePageKind(null, { sampleId: null, base: null, from: null, to: null })).toBe('unavailable');
-    expect(framePageKind(empty({ scanned_anchor_lines: 0 }), { sampleId: null, base: null, from: null, to: null })).toBe('no-anchor-lines');
-    expect(framePageExplanation(empty({ scanned_anchor_lines: 0 }), { sampleId: null, base: null, from: null, to: null })).toContain('不推断该 Episode 没有录制');
-    expect(framePageKind(empty({ excluded_outside_time_window: 302 }), { sampleId: null, base: 'capture_backend_monotonic_s', from: 1, to: 2 })).toBe('window-empty');
-    expect(framePageExplanation(empty({ excluded_outside_time_window: 302 }), { sampleId: null, base: 'capture_backend_monotonic_s', from: 1, to: 2 })).toContain('空结果页，不是读取错误');
-    expect(framePageKind(empty({}), { sampleId: 'rgbd_nope', base: null, from: null, to: null })).toBe('sample-no-match');
-    expect(framePageExplanation(empty({}), { sampleId: 'rgbd_nope', base: null, from: null, to: null })).toContain('由界面持有');
-    expect(framePageKind(empty({ offset: 303, skipped_before_offset: 303 }), { sampleId: null, base: null, from: null, to: null })).toBe('offset-past-end');
-    expect(framePageExplanation(empty({ offset: 303, skipped_before_offset: 303 }), { sampleId: null, base: null, from: null, to: null })).toContain('不推断录制结束');
-    const counted = pageFixture({ paging: { ...base, records_missing_selected_time_base: 7 }, frames: [] });
-    expect(framePageExplanation(counted, { sampleId: null, base: 'capture_sim_time_s', from: 1, to: 2 })).toContain('records_missing_selected_time_base=7');
-    expect(framePageExplanation(counted, { sampleId: null, base: 'capture_sim_time_s', from: 1, to: 2 })).toContain('不补值');
-    // A non-empty page says how many frames it returned and forbids any total count wording.
-    const words = framePageExplanation(pageFixture(), { sampleId: null, base: null, from: null, to: null });
-    expect(words).toContain('本页返回 1 帧');
-    expect(words).toContain('响应不提供总帧数');
-    expect(words).toContain('line_index_is_not_a_clock=true');
+  it('reports the line census, the offset semantics and no total on a filled page', () => {
+    const text = framePageExplanation(pageFixture(), { sampleId: null, base: null, from: null, to: null });
+    expect(text).toContain('已读行 4');
+    expect(text).toContain('anchor_records_examined=4');
+    expect(text).toContain('next_qualifying_anchor_line_index=3');
+    expect(text).toContain('raw line index after the last returned anchor');
+    expect(text).not.toMatch(/共\s*\d+\s*帧/);
   });
-  it('names the has_more/next_offset gap instead of pretending more frames exist', () => {
-    const stopped = pageFixture({ paging: { ...pageFixture().paging, offset: 1, returned: 0, scanned_anchor_lines: 303, skipped_before_offset: 1, excluded_outside_time_window: 302, next_offset: null, has_more: false }, frames: [] });
-    const note = frameStopNote(stopped, { sampleId: null, base: 'capture_backend_monotonic_s', from: 1, to: 2 }, true);
-    expect(note).toContain('返回 0 帧');
-    expect(note).toContain('混合了候选行计数与锚点原生行号');
-    expect(note).toContain('不伪造分页结果');
-    expect(frameStopNote(pageFixture(), { sampleId: null, base: null, from: null, to: null }, true)).toBe('');
+  it('separates an unscanned anchor stream from a filtered-empty sample lookup', () => {
+    const noLines = pageFixture({ frames: [], paging: { ...PAGING, returned: 0, anchor_lines: { ...PAGING.anchor_lines, lines_read: 0 }, anchor_records_examined: 0 } });
+    expect(framePageKind(noLines, { sampleId: null, base: null, from: null, to: null })).toBe('no-anchor-lines');
+    const filtered = pageFixture({ frames: [], paging: { ...PAGING, offset: 100, returned: 0, has_more: false, next_offset: null, anchor_records_examined: 303, excluded_by_sample_id_filter: 302, anchor_lines: { ...PAGING.anchor_lines, lines_read: 303 } } });
+    const text = framePageExplanation(filtered, { sampleId: 'rgbd_missing', base: null, from: null, to: null });
+    expect(framePageKind(filtered, { sampleId: 'rgbd_missing', base: null, from: null, to: null })).toBe('sample-no-match');
+    expect(text).toContain('sample 条件排除 302');
+    expect(text).toContain('由界面持有');
+  });
+  it('counts a window-empty page as a successful empty read', () => {
+    const page = pageFixture({ frames: [], time: { ...pageFixture().time, selected_time_base: 'capture_sim_time_s', time_from: 900, time_to: 901 },
+      paging: { ...PAGING, returned: 0, excluded_outside_time_window: 41, has_more: false } });
+    const ctx = { sampleId: null, base: 'capture_sim_time_s', from: 900, to: 901 };
+    expect(framePageKind(page, ctx)).toBe('window-empty');
+    expect(framePageExplanation(page, ctx)).toContain('41 行按窗口排除');
+  });
+  it('keeps the corrected pagination and never repeats the old candidate’s paging caveat', () => {
+    const page = pageFixture({ frames: [], paging: { ...PAGING, offset: 3, returned: 0, has_more: false, next_offset: null, post_page_records_examined: 0, anchor_records_examined: 3 } });
+    const note = frameStopNote(page, { sampleId: null, base: 'capture_sim_time_s', from: 1, to: 2 }, true);
+    expect(note).toContain('whole_file_scanned=false');
+    expect(note).toContain('保留窗口与筛选条件');
+    // The v1 wording described a defect this candidate fixed; it must not survive as a fact.
+    expect(note).not.toContain('混合了候选行计数与锚点原生行号');
+    expect(note).not.toContain('has_more=true 混合');
   });
 });
 
-describe('frame state, time and role wording', () => {
-  it('labels a recorded model joint angle as a model joint angle, never a command or calibration', () => {
+describe('times: named quantities instead of one merged age', () => {
+  const rows = quantityRowsOf(frameFixture());
+  it('keeps the three state stamps as three separate rows with their own sources', () => {
+    const keys = rows.map((row) => row.key);
+    expect(keys).toContain('state_event_write_minus_frame_capture');
+    expect(keys).toContain('state_payload_feedback_time_minus_frame_capture');
+    expect(keys).toContain('recorder_declared_feedback_time_minus_frame_capture');
+    expect(rows.find((row) => row.key === 'state_event_write_minus_frame_capture')?.display).toContain('写入');
+    expect(rows.find((row) => row.key === 'state_payload_feedback_time_minus_frame_capture')?.display).toContain('采样');
+    expect(rows.find((row) => row.key === 'state_event_write_minus_frame_capture')?.absMs).toBe('2.8854069532826543');
+    expect(rows.find((row) => row.key === 'recorder_declared_feedback_time_minus_frame_capture')?.absMs).toBe('3.668295976240188');
+  });
+  it('marks the sim quantity as another clock and the persist row as pipeline latency', () => {
+    expect(rows.find((row) => row.key === 'state_sim_time_minus_frame_capture_sim_time')?.clock).toBe('sim');
+    expect(rows.find((row) => row.key === 'persist_minus_capture')?.display).toContain('落盘');
+    expect(rows.find((row) => row.key === 'observation_arrival_minus_frame_capture')?.note).toContain('管线');
+  });
+  it('does not invent a display for a key the reader did not name', () => {
+    const row = quantityRowsOf(frameFixture({ times: { ...frameFixture().times, quantities: [quantity('brand_new_difference')] } }))[0];
+    expect(row.display).toContain('brand_new_difference');
+    expect(row.note).toContain('不解释成延迟、帧率或同时刻');
+  });
+  it('copies the recorder’s own latency fields and never re-derives them', () => {
+    const declared = recorderDeclaredOf(frameFixture());
+    expect(declared.text).toContain('observation_age_ms=33.45116903074086');
+    expect(declared.text).toContain('agrees_with_recomputation=true');
+    expect(declared.note).toContain('not the difference between a state sample and the capture');
+    expect(recorderDeclaredOf(null).text).toContain('不自行推断录制器时延');
+  });
+  it('lists the three state time keys and the removed field', () => {
+    expect(stateQuantityKeysOf(frameFixture())).toContain('state_payload_feedback_time_minus_frame_capture');
+    expect(timeSemanticsText(frameFixture())).toContain('age_of_state_relative_to_frame');
+    const migration = versionMigrationText(pageFixture());
+    expect(migration.head).toBe('unirobot-mobilecar-frame-link-1 → unirobot-mobilecar-frame-link-2');
+    expect(migration.removed[0]).toContain('merged the state event’s write stamp');
+    expect(migration.note).toContain('not the same contract');
+    expect(versionMigrationText(null).head).toContain('未返回 version_migration');
+  });
+});
+
+describe('state without a single selected record', () => {
+  it('produces no rows and no invented value when recorded_state is null', () => {
+    const frame = frameFixture({ state: { ...frameFixture().state, recorded_state: null, single_state_selected: false, candidate_records: 2, status: 'ambiguous_candidates', multiple_candidates_note: 'two records claimed this control_tick_id; none is chosen' } });
+    expect(stateRowsOf(frame)).toEqual([]);
+    const selection = stateSelectionOf(frame);
+    expect(selection?.hasRecordedState).toBe(false);
+    expect(selection?.singleSelected).toBe('false');
+    expect(selection?.candidateRecords).toBe('2');
+    expect(selection?.note).toContain('none is chosen');
+    expect(selection?.candidates[0].position).toBe('events.jsonl#27');
+  });
+  it('shows the recorded values verbatim with the reader’s units', () => {
     const rows = stateRowsOf(frameFixture());
-    const qpos = rows.find((row) => row.key === 'arm_model_qpos_rad')!;
-    expect(qpos.label).toContain('机械臂模型关节角');
-    expect(qpos.note).toContain('不是用户控制角');
-    expect(qpos.note).toContain('不是标定结果');
-    expect(qpos.unit).toContain('radians');
-    const gripper = rows.find((row) => row.key === 'gripper_width_m')!;
-    expect(gripper.value).toBe('0.024999996765415464');
-    expect(gripper.unit).toContain('metres');
-    const base = rows.find((row) => row.key === 'base_position_world_sim_m')!;
-    // JS prints this magnitude in fixed notation; the digits, not the exponent form, are the point.
-    expect(base.value).toBe('[-0.00023473557897040777, -0.0000010145992864392481, 0.053540585735473954]（3 个分量，原样）');
-    expect(base.note).toContain('不是发送过的指令位置');
-    // A field the reader did not describe keeps its own name and says the unit is undeclared.
-    const unknown = stateRowsOf(frameFixture({ state: { ...frameFixture().state, recorded_state: { mystery_joint_nm: 1.5 } } }))[0];
-    expect(unknown.label).toContain('mystery_joint_nm');
-    expect(unknown.note).toContain('不翻译成关节/控制/标定等类别');
+    const arm = rows.find((row) => row.key === 'arm_model_qpos_rad');
+    expect(arm?.value).toContain('5 个分量，原样');
+    expect(arm?.note).toContain('不是用户控制角');
+    expect(rows.find((row) => row.key === 'wheel_velocity_rad_s')?.unit).toContain('radians per second');
+    expect(rows.find((row) => row.key === 'feedback_time_monotonic')?.unit).toContain('未在 units 表里声明');
     expect(stateRowsOf(null)).toEqual([]);
   });
-  it('matches units by the longest declared suffix and says when nothing matches', () => {
-    const units = { '*_rad': 'radians', '*_rad_s': 'radians per second', '*_m': 'metres', '*_nm': 'newton metres' };
-    expect(unitForField(units, 'joint_torques_nm').unit).toContain('newton metres');
-    expect(unitForField(units, 'wheel_velocity_rad_s').unit).toContain('radians per second');
-    expect(unitForField(units, 'feedback_time_monotonic').declared).toBe(false);
-    expect(unitForField(units, 'feedback_time_monotonic').unit).toContain('未在 units 表里声明');
+});
+
+describe('roles, ambiguity and coverage', () => {
+  it('carries the kind requirement, inventory and candidate lines per role', () => {
+    const roles = roleRowsOf(frameFixture(), pageFixture().linkage);
+    const image = roles.find((row) => row.role === 'image_observation');
+    expect(image?.requirement).toContain('required_kinds=rgb/depth ×1');
+    expect(image?.inventory).toContain('rgb→[8]');
+    expect(image?.kinds).toContain('missing_kinds=空');
+    expect(roles.find((row) => row.role === 'camera_transform')?.requirement).toContain('exact_records=1');
+    expect(roles.find((row) => row.role === 'feedback_observation_row')?.reason).toContain('引用未解析');
+    expect(ambiguousRoleCount(frameFixture())).toBe(0);
   });
-  it('calls the millisecond numbers linkage time differences, keeps raw times, and does not infer one clock', () => {
-    const rows = deltaRowsOf(frameFixture());
-    const state = rows.find((row) => row.label === 'state_event_minus_frame_capture')!;
-    expect(state.display).toContain('关联状态事件时间差');
-    expect(state.note).toContain('不是物理状态采样延迟');
-    expect(state.absMs).toBe('2.8854069532826543');
-    expect(state.captureValue).toBe('426494.351568496');
-    expect(state.otherValue).toBe('426494.348683089');
-    expect(state.position).toContain('line_index=27');
-    const arrival = rows.find((row) => row.label === 'observation_arrival_time_s_minus_frame_capture')!;
-    expect(arrival.position).toContain('sensor_kind=rgb');
-    // An unlabelled difference is shown with the reader's basis only: no invented meaning.
-    const future = rows.find((row) => row.label === 'some_future_difference')!;
-    expect(future.display).toBe('some_future_difference');
-    expect(future.note).toContain('不解释成延迟、帧率或同时刻');
-    const age = stateAgeOf(frameFixture(), pageFixture())!;
-    expect(age.absMs).toBe('2.8854069532826543');
-    expect(age.beforeCapture).toBe('true');
-    expect(age.sameClock).toBe('false');
-    expect(age.clockSameness).toContain('verified_by_reader=false');
-    expect(declaredLatencyOf(frameFixture())).toContain('记录者自己');
-    expect(declaredLatencyOf(frameFixture({ times: { ...frameFixture().times, declared_latency_ms: {} } }))).toContain('没有记录自述的延迟字段');
+  it('names ambiguity instead of silently picking a candidate', () => {
+    const frame = frameFixture({ primary_roles_ambiguous: ['image_observation'],
+      roles: [{ ...frameFixture().roles[0], status: 'ambiguous_kind', duplicate_kinds: ['rgb'], kind_inventory: { rgb: [8, 9], depth: [10] }, matched_kinds: ['depth'],
+        ambiguous_records: [{ stream_id: 'observations-index', relative_path: 'observations/index.jsonl', line_index: 8 }, { stream_id: 'observations-index', relative_path: 'observations/index.jsonl', line_index: 9 }] }] });
+    const row = roleRowsOf(frame, pageFixture().linkage)[0];
+    expect(row.status).toBe('ambiguous_kind');
+    expect(row.statusMeaning).toContain('recorded more than once');
+    expect(row.ambiguous).toContain('2 条候选记录冲突');
+    expect(row.inventory).toContain('rgb→[8,9]');
+    expect(ambiguousRoleCount(frame)).toBe(1);
+    expect(linkageScopeText(pageFixture(), frame)).toContain('primary_roles_ambiguous=[image_observation]');
   });
-  it('keeps the four primary roles and the declared feedback reference as two separate statements', () => {
-    const rows = roleRowsOf(frameFixture(), pageFixture().linkage);
-    expect(rows.filter((row) => row.primary)).toHaveLength(4);
-    const feedback = rows.find((row) => row.role === 'feedback_observation_row')!;
-    expect(feedback.primary).toBe(false);
-    expect(feedback.status).toBe('unresolved_reference');
-    expect(feedback.statusMeaning).toContain('target record is not in this Episode');
-    expect(feedback.reason).toContain('不等于完全没有机器人状态');
-    expect(feedback.reason).toContain('state_feedback_event（status=matched）');
-    expect(rows.find((row) => row.role === 'image_observation')!.positions).toBe('observations/index.jsonl#8 , observations/index.jsonl#9');
-    const scope = linkageScopeText(pageFixture(), frameFixture());
-    expect(scope).toContain('linkage_status=matched');
-    expect(scope).toContain('declared_reference_status=unresolved_reference');
-    expect(scope).toContain('feedback 引用未解析=1');
-    expect(linkageScopeText(null, null)).toContain('不声明任何关联结论');
+  it('reports coverage and precedence exactly as the page words them', () => {
+    expect(roleCoverageText(pageFixture())).toContain('image_observation: matched=3');
+    expect(statusPrecedenceText(pageFixture())).toContain('stream_absent > identity_mismatch > ambiguous_kind');
+    expect(selectionRulesText(pageFixture())).toContain('the first line in the file is not chosen');
+    expect(selectionRulesText(pageFixture())).toContain('numeric closeness is not treated as identity');
+    expect(roleCoverageText(null)).toContain('未给本页角色覆盖统计');
+  });
+  it('summarises the page scope with the frame’s own list fields', () => {
+    const text = linkageScopeText(pageFixture(), frameFixture());
+    expect(text).toContain('primary_roles_matched=[image_observation,camera_transform,capture_timing_event,state_feedback_event]');
+    expect(text).toContain('feedback 引用未解析=3');
+    expect(linkageScopeText(null, null)).toContain('未读取帧页');
   });
 });
 
-describe('frame media and provenance', () => {
-  it('reads only this frame’s own references and marks a non-present one unreadable', () => {
+describe('media refs of the selected frame', () => {
+  it('lists every candidate row and keeps an absent digest absent', () => {
     const refs = frameMediaRefs(frameFixture());
-    expect(refs.map((ref) => ref.field)).toEqual(['rgb_uri', 'depth_uri', 'valid_mask_uri']);
-    expect(refs.every((ref) => ref.loadable)).toBe(true);
-    expect(frameAutoLoadRef(refs)!.uri).toBe(`assets/rgb/${SAMPLE}_rgb.png`);
-    expect(mediaDeclarationText(frameFixture())).toContain('declared only; recomputed when the asset endpoint serves the file');
-    const broken = frameMediaRefs(frameFixture({
-      media: { items: [
-        { field: 'rgb_uri', uri: 'assets/rgb/gone_rgb.png', availability: 'absent', bytes_on_disk: null, declared_sha256_by_row: 'd'.repeat(64), declared_bytes_by_row: 1, agrees_with_observation_row: false, row_line_index: 3 },
-        { field: 'depth_uri', uri: 'assets/depth/escape.npy', availability: 'refused', refusal_code: 'episode_asset_escape' },
-        { field: 'valid_mask_uri', uri: '', availability: 'not_recorded_on_this_frame' },
-      ] },
-    }));
-    expect(frameAutoLoadRef(broken)).toBeNull();
-    expect(broken[0].loadable).toBe(false);
-    expect(broken[0].note).toContain('不按文件名推测内容');
-    expect(broken[1].note).toContain('refusal_code=episode_asset_escape');
-    expect(broken[1].note).toContain('界面不绕过这个拒绝');
-    expect(broken[2].note).toContain('不拿别的帧的图片顶替');
-    expect(frameMediaRefs(null)).toEqual([]);
+    expect(refs).toHaveLength(3);
+    expect(refs[0].rowLines).toBe('8');
+    expect(refs[2].declaredSha256).toBeNull();
+    expect(refs[2].rowsConflict).toBe('null');
+    expect(frameAutoLoadRef(refs)?.field).toBe('rgb_uri');
+    expect(mediaDeclarationText(frameFixture())).toContain('every candidate row for the kind is listed');
   });
-  it('proves where every displayed value came from', () => {
+  it('marks conflicting duplicate rows without choosing one', () => {
+    const refs = frameMediaRefs(frameFixture({ media: { ...frameFixture().media, items: [{ field: 'rgb_uri', uri: 'assets/rgb/a.png', availability: 'present', observation_row_line_indexes: [8, 12], observation_row_candidates: 2, observation_rows_conflict: true, agrees_with_observation_row: true }] } }));
+    expect(refs[0].rowLines).toBe('8,12');
+    expect(refs[0].rowsConflict).toBe('true');
+    expect(refs[0].note).toContain('可按 assets 端点读取字节');
+  });
+  it('refuses to read a reference the reader did not mark present', () => {
+    const refs = frameMediaRefs(frameFixture({ media: { ...frameFixture().media, items: [
+      { field: 'rgb_uri', uri: 'assets/rgb/a.png', availability: 'absent', observation_row_line_indexes: [8] },
+      { field: 'depth_uri', uri: 'assets/depth/a.npy', availability: 'refused', refusal_code: 'episode_asset_escape', observation_row_line_indexes: [] }] } }));
+    expect(refs[0].loadable).toBe(false);
+    expect(refs[0].note).toContain('不按文件名推测内容');
+    expect(refs[1].note).toContain('不绕过这个拒绝');
+    expect(frameAutoLoadRef(refs)).toBeNull();
+  });
+});
+
+describe('provenance and boundaries', () => {
+  it('keeps record positions and declared identity in the provenance rows', () => {
     const rows = provenanceRowsOf(pageFixture(), frameFixture());
-    const value = (key: string) => rows.find((row) => row.key === key)!.value;
-    expect(value('source')).toContain(SOURCE.source_id);
-    expect(value('identity')).toContain(RUN);
-    expect(value('anchor')).toContain('observations/persist.jsonl # line_index=0');
-    expect(value('sample')).toContain(`capture_control_tick_id=tick_000006551 feedback_sample_id=joint_feedback_000006551`);
-    expect(value('state_position')).toContain('events.jsonl#27');
-    expect(value('state_position')).toContain('event_seq=28');
-    expect(value('role_positions')).toContain('camera_transform:transforms.jsonl#0');
-    expect(value('profile')).toContain('profile_id=g2a-rgbd-5hz-original');
-    expect(value('clocks')).toContain('persist_backend_monotonic_s=426494.451593934');
-    expect(provenanceRowsOf(pageFixture(), frameFixture({ state: { ...frameFixture().state, status: 'missing', source: null } })).find((row) => row.key === 'state_position')!.value)
-      .toContain('状态未命中（status=missing）');
-    expect(provenanceRowsOf(null, null)).toEqual([]);
+    const map = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+    expect(map.identity).toContain('the run directory was re-validated as itself');
+    expect(map.state_position).toContain('events.jsonl#27');
+    expect(map.role_positions).toContain('capture_timing_event:events.jsonl#40');
+    expect(map.sample).toContain('tick_000006551');
   });
-  it('keeps the 3D and cross-stream refusal in the reader’s own words', () => {
-    const notice = frameBoundaryNotice(pageFixture());
-    expect(notice).toContain('this_slice_does_not_enable_3d_replay=true');
-    expect(notice).toContain('live_geometry_or_actual_may_be_applied=false');
-    expect(notice).toContain('transforms_are_full_per_body_pose_sequences=false');
-    expect(notice).toContain('no control, RESET, recording or physics stepping');
-    expect(notice).toContain('cross-stream or cross-episode replay cursor');
-    expect(frameBoundaryNotice(null)).toContain('不声明 3D 或未证明范围');
+  it('states the 3D boundary and points at the pose slice that owns the model', () => {
+    const text = frameBoundaryNotice(pageFixture());
+    expect(text).toContain('this_slice_does_not_enable_3d_replay=true');
+    expect(text).toContain('robot_pose_readiness_slice=GET /api/v1/episodes/{episode_id}/robot-state');
+    expect(text).toContain('no replay execution');
+  });
+  it('separates what records name from what the reader can verify', () => {
+    const text = clockSamenessText(pageFixture());
+    expect(text).toContain('verified_by_reader=false');
+    expect(text).toContain('the native build or release that wrote the archive');
+    expect(text).toContain('synchronized_upgraded_by_numeric_closeness=false');
+    expect(clockSamenessText(null)).toContain('未声明 clock_sameness');
   });
 });

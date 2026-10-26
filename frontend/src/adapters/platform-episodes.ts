@@ -122,7 +122,8 @@ export interface RecordPageDto {
   };
 }
 
-/** Reads only. The six GET paths of the history candidates, exactly the ones they declare. */
+/** Reads only. The GET paths of the history candidates, exactly the ones they declare: the five
+ *  below plus `frames` (platform-frames) and `robot-state` / `model/assets` (platform-history-pose). */
 export class PlatformEpisodeApi {
   async listEpisodes(params: { limit?: number; offset?: number; run_id?: string; recording_status?: string; episode_id?: string }, signal: AbortSignal) {
     return json<EpisodeListDto>(`/api/v1/episodes${query(params)}`, signal, EPISODE_READ_SCHEMA);
@@ -418,7 +419,11 @@ const CODE_HINTS: Record<string, string> = {
   time_base_unsupported: '该时间基不是记录声明的命名时间基（supported 见响应）',
   time_base_not_numeric: '该时间基是日历字符串，不接受数值区间：改用响应列出的数值基，界面不猜日历格式',
   time_range_required: '给了 time_base 就必须给 time_from 或 time_to',
-  sample_id_invalid: 'sample_id 不是原生 id token（frame-link-1 拒绝含非法字符的 id，未扫描归档）',
+  sample_id_invalid: 'sample_id 不是原生 id token（frame-link-2 拒绝含非法字符的 id，未扫描归档）',
+  frame_not_found: '该 Episode 没有符合请求的持久化帧：robot-state 拒绝在不打开任何帧的情况下返回默认记录',
+  history_model_asset_unavailable: '该资产不在冻结 geometry bundle 的清单里（supported 见响应），未读出任何字节',
+  history_asset_revision_changed: '服务端重算摘要与请求声明的 sha256 不符，字节未返回（历史资产内容变了）',
+  geometry_bundle_unavailable: '该候选没有加载冻结 geometry bundle：没有历史模型资产可读',
   episode_asset_path_invalid: '资产路径必须是该 Episode 内的相对路径',
   episode_asset_missing: '该媒体在记录中不存在',
   episode_asset_escape: '解析后的路径离开了允许的范围，拒绝读取',
@@ -446,7 +451,12 @@ export function describeHistoryError(cause: unknown): string {
   const expected = typeof detail?.expected === 'string' ? ` · 声明摘要 ${short(detail.expected)}` : '';
   const suffix = typeof detail?.suffix === 'string' ? ` · 后缀 ${detail.suffix}` : '';
   const relative = typeof detail?.relative_path === 'string' ? ` · 路径 ${detail.relative_path}` : '';
-  return `${cause.code} · ${cause.message}${supported}${runs}${numeric}${actual}${expected}${suffix}${relative}${CODE_HINTS[cause.code] ? ` · ${CODE_HINTS[cause.code]}` : ''}`;
+  const asset = typeof detail?.asset_id === 'string' ? ` · 资产 ${detail.asset_id}` : '';
+  const bundle = typeof detail?.bundle_sha256 === 'string' ? ` · bundle 重算 ${short(detail.bundle_sha256)}` : '';
+  const requested = typeof detail?.requested_sha256 === 'string' ? ` · 请求声明 ${short(detail.requested_sha256)}` : '';
+  const episode = typeof detail?.episode_id === 'string' ? ` · episode ${detail.episode_id}` : '';
+  const sample = typeof detail?.sample_id === 'string' ? ` · sample ${detail.sample_id}` : '';
+  return `${cause.code} · ${cause.message}${supported}${runs}${numeric}${actual}${expected}${suffix}${relative}${asset}${bundle}${requested}${episode}${sample}${CODE_HINTS[cause.code] ? ` · ${CODE_HINTS[cause.code]}` : ''}`;
 }
 export function isAmbiguous(cause: unknown) { return cause instanceof ApiError && cause.code === 'episode_id_ambiguous'; }
 export function ambiguousRuns(cause: unknown): string[] {
