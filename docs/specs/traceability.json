@@ -1543,6 +1543,11 @@
       "path": "90-governance/sources/S24-frame-reading-and-pose-preparation.md",
       "sha256": "e450e0442a012eb7d57e8107cbb3852928e28affc136a12c2e2bfb69fc2fa1a3",
       "kind": "current_user_frame_paging_time_semantics_and_pose_preparation_goal"
+    },
+    "S25": {
+      "path": "90-governance/sources/S25-time-sources-and-pose-readiness.md",
+      "sha256": "1f7334705d3bd5f11716e5b5133c8e12f9321ef9725a3463aba1c07482b9f3d7",
+      "kind": "current_user_time_sources_and_pose_readiness_goal"
     }
   },
   "visual_registry": "references/visual-assets.json"

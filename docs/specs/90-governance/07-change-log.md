@@ -10,6 +10,16 @@
 
 ## V0.8｜2026-10-25
 
+### 2026-10-26 M1.5e `sim` 时间量来源拆分、机械臂映射证据与分部姿态就绪
+
+- 新增来源 S25（时间量来源与姿态就绪实测）与决策 DEC-062（`sim` 基时间量按来源记录拆分且不回退、机械臂映射以源码链+冻结快照+摘要一致+运动学复现为证据上限且不证明写者版本、模型角绘制不依赖用户角转换、就绪条件按部件划分、夹爪宽度表述更正）。
+- 更正上一轮两处超出证据的表述并显式记账，不回填原文：`zero_model_rad` 实为精确 `-π/2`（不是"舍入为 -1.5708"），平台运动学配置已声明夹爪宽度与 mimic 常数（不是"任何地方都不存在规则"），缺的是这些常数与历史写者版本绑定的凭证；见 [M1.5d 交付记录](../backend-m1.5d-frame-reading-and-pose-preparation.md) 追加的"更正"小节。
+- [Episode/事件/标注契约](../30-contracts/03-episode-events-annotations.md)：帧时间小节把 `sim` 基差值拆为 `state_sim_time_minus_frame_capture_sim_time`（只取状态负载 `payload.sim_time_s`）与 `state_event_envelope_sim_time_minus_frame_capture_sim_time`（只取事件信封 `sim_time_s`），缺数值时对应量缺席、不回退、`times.sim_time_quantity_keys` 列出两者，迁移说明补 `version_migration.corrections`；姿态小节新增 `arm_mapping_chain`、`version_binding`（`writer_identified=false` 与可绑定范围上限）、`model_vs_user_angles`（`render_source`/`conversion_is_required_for_drawing=false`，用户角公式与照片零位权威单独列出）、`tcp_kinematic_cross_check`（两条根坐标假设、`supported_hypotheses`、逐轴差值、`tolerance_authority`、`supports`/`does_not_prove`）与九项 `part_readiness`（状态词汇 `ready`/`ready_with_caveats`/`conditional`/`blocked`/`not_required`，每项带 `requires`/`pose_input_required`/`inputs_available`/`frontend_rule`/`evidence`/`gaps`）＋`capability_summary`（`fixed_model_assembly_available=true` 与 `whole_robot_pose_rebuildable=false` 并存，`escalation_forbidden`/`defaults_forbidden`），映射状态改为按证据判定（`verified` 需复现成立）、未证项仍不补默认值；`frame-link-2` 与 `history-pose-1` 版本不变（纯字段新增，向后兼容）。
+- 实现：`backend/src/unirobot/frames.py`（`SIM_TIME_QUANTITIES` 两条独立量与 `_delta` 来源标注）、`backend/src/unirobot/history_pose.py`（映射链证据、版本绑定上限、模型角/用户角分离、TCP 运动学对照、分部就绪与能力汇总）、新增 `backend/src/unirobot/history_fk.py`（纯运动学：冻结 bundle 体树、`body_poses`/`site_world_position`/`tcp_from_recorded_state`，不依赖 MuJoCo/numpy/native）、新增 `backend/tools/history_fk_check.py`（离线全归档聚合对照，产出 `unirobot-mobilecar-history-fk-check-1`）；`tools/episode_history_check.py` 断言由 102 增至 110（本轮 8 项），新增 `backend/tests/test_history_fk.py`（7 项手算期望）与 `test_frames.py` 的来源/映射/分部用例。
+- 服务器验证：候选 `m1x-20261026T065320Z-platform`（`127.0.0.1:18970`，PID 3256687，独立 SQLite `frames-20261026T065320Z.sqlite3`，源码聚合 `df124d886e652f03…` 49 文件，清单 sha256 `6209e493cc23443e…`）读取检查 110/110、统一能力回归 28/28、聚焦 45 passed、全量 179 passed / 3 项历史布局失败（名称与基线同前：`test_catalog.py::test_catalog_loads_real_tasks`、`test_catalog.py::test_every_task_has_existing_evidence`、`test_migrate.py::test_manifest_sources_exist`）；本轮经 `GetProbe` 发出的 64 条请求全为 GET，946 文件覆盖集合 `drift=[]`，历史归档、native 8792、生产配方与 pin 未改动，未启动新的 native 实例。离线运动学对照：真实 Episode 152/303 帧可比，`error_primary_m` 最大 1.68974e-14 m，五轴均有位移（joint2/joint3 幅度仅 0.0029/0.0022 rad），竞争根坐标约定分离 0.0556000 m、关节序反转分离 0.20967 m；容差 0.005 m 由本检查自述，非标定上限。
+- 机器目录：补充来源 19 → 20 个，文档节点与 REQ 计数不变。固定模型资源准备完成、前端装配验证、历史姿态局部验证与正式 M1.5/M1 验收是四件不同的事：本轮只交付前三者的契约与证据基础，历史整车渲染、跨流同步与统一历史游标仍未验证。
+
+
 ### 2026-10-25 M1.5d 帧读取分页/角色完整性修正、时间语义分离与历史姿态准备
 
 - 新增来源 S24（帧读取修正与历史姿态准备实测）与决策 DEC-061（分页由下一条合格锚点决定、角色完整性按必需 sensor_kind 与逐角色基数判定、三个时间量分离且版本迁移显式、同钟命名与写入版本绑定分开、姿态映射逐项可判定且不补默认值、资源就绪与渲染验证分离）。

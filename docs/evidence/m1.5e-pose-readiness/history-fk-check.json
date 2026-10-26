@@ -1,0 +1,163 @@
+{
+  "does_not_prove": [
+    "hardware or sensor calibration",
+    "that any specific native build wrote this archive: records carry no release or commit id",
+    "rendered appearance, and unexercised joints are not validated by this pass"
+  ],
+  "identity": {
+    "arm_names_in_bundle_document_order": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5"
+    ],
+    "arm_names_in_platform_config_order": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5"
+    ],
+    "bundle": {
+      "contract_version": "mobilecar-1.0",
+      "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+      "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+      "scene_id": "mobile_pick"
+    },
+    "bundle_json_sha256": "a5f4a90ca5988ba0e7e3accba2212b38939d8e420a3882b3f9cc7a344d9e20f3",
+    "bundle_sha256": "275389464eee2f3de0c2ddf96ae85acbedfd382c496a589ec41a3662ee31d171",
+    "kinematics_config_sha256": "6e2d3d08f6b30a8e7424d808bcff1212b44b996d54d44369e067827f419f3fd5",
+    "orders_equal": true,
+    "recorded": {
+      "contract_version": "mobilecar-1.0",
+      "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+      "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+      "scene_id": "mobile_pick"
+    }
+  },
+  "limits": {
+    "axes_declared_verified": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5"
+    ],
+    "note": "an axis is only exercised where the samples actually move it; a consistent total error with a static axis does not validate that axis on its own"
+  },
+  "method": {
+    "site_attachment": {
+      "orientation_status": "not_specified_in_source",
+      "orientation_xyzw": null,
+      "parent_body": "guide_rod_link",
+      "position_m": [
+        -0.0030427614580541846,
+        -0.0007270026737451543,
+        0.01995871637761593
+      ],
+      "site": "grasp_tcp"
+    },
+    "site_attachment_authority": "platform_reference_not_native_attested",
+    "tolerance_authority": "stated by this check; not a calibration limit",
+    "tolerance_m": 0.005,
+    "tree": "frozen compiled bundle links; body offset then joint motion in the child body frame"
+  },
+  "read_only": true,
+  "results": {
+    "base_motion_observed_m": {
+      "axis_0_range_m": 0.05105979635029077,
+      "axis_1_range_m": 0.0045952621519453314,
+      "axis_2_range_m": 0.0003266721194493602
+    },
+    "error_primary_m": {
+      "count": 152,
+      "max_m": 1.6897430535684736e-14,
+      "median_m": 1.6613937867905297e-14,
+      "min_m": 1.6114521549889284e-14,
+      "p95_m": 1.6680898896109894e-14
+    },
+    "error_with_base_offset_added_m": {
+      "count": 152,
+      "max_m": 0.05560000000000459,
+      "median_m": 0.0556000000000042,
+      "min_m": 0.05560000000000359,
+      "p95_m": 0.05560000000000431
+    },
+    "joint_excursion_rad": {
+      "joint1": {
+        "max": 0.03454706762681787,
+        "min": -0.0007981158465394831,
+        "range": 0.035345183473357356
+      },
+      "joint2": {
+        "max": 0.0016603668666036813,
+        "min": -0.0012663503153483879,
+        "range": 0.0029267171819520694
+      },
+      "joint3": {
+        "max": 0.0014384481908740504,
+        "min": -0.0007750899962000804,
+        "range": 0.0022135381870741306
+      },
+      "joint4": {
+        "max": -1.5696750090681135,
+        "min": -1.5709619491098505,
+        "range": 0.001286940041737017
+      },
+      "joint5": {
+        "max": 0.03503819302824324,
+        "min": -3.8479350318820355e-05,
+        "range": 0.03507667237856207
+      }
+    },
+    "per_axis_median_difference_m": [
+      1.587618925213974e-14,
+      2.4841240175987878e-15,
+      4.218847493575595e-15
+    ],
+    "permutation_error_medians_m": {
+      "reversed": 0.20967078327322822,
+      "source_order_joint1_to_joint5": 1.6613937867905297e-14
+    },
+    "unexercised_joints": [],
+    "verdict": "kinematic_consistency_holds",
+    "worst_sample": {
+      "control_tick_id": "tick_000007838",
+      "difference_m": [
+        1.6153745008296028e-14,
+        2.5118795932144167e-15,
+        4.274358644806853e-15
+      ],
+      "error_primary_m": 1.6897430535684736e-14,
+      "error_with_base_offset_added_m": 0.05560000000000426,
+      "permutation_errors_m": {
+        "reversed": 0.20967078327322733,
+        "source_order_joint1_to_joint5": 1.6897430535684736e-14
+      },
+      "sample_id": "rgbd_b7634a5d25104ee2b6f21cc028aa60a7"
+    }
+  },
+  "schema_version": "unirobot-mobilecar-history-fk-check-1",
+  "scope": {
+    "anchors_in_episode": 303,
+    "anchors_sampled": 152,
+    "compared": 152,
+    "episode_directory": "/home/liaozhengyan/Desktop/mobileCar/var/runs/run_0104613ff7364ae78cf2f3946bd45f7b/episodes/episode_27bfed5427684795b361cd2ec21e9aa7",
+    "episode_id": "episode_27bfed5427684795b361cd2ec21e9aa7",
+    "manifest_software": {
+      "name": "mobilecar",
+      "version": "0.1.0"
+    },
+    "run_id": "run_0104613ff7364ae78cf2f3946bd45f7b",
+    "skipped": {
+      "no_state_event_on_the_capture_tick": 0,
+      "state_payload_missing_fields": 0
+    },
+    "stride": 2
+  },
+  "supports": [
+    "kinematic consistency between the recorded state, the frozen model tree and the declared site attachment",
+    "per-joint excursion coverage over 152 compared frames"
+  ]
+}

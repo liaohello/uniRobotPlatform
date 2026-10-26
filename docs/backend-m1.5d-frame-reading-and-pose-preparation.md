@@ -25,3 +25,12 @@
 - 不补标定与坐标语义：底盘位置参考系/原点、夹爪宽度→关节值、TCP 朝向、相机外参标定需要新的凭证来源（native 侧声明或经批准的标定资产），本轮只登记精确缺口。
 - 不做跨流同步游标、不扩归档全量验证、不接新采集闭环、不改 native/前端/生产 recipe 与 pin。
 - 检查工具仍需避免复用外层变量名（本轮两次中断的原因），并保持"报告↔冻结字节"断言。
+
+## 更正（2026-10-26，M1.5e 复核发现，原文不回填）
+
+本轮补证据时复核了本记录与 [S24](specs/90-governance/sources/S24-frame-reading-and-pose-preparation.md) 的两处表述，它们超出实际来源，在此显式更正。上一轮的其余事实与测量结果不变。
+
+1. **`zero_model_rad[3]` 不是四舍五入值。** 本记录"事实"段与 S24 第 8 条称平台配置把该常量写成 `-1.5708`（四舍五入）。重读 `backend/config/mobilecar-landerpi-kinematics-v1.json` 实际值是 `-1.5707963267948966`，即精确的 `-π/2`，与记录里 `joint_feedback` 行 model/user 之差（`-1.5713109306099213 − (-0.0005146038150247723) = -1.5707963267948965`）在浮点精度内一致。原表述把"读取时四舍五入显示"误写成"配置里存的是舍入值"。
+2. **"夹爪宽度→关节值规则在平台配置里不存在"这句不成立。** 平台运动学配置的 `gripper` 段已声明 `min_width_m`/`max_width_m`/`zero_width_m`/`zero_model_rad`/`width_per_drive_rad_m`/`jaw_origin_correction_m`/`source_gap_m` 与 `mimic` 关节表，因此"候选规则"确实存在于平台配置中。准确的缺口是：没有任何来源把这些常数认证为写这批历史记录时生效的规则（记录与 bundle 都不带夹爪几何凭证，平台配置的 `authority` 自称 `platform_reference_not_native_attested`），所以夹爪映射仍为 `unverified`，仍不补默认值。结论不变，理由与措辞需按此修正。
+
+同轮的另一项语义变化不属于"错误"，但会改写上一轮的结论范围：`base_position_world_sim_m`、`base_quaternion_xyzw` 与 `tcp_position_world_m` 已由同一反馈负载内的纯运动学复现升级为 `verified`（`arm_model_qpos_rad` 的逐位顺序也得到源码链 + 冻结快照 + 复现的共同支持），故 S24 第 9 条"底盘、夹爪与 TCP 的语义没有被任何来源证实"现只对夹爪、TCP 朝向、相机外参与动态对象成立。详见 [M1.5e 交付记录](backend-m1.5e-pose-readiness-and-time-sources.md) 与 [S25](specs/90-governance/sources/S25-time-sources-and-pose-readiness.md)。
