@@ -1,12 +1,14 @@
 # uniRobotPlatform Specification 总索引
 
-组织版本：V0.6 · 2026-10-22（America/Los_Angeles）。状态：**Specification 文档体系；本轮为详细设计基线建议，非产品实现/验收声明。**
+组织版本：V0.7 · 2026-10-23（America/Chicago）。状态：**Specification 文档体系；本轮为前端计划复评，非工作台实现/验收声明。** 未修改节点保留各自版本。
 
 本文档树吸收设计总册，将现有规则落到可继续讨论的功能节点。保留需求确认程度、建议和未决项；产品验收尚未执行。前端目录按业务工作区＋共享交互组织，后端按能力域组织，另提供按界面区域和完整功能链查找的入口。
 
 ## 从哪里开始
 
 **当前优先阅读：[mobileCar 最短闭环与 bimanual 复用](00-overview/10-first-task-closed-loop.md)。** 用户已确定 M1 场景→运行→录制→回放，M2 用 bimanual 验证共享组件；训练/预测后续。轻量专项工具可独立 HostApp，store 按草案注入，同一运行实体的控制权仍由后端统一裁决。
+
+**最新前端方向：[统一 3D 工作台实施计划](00-overview/09-page-design-delivery-plan.md)。** 按 S11/S17 先统一主架构，再逐项接任务；下一个前端产物是对象树/视口/Inspector、相机与 Joint/TCP Target 可操作样板，继而接真实控制/采集/回放。诊断/元数据草案成果保留，不能代替主工作台。前端生产实现继续暂停。
 
 | 阅读目的 | 入口 |
 |---|---|
@@ -66,7 +68,7 @@ docs/specs/
 - VLA 控制中使用显式受控接管，鼠标选择/拖动不隐式覆盖策略。
 - TCP 移动时需要虚线轨迹；默认表示 TCP、关节中心或组合尚未冻结。
 - 实体主臂无独立相机；保留状态、映射、标定与跟踪误差。
-- 用户已允许浏览器绘制 3D；仿真、感知、规划在服务器。具体前端技术栈仍为建议。
+- 用户已允许浏览器绘制 3D；仿真、感知、规划在服务器。当前工程方向沿已有分析采用 React + TypeScript 外壳、Three.js SceneView 复用、Dockview 先验证；具体库版本与兼容性未因文档存在而验证。
 
 ## 使用方式
 
@@ -122,10 +124,16 @@ docs/specs/
 
 本轮更新文档、索引和参考素材；未运行仿真、采集、训练或预测。图片与目录里的能力标签不作为已接通证据。
 
-## V0.6 当前更新：审核修复与 mobileCar 优先
+## V0.6 更新：审核修复与 mobileCar 优先
 
 - 当前阶段改为 [M1 mobileCar 四步闭环 / M2 bimanual 组件复用](00-overview/10-first-task-closed-loop.md)，完整数据/训练/预测保留后续；三图不是全部功能前置。
 - [配置契约](30-contracts/07-task-scene-experiment-config.md) 明确 SceneVersion/SceneDraft/ExperimentDraft、覆盖解析、HostApp/store 作用域与分层唯一性；三张 Profile 卡与 Execution/Export 分开适用。
 - [Episode/采集契约](30-contracts/03-episode-events-annotations.md) 合并旧引用集合，以固定快照为配置权威；收敛原生 start/RESET、finalize、失败保留、索引与只读回放。原生能力不自动等于平台适配已完成。
 - [状态域](00-overview/04-runtime-state-domains.md) 补 Session lifecycle；[Collection/版本](30-contracts/05-dataset-model-lineage.md) 明确可编辑选择和不可变成员清单；[术语表](00-overview/05-glossary.md) 区分导航、工作区、页面和组件。
 - 当前 **89 项 REQ、26 PNG/25 独特内容**；旧数字保留历史标签。[新增四项验收](40-verification/06-scene-setup-first-loop.md) 与既有条目均未执行。本轮仅修改文档/机器索引，不修改产品代码、原生工程或图片。
+
+## V0.7 当前更新：统一 3D 工作台计划复评
+
+- [S17](90-governance/sources/S17-3d-workbench-replan.md) 重申统一主架构和好操作的 3D 界面；补 DEC-052～054，保留 M1/M2、专项轻宿主及既有后端。
+- [实施计划](00-overview/09-page-design-delivery-plan.md) 增加架构/复用决定、A–H 工作台形态、交互服务与 M1.2a 样板门槛；[PAGE-03](10-frontend/page-designs/03-simulation.md) 同步。无新增产品需求或 TEST 编号。
+- 机器目录新增一个来源节点至149，需求仍89项，图片不变；产品验收状态不变。本轮只修改文档/索引，前端实现继续暂停，详细兼容性与真实闭环尚待验证。

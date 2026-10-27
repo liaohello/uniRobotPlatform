@@ -1,7 +1,7 @@
 {
-  "version": "0.6",
-  "date": "2026-10-22",
-  "timezone": "America/Los_Angeles",
+  "version": "0.7",
+  "date": "2026-10-23",
+  "timezone": "America/Chicago",
   "source_book": "../设计过程与Specification总册_20261021.md",
   "source_sha256": "995e4bf3c3fdc19f6874e1d221d5e52195db5f38e79fcac8c082b8ac9939119a",
   "requirements": [
@@ -25,7 +25,8 @@
       "confirmation": "用户明确",
       "summary": "三维编辑器操作手感 + 多面板与时间轴",
       "source_ids": [
-        "S02"
+        "S02",
+        "S17"
       ],
       "primary_spec": "00-overview/01-product-boundaries.md",
       "tests": [],
@@ -987,10 +988,12 @@
     },
     {
       "id": "REQ-ARCH-001",
-      "confirmation": "开发建议",
+      "confirmation": "统一架构原则用户明确；切片/验收机制为设计建议",
       "summary": "统一骨架先行、按真实任务纵向接入与验收",
       "source_ids": [
-        "S09"
+        "S09",
+        "S11",
+        "S17"
       ],
       "primary_spec": "00-overview/08-unified-development-roadmap.md",
       "tests": [
@@ -1497,6 +1500,11 @@
       "path": "90-governance/sources/S16-mobile-first-spec-repair.md",
       "sha256": "9151707aacd0c9f1aab73c08a894cc1511d87a309596b4c52ad540c6eccb3703",
       "kind": "current_user_mobile_first_scope_and_spec_repair_authorization"
+    },
+    "S17": {
+      "path": "90-governance/sources/S17-3d-workbench-replan.md",
+      "sha256": "81779eaae6a980aa615e62dba8d8cc717c5cc44c02546b19c1039ad63b17b870",
+      "kind": "current_user_3d_workbench_replan_request"
     }
   },
   "visual_registry": "references/visual-assets.json"
