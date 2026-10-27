@@ -1,0 +1,31 @@
+{
+  "before": {
+    "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+    "backend_generation": 1,
+    "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+    "recording": {
+      "status": "IDLE",
+      "episode_id": null,
+      "recording_segment_id": null,
+      "command_capture_ready": false,
+      "queued_events": 0,
+      "dropped_events": 0,
+      "error": null
+    }
+  },
+  "after": {
+    "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+    "backend_generation": 1,
+    "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+    "recording": {
+      "status": "IDLE",
+      "episode_id": null,
+      "recording_segment_id": null,
+      "command_capture_ready": false,
+      "queued_events": 0,
+      "dropped_events": 0,
+      "error": null
+    }
+  },
+  "unchanged": true
+}

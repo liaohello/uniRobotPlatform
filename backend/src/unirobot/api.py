@@ -32,7 +32,9 @@ from .runtime import (
     RunNotFound,
     TaskNotFound,
 )
-from .settings import ALLOW_LAUNCH, CONFIG_PATH
+from .mobilecar import MobileCarIntegration
+from .drafts import CreateDraft, CreateSession, DraftConflict, DraftNotFound, DraftStore, SaveDraft, ValidateDraft
+from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -45,7 +47,7 @@ def _catalog(request: Request) -> Catalog:
     return request.app.state.catalog
 
 
-def create_app(catalog_path: str | Path | None = None) -> FastAPI:
+def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | None = None) -> FastAPI:
     path = Path(catalog_path) if catalog_path else CONFIG_PATH
 
     catalog = load_catalog(path)
@@ -70,6 +72,8 @@ def create_app(catalog_path: str | Path | None = None) -> FastAPI:
     application.state.catalog = catalog
     application.state.adapters = adapters
     application.state.manager = manager
+    application.state.mobilecar_integration = MobileCarIntegration(catalog.adapters.get("mobilecar"))
+    application.state.drafts = DraftStore(draft_db_path or DRAFT_DB_PATH, application.state.mobilecar_integration)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -89,6 +93,44 @@ def create_app(catalog_path: str | Path | None = None) -> FastAPI:
             "active_runs": manager.active_count(),
             "adapters": {item.adapter_id: item.state.value for item in statuses},
         }
+
+    @application.get("/api/v1/mobilecar/preflight")
+    def mobilecar_preflight(request: Request) -> dict[str, Any]:
+        return request.app.state.mobilecar_integration.check()
+
+    @application.exception_handler(DraftNotFound)
+    async def missing_draft(request: Request, exc: DraftNotFound):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=404, content={"detail": {"code": "draft_not_found", "message": "Draft not found"}})
+
+    @application.exception_handler(DraftConflict)
+    async def stale_draft(request: Request, exc: DraftConflict):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=409, content={"detail": {"code": "conflict", "message": str(exc)}})
+
+    @application.get("/api/v1/experiment-drafts")
+    def list_drafts(request: Request) -> list[dict]:
+        return request.app.state.drafts.list()
+
+    @application.post("/api/v1/experiment-drafts", status_code=201)
+    def create_draft(spec: CreateDraft, request: Request) -> dict:
+        return request.app.state.drafts.create(spec)
+
+    @application.get("/api/v1/experiment-drafts/{draft_id}")
+    def get_draft(draft_id: str, request: Request) -> dict:
+        return request.app.state.drafts.get(draft_id)
+
+    @application.put("/api/v1/experiment-drafts/{draft_id}")
+    def save_draft(draft_id: str, spec: SaveDraft, request: Request) -> dict:
+        return request.app.state.drafts.save(draft_id, spec)
+
+    @application.post("/api/v1/experiment-drafts/{draft_id}/validate")
+    def validate_draft(draft_id: str, spec: ValidateDraft, request: Request) -> dict:
+        return request.app.state.drafts.validate(draft_id, spec)
+
+    @application.post("/api/v1/sessions")
+    def create_session(spec: CreateSession) -> dict:
+        raise HTTPException(status_code=409, detail={"code": "unsupported", "message": "Native Session binding and explicit Start are not implemented; no validated snapshot or Session was created"})
 
     @application.get("/api/v1/platform", response_model=PlatformSummary)
     def platform(request: Request) -> PlatformSummary:

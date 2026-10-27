@@ -1,0 +1,17 @@
+{
+  "pinned_native_commit": "a5cef52d932ba41424b4bcc134539914031fda39",
+  "pinned_manifest_sha256": "a01098040d953608004a34b3c76519d7884eaa4b2c95e36822bd4e7d283b911c",
+  "deployed_release": "drvfix-20261019T044549Z-0a80415b2577",
+  "compared_files": 155,
+  "changed_files": [
+    "AGENTS.md",
+    "assets/landerpi/source_description/urdf/mecanum.xacro",
+    "src/mobilecar/backends/modelgen/model/__init__.py",
+    "src/mobilecar/backends/modelgen/model/source.py",
+    "src/mobilecar/backends/mujoco/backend.py",
+    "src/mobilecar/ui/static/g4a2.html",
+    "src/mobilecar/ui/static/g4a2.js"
+  ],
+  "missing_files": [],
+  "full_content_match": false
+}

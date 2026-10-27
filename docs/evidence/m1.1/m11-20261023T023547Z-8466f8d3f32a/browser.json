@@ -1,0 +1,184 @@
+{
+  "status": "passed",
+  "checks": [
+    "live_native_read_only_and_disabled_session_actions",
+    "synthetic_compatible_fields_do_not_enable_session_or_parse_html",
+    "failed_refresh_clears_old_identity_and_results",
+    "two_host_mounts_have_independent_state",
+    "browser_sent_get_requests_only",
+    "mobile_layout_has_no_horizontal_overflow"
+  ],
+  "native_preflight": {
+    "schema_version": "mobilecar-integration-1",
+    "task_id": "mobilecar.g1.teleop",
+    "checked_at": "2026-10-23T02:37:37+00:00",
+    "read_only": true,
+    "session_ready": false,
+    "read_contract_compatible": false,
+    "verification_scope": "Only the checked fields of four native GET responses; not full scene/config/assets or deployed-source verification",
+    "transport": "online",
+    "runtime_identity": {
+      "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354"
+    },
+    "native_resource_identity": {
+      "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+      "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+      "scene_id": "mobile_pick",
+      "backend_kind": "mujoco",
+      "interface_profile": "g4a1-1.0"
+    },
+    "recording": {
+      "status": "IDLE",
+      "command_capture_ready": false,
+      "recording_segment_id": null
+    },
+    "preset": {
+      "preset_id": "mobilecar.g1.teleop",
+      "native_commit": "a5cef52d932ba41424b4bcc134539914031fda39",
+      "manifest_sha256": "a01098040d953608004a34b3c76519d7884eaa4b2c95e36822bd4e7d283b911c",
+      "recipe": {
+        "argv": [
+          ".venv/bin/mobilecar",
+          "--config",
+          "configs/default.yaml",
+          "--backend",
+          "mujoco",
+          "--require-recording"
+        ],
+        "env": {
+          "MUJOCO_GL": "egl"
+        },
+        "config_path": "configs/default.yaml",
+        "effective_overrides": {
+          "backend.kind": "mujoco",
+          "recording.required_for_motion": true
+        },
+        "execution_location": "server_only",
+        "editable_initial_state_fields": [],
+        "execution_sources": [
+          "human_teleop"
+        ],
+        "policy_observation": null,
+        "recording_profile": "configs/profiles/g2a_rgbd_5hz.yaml",
+        "action_profile": "configs/profiles/g2a_action_teleop_v1.yaml"
+      },
+      "expected": {
+        "contract_version": "mobilecar-1.0",
+        "backend_kind": "mujoco",
+        "interface_profile": "g2a-1.0",
+        "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+        "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+        "scene_id": "mobile_pick",
+        "scene_content_sha256": "f94c2c1971b73df9bcaf771306a951e4f6b061c7a1af006bf7826658ccbb204a",
+        "commands": [
+          "set_base_twist",
+          "zero_base",
+          "set_arm_joint_goal",
+          "set_gripper_width_goal",
+          "stop",
+          "reset",
+          "heartbeat"
+        ],
+        "sensor_streams": [
+          "rgb",
+          "depth",
+          "imu",
+          "encoders",
+          "joint_feedback",
+          "lidar",
+          "image_transforms"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "key": "/api/v1/health",
+        "status": "passed",
+        "detail": "Read-only response received and required fields checked"
+      },
+      {
+        "key": "/api/v1/capabilities",
+        "status": "passed",
+        "detail": "Read-only response received and required fields checked"
+      },
+      {
+        "key": "/api/v1/scene",
+        "status": "passed",
+        "detail": "Read-only response received and required fields checked"
+      },
+      {
+        "key": "/api/v1/snapshot",
+        "status": "passed",
+        "detail": "Read-only response received and required fields checked"
+      },
+      {
+        "key": "runtime_identity",
+        "status": "passed",
+        "detail": "health and snapshot must name the same run/generation/episode; recheck after a reset or restart"
+      },
+      {
+        "key": "model_id",
+        "status": "passed",
+        "detail": "capabilities=landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a; scene=landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a; expected model_id=landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a"
+      },
+      {
+        "key": "model_sha256",
+        "status": "passed",
+        "detail": "capabilities=3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280; scene=3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280; expected model_sha256=3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280"
+      },
+      {
+        "key": "scene_id",
+        "status": "passed",
+        "detail": "capabilities=mobile_pick; scene=mobile_pick; expected scene_id=mobile_pick"
+      },
+      {
+        "key": "backend_kind",
+        "status": "passed",
+        "detail": "The physical M1 preset requires the MuJoCo backend; mock is insufficient"
+      },
+      {
+        "key": "interface_profile",
+        "status": "failed",
+        "detail": "Native interface profile=g4a1-1.0; expected=g2a-1.0"
+      },
+      {
+        "key": "recording_gate",
+        "status": "passed",
+        "detail": "The selected recipe must require recording before motion"
+      },
+      {
+        "key": "human_commands",
+        "status": "passed",
+        "detail": "Native must declare the preset's human control and safety commands"
+      },
+      {
+        "key": "declared_streams",
+        "status": "passed",
+        "detail": "Checks advertised stream support only; fresh persisted samples are not verified"
+      },
+      {
+        "key": "deployed_source_and_config",
+        "status": "not_checked",
+        "detail": "Native HTTP does not attest the full source/config/asset manifest; local pin is expected content only"
+      },
+      {
+        "key": "prepared_session_and_start",
+        "status": "unsupported",
+        "detail": "Pinned native protocol has no non-motion Session binding and explicit Start; episodes/start performs RESET and recording"
+      },
+      {
+        "key": "recording_reset_applied",
+        "status": "unsupported",
+        "detail": "Native start accepts RESET RECEIVED/DISPATCHED before taking the initial snapshot; applied identity needs confirmation"
+      },
+      {
+        "key": "parking_receipt",
+        "status": "unsupported",
+        "detail": "Native stop finalizes after parking feedback or timeout without a separate parking result in its response"
+      }
+    ]
+  },
+  "synthetic_cases_are_product_acceptance": false
+}

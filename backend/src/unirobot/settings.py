@@ -26,3 +26,4 @@ MIGRATION_MANIFEST = BACKEND_ROOT / "migration_manifest.json"
 
 ALLOW_LAUNCH = os.environ.get("UNIROBOT_ALLOW_LAUNCH", "0") == "1"
 PROBE_TIMEOUT_S = float(os.environ.get("UNIROBOT_PROBE_TIMEOUT", "0.6"))
+DRAFT_DB_PATH = Path(os.environ.get("UNIROBOT_DRAFT_DB", BACKEND_ROOT / "var" / "drafts.sqlite3")).expanduser()
