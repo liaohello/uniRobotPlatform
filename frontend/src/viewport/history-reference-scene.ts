@@ -32,6 +32,9 @@ export interface ReferenceInspect {
   assetFailures: string[]; pendingLoads: number; camera: { distance: number; azimuthDeg: number; polarDeg: number; target: number[] };
   lifecycle: { created: boolean; disposed: boolean; active: boolean; renders: number };
   attribution: PoseAttribution; worldPositions: Record<string, number[]>;
+  /** The same positions converted back into the record's own world_sim axes, so a rendered body can be
+   *  compared with `base_position_world_sim_m` / `tcp_position_world_m` instead of with our own numbers. */
+  worldPositionsSim: Record<string, number[]>; tcpPositionSim: number[] | null;
 }
 export interface HistoryPoseInput {
   sample: string; joints: Record<string, number>;
@@ -171,6 +174,20 @@ export class HistoryReferenceScene extends SceneView {
     return group.getWorldPosition(new THREE.Vector3()).toArray();
   }
 
+  /** A body's rendered position expressed back in world_sim, through the render root's own transform.
+   *  That conversion is the only place where the ±90° axis mapping could hide an error, so the acceptance
+   *  compares this against the record's vector rather than trusting the mapping. */
+  worldSimPosition(name: string): number[] | null {
+    const group = this.linkGroups.get(name)?.group ?? this.worldGroups.get(name)?.group;
+    if (!group) return null;
+    return this.mujocoRoot.worldToLocal(group.getWorldPosition(new THREE.Vector3())).toArray();
+  }
+
+  tcpWorldSimPosition(): number[] | null {
+    if (!this.tcpMarker?.visible) return null;
+    return this.mujocoRoot.worldToLocal(this.tcpMarker.getWorldPosition(new THREE.Vector3())).toArray();
+  }
+
   /** The same three standard views the live workbench offers; only the camera moves. */
   standardView(view: 'front' | 'side' | 'top'): void {
     if (this.disposed) return;
@@ -199,6 +216,10 @@ export class HistoryReferenceScene extends SceneView {
       worldPositions: Object.fromEntries(['base_link', 'link5', 'gripper_link']
         .map((name) => [name, this.linkWorldPosition(name)])
         .filter((entry): entry is [string, number[]] => entry[1] !== null)),
+      worldPositionsSim: Object.fromEntries(['base_link', 'link5', 'gripper_link']
+        .map((name) => [name, this.worldSimPosition(name)])
+        .filter((entry): entry is [string, number[]] => entry[1] !== null)),
+      tcpPositionSim: this.tcpWorldSimPosition(),
     };
   }
 
