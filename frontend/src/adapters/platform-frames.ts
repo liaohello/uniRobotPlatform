@@ -79,7 +79,7 @@ export interface FrameRecorderDeclaredDto {
 }
 export interface FrameTimesDto {
   quantities: FrameQuantityDto[]; recorder_declared?: FrameRecorderDeclaredDto | null;
-  semantics_rule?: string; state_time_quantity_keys?: string[];
+  semantics_rule?: string; state_time_quantity_keys?: string[]; sim_time_quantity_keys?: string[];
   removed_in_this_version?: Record<string, string> | string | null;
   same_clock_verified: boolean;
 }
@@ -103,7 +103,7 @@ export interface FramePagingDto {
   anchor_lines?: FrameAnchorLinesDto; scan?: { whole_file_scanned?: boolean; stopped_after_full_page_at_line_index?: number | null; note?: string };
 }
 export interface FrameVersionMigrationDto {
-  from_schema?: string; to_schema?: string; changed?: string[];
+  from_schema?: string; to_schema?: string; changed?: string[]; corrections?: string[];
   removed_fields?: Record<string, string>; compatibility_note?: string;
 }
 export interface FrameClockSamenessDto {
@@ -344,19 +344,28 @@ export function stateQuantityKeysOf(frame: FrameDto | null): string {
   const keys = frame?.times?.state_time_quantity_keys ?? [];
   return keys.length ? `${keys.join(' / ')}（这三个量各自独立显示，不合并成单一“年龄”）` : 'reader 未声明 state 相关时间量清单';
 }
+/** M1.5e splits the simulator-time quantity in two: the payload's own stamp and the event envelope's
+ *  stamp are different records, and the payload quantity is absent rather than filled from the
+ *  envelope. The list is the reader's, so an absent key is reported as absent. */
+export function simQuantityKeysOf(frame: FrameDto | null): string {
+  const keys = frame?.times?.sim_time_quantity_keys ?? [];
+  return keys.length ? `${keys.join(' / ')}（负载量与信封量各一条，缺就是缺，不互相回填）` : 'reader 未声明 sim 时间量清单（本版无该键）';
+}
 export function timeSemanticsText(frame: FrameDto | null): string {
   const parts = [frame?.times?.semantics_rule ? `规则：${frame.times.semantics_rule}` : '',
     frame?.times?.removed_in_this_version ? `本版移除字段：${JSON.stringify(frame.times.removed_in_this_version)}` : '',
     `same_clock_verified=${text(frame?.times?.same_clock_verified)}`].filter(Boolean);
   return parts.join(' ｜ ');
 }
-export function versionMigrationText(page: FramePageDto | null): { head: string; changed: string[]; removed: string[]; note: string } {
+export function versionMigrationText(page: FramePageDto | null): { head: string; changed: string[]; removed: string[]; corrections: string[]; note: string } {
   const m = page?.version_migration;
-  if (!m) return { head: 'reader 未返回 version_migration。', changed: [], removed: [], note: '' };
+  if (!m) return { head: 'reader 未返回 version_migration。', changed: [], removed: [], corrections: [], note: '' };
   return {
     head: `${text(m.from_schema)} → ${text(m.to_schema)}`,
     changed: m.changed ?? [],
     removed: Object.entries(m.removed_fields ?? {}).map(([key, why]) => `${key}：${why}`),
+    // M1.5e keeps the schema at frame-link-2 and records its labelling fix here instead.
+    corrections: m.corrections ?? [],
     note: m.compatibility_note ?? '',
   };
 }

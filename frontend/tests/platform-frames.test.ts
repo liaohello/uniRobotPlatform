@@ -4,7 +4,7 @@ import {
   FRAME_LINK_SCHEMA, ambiguousRoleCount, clockSamenessText, frameAutoLoadRef, frameBoundaryNotice, frameMediaRefs,
   framePageExplanation, framePageKind, frameSelectableBases, frameStopNote, frameWindowGate, linkageScopeText,
   mediaDeclarationText, provenanceRowsOf, quantityRowsOf, readFramesPage, recorderDeclaredOf, roleCoverageText,
-  roleRowsOf, selectionRulesText, stateQuantityKeysOf, stateRowsOf, stateSelectionOf, statusPrecedenceText,
+  roleRowsOf, selectionRulesText, simQuantityKeysOf, stateQuantityKeysOf, stateRowsOf, stateSelectionOf, statusPrecedenceText,
   timeSemanticsText, versionMigrationText,
   type FrameDto, type FramePageDto,
 } from '../src/adapters/platform-frames';
@@ -393,5 +393,32 @@ describe('provenance and boundaries', () => {
     expect(text).toContain('the native build or release that wrote the archive');
     expect(text).toContain('synchronized_upgraded_by_numeric_closeness=false');
     expect(clockSamenessText(null)).toContain('未声明 clock_sameness');
+  });
+});
+
+describe('M1.5e time-source split and recorded corrections', () => {
+  const SIM_KEYS = ['state_sim_time_minus_frame_capture_sim_time', 'state_event_envelope_sim_time_minus_frame_capture_sim_time'];
+  it('names both simulator-time quantities as the reader separates them', () => {
+    const frame = frameFixture({ times: { ...frameFixture().times, sim_time_quantity_keys: SIM_KEYS } });
+    const text = simQuantityKeysOf(frame);
+    expect(text).toContain('state_sim_time_minus_frame_capture_sim_time');
+    expect(text).toContain('state_event_envelope_sim_time_minus_frame_capture_sim_time');
+    expect(text).toContain('负载量与信封量各一条，缺就是缺，不互相回填');
+  });
+  it('says the key list is absent instead of inventing one', () => {
+    expect(simQuantityKeysOf(frameFixture())).toContain('reader 未声明 sim 时间量清单');
+    expect(simQuantityKeysOf(null)).toContain('reader 未声明 sim 时间量清单');
+  });
+  it('renders version_migration.corrections as the reader wrote them', () => {
+    const corrections = [
+      'state_sim_time_minus_frame_capture_sim_time now names only the state feedback PAYLOAD stamp and is absent when the payload carries no numeric sim_time_s',
+      'the envelope’s own simulator time is a separate quantity, state_event_envelope_sim_time_minus_frame_capture_sim_time',
+      'no quantity is ever filled from another record: absence is reported as absence',
+    ];
+    const page = pageFixture({ version_migration: { ...pageFixture().version_migration!, corrections } });
+    const migration = versionMigrationText(page);
+    expect(migration.corrections).toEqual(corrections);
+    expect(migration.head).toContain('unirobot-mobilecar-frame-link-1');
+    expect(versionMigrationText(pageFixture()).corrections).toEqual([]);
   });
 });

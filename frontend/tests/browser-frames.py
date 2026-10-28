@@ -39,6 +39,13 @@ SOURCE_ID = 'mobilecar-server-history-20261017'
 FRAME_SCHEMA = 'unirobot-mobilecar-frame-link-2'
 POSE_SCHEMA = 'unirobot-mobilecar-history-pose-1'
 GEOMETRY_SCHEMA = 'unirobot-mobilecar-geometry-2'
+# The identity fields the assembled tree is bound to: the record and the bundle agree on all four, and
+# a synthetic case can break exactly one of them to prove the binding is what stops the assembly.
+BUNDLE_ID = '2' * 64
+CONTENT_ID = 'c' * 64
+MODEL_INPUTS_ID = 'i' * 64
+COMPILED_ID = 's' * 64
+WORLD_LINK_NAMES = ['world_static', 'target_cube']
 READ_SCHEMA = 'unirobot-mobilecar-episode-read-1'
 REFUSAL = '<html>Only allowlisted platform endpoints are exposed</html>'
 
@@ -98,6 +105,21 @@ async def wait_model(page, status, timeout=60000):
     except PlaywrightTimeoutError:
         actual = await page.evaluate("()=>{const p=document.querySelector('[data-model-pane]');return [p?.getAttribute('data-model-status')??'absent',(p?.querySelector('[data-model-stage]')?.innerText??'').slice(0,300)]}")
         raise AssertionError(f'model pane never reached {status!r}; it stayed {actual[0]!r} · {actual[1]}')
+
+
+async def wait_model_quiet(page, attempts=15):
+    """Sample the surface until the last mesh has landed and the camera stopped moving: the deferred
+    fit-to-extents is allowed once, at assembly, and must not be confused with a frame step."""
+    previous = None
+    for _ in range(attempts):
+        await page.locator('[data-model-inspect]').click()
+        state = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+        current = (json.dumps(state['camera'], sort_keys=True), state['pendingLoads'], state['assetFailures'])
+        if state['pendingLoads'] == 0 and state['assetFailures'] == [] and current == previous:
+            return state
+        previous = current
+        await page.wait_for_timeout(400)
+    raise AssertionError(f'the reference view never settled on loads {previous[1]} / failures {previous[2]}')
 
 
 async def read_direct(page, path, params=None):
@@ -181,11 +203,21 @@ def page_attrs(page):
         quantityKeys:q('[data-quantity-row]','data-quantity-row'),quantityAbs:q('[data-quantity-row]','data-quantity-abs-ms'),
         mediaFields:q('[data-frame-media-ref]','data-media-field'),mediaAvailability:q('[data-frame-media-ref]','data-media-availability'),
         mediaRowLines:q('[data-frame-media-ref]','data-media-row-lines'),provenance:q('[data-provenance-row]','data-provenance-row'),
-        modelStatus:g('[data-model-pane]','data-model-status'),modelSample:g('[data-model-pane]','data-model-sample'),
+        modelStatus:g('[data-model-pane]','data-model-status'),modelRequested:g('[data-model-pane]','data-model-requested-sample'),
+        modelDisplayed:g('[data-model-pane]','data-model-displayed-sample'),modelAttribution:g('[data-model-pane]','data-model-attribution'),
         modelEpisode:g('[data-model-pane]','data-model-episode'),modelFramePose:g('[data-model-pane]','data-frame-pose-verified'),
+        modelBase:g('[data-model-pane]','data-model-base-applied'),modelTcp:g('[data-model-pane]','data-model-tcp-applied'),
+        modelJoints:g('[data-model-pane]','data-model-joints-applied'),modelRootHeight:g('[data-model-pane]','data-model-root-height'),
+        modelCompiledRoot:g('[data-model-pane]','data-model-compiled-root-height'),
         modelDrive:g('[data-model-drive-summary]','data-model-drive-summary'),modelStage:g('[data-model-stage]','data-model-stage'),
         modelWithheld:g('[data-model-withheld-count]','data-model-withheld-count'),mappingStatuses:q('[data-mapping-row]','data-mapping-status'),
-        mappingDrivable:q('[data-mapping-row]','data-mapping-drivable'),mappingTargets:q('[data-mapping-row]','data-mapping-row'),
+        partCaps:q('[data-part-row]','data-part-row'),partStatuses:q('[data-part-row]','data-part-status'),partDrivable:q('[data-part-row]','data-part-drivable'),
+        fkVerdicts:q('[data-fk-row]','data-fk-verdict'),fkCheck:g('[data-fk-check]','data-fk-check'),
+        treeFields:q('[data-tree-binding-row]','data-tree-binding-row'),treeEqual:q('[data-tree-binding-row]','data-tree-binding-equal'),
+        simKeys:g('[data-sim-quantity-keys]','data-sim-quantity-keys'),
+        corrections:[...document.querySelectorAll('[data-frame-correction]')].map(e=>e.innerText),
+        displayedSamples:q('[data-frame-displayed-sample]','data-frame-displayed-sample'),
+        mappingTargets:q('[data-mapping-row]','data-mapping-row'),
         comparisonEqual:q('[data-comparison-row]','data-comparison-equal'),assetEqual:q('[data-asset-row]','data-asset-equal'),
         assetReads:q('[data-asset-row]','data-asset-read'),assetIds:q('[data-asset-row]','data-asset-row'),
         canvas:document.querySelectorAll('canvas').length,modelCanvas:document.querySelectorAll('[data-model-canvas-host] canvas').length,
@@ -214,6 +246,13 @@ async def real_flow(page):
           view['migrationFrom'] == 'unirobot-mobilecar-frame-link-1' and view['migrationTo'] == FRAME_SCHEMA
           and 'age_of_state_relative_to_frame' in view['text']
           and 'not the same contract' in await page.locator('[data-frame-version-migration]').inner_text(), view['migrationFrom'])
+    check('the M1.5e time-source split and its recorded corrections are shown as the reader states them',
+          'state_sim_time_minus_frame_capture_sim_time' in view['simKeys']
+          and 'state_event_envelope_sim_time_minus_frame_capture_sim_time' in view['simKeys']
+          and '负载量与信封量各一条，缺就是缺，不互相回填' in view['simKeys']
+          and len(view['corrections']) == len(direct['version_migration']['corrections']) >= 1
+          and any('PAYLOAD' in line for line in view['corrections'])
+          and set(direct['frames'][0]['times']['sim_time_quantity_keys']) == set(SIM_KEYS), (view['simKeys'], view['corrections']))
     first = direct['frames'][0]
     paging = direct['paging']
     check('the corrected pagination is reported with the lines actually read and no total anywhere',
@@ -328,24 +367,118 @@ async def real_flow(page):
     check('the reference view reads robot-state for the selected frame and checks its identity back',
           pose['schema_version'] == POSE_SCHEMA and pose['frame']['sample_id'] == first['sample_id']
           and pose['frame']['linkage_schema'] == FRAME_SCHEMA and model['modelStatus'] == 'ready'
-          and model['modelSample'] == first['sample_id']
-          and all(first['sample_id'] in r['url'] for r in pose_reads[-1:]), (model['modelStatus'], pose_reads[-1:]))
-    check('the nine mapping rows are shown with the reader’s own statuses, and none is fully verified',
-          len(model['mappingStatuses']) == 9
-          and model['mappingStatuses'].count('partially_verified') == 1 and model['mappingStatuses'].count('unverified') == 4
-          and model['mappingStatuses'].count('missing') == 2 and model['mappingStatuses'].count('not_required_for_pose') == 2
-          and model['mappingStatuses'].count('verified') == 0
+          and model['modelDisplayed'] == first['sample_id'] and model['modelRequested'] == first['sample_id']
+          and model['modelAttribution'] == 'matched'
+          and all(first['sample_id'] in r['url'] for r in pose_reads[-1:]), (model['modelAttribution'], pose_reads[-1:]))
+    check('the ten mapping rows carry the reader’s own statuses and four of them are verified',
+          len(model['mappingStatuses']) == 10 and model['mappingStatuses'].count('verified') == 4
+          and model['mappingStatuses'].count('unverified') == 1 and model['mappingStatuses'].count('missing') == 3
+          and model['mappingStatuses'].count('not_required_for_pose') == 2
           and pose['pose_readiness']['mapped_targets_partially_or_fully_verified'] in model['modelText'], model['mappingStatuses'])
-    arm = model['mappingTargets'].index('arm_joint_positions')
-    check('the partially verified arm mapping does not drive the model, so the pose stays the reference pose',
-          model['mappingStatuses'][arm] == 'partially_verified' and model['mappingDrivable'][arm] == 'false'
-          and '已驱动 0 个关节值' in model['modelDrive'] and '保持固定参考' in model['modelText']
-          and model['modelFramePose'] == 'false' and '固定模型参考；所选帧姿态尚未验证' in model['modelText'], model['modelDrive'])
-    check('the whole robot is not claimed rebuildable and every missing part keeps its own gap',
+    check('the readiness gate drives the arm, the chassis and the TCP point on the real record',
+          model['partCaps'] == PART_CAPS and model['partStatuses'] == ['ready', 'ready_with_caveats', 'ready_with_caveats', 'conditional', 'ready_with_caveats', 'blocked', 'blocked', 'blocked', 'not_required']
+          and model['modelJoints'] == '5' and model['modelBase'] == 'true' and model['modelTcp'] == 'true'
+          and int(model['modelWithheld']) == 5 and model['modelFramePose'] == 'true'
+          and '本帧历史姿态（按部件门控）' in model['modelText'], (model['partStatuses'], model['modelDrive']))
+    await page.locator('[data-model-inspect]').click()
+    posed = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+    recorded = pose['state']['recorded_payload']
+    check('the driven joint values are the recorded model radians verbatim, with no user-zero step',
+          posed['selectedJointDriven'] == {name: value for name, value in zip(pose['model_resource']['arm_hinge_joints'], recorded['arm_model_qpos_rad'])}
+          and posed['selectedJointDriven']['joint4'] == recorded['arm_model_qpos_rad'][3]
+          and abs(posed['selectedJointDriven']['joint4'] - (recorded['arm_model_qpos_rad'][3] - (-1.5707963267948966))) > 1.0
+          and pose['model_vs_user_angles']['conversion_is_required_for_drawing'] is False, posed['selectedJointDriven'])
+    check('the chassis is placed at the recorded world pose and the compiled root offset is not re-added',
+          abs(float(model['modelRootHeight']) - recorded['base_position_world_sim_m'][2]) < 1e-12
+          and abs(float(model['modelRootHeight']) - (recorded['base_position_world_sim_m'][2] + pose['model_resource']['root_joint']['local_position_m'][2])) > 0.05
+          and abs(float(model['modelCompiledRoot']) - float(model['modelRootHeight'])) > 1e-9, (model['modelRootHeight'], model['modelCompiledRoot']))
+    fk = pose['tcp_kinematic_cross_check']
+    check('the TCP point is the recorded position and the reader’s same-frame FK error is shown with its tolerance owner',
+          fk['verdict'] == 'consistent' and fk['abs_error_m'] < fk['consistency_tolerance_m']
+          and f"abs_error_m={fk['abs_error_m']}" in model['fkCheck'] and f"容差={fk['consistency_tolerance_m']}" in model['fkCheck']
+          and 'not a calibration limit' in model['fkCheck']
+          and json.loads(model['fkCheck'].split('记录 TCP=')[1].split(' ·')[0]) == recorded['tcp_position_world_m']
+          and 'inconsistent' in model['fkVerdicts'], (model['fkCheck'][:200], fk['abs_error_m']))
+    check('the withheld parts keep their own limits and never claim a whole-robot rebuild',
           'robot_state_can_be_rebuilt_without_assumptions=false' in model['modelText']
-          and 'no attested rule turns the recorded width into jaw joint values' in model['modelText']
+          and 'whole_robot_pose_rebuildable=false' in model['modelText']
+          and 'nothing in the record or bundle attests them' in model['modelText']
           and 'no historical position is recorded for dynamic scene objects' in model['modelText']
-          and '不伪造动态物体位姿' in model['modelText'] and 'no live geometry or Actual substitution' in model['modelText'], model['modelText'][-300:])
+          and 'no TCP orientation is recorded and the reference declares none' in model['modelText']
+          and 'writer_identified=false' in model['modelText'] and 'uncalibrated' in model['modelText']
+          and '不伪造动态物体位姿' in model['modelText'] and 'no live geometry or Actual substitution' in model['modelText']
+          # The reader separates "kinematics agree" from "hardware is calibrated": the second is a limit, not a result.
+          and 'no calibration claim' in model['modelText']
+          and fk['verdict'] == 'consistent' and 'consistent' in model['modelText'], model['modelText'][-400:])
+    check('the assembled tree is bound to the record by content identity, not only by mesh digests',
+          set(model['treeEqual']) == {'true'} and {'bundle_sha256', 'content_identity_sha256', 'model_inputs_sha256', 'compiled_scene_sha256',
+                                                  'link_count', 'arm_hinge_joints'} <= set(model['treeFields'])
+          and model['comparisonEqual'] == ['true'] * 4
+          and model['assetEqual'] == ['true'] * len(pose['model_resource']['assets']), model['treeFields'])
+
+    # ---- real multi-frame pose linkage: the picture must follow the record, frame by frame ----
+    distinct, seen_values = [], set()
+    for candidate in direct['frames']:
+        state = (candidate.get('state') or {}).get('recorded_state') or {}
+        signature = (tuple(round(value, 6) for value in state.get('arm_model_qpos_rad') or []),
+                     tuple(round(value, 6) for value in state.get('base_position_world_sim_m') or []))
+        if signature in seen_values:
+            continue
+        seen_values.add(signature)
+        distinct.append(candidate)
+    check('the page really carries several frames with different chassis and joint values',
+          len(distinct) >= 3, [len(distinct), len(direct['frames'])])
+    observations = []
+    for position, candidate in enumerate(distinct[:3]):
+        await page.locator(f'[data-frame-pick="{candidate["sample_id"]}"]').click()
+        await wait_model(page, 'ready')
+        await page.wait_for_function(f"()=>(document.querySelector('[data-model-pane]')?.getAttribute('data-model-displayed-sample') ?? '')==='{candidate['sample_id']}'", timeout=60000)
+        await page.locator('[data-model-inspect]').click()
+        state = (candidate.get('state') or {}).get('recorded_state') or {}
+        shown = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+        attrs = await page_attrs(page)
+        observations.append({'sample': candidate['sample_id'], 'camera': shown['camera'], 'links': shown['links'],
+                             'joints': shown['selectedJointDriven'], 'base': shown['attribution']['rootHeightWorldSimM'],
+                             'baseVector': tuple(state['base_position_world_sim_m']), 'armVector': tuple(state['arm_model_qpos_rad']),
+                             'tip': shown['worldPositions'].get('gripper_link') or shown['worldPositions'].get('link5') or [], 'attrs': attrs})
+        check(f'frame {position + 1} binds the pose, the numbers and the image to its own sample',
+              shown['attribution']['displayedSample'] == candidate['sample_id']
+              and shown['selectedJointDriven'] == {name: value for name, value in zip(pose['model_resource']['arm_hinge_joints'], state['arm_model_qpos_rad'])}
+              and abs(float(attrs['modelRootHeight']) - state['base_position_world_sim_m'][2]) < 1e-12
+              and attrs['currentSample'] == candidate['sample_id'] and attrs['assetUri'] == candidate['media']['items'][0]['uri']
+              and candidate['sample_id'] in attrs['displayedSamples'][0], (shown['attribution'], attrs['modelRootHeight']))
+        await page.screenshot(path=str(a.output / f'pose-{candidate["sample_id"][:12]}.png'), full_page=False)
+    # Movement is judged from what the record actually varies: these frames differ in the chassis by
+    # microns, so the claim is "distinct recorded values render as distinct", not "moved by > X mm".
+    arm_variants = {item['armVector'] for item in observations}
+    base_variants = {item['baseVector'] for item in observations}
+    moved = [(x, y) for x in range(len(observations)) for y in range(x + 1, len(observations))
+             if observations[x]['armVector'] != observations[y]['armVector']]
+    tip_gap = lambda p, q: sum((a - b) ** 2 for a, b in zip(p, q)) ** 0.5
+    check('the rendered picture follows the record: distinct chassis values render at distinct heights and a distinct arm value moves the tip',
+          len(base_variants) == len(observations) and len({item['base'] for item in observations}) == len(observations)
+          and all(observations[0]['base'] != item['base'] for item in observations[1:])
+          and all(tip_gap(observations[x]['tip'], observations[y]['tip']) > 1e-12 for x, y in moved)
+          and all(item['links'] == observations[0]['links'] for item in observations)
+          and all(len(item['tip']) == 3 for item in observations),
+          {'bases': [item['base'] for item in observations], 'arm_variants': len(arm_variants), 'moved_pairs': len(moved)})
+    check('stepping frames never resets the camera or rebuilds the tree',
+          all(abs(item['camera']['distance'] - observations[0]['camera']['distance']) < 1e-6
+              and abs(item['camera']['azimuthDeg'] - observations[0]['camera']['azimuthDeg']) < 1e-6
+              and abs(item['camera']['polarDeg'] - observations[0]['camera']['polarDeg']) < 1e-6 for item in observations)
+          and all(item['links'] == observations[0]['links'] for item in observations), [item['camera'] for item in observations])
+    report['real']['pose_linkage'] = {'frames': [item['sample'] for item in observations],
+                                      'root_heights': [item['base'] for item in observations],
+                                      'recorded_base_vectors': [list(item['baseVector']) for item in observations],
+                                      'joint_sets': [item['joints'] for item in observations],
+                                      'arm_value_variants': len(arm_variants), 'chassis_variants': len(base_variants),
+                                      'arm_moved_pairs': len(moved),
+                                      'tip_positions': [item['tip'] for item in observations],
+                                      'fk_abs_error_m': fk['abs_error_m'], 'fk_tolerance_m': fk['consistency_tolerance_m'],
+                                      'fk_tolerance_authority': fk['tolerance_authority'],
+                                      'camera_kept': observations[0]['camera']}
+    await page.locator('[data-frame-pick]').first.click()
+    await wait_model(page, 'ready')
     check('the run manifest and the frozen bundle agree on all four identity fields',
           model['comparisonEqual'] == ['true'] * 4 and all(row['equal'] for row in pose['model_resource']['comparison'].values()), model['comparisonEqual'])
     check('every mesh asset of the bundle is present in the history manifest with an equal digest',
@@ -373,7 +506,7 @@ async def real_flow(page):
     check('stepping inside the page moves the cursor, rebinds the image and re-reads that frame’s state',
           moved_last['index'] == str(len(direct['frames']) - 1) and moved_last['currentSample'] == last['sample_id']
           and moved_last['assetUri'] == next(item for item in last['media']['items'] if item['field'] == 'rgb_uri')['uri']
-          and moved_last['modelSample'] == last['sample_id'], (moved_last['index'], moved_last['modelSample']))
+          and moved_last['modelDisplayed'] == last['sample_id'], (moved_last['index'], moved_last['modelDisplayed']))
     second = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/frames', {'run_id': a.complete_run, 'limit': 5, 'offset': paging['next_offset']})
     await page.locator('[data-frame-next]').click()
     await wait_frames(page, f"()=>(document.querySelector('[data-frame-offset]')?.getAttribute('data-frame-offset') ?? '')==='{paging['next_offset']}'")
@@ -501,6 +634,9 @@ QUANTITIES = [
     {'key': 'state_sim_time_minus_frame_capture_sim_time', 'source_record': 'events state feedback payload', 'field': 'sim_time_s',
      'relative_to': 'persisted frame capture_sim_time_s', 'unit': 's', 'clock': 'sim', 'meaning': 'simulator-time separation, a different clock',
      'capture_value': 1.0, 'other_value': 1.0, 'value': 0.0, 'abs_ms': 0.0, 'direction': 'equal', 'line_index': 7},
+    {'key': 'state_event_envelope_sim_time_minus_frame_capture_sim_time', 'source_record': 'events state feedback envelope', 'field': 'sim_time_s',
+     'relative_to': 'persisted frame capture_sim_time_s', 'unit': 's', 'clock': 'sim', 'meaning': "the envelope's own simulator time, a separate record from the payload stamp",
+     'capture_value': 1.0, 'other_value': 1.0, 'value': 0.0, 'abs_ms': 0.0, 'direction': 'equal', 'line_index': 7},
     {'key': 'persist_minus_capture', 'source_record': 'persisted frame', 'field': 'persist_backend_monotonic_s', 'relative_to': 'its own capture clock',
      'unit': 's', 'clock': 'named backend_monotonic by the record', 'meaning': 'the recorder’s own capture-to-disk latency',
      'capture_value': 100.0, 'other_value': 100.1, 'value': 0.1, 'abs_ms': 100.0, 'direction': 'later', 'line_index': 0},
@@ -517,6 +653,11 @@ STATUS_MEANING = {'matched': 'every record the role requires was found by its re
                   'ambiguous_kind': 'a sensor_kind the role requires was recorded more than once for the same frame key',
                   'ambiguous_candidates': 'more than one record claimed this role’s key, so no single record can be reported'}
 ROLE_KEYS = ['image_observation', 'camera_transform', 'capture_timing_event', 'state_feedback_event', 'feedback_observation_row']
+# M1.5e splits the simulator-time quantity in two and records the labelling fix as `corrections`.
+SIM_KEYS = ['state_sim_time_minus_frame_capture_sim_time', 'state_event_envelope_sim_time_minus_frame_capture_sim_time']
+CORRECTIONS = ['state_sim_time_minus_frame_capture_sim_time now names only the state feedback PAYLOAD stamp and is absent when the payload carries no numeric sim_time_s; earlier builds of this version silently filled it from the event envelope while still labelling the payload as the source',
+               'the envelope’s own simulator time is a separate quantity, state_event_envelope_sim_time_minus_frame_capture_sim_time',
+               'no quantity is ever filled from another record: absence is reported as absence']
 ARM_RAD = [0.01, 0.02, 0.03, -1.57, 0.05]
 
 
@@ -566,6 +707,7 @@ def frame_payload(sample, **patch):
                   'note': 'the state the recorder placed on the frame’s capture tick'},
         'times': {'quantities': QUANTITIES, 'semantics_rule': 'each quantity is one named subtraction of two recorded fields',
                   'state_time_quantity_keys': ['state_event_write_minus_frame_capture', 'state_payload_feedback_time_minus_frame_capture', 'recorder_declared_feedback_time_minus_frame_capture'],
+                  'sim_time_quantity_keys': SIM_KEYS,
                   'recorder_declared': {'fields': {'observation_age_ms': 30.0, 'capture_to_persist_ms': 100.0},
                                         'observation_age_ms_note': 'observation_age_ms is capture-to-arrival, not the difference between a state sample and the capture',
                                         'recomputed_arrival_minus_capture_ms': 30.0, 'agrees_with_recomputation': True},
@@ -633,6 +775,7 @@ def frames_payload(episode, frames, **patch):
             'frames': frames,
             'not_proven': ['rendered 3D replay', 'a cross-stream or cross-episode replay cursor', 'that two records naming the same clock base were stamped by one writer'],
             'version_migration': {'from_schema': 'unirobot-mobilecar-frame-link-1', 'to_schema': FRAME_SCHEMA,
+                                  'corrections': CORRECTIONS,
                                   'changed': ['paging.has_more is decided by finding the next qualifying anchor line'],
                                   'removed_fields': {'times.age_of_state_relative_to_frame': 'it merged the state event’s write stamp with the state sample stamps'},
                                   'compatibility_note': 'consumers must read schema_version: frame-link-1 and frame-link-2 pages are not the same contract'},
@@ -643,34 +786,87 @@ def frames_payload(episode, frames, **patch):
     return base
 
 
-def geometry_payload():
+def geometry_payload(content_identity=CONTENT_ID, bundle_sha=BUNDLE_ID, arm_order=None, world_link_count=1):
+    """The frozen placement tree the pane assembles from, with the identity fields the record is bound by.
+
+    `arm_order` and `content_identity` let a synthetic case keep every mesh digest identical while the
+    tree itself differs — the case mesh digests alone cannot catch."""
+    order = arm_order or ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
+    links = [{'name': 'base_link', 'parent_name': None, 'joint_name': 'base_free', 'joint_type': 'free', 'joint_axis': [0.0, 0.0, 1.0],
+              'local_transform': {'position_m': [0.0, 0.0, 0.055], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
+              'geoms': [{'name': 'base_vis', 'geom_type': 'box', 'size_m': [0.09, 0.05, 0.02],
+                         'local_transform': {'position_m': [0.0, 0.0, 0.0], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
+                         'rgba': [0.3, 0.4, 0.5, 1.0], 'mesh_asset_id': None, 'collision': False, 'group': 0}]}]
+    parent = 'base_link'
+    for index, joint in enumerate(order):
+        links.append({'name': f'{joint}_link', 'parent_name': parent, 'joint_name': joint, 'joint_type': 'hinge', 'joint_axis': [0.0, 0.0, 1.0],
+                      'local_transform': {'position_m': [0.0, 0.0, 0.1], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
+                      'geoms': [{'name': f'{joint}_mesh', 'geom_type': 'mesh', 'size_m': [1.0, 1.0, 1.0],
+                                 'local_transform': {'position_m': [0.0, 0.0, 0.0], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
+                                 'rgba': [0.6, 0.2, 0.2, 1.0], 'mesh_asset_id': 'link1', 'collision': False, 'group': 0}]})
+        parent = f'{joint}_link'
+    world_links = [{'name': name, 'parent_name': None, 'joint_name': None, 'joint_type': 'fixed', 'joint_axis': [0.0, 0.0, 1.0],
+                    'local_transform': {'position_m': [0.4, 0.0, 0.03], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
+                    'geoms': [{'name': f'{name}_vis', 'geom_type': 'box', 'size_m': [0.03, 0.03, 0.03],
+                               'local_transform': {'position_m': [0.0, 0.0, 0.0], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
+                               'rgba': [0.9, 0.8, 0.1, 1.0], 'mesh_asset_id': None, 'collision': False, 'group': 0}]}
+                   for name in WORLD_LINK_NAMES[:world_link_count]]
     return {'schema_version': GEOMETRY_SCHEMA, 'read_only': True, 'data_source': 'live_native_http_with_verified_compiled_geometry',
             'world_pose_semantics': 'compiled_initial_layout_not_live_object_state', 'retrieved_at': '2026-01-01T00:00:00Z',
             'resource_identity': {'contract_version': 'mobilecar-1.0', 'model_id': 'fixture_model', 'model_sha256': 'm' * 64, 'scene_id': 'fixture_scene'},
             'runtime_identity': {'run_id': 'run_fixture', 'backend_generation': 1, 'episode_id': 'episode_fixture'},
+            'geometry_binding': {'bundle_sha256': bundle_sha, 'content_identity_sha256': content_identity,
+                                 'exported_runtime_identity': {'run_id': 'run_fixture', 'backend_generation': 1, 'episode_id': 'episode_fixture'}},
+            'geometry_provenance': {'model_inputs_sha256': MODEL_INPUTS_ID, 'compiled_scene_sha256': COMPILED_ID, 'compiler': 'MuJoCo', 'compiler_version': '3.1.6'},
             'data': {'contract_version': 'mobilecar-1.0', 'model_id': 'fixture_model', 'model_sha256': 'm' * 64, 'scene_id': 'fixture_scene',
-                     'camera_ids': ['rgbd'], 'tcp_site': 'grasp_tcp', 'source': 'fixture',
-                     'links': [{'name': 'base_link', 'parent_name': None, 'joint_name': 'base_free', 'joint_type': 'free', 'joint_axis': [0.0, 0.0, 1.0],
-                                'local_transform': {'position_m': [0.0, 0.0, 0.055], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                                'geoms': [{'name': 'base_vis', 'geom_type': 'box', 'size_m': [0.09, 0.05, 0.02],
-                                           'local_transform': {'position_m': [0.0, 0.0, 0.0], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                                           'rgba': [0.3, 0.4, 0.5, 1.0], 'mesh_asset_id': None, 'collision': False, 'group': 0}]},
-                               {'name': 'link1', 'parent_name': 'base_link', 'joint_name': 'joint1', 'joint_type': 'hinge', 'joint_axis': [0.0, 0.0, 1.0],
-                                'local_transform': {'position_m': [0.0, 0.0, 0.1], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                                'geoms': [{'name': 'link1_mesh', 'geom_type': 'mesh', 'size_m': [1.0, 1.0, 1.0],
-                                           'local_transform': {'position_m': [0.0, 0.0, 0.0], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                                           'rgba': [0.6, 0.2, 0.2, 1.0], 'mesh_asset_id': 'link1', 'collision': False, 'group': 0}]}],
-                     'world_links': [{'name': 'target_cube', 'parent_name': None, 'joint_name': None, 'joint_type': 'fixed', 'joint_axis': [0.0, 0.0, 1.0],
-                                      'local_transform': {'position_m': [0.4, 0.0, 0.03], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                                      'geoms': [{'name': 'cube_vis', 'geom_type': 'box', 'size_m': [0.03, 0.03, 0.03],
-                                                 'local_transform': {'position_m': [0.0, 0.0, 0.0], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                                                 'rgba': [0.9, 0.8, 0.1, 1.0], 'mesh_asset_id': None, 'collision': False, 'group': 0}]}],
+                     'camera_ids': ['rgbd'], 'tcp_site': 'grasp_tcp', 'source': 'fixture', 'links': links, 'world_links': world_links,
                      'mesh_assets': [{'asset_id': 'link1', 'uri': f'/api/v1/mobilecar/scene/assets/link1?sha256={STL_SHA}', 'sha256': STL_SHA,
                                       'media_type': 'model/stl', 'coordinate_space': 'mujoco_compiled_mesh', 'units': 'm',
                                       'mesh_preprocessing_applied': True, 'source_sha256': 's' * 64, 'source_mesh_name': 'link1.stl'}]}}
 
 
-def mapping_fixture(arm_status='partially_verified'):
+def mapping_fixture(arm_status='partially_verified', mode='legacy'):
+    """`legacy` copies the 18969 answer (nothing verified); `m15e` copies the 18970 answer, where the
+    arm joints, the base pose and the TCP site are verified with their own stated basis."""
+    if mode == 'm15e':
+        return [
+            {'target': 'arm_joint_positions', 'recorded_field': 'arm_model_qpos_rad', 'recorded_unit': 'rad', 'recorded_length': 5,
+             'target_field': 'bundle hinge joints joint1, joint2, joint3, joint4, joint5', 'status': 'verified',
+             'verified_basis': ['the recorded TCP position is reproduced from these five values through the frozen tree', 'the source chain addresses the joints by name'],
+             'draw_source': 'model radians, applied directly to the hinge joints', 'requires_user_angle_conversion': False,
+             'evidence': {'bundle_arm_hinge_joints_in_document_order': ['joint1', 'joint2', 'joint3', 'joint4', 'joint5'], 'positions_are_model_radians_not_user_radians': True},
+             'no_default_applied': True, 'gap': 'index 0, 1, 2 and 4 are mapped through the source order chain; a per-index record attestation exists only at index 3'},
+            {'target': 'base_position', 'recorded_field': 'base_position_world_sim_m', 'recorded_unit': 'm', 'recorded_length': 3,
+             'target_field': 'bundle root link base_link free joint base_free', 'status': 'verified',
+             'verified_basis': ['reproducing the recorded TCP position requires the base pose to be the base body’s world pose; the alternative convention is off by exactly the base body offset'],
+             'evidence': {'bundle_root_joint': {'name': 'base_link', 'joint_name': 'base_free', 'joint_type': 'free', 'local_position_m': [0.0, 0.0, 0.055]}},
+             'no_default_applied': True, 'gap': 'the MuJoCo quantity behind the field is declared in native source that cannot be tied to a single writer build; the kinematic cross-check is reported separately'},
+            {'target': 'base_orientation', 'recorded_field': 'base_quaternion_xyzw', 'recorded_unit': 'unit quaternion', 'recorded_length': 4,
+             'target_field': 'bundle transforms declare orientation as xyzw', 'status': 'verified',
+             'verified_basis': ['the recorded TCP position is reproduced with this quaternion read in xyzw order'], 'evidence': {}, 'no_default_applied': True,
+             'gap': 'the component order is labelled consistently and declared in native source, but no record-side attestation ties this archive to that writer'},
+            {'target': 'gripper_joints', 'recorded_field': 'gripper_width_m', 'recorded_unit': 'm', 'recorded_length': 1,
+             'target_field': 'bundle slide joints left_jaw_joint, right_jaw_joint', 'status': 'unverified', 'evidence': {}, 'no_default_applied': True,
+             'gap': 'turning the recorded width into jaw and drive joint values needs the platform\'s declared gripper constants accepted as authoritative; nothing in the record or bundle attests them'},
+            {'target': 'tcp_site_position', 'recorded_field': 'tcp_position_world_m', 'recorded_unit': 'm', 'recorded_length': 3,
+             'target_field': 'bundle tcp_site grasp_tcp on body guide_rod_link', 'status': 'verified',
+             'verified_basis': ['the recomputed site position matches the recorded one within the stated tolerance'], 'evidence': {'the_site_is_not_a_link_in_the_bundle': True},
+             'no_default_applied': True, 'gap': 'the site offset lives in the platform reference config, not in the frozen bundle or the record; the cross-check reports how well that attachment reproduces the recorded position'},
+            {'target': 'tcp_site_orientation', 'recorded_field': None, 'recorded_unit': None, 'recorded_length': None, 'target_field': None,
+             'status': 'missing', 'evidence': {}, 'no_default_applied': True, 'gap': 'no TCP orientation is recorded and the reference declares none'},
+            {'target': 'camera_extrinsics', 'recorded_field': None, 'recorded_unit': None, 'recorded_length': None,
+             'target_field': 'bundle camera link chain depth_cam_link', 'status': 'missing', 'evidence': {}, 'no_default_applied': True,
+             'gap': 'no recorded camera calibration, and the declared mount body is not rigid to the TCP'},
+            {'target': 'wheel_joint_velocities', 'recorded_field': 'wheel_velocity_rad_s', 'recorded_unit': 'rad/s', 'recorded_length': 4,
+             'target_field': None, 'status': 'not_required_for_pose', 'evidence': {}, 'no_default_applied': True,
+             'gap': 'the four wheel values carry no per-wheel identity; a static pose does not need them'},
+            {'target': 'base_twist', 'recorded_field': 'base_twist_body_m_s', 'recorded_unit': 'm/s or rad/s', 'recorded_length': 3,
+             'target_field': None, 'status': 'not_required_for_pose', 'evidence': {}, 'no_default_applied': True,
+             'gap': 'component meaning is not recorded and a static pose does not need it'},
+            {'target': 'dynamic_scene_objects', 'recorded_field': None, 'recorded_unit': None, 'recorded_length': None,
+             'target_field': 'bundle world links world_static, target_cube', 'status': 'missing', 'evidence': {}, 'no_default_applied': True,
+             'gap': 'no historical position is recorded for dynamic scene objects, so they cannot be placed from the record'},
+        ]
     return [{'target': 'arm_joint_positions', 'recorded_field': 'arm_model_qpos_rad', 'recorded_unit': 'rad', 'recorded_length': 5,
              'target_field': 'bundle hinge joints joint1, joint2, joint3, joint4, joint5', 'status': arm_status,
              'evidence': {'bundle_arm_hinge_joints_in_document_order': ['joint1', 'joint2', 'joint3', 'joint4', 'joint5'], 'positions_are_model_radians_not_user_radians': True},
@@ -702,7 +898,67 @@ def mapping_fixture(arm_status='partially_verified'):
              'gap': 'no historical position is recorded for dynamic scene objects, so they cannot be placed from the record'}]
 
 
-def pose_payload(episode, sample, **patch):
+def part_readiness_fixture(tcp_position, arm_count=5):
+    """The nine capabilities exactly as the 18970 candidate reports them — rules and gaps verbatim, with
+    only the counts scaled to this fixture's six-link tree."""
+    part = lambda capability, status, **extra: {'capability': capability, 'status': status, 'requires': ['fixture requirement'],
+                                                'pose_input_required': True, 'frontend_rule': f'rule for {capability}', 'gaps': [], **extra}
+    return {'part_readiness': [
+        part('fixed_model_reference_assembly', 'ready', pose_input_required=False,
+             inputs_available={'identity': 'match', 'asset_count': 1, 'link_count': 6,
+                               'asset_routes': 'GET /api/v1/episodes/{episode_id}/model/assets/{asset_id}'},
+             frontend_rule='the frozen model may be assembled and shown for any frame of this Episode once the identity matches; a whole-robot pose gap never blocks this assembly'),
+        part('arm_local_pose', 'ready_with_caveats',
+             inputs_available={'recorded_length': arm_count, 'bundle_joints': ['joint1', 'joint2', 'joint3', 'joint4', 'joint5'], 'draw_in_model_radians': True},
+             frontend_rule='apply the recorded five values directly to the five arm hinges in model radians; do not convert through user angles to draw, and do not claim an axis is exercised unless the samples actually move it',
+             gaps=['the writer is narrowed to the 2026-10-17 release family but not identified', 'per-index record attestation exists only at index 3']),
+        part('base_pose_placement', 'ready_with_caveats', inputs_available={'position_length': 3, 'quaternion_length': 4},
+             frontend_rule='the base may be placed only with the caveat shown beside it: the field\'s meaning comes from native source that is not bound to an identified writer build; if the kinematic cross-check disagrees, do not place the base',
+             gaps=['the MuJoCo quantity behind the field is declared in native source that cannot be tied to a single writer build; the kinematic cross-check is reported separately']),
+        part('gripper_visual_appearance', 'conditional',
+             inputs_available={'recorded_scalar': True, 'platform_constants': {'min_width_m': 0.012000038000000005, 'max_width_m': 0.05,
+                                                                              'zero_width_m': 0.025, 'zero_model_rad': -1.077632656580025,
+                                                                              'width_per_drive_rad_m': 0.023199}},
+             frontend_rule='the jaws may be posed only from the platform reference constants, which declare themselves not native-attested; otherwise keep the jaws at the bundle\'s own layout and label the gripper as not-from-record',
+             gaps=['turning the recorded width into jaw and drive joint values needs the platform\'s declared gripper constants accepted as authoritative; nothing in the record or bundle attests them']),
+        part('tcp_position_marker', 'ready_with_caveats',
+             inputs_available={'recorded_position': 3, 'computed_position': [value + 1e-14 for value in tcp_position], 'abs_error_m': 1.6454e-14},
+             frontend_rule='a point marker is allowed; it must not be drawn as an oriented frame because no TCP orientation is recorded',
+             gaps=['the site offset lives in the platform reference config, not in the frozen bundle or the record; the cross-check reports how well that attachment reproduces the recorded position']),
+        part('tcp_orientation_frame', 'blocked', inputs_available={'recorded': False},
+             frontend_rule='do not synthesise an oriented TCP frame',
+             gaps=['no TCP orientation is recorded and the reference declares none']),
+        part('camera_view_from_record', 'blocked',
+             inputs_available={'recorded_calibration': False, 'declared_mount': {'parent_body': 'link4', 'status': 'source_topology_not_rigid_to_tcp'}},
+             frontend_rule='an image plane or a viewer-placed camera is allowed; a record-derived camera pose is not',
+             gaps=['no recorded camera calibration, and the declared mount body is not rigid to the TCP']),
+        part('dynamic_scene_objects_from_record', 'blocked', inputs_available={'recorded': False},
+             frontend_rule='keep world objects at the bundle’s compiled initial layout and label that layout as not the historical state',
+             gaps=['no historical position is recorded for dynamic scene objects, so they cannot be placed from the record']),
+        part('wheel_pose_from_record', 'not_required', inputs_available={'unlabelled_velocity_count': 4},
+             frontend_rule='wheel angles are not needed to place the robot for this slice',
+             gaps=['the four wheel values carry no per-wheel identity; a static pose does not need them'])],
+        'part_status_meaning': {'ready': 'the inputs, the fixed resources and the mapping rule are all present and consistent',
+                                'ready_with_caveats': 'usable now, with the named limits stated beside it',
+                                'conditional': 'usable only if the consumer accepts the named unattested assumption and shows it',
+                                'blocked': 'a required input or attestation is absent, so this part must not be drawn from the record',
+                                'not_required': 'this part is not needed to place the robot'}}
+
+
+def fk_fixture(tcp_position, supported=('recorded_pose_is_base_body_world_pose',)):
+    """The reader's own same-frame forward-kinematics answer, including the convention it excluded."""
+    return {'status': 'computed', 'method': 'pure forward kinematics over the frozen bundle tree',
+            'recorded_tcp_position_m': tcp_position, 'computed_tcp_position_m': [value + 1e-14 for value in tcp_position],
+            'abs_error_m': 1.6454e-14, 'verdict': 'consistent', 'consistency_tolerance_m': 0.005,
+            'tolerance_authority': 'stated by this slice to judge kinematic agreement; it is not a calibration limit and not a contract threshold',
+            'supported_hypotheses': list(supported), 'chain_links': ['base_link', 'joint1_link'],
+            'hypotheses': [{'hypothesis': 'recorded_pose_is_base_body_world_pose', 'status': 'computed',
+                            'computed_tcp_position_m': [value + 1e-14 for value in tcp_position], 'abs_error_m': 1.6454e-14, 'verdict': 'consistent'},
+                           {'hypothesis': 'recorded_pose_needs_the_bundle_base_offset', 'status': 'computed',
+                            'computed_tcp_position_m': [tcp_position[0], tcp_position[1], tcp_position[2] + 0.055], 'abs_error_m': 0.0556, 'verdict': 'inconsistent'}]}
+
+
+def pose_payload(episode, sample, mode='m15e', **patch):
     value = {'schema_version': POSE_SCHEMA, 'read_only': True, 'source': SOURCE_FIXTURE, 'retrieved_at': '2026-01-01T00:00:00Z',
              'identity': {'run_id': 'run_a', 'episode_id': episode, 'recorded_run_manifest': {'contract_version': 'mobilecar-1.0', 'model_sha256': 'm' * 64},
                           'identity_source': 'the run manifest the recorder itself wrote, copied verbatim'},
@@ -716,7 +972,7 @@ def pose_payload(episode, sample, **patch):
                                             'base_quaternion_xyzw': [0.0, 0.0, 0.0, 1.0], 'base_twist_body_m_s': [0.0, 0.0, 0.0]},
                        'declared_reference': {'feedback_sample_id': 'joint_feedback_1', 'row_status': 'unresolved_reference'}, 'units': {'*_rad': 'radians'}},
              'time': {'quantities': QUANTITIES, 'state_time_quantity_keys': ['state_event_write_minus_frame_capture']},
-             'mapping': mapping_fixture(),
+             'mapping': mapping_fixture(mode='legacy' if mode == 'legacy' else 'm15e'),
              'status_meaning': {'verified': 'the record and the fixed bundle agree on this mapping, and nothing had to be assumed',
                                 'partially_verified': 'some parts of the mapping are attested; the attested indexes or fields are named here',
                                 'unverified': 'the value is recorded, but its frame, order, sign or convention is not attested by the record or the bundle',
@@ -731,8 +987,14 @@ def pose_payload(episode, sample, **patch):
                                                                   'model_id': {'recorded': 'fixture_model', 'bundle': 'fixture_model', 'equal': True},
                                                                   'model_sha256': {'recorded': 'm' * 64, 'bundle': 'm' * 64, 'equal': True},
                                                                   'scene_id': {'recorded': 'fixture_scene', 'bundle': 'fixture_scene', 'equal': True}},
-                                'bundle_sha256': '2' * 64, 'content_identity_sha256': 'c' * 64, 'compiler': {'name': 'MuJoCo', 'version': '3.1.6'},
-                                'link_count': 2, 'tcp_site': 'grasp_tcp', 'camera_ids': ['rgbd'],
+                                'bundle_sha256': BUNDLE_ID, 'content_identity_sha256': CONTENT_ID, 'compiler': {'name': 'MuJoCo', 'version': '3.1.6'},
+                                'model_inputs_sha256': MODEL_INPUTS_ID, 'compiled_scene_sha256': COMPILED_ID,
+                                'link_count': 6, 'tcp_site': 'grasp_tcp', 'camera_ids': ['rgbd'],
+                                'root_joint': {'name': 'base_link', 'parent_name': None, 'joint_name': 'base_free', 'joint_type': 'free',
+                                               'joint_axis': [0.0, 0.0, 1.0], 'local_position_m': [0.0, 0.0, 0.055], 'local_orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
+                                'tcp_parent_body_view': {'name': 'joint5_link', 'joint_type': 'fixed'},
+                                'world_links': [{'name': name, 'geom_types': ['box']} for name in WORLD_LINK_NAMES],
+                                'link_frames': "each link's local_transform is the model body offset relative to its parent body",
                                 'arm_hinge_joints': ['joint1', 'joint2', 'joint3', 'joint4', 'joint5'], 'gripper_slide_joints': ['left_jaw_joint', 'right_jaw_joint'],
                                 'wheel_hinge_joints': ['front_left_joint'], 'assets': [{'asset_id': 'link1', 'sha256': STL_SHA, 'media_type': 'model/stl',
                                                                                         'coordinate_space': 'mujoco_compiled_mesh', 'units': 'm', 'bytes': len(STL)}],
@@ -742,7 +1004,39 @@ def pose_payload(episode, sample, **patch):
              'not_proven': [{'target': 'base_position', 'status': 'unverified', 'gap': 'the body origin, frame and z convention is not attested'},
                             {'target': 'dynamic_scene_objects', 'status': 'missing', 'gap': 'no historical position is recorded for dynamic scene objects'}],
              'capability_limits': ['no replay execution', 'no live geometry or Actual substitution', 'no fabricated dynamic object pose',
-                                   'no control, RESET, recording or physics stepping']}
+                                   'no calibration claim', 'no control, RESET, recording or physics stepping']}
+    if mode != 'legacy':
+        tcp = value['state']['recorded_payload']['tcp_position_world_m']
+        value['not_proven'] = [
+            {'target': 'gripper_joints', 'status': 'unverified',
+             'gap': 'turning the recorded width into jaw and drive joint values needs the platform\'s declared gripper constants accepted as authoritative; nothing in the record or bundle attests them'},
+            {'target': 'tcp_site_orientation', 'status': 'missing', 'gap': 'no TCP orientation is recorded and the reference declares none'},
+            {'target': 'camera_extrinsics', 'status': 'missing', 'gap': 'no recorded camera calibration, and the declared mount body is not rigid to the TCP'},
+            {'target': 'dynamic_scene_objects', 'status': 'missing', 'gap': 'no historical position is recorded for dynamic scene objects, so they cannot be placed from the record'}]
+        value['pose_readiness']['blocking_fields'] = ['gripper_joints', 'tcp_site_orientation', 'camera_extrinsics', 'dynamic_scene_objects']
+        value.update(part_readiness_fixture(tcp))
+        value.update({'capability_summary': {'usable_now': ['fixed_model_reference_assembly', 'arm_local_pose', 'base_pose_placement', 'tcp_position_marker'],
+                                             'usable_only_with_the_named_caveat': ['gripper_visual_appearance'],
+                                             'blocked': ['tcp_orientation_frame', 'camera_view_from_record', 'dynamic_scene_objects_from_record'],
+                                             'fixed_model_assembly_available': True, 'whole_robot_pose_rebuildable': False,
+                                             'escalation_forbidden': 'a usable part never upgrades into whole-robot rebuild, rendering or synchronised replay',
+                                             'defaults_forbidden': 'no part may be filled with an assumed value',
+                                             'kinematic_agreement': 'consistent', 'abs_tcp_error_m': 1.6454e-14},
+                      'tcp_kinematic_cross_check': fk_fixture(tcp),
+                      'version_binding': {'reference_source': 'native working tree at commit a5cef52 (dirty)', 'chain_verified_in_reference_source': True,
+                                          'writer_identified': False, 'record_carries_no': ['native release id', 'build id', 'git commit'],
+                                          'conclusion': 'narrows the writer to that release family; it does not identify a single build'},
+                      'model_vs_user_angles': {'render_source': 'arm_model_qpos_rad applied to the bundle hinge joints, in model radians, with no conversion step',
+                                               'conversion_is_required_for_drawing': False,
+                                               'user_angle_formula': {'q_user': 'q_user = (q_model - zero_model_rad) / user_direction',
+                                                                      'zero_model_rad': [0.0, 0.0, 0.0, -1.5707963267948966, 0.0],
+                                                                      'user_direction': [1, 1, 1, 1, 1], 'used_for': 'user-facing display and limit comparison only'},
+                                               'zero_pose_authority': {'zero_status': 'user_defined_photo_pose_not_hardware_500', 'calibration_session': 'uncalibrated',
+                                                                       'authority': 'platform_reference_not_native_attested'}},
+                      'pose_readiness': {**value['pose_readiness'], 'mapped_targets_partially_or_fully_verified': '4/10',
+                                         'parts_ready': ['fixed_model_reference_assembly'], 'parts_conditional': ['gripper_visual_appearance'],
+                                         'parts_blocked': ['tcp_orientation_frame', 'camera_view_from_record', 'dynamic_scene_objects_from_record'],
+                                         'kinematic_agreement': 'consistent'}})
     value.update(patch)
     return value
 
@@ -793,7 +1087,20 @@ SLOW = {'frame': 'idle', 'pose': 'idle'}
 SYNTH_EPISODES = ['episode_ok', 'episode_no_frames', 'episode_bad_frame_schema', 'episode_bad_sample', 'episode_no_time_bases',
                   'episode_media_gaps', 'episode_state_missing', 'episode_ambiguous', 'episode_state_ambiguous',
                   'episode_pose_verified', 'episode_pose_identity_mismatch', 'episode_pose_asset_mismatch',
-                  'episode_pose_missing', 'episode_pose_bad_schema', 'episode_pose_late', 'episode_asset_conflict']
+                  'episode_pose_missing', 'episode_pose_bad_schema', 'episode_pose_late', 'episode_asset_conflict',
+                  'episode_no_part_readiness', 'episode_zero_angles', 'episode_no_world_pose_convention',
+                  'episode_tree_identity', 'episode_link_order_swap', 'episode_pose_order_swap', 'episode_no_sim_keys']
+# The placement tree is one read per Episode and carries no episode in its URL, so a case that needs a
+# different tree sets this explicitly before it switches Episodes — no ordering race inside the fixture.
+SCENE = {'content_identity': CONTENT_ID, 'arm_order': None}
+# The nine capabilities, in the order the reader lists them on 18970.
+PART_CAPS = ['fixed_model_reference_assembly', 'arm_local_pose', 'base_pose_placement', 'gripper_visual_appearance', 'tcp_position_marker',
+             'tcp_orientation_frame', 'camera_view_from_record', 'dynamic_scene_objects_from_record', 'wheel_pose_from_record']
+
+
+def set_scene_variant(content_identity=CONTENT_ID, arm_order=None):
+    SCENE['content_identity'] = content_identity
+    SCENE['arm_order'] = arm_order
 
 
 def ambiguous_frame(sample='rgbd_ambiguous'):
@@ -848,8 +1155,33 @@ async def synthetic_handler(route):
             await asyncio.sleep(2.4)
             SLOW['pose'] = 'done'
         sample = (query.get('sample_id') or [''])[0]
+        if episode == 'episode_ok' and sample == 'rgbd_2':
+            # A deliberately slow answer for the frame the attribution check switches to, so "the old
+            # pose is hidden while this frame is in flight" is an observable window, not a race.
+            await asyncio.sleep(1.2)
+        if episode == 'episode_no_part_readiness':
+            # The 18969 answer: a verified-looking mapping with no per-capability readiness at all.
+            await route.fulfill(json=pose_payload(episode, sample, mode='legacy')); return
         if episode == 'episode_pose_verified':
-            await route.fulfill(json=pose_payload(episode, sample, mapping=mapping_fixture('verified'))); return
+            await route.fulfill(json=pose_payload(episode, sample, mode='legacy', mapping=mapping_fixture('verified'))); return
+        if episode == 'episode_zero_angles':
+            payload = pose_payload(episode, sample)
+            payload['state']['recorded_payload']['arm_model_qpos_rad'] = [0.0, 0.0, 0.0, 0.0, 0.0]
+            await route.fulfill(json=payload); return
+        if episode == 'episode_no_world_pose_convention':
+            payload = pose_payload(episode, sample)
+            payload['tcp_kinematic_cross_check']['supported_hypotheses'] = []
+            await route.fulfill(json=payload); return
+        if episode == 'episode_state_ambiguous':
+            # The same frame the frame page calls ambiguous: two state records claim its key, so the
+            # reader selects none — the tree still assembles, but no recorded value may pose it.
+            payload = pose_payload(episode, sample)
+            payload['state'] = {**payload['state'], 'linkage_status': 'ambiguous_candidates', 'recorded_payload': None,
+                                'single_state_selected': False, 'candidate_records': 2,
+                                'multiple_candidates_note': 'two records claim this frame’s key, so no single record can be reported',
+                                'candidates': [{'line_index': 7, 'record_position': 'events.jsonl#7', 'payload': {}},
+                                               {'line_index': 8, 'record_position': 'events.jsonl#8', 'payload': {}}]}
+            await route.fulfill(json=payload); return
         if episode == 'episode_pose_identity_mismatch':
             payload = pose_payload(episode, sample)
             payload['model_resource']['comparison']['model_sha256'] = {'recorded': 'm' * 64, 'bundle': 'other', 'equal': False}
@@ -892,6 +1224,15 @@ async def synthetic_handler(route):
                                                                          scan={'whole_file_scanned': True, 'stopped_after_full_page_at_line_index': None,
                                                                                'note': 'the file was read past the last qualifying anchor'}),
                                           'time': {**empty['time'], 'selected_time_base': (query.get('time_base') or [''])[0], 'time_from': 1.0, 'time_to': 2.0}}); return
+        if episode == 'episode_no_sim_keys':
+            # The 18969 answer: only the payload's own sim quantity existed, the split key list and the
+            # corrections list did not exist at all.
+            legacy_page = frames_payload(episode, [frame_payload('rgbd_legacy_time')])
+            frame = legacy_page['frames'][0]
+            legacy_rows = [row for row in frame['times']['quantities'] if row['key'] != SIM_KEYS[1]]
+            legacy_page['version_migration'] = {key: value for key, value in legacy_page['version_migration'].items() if key != 'corrections'}
+            await route.fulfill(json={**legacy_page, 'frames': [{**frame, 'times': {key: (legacy_rows if key == 'quantities' else value)
+                                                                                   for key, value in frame['times'].items() if key != 'sim_time_quantity_keys'}}]}); return
         if episode == 'episode_no_time_bases':
             payload = frames_payload(episode, [frame_payload('rgbd_empty_bases')])
             payload['time'] = {**payload['time'], 'selectable_time_bases': []}
@@ -969,8 +1310,9 @@ async def synthetic_handler(route):
 
 async def scene_handler(route):
     """The placement tree is a platform-side read; in synthetic mode it is a fixture too, so this suite
-    never needs a live robot to exercise the reference assembly."""
-    await route.fulfill(json=geometry_payload())
+    never needs a live robot to exercise the assembly, the identity binding and the pose drive."""
+    await route.fulfill(json=geometry_payload(content_identity=SCENE['content_identity'], arm_order=SCENE['arm_order'],
+                                              world_link_count=len(WORLD_LINK_NAMES)))
 
 
 async def synthetic_flow(page):
@@ -982,37 +1324,113 @@ async def synthetic_flow(page):
           and view['migrationTo'] == FRAME_SCHEMA and view['primaryMatched'] == '|'.join(ROLE_KEYS[:4]))
     check('the three state stamps stay separate rows and the removed age is named as removed',
           {'state_event_write_minus_frame_capture', 'state_payload_feedback_time_minus_frame_capture', 'recorder_declared_feedback_time_minus_frame_capture',
-           'state_sim_time_minus_frame_capture_sim_time', 'persist_minus_capture', 'observation_arrival_minus_frame_capture'} == set(view['quantityKeys'])
+           'state_sim_time_minus_frame_capture_sim_time', 'state_event_envelope_sim_time_minus_frame_capture_sim_time', 'persist_minus_capture', 'observation_arrival_minus_frame_capture'} == set(view['quantityKeys'])
           and 'age_of_state_relative_to_frame' in await page.locator('[data-time-semantics]').inner_text()
           # String(3.0) in JS is '3': the fixture values are shown in the reader's own numeric form.
           and '3' in view['quantityAbs'] and '4' in view['quantityAbs'], view['quantityKeys'])
+    # The split sim keys and the recorded labelling fix are the reader's own words, not the interface's.
+    check('the M1.5e sim-time split and the recorded corrections are shown from the reader’s own keys',
+          all(key in view['simKeys'] for key in SIM_KEYS) and '负载量与信封量各一条，缺就是缺，不互相回填' in view['simKeys']
+          and len(view['corrections']) == len(CORRECTIONS)
+          and all(line in ' '.join(view['corrections']) for line in CORRECTIONS), (view['simKeys'], view['corrections'][:1]))
     await wait_model(page, 'ready')
     model = await page_attrs(page)
-    check('the fixed reference assembles from the bundle tree with history bytes and an unverified pose',
-          model['modelStatus'] == 'ready' and model['modelCanvas'] == 1
-          and '固定模型参考；所选帧姿态尚未验证' in model['modelText'] and model['modelFramePose'] == 'false'
-          and model['comparisonEqual'] == ['true'] * 4, model['modelStatus'])
-    check('a partially verified mapping drives nothing and keeps the reference pose',
-          '已驱动 0 个关节值' in model['modelDrive'] and model['mappingDrivable'] == ['false'] * 9
-          and model['mappingStatuses'] == ['partially_verified'] + ['unverified'] * 4 + ['missing'] + ['not_required_for_pose'] * 2 + ['missing']
-          and int(model['modelWithheld']) == 9, (model['mappingStatuses'], model['modelWithheld']))
+    check('the tree assembles from the frozen bundle with history bytes and a pose attributable to the frame',
+          model['modelStatus'] == 'ready' and model['modelCanvas'] == 1 and model['modelAttribution'] == 'matched'
+          and model['modelDisplayed'] == model['modelRequested'] and model['modelFramePose'] == 'true'
+          and model['comparisonEqual'] == ['true'] * 4 and set(model['treeEqual']) == {'true'}
+          and '本帧历史姿态（按部件门控）' in model['modelText'], (model['modelAttribution'], model['treeFields']))
+    check('the readiness gate drives the arm, the chassis and the TCP point and withholds the rest by name',
+          model['partCaps'] == PART_CAPS and model['partDrivable'] == ['true', 'true', 'true', 'false', 'true', 'false', 'false', 'false', 'false']
+          and model['partStatuses'] == ['ready', 'ready_with_caveats', 'ready_with_caveats', 'conditional', 'ready_with_caveats', 'blocked', 'blocked', 'blocked', 'not_required']
+          and model['modelJoints'] == '5' and model['modelBase'] == 'true' and model['modelTcp'] == 'true'
+          and int(model['modelWithheld']) == 5 and '不默认开启' in model['modelText'], (model['partStatuses'], model['modelWithheld']))
+    check('the same-frame kinematic answer is shown with both tested conventions and its tolerance owner',
+          model['fkVerdicts'] == ['consistent', 'inconsistent'] and '0.0556' in model['modelText']
+          and 'not a calibration limit' in model['fkCheck'] and 'abs_error_m=1.6454e-14' in model['fkCheck']
+          and 'verdict=consistent' in model['fkCheck'], (model['fkVerdicts'], model['fkCheck'][:200]))
+    check('the version binding and the uncalibrated zero stay on screen next to the driven pose',
+          'writer_identified=false' in model['modelText'] and 'uncalibrated' in model['modelText']
+          and 'conversion_is_required_for_drawing=false' in model['modelText'], model['modelText'][-300:])
     check('the reference surface carries no live control affordance and declares itself non-polling',
           model['controlSurface'] == 0 and await attr(page, '[data-model-pane]', 'data-model-live-poll') == 'off'
           and await attr(page, '[data-model-pane]', 'data-reference-pose') == 'compiled-initial-layout',
           (model['controlSurface'], model['modelStatus']))
 
+    # Stepping frames must rebind the pose, not the viewport: camera, layout and tree stay.
+    before = await wait_model_quiet(page)
+    await page.locator('[data-frame-next]').click()
+    await wait_model(page, 'ready')
+    after = await wait_model_quiet(page)
+    check('a frame step re-poses the same tree without rebuilding the viewport or moving the camera',
+          after['camera'] == before['camera'] and after['links'] == before['links'] and after['worldLinks'] == before['worldLinks']
+          and after['lifecycle']['renders'] > before['lifecycle']['renders'] and after['attribution']['displayedSample'] != before['attribution']['displayedSample']
+          and after['pendingLoads'] == 0 and after['assetFailures'] == [], (after['camera'], before['camera']))
+    await page.locator('[data-model-view="top"]').click()
+    await page.locator('[data-model-inspect]').click()
+    top = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+    await page.locator('[data-model-view="front"]').click()
+    await page.locator('[data-model-inspect]').click()
+    front = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+    check('the standard views move only the camera and survive a frame step',
+          abs(top['camera']['polarDeg'] - front['camera']['polarDeg']) > 20 and abs(top['camera']['distance'] - front['camera']['distance']) < 1e-6
+          and front['attribution']['displayedSample'] == after['attribution']['displayedSample'], (top['camera'], front['camera']))
+
+    # A read still in flight may never show the previous frame's pose under the new frame's title.
+    await page.locator('[data-frame-pick="rgbd_1"]').click()
+    await wait_model(page, 'ready')
+    await page.locator('[data-frame-pick="rgbd_2"]').click()
+    await page.wait_for_function("()=>(document.querySelector('[data-model-pane]')?.getAttribute('data-model-attribution') ?? '')==='pending'", timeout=30000)
+    pending = await page_attrs(page)
+    check('while the next frame is being read the dynamic pose is hidden, not relabelled',
+          pending['modelAttribution'] == 'pending' and pending['modelDisplayed'] == 'none' and pending['modelRequested'] == 'rgbd_2'
+          and pending['modelFramePose'] == 'false' and pending['modelBase'] == 'false' and pending['modelTcp'] == 'false' and pending['modelJoints'] == '0'
+          and '回到编译初始布局' in pending['modelStage'], (pending['modelAttribution'], pending['modelStage'][:160]))
+    await wait_model(page, 'ready')
+    landed = await page_attrs(page)
+    check('once it lands the pose belongs to that frame and only that frame',
+          landed['modelAttribution'] == 'matched' and landed['modelDisplayed'] == 'rgbd_2' and landed['modelRequested'] == 'rgbd_2'
+          and landed['modelFramePose'] == 'true' and landed['modelJoints'] == '5', (landed['modelAttribution'], landed['modelDisplayed']))
+
     await open_episode(page, 'run_a', 'episode_pose_verified')
     await wait_model(page, 'ready')
-    verified = await page_attrs(page)
-    arm = verified['mappingTargets'].index('arm_joint_positions')
-    check('a verified mapping drives exactly the recorded model radians (synthetic gate, not a real archive claim)',
-          verified['mappingDrivable'][arm] == 'true' and verified['mappingStatuses'][arm] == 'verified'
-          and '已驱动 5 个关节值' in verified['modelDrive'], verified['modelDrive'])
+    legacy = await page_attrs(page)
+    arm = legacy['mappingTargets'].index('arm_joint_positions')
+    check('a verified mapping without any part_readiness still drives nothing (the gate is the readiness)',
+          legacy['mappingStatuses'][arm] == 'verified' and legacy['modelJoints'] == '0' and legacy['modelBase'] == 'false'
+          and legacy['modelFramePose'] == 'false' and 'reader 未返回该能力的就绪状态' in legacy['modelText'], legacy['modelDrive'])
+
+    await open_episode(page, 'run_a', 'episode_zero_angles')
+    await wait_model(page, 'ready')
     await page.locator('[data-model-inspect]').click()
-    driven = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
-    check('the driven values are the model angles themselves, not user-zero converted ones',
-          driven['selectedJointDriven']['joint4'] == ARM_RAD[3] and driven['selectedJointDriven']['joint1'] == ARM_RAD[0]
-          and abs(driven['selectedJointDriven']['joint4'] - (ARM_RAD[3] - (-1.5707963267948966))) > 1.0, driven['selectedJointDriven'])
+    zeros = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+    check('zero angles are legal values and are driven as recorded, not treated as missing',
+          all(value == 0.0 for value in zeros['selectedJointDriven'].values()) and len(zeros['selectedJointDriven']) == 5
+          and '0 是合法数值' in (await page_attrs(page))['modelText'], zeros['selectedJointDriven'])
+
+    await open_episode(page, 'run_a', 'episode_no_world_pose_convention')
+    await wait_model(page, 'ready')
+    unconvention = await page_attrs(page)
+    check('an unstated root convention withholds only the chassis; the arm keeps driving',
+          unconvention['modelBase'] == 'false' and unconvention['modelJoints'] == '5' and unconvention['modelTcp'] == 'true'
+          and 'supported_hypotheses' in unconvention['modelText'], (unconvention['modelBase'], unconvention['modelJoints']))
+
+    # Same mesh bytes, different tree: only the content identity can catch this one.
+    set_scene_variant(content_identity='d' * 64)
+    await open_episode(page, 'run_a', 'episode_tree_identity')
+    await wait_model(page, 'blocked')
+    identity = await page_attrs(page)
+    check('a tree whose content identity differs from the record is refused even though every mesh matches',
+          identity['modelStatus'] == 'blocked' and '静态树与记录的内容身份不一致' in identity['modelStage']
+          and 'content_identity_sha256' in identity['modelStage'] and identity['canvas'] == 0
+          and identity['assetEqual'] == ['true'] and 'false' in identity['treeEqual'], identity['modelStage'][:200])
+    set_scene_variant(arm_order=['joint2', 'joint1', 'joint3', 'joint4', 'joint5'])
+    await open_episode(page, 'run_a', 'episode_link_order_swap')
+    await wait_model(page, 'blocked')
+    swapped = await page_attrs(page)
+    check('the same meshes hung on a re-ordered joint chain are refused by the joint-name binding',
+          swapped['modelStatus'] == 'blocked' and 'arm_hinge_joints' in swapped['modelStage'] and swapped['canvas'] == 0, swapped['modelStage'][:200])
+    set_scene_variant()
 
     await open_episode(page, 'run_a', 'episode_pose_identity_mismatch')
     await wait_model(page, 'blocked')
@@ -1071,9 +1489,14 @@ async def synthetic_flow(page):
           and no_state['candidateLines'] == ['events.jsonl#7', 'events.jsonl#8'], (no_state['singleState'], no_state['stateKeys']))
     await wait_model(page, 'ready')
     after_ambiguous = await page_attrs(page)
-    check('the model reference follows the frame whose state is ambiguous without inventing a pose',
-          after_ambiguous['modelStatus'] == 'ready' and '已驱动 0 个关节值' in after_ambiguous['modelDrive']
-          and after_ambiguous['modelSample'] == 'rgbd_state_ambiguous', after_ambiguous['modelDrive'])
+    check('the frame whose state is ambiguous still assembles the tree but drives no recorded value',
+          after_ambiguous['modelStatus'] == 'ready' and after_ambiguous['modelJoints'] == '0'
+          and after_ambiguous['modelBase'] == 'false' and after_ambiguous['modelTcp'] == 'false'
+          and after_ambiguous['modelFramePose'] == 'false' and after_ambiguous['modelDisplayed'] == 'rgbd_state_ambiguous'
+          and after_ambiguous['modelAttribution'] == 'matched' and int(after_ambiguous['modelWithheld']) == 3
+          and '不挑候选、不补 0、不沿用上一帧' in after_ambiguous['modelText']
+          and 'candidate_records=2' in after_ambiguous['modelText'] and 'no single record can be reported' in after_ambiguous['modelText'],
+          (after_ambiguous['modelDrive'], after_ambiguous['modelWithheld']))
 
     await open_episode(page, 'run_a', 'episode_no_time_bases')
     empty_bases = await page_attrs(page)
@@ -1083,6 +1506,15 @@ async def synthetic_flow(page):
           and '未选择时间基' in empty_bases['windowReason'] and await page.locator('[data-frame-window-apply]').is_disabled()
           and 'reader 未声明（空数组就是本页的答案，不回退默认基）' in await page.locator('[data-frame-selectable-bases]').inner_text(),
           (options, empty_bases['windowReason']))
+
+    # The previous backend candidate answered without these keys at all; the pane must say that, not invent them.
+    await open_episode(page, 'run_a', 'episode_no_sim_keys')
+    legacy_time = await page_attrs(page)
+    check('an older reader answer without the sim keys or corrections is reported as absent, not filled in',
+          'reader 未声明 sim 时间量清单（本版无该键）' in legacy_time['simKeys'] and legacy_time['corrections'] == []
+          and SIM_KEYS[0] not in legacy_time['simKeys'] and SIM_KEYS[1] not in legacy_time['simKeys']
+          and SIM_KEYS[0] in legacy_time['quantityKeys'] and SIM_KEYS[1] not in legacy_time['quantityKeys'],
+          (legacy_time['simKeys'], legacy_time['corrections']))
 
     await open_episode(page, 'run_a', 'episode_media_gaps')
     await wait_asset_uri(page, 'assets/rgb/rgbd_media_ok_rgb.png')
@@ -1198,11 +1630,15 @@ async def synthetic_flow(page):
     await page.locator('[data-frame-play]').click()
     playing = await attr(page, '[data-frame-play]', 'data-frame-play')
     await page.wait_for_timeout(1200)
-    played = await page_attrs(page)
     await page.locator('[data-frame-play]').click()
+    # Playing re-reads each frame it lands on, so the pose only has to catch up with the selection
+    # after the walk stops; while it is still in flight the pane says whose pose it is showing.
+    await wait_model(page, 'ready')
+    await page.wait_for_function("()=>(document.querySelector('[data-model-pane]')?.getAttribute('data-model-attribution') ?? '')==='matched'", timeout=30000)
+    played = await page_attrs(page)
     check('play advances on a UI cadence only, re-reading the state of each frame it lands on',
-          playing == 'pause' and int(played['index']) >= 1 and played['modelSample'] == played['currentSample']
-          and '节奏只控制界面推进，不是录制帧率' in played['text'] and '帧率' not in played['explanation'], (playing, played['index']))
+          playing == 'pause' and int(played['index']) >= 1 and played['modelDisplayed'] == played['currentSample']
+          and '节奏只控制界面推进，不是录制帧率' in played['text'] and '帧率' not in played['explanation'], (playing, played['index'], played['modelDisplayed']))
 
 
 async def boundary_checks(page):

@@ -16,7 +16,7 @@ import {
   NO_FRAME_CONTEXT, ambiguousRoleCount, clockSamenessText, frameAutoLoadRef, frameBoundaryNotice, frameMediaRefs,
   framePageExplanation, framePageKind, frameSelectableBases, frameStopNote, frameWindowGate, linkageScopeText,
   mediaDeclarationText, provenanceRowsOf, quantityRowsOf, readFramesPage, recorderDeclaredOf, roleCoverageText,
-  roleRowsOf, selectionRulesText, stateQuantityKeysOf, stateRowsOf, stateSelectionOf, statusPrecedenceText,
+  roleRowsOf, selectionRulesText, simQuantityKeysOf, stateQuantityKeysOf, stateRowsOf, stateSelectionOf, statusPrecedenceText,
   timeSemanticsText, versionMigrationText,
   type FrameDto, type FramePageDto, type FrameReadContext,
 } from '../adapters/platform-frames';
@@ -254,6 +254,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
           {migration.head}
           <ul>{migration.changed.map((line) => <li key={line}>{line}</li>)}</ul>
           {migration.removed.map((line) => <li key={line} data-frame-removed-field="true"><b>已移除字段</b> {line}</li>)}
+          {migration.corrections.map((line) => <li key={line} data-frame-correction="true"><b>本版标注更正</b> {line}</li>)}
           <em>{migration.note}</em></dd></div>
         <div><dt>锚点与游标</dt><dd>锚点流={page.anchor.stream_id} → {page.anchor.relative_path}（requested_stream={text(page.anchor.requested_stream)}）· {text(page.anchor.semantics)} · 顺序={text(page.cursor.order)} · <b>line_index 不是时钟（{String(page.cursor.line_index_is_not_a_clock)}）</b> · persist_sequence 是记录者自己的计数器 · 本页 {frames.length ? `首/末行 ${text(page.cursor.first_line_index)}/${text(page.cursor.last_line_index)} · 首/末 persist_sequence ${text(page.cursor.first_persist_sequence)}/${text(page.cursor.last_persist_sequence)}` : '无行'}</dd></div>
         <div><dt>分页与读到的行（响应原样）</dt><dd>limit={paged?.limit} · offset={paged?.offset} · returned={paged?.returned} · has_more={String(paged?.has_more)} · next_offset={text(paged?.next_offset)} · next_qualifying_anchor_line_index={text(paged?.next_qualifying_anchor_line_index)} · anchor_records_examined={paged?.anchor_records_examined} · post_page_records_examined={paged?.post_page_records_examined} · whole_file_scanned={text(paged?.scan?.whole_file_scanned)}<br/>
@@ -360,12 +361,13 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
           </>}
         </section>
 
-        <section className="history-stream-pane" data-frame-time-pane="true">
+        <section className="history-stream-pane" data-frame-time-pane="true" data-frame-displayed-sample={frame?.sample_id ?? 'none'}>
           <h4>时间与来源（每条都是两个记录字段之差）</h4>
           {!frame && <p className="session-note" data-frame-time-empty="true">未绑定帧：没有时间量可显示。</p>}
           {frame && <>
             <p className="session-note" data-time-semantics={timeSemanticsText(frame)}>{timeSemanticsText(frame)}</p>
             <p className="session-note" data-state-quantity-keys={stateQuantityKeysOf(frame)}>{stateQuantityKeysOf(frame)}</p>
+            <p className="session-note" data-sim-quantity-keys={simQuantityKeysOf(frame)}>{simQuantityKeysOf(frame)}</p>
             <p className="session-note" data-recorder-declared={recorder.text} data-recorder-agrees={recorder.agrees}>
               录制器自述的时延字段（原样复制，界面不重测、不折算成状态年龄）：{recorder.text}<br/><em>{recorder.note}</em></p>
             <table className="frame-record-table"><thead><tr><th>时间量（显示口径）</th><th>值</th><th>来源记录／字段／相对什么／单位／钟</th></tr></thead>
@@ -379,7 +381,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
           <dl className="session-fields">{provenanceRowsOf(page, frame).map((row) => <div key={row.key} data-provenance-row={row.key}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl>
         </section>
 
-        <section className="history-stream-pane" data-frame-media-pane="true">
+        <section className="history-stream-pane" data-frame-media-pane="true" data-frame-displayed-sample={frame?.sample_id ?? 'none'}>
           <h4>媒体（只按本帧 media.items 的引用读取）</h4>
           <p className="session-note" data-media-declaration={mediaDeclarationText(frame)}>{mediaDeclarationText(frame)}</p>
           {!refs.length && <p className="session-note" data-frame-media-none="true">{frame ? '本帧 media.items 没有引用：不显示图像，也不按 sample_id 拼文件名。' : '未绑定帧。'}</p>}

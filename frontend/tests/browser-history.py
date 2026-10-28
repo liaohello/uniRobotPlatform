@@ -994,11 +994,14 @@ async def boundary_checks(page):
           [item for item in refused if not (item['status'] in (404, 405) and item['gateway'] and item['html_error_page'])])
     surfaces = await page.evaluate("()=>({canvas:document.querySelectorAll('canvas').length,inReference:document.querySelectorAll('[data-model-canvas-host] canvas').length,"
                                    "target:document.querySelectorAll('[data-target-readout],[data-ghost-toggle],[data-workbench-tool]').length,"
-                                   "poseVerified:document.querySelector('[data-model-pane]')?.getAttribute('data-frame-pose-verified')??'absent'})")
+                                   "poseVerified:document.querySelector('[data-model-pane]')?.getAttribute('data-frame-pose-verified')??'absent',"
+                                   "requested:document.querySelector('[data-model-pane]')?.getAttribute('data-model-requested-sample')??'absent',"
+                                   "displayed:document.querySelector('[data-model-pane]')?.getAttribute('data-model-displayed-sample')??'absent'})")
     check('the history view renders no canvas outside the fixed model reference and no Target/Ghost control',
           surfaces['canvas'] == surfaces['inReference'] and surfaces['target'] == 0, surfaces)
-    check('whatever the history view draws, it never presents the selected frame’s pose as verified',
-          surfaces['poseVerified'] in ('false', 'absent'), surfaces)
+    check('a pose is only ever claimed for the frame actually displayed, never for the frame merely requested',
+          surfaces['poseVerified'] in ('false', 'absent')
+          or (surfaces['poseVerified'] == 'true' and surfaces['displayed'] == surfaces['requested'] != 'none'), surfaces)
 
 
 async def live_isolation(page):
