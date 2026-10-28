@@ -56,6 +56,15 @@
 
 整张表挂在**显示帧**上：`data-model-values-table` 取显示帧的 `sample_id`，归属未成立时为 `no-frame` 并列出“本帧没有可归属的已驱动值”一行（`data-model-value-none`）。真实三帧逐帧断言行内容随记录变化且互不重复（`real.driven_value_readout_per_frame`：`rgbd_e3213e6…` → `rgbd_e553d6b…` → `rgbd_9d0502b…` 的臂值、底盘向量、TCP 各自不同，且“打印出的不同值数量”与“记录里的不同值数量”一一对应——臂 3 种、底盘 3 种、TCP 3 种）。合成路径覆盖四种空/缺表状态：读取中（`pending`＋表为 `no-frame`）、无 `part_readiness`（有显示帧但零行）、运动学核对缺失（只有底盘行消失，臂与 TCP 保留）、放置树被拒（`failed`＋零行）。0 照常成行：`episode_zero_angles` 五行原值为 `0`，joint4 的展示列算成 `1.5707963267948966`。
 
+## 七、跨帧运动覆盖的本会话观测（本轮新增切片）
+
+第三类与第四类说法要分开：**同帧运动学一致**不等于**跨帧运动被覆盖**，而后者此前只在测试里算过一次，屏幕上看不出来。现在面板把“本会话在这一个 Episode 真读过并归属过的帧”里每个被驱动项出现过的**不同记录值个数**如实列出来（`motionCoverageOf()`，输入是每次 `applyFramePose` 真正施加的那份值）：
+
+- 只有 1 个值的轴写明“没有跨帧运动覆盖证据，不宣称该轴已被验证”，多个值才写“有跨帧运动证据，且只对已访问帧成立”，并把每个不同值的来源帧 id 列在旁边（`data-motion-distinct` / `data-motion-visits` / `data-motion-samples`）。
+- 观测按 `episode|run` 起算并随其重置（`data-motion-visited-key`），换 Episode 不会把上一个 Episode 的帧混进来；被扣下的部件没有行，所以底盘被扣的夹具里运动覆盖行也只有臂与 TCP，放置树被拒时访问计数为 0。
+- 真实记录实测（`real.motion_coverage`）：步进三帧时访问计数为 `[1, 2, 3]`，三帧之后七个被驱动项全部 `distinct=3`、`visits=3`，来源帧恰好是这三帧且都属于本 Episode——即“记录里三个帧各不同 → 屏幕上确实显示三个不同值”，而**不是**推断整条 Episode 的每个轴都活动过。
+- 合成路径给出反向证据：`episode_ok` 两帧的 `arm_model_qpos_rad` 完全相同，界面在两帧都驱动成功的同时写明七项全为 `distinct=1` 且“没有跨帧运动覆盖证据”——驱动成立与运动被验证是两件事，这条现在在屏幕上直接可见。
+
 ## 本轮测出并修掉的实际缺陷
 
 1. **内容身份绑定表里的“清单来源”行会让装配永远失败（真实缺陷，代码审查＋浏览器检查发现）**：把“树来自哪里”写成一行身份比较，两侧字符串永不相等，`unbound` 恒不为空、装配恒为 `blocked`。改为只比较可比较的身份字段，来源另在绑定表旁的说明里陈述。
@@ -66,13 +75,13 @@
 
 ## 同一冻结版本的实际验证
 
-最终交付 release：`m1-front-geometry-20261028T111708Z-6461c5cb1838`（109 个文件逐项摘要核对，聚合 `6461c5cb1838…`）。两个 pass 用**同一 dist、同一上游 18970**，不拼接 18969/18970 结果；本页是验证后记录，刻意排除在自身哈希之外（`docs/backend-gaps.md` 同样在本轮跑绿之后才补记，因此冻结快照里存的是它的上一版——代码与测试文件则与被验证的 dist 逐字节一致）。同 Goal 更早的切片（`…T095056Z-76dfc8d77404`、`…T100907Z-9ef64bbd5685`、`…T102544Z-0dae559ab0e2`、`…T103714Z-1ced9aec48d9`、`…T105132Z-d61eb284e6f7`）都跑绿过，本轮在其上加了逐值溯源表，因此以最新一次为准。
+最终交付 release：`m1-front-geometry-20261028T120719Z-43e7556d3445`（109 个文件逐项摘要核对，聚合 `43e7556d3445…`）。两个 pass 用**同一 dist、同一上游 18970**，不拼接 18969/18970 结果；本页是验证后记录，刻意排除在自身哈希之外。交付后逐文件比对冻结清单与当前工作树（`…T120719Z-43e7556d3445` 聚合 `43e7556d3445…` 对当前树 `480e1b6b4a16…`）：**109 个文件里只有 `docs/backend-gaps.md` 不同**（本轮补记写在验证之后），`src/`、`tests/`、`index.html`、锁文件全部逐字节相同——也就是说被验证的 dist 与交付的代码/测试是同一份，滞后的只有那份文档副本。同 Goal 更早的切片（`…T095056Z-76dfc8d77404`、`…T100907Z-9ef64bbd5685`、`…T102544Z-0dae559ab0e2`、`…T103714Z-1ced9aec48d9`、`…T105132Z-d61eb284e6f7`、`…T111708Z-6461c5cb1838`）都跑绿过，本轮在其上加了运动覆盖观测，因此以最新一次为准。
 
 | pass | 实际执行（全部在授权服务器） | 结果 |
 |---|---|---|
-| 共同 | `npm run build`（含 `tsc --noEmit`）＋ `vitest` | 构建通过；**164/164** 单测通过（含按能力门控的驱动、逐值行的反推与扣行、内容身份绑定、时间措辞与 M1.5e 载荷形状） |
-| A · 真实 | `--frames --history --history-mode real --geometry --session --config --lifecycle --upstream http://127.0.0.1:18970` | frames **85**、history **78**、geometry **23**、session **38**、config **51**、lifecycle **48** 项检查全部通过，0 浏览器错误 |
-| B · 合成 | `--frames --history --history-mode synthetic`（同一 dist、同一上游） | frames **66**、history **42** 项检查全部通过，0 浏览器错误 |
+| 共同 | `npm run build`（含 `tsc --noEmit`）＋ `vitest` | 构建通过；**169/169** 单测通过（含按能力门控的驱动、逐值行反推与扣行、运动覆盖计数、内容身份绑定、时间措辞与 M1.5e 载荷形状） |
+| A · 真实 | `--frames --history --history-mode real --geometry --session --config --lifecycle --upstream http://127.0.0.1:18970` | frames **86**、history **78**、geometry **23**、session **38**、config **51**、lifecycle **48** 项检查全部通过，0 浏览器错误 |
+| B · 合成 | `--frames --history --history-mode synthetic`（同一 dist、同一上游） | frames **68**、history **42** 项检查全部通过，0 浏览器错误 |
 
 真实多帧数值核对（pass A，`frames/browser.json → real.pose_linkage`）：三帧 `rgbd_e3213e6… / rgbd_e553d6b… / rgbd_9d0502b…` 的记录底盘 z 为 `0.053540585735473954 / 0.05353981847658025 / 0.05353885338965963`（编译初始 `0.0556`，未被再次叠加），三帧臂值互不相同（`arm_value_variants=3`、`chassis_variants=3`、`arm_moved_pairs=3`），`gripper_link` 渲染世界位置随帧移动；同帧运动学误差 `abs_error_m=1.6454375138849238e-14` 对容差 `0.005`（容差归属原文“not a calibration limit and not a contract threshold”），被排除的另一约定误差 `0.0556`。步进全程相机 `distance/azimuth/polar` 与 link/world link 计数不变。
 
@@ -86,13 +95,15 @@
 
 逐值溯源表（本轮新增，`real.driven_value_readout` 与 `real.driven_value_readout_per_frame`）：首帧表头 `data-model-values-table=rgbd_e3213e6cb64b4cd693c17d485d064d09`，七行依次为 `joint1…joint5 / base_link / grasp_tcp`（末行名字取记录自己的 `model_resource.tcp_site`），`data-value-model` 与同帧 `recorded_payload` 逐字相等——臂五行 `0.00004731963891071609 / 0.0016603668666036813 / 0.0014384481908740504 / -1.5696750090681135 / 0.0000011293487091102144`，底盘行 `[-0.00023473557897040777,-0.0000010145992864392481,0.053540585735473954] / […]`（四元数完整列出，且写明 `local_position_m` 未再叠加），TCP 行 `[0.17753849921383363,0.002461415763947755,0.30179180035418635]`；展示列 joint4 为 `0.0011213177…`，与绘制的 `-1.5696750090681135` 相差 1.57 rad，正是“绘制用模型弧度、用户角只展示”的可见证据。三帧的行分别对应各自记录、互不重复，且“打印出的不同值数量”与记录里的不同值数量一致（臂 3 / 底盘 3 / TCP 3）。
 
-请求边界（pass A：帧套件全页 **154** 条、历史窗 **145** 条，历史套件全页 **174** 条；非 GET **0** 条）：路径只落在 8 条精确历史 GET（列表、详情、streams、records、assets、`/frames`、`/robot-state`、`/model/assets/{asset_id}`）、`/api/v1/mobilecar/scene` 与外壳自身的只读监控 `GET /api/v1/mobilecar/snapshot`（帧套件 13 次、历史套件 17 次）。全页 `/mobilecar/scene` 共 **3** 条且都能对上原因：两个 Episode 各 1 次装配读取 ＋“与直接 GET 逐字比对来源”的用例读取 1 次，没有一条来自换帧；`/robot-state` 变多是因为三帧各有一次独立的同帧核对读取。控制、Session、RESET、录制与 native 透传为 0 次——历史套件的 `gateway_boundary` 逐条记录了网关对这些写路径返回自己的 HTML 拒绝页（404/405）且不转发。
+请求边界（pass A：帧套件全页 **177** 条、历史窗 **145** 条，历史套件全页 **197** 条；非 GET **0** 条）：路径只落在 8 条精确历史 GET（列表、详情、streams、records、assets、`/frames`、`/robot-state`、`/model/assets/{asset_id}`）、`/api/v1/mobilecar/scene` 与外壳自身的只读监控 `GET /api/v1/mobilecar/snapshot`（帧套件 14 次、历史套件 18 次）。全页 `/mobilecar/scene` 共 **3** 条且都能对上原因：两个 Episode 各 1 次装配读取 ＋“与直接 GET 逐字比对来源”的用例读取 1 次，没有一条来自换帧；`/robot-state` 变多是因为三帧各有一次独立的同帧核对读取。控制、Session、RESET、录制与 native 透传为 0 次——历史套件的 `gateway_boundary` 逐条记录了网关对这些写路径返回自己的 HTML 拒绝页（404/405）且不转发。
 
-证据：真实 pass 的 [unit.json](../reports/m1-front-geometry-20261028T111708Z-6461c5cb1838-real/unit.json)、[frames/browser.json](../reports/m1-front-geometry-20261028T111708Z-6461c5cb1838-real/frames/browser.json)、[history/browser.json](../reports/m1-front-geometry-20261028T111708Z-6461c5cb1838-real/history/browser.json)、[geometry/geometry.json](../reports/m1-front-geometry-20261028T111708Z-6461c5cb1838-real/geometry/geometry.json)、[preview.json](../reports/m1-front-geometry-20261028T111708Z-6461c5cb1838-real/preview.json)；合成 pass 的 [frames/browser.json](../reports/m1-front-geometry-20261028T111708Z-6461c5cb1838-synthetic/frames/browser.json)。真实截图（同一 dist、同一 Episode）：
+运动覆盖观测**不产生任何额外请求**：它只用已经读回并归属的帧值，访问计数与 `robot-state` 的归属次数一一对应。
 
-![真实记录第三帧：底盘＋五个模型弧度＋TCP 位置点已按部件门控驱动，逐值表列出这一帧真正施加的原值，未驱动部分仍是固定参考](../reports/m1-front-geometry-20261028T111708Z-6461c5cb1838-real/frames/pose-rgbd_e553d6b.png)
+证据：真实 pass 的 [unit.json](../reports/m1-front-geometry-20261028T120719Z-43e7556d3445-real/unit.json)、[frames/browser.json](../reports/m1-front-geometry-20261028T120719Z-43e7556d3445-real/frames/browser.json)、[history/browser.json](../reports/m1-front-geometry-20261028T120719Z-43e7556d3445-real/history/browser.json)、[geometry/geometry.json](../reports/m1-front-geometry-20261028T120719Z-43e7556d3445-real/geometry/geometry.json)、[preview.json](../reports/m1-front-geometry-20261028T120719Z-43e7556d3445-real/preview.json)；合成 pass 的 [frames/browser.json](../reports/m1-front-geometry-20261028T120719Z-43e7556d3445-synthetic/frames/browser.json)。真实截图（同一 dist、同一 Episode）：
 
-![真实记录上点击拾取后的 Inspector 与只读选择](../reports/m1-front-geometry-20261028T111708Z-6461c5cb1838-real/frames/pose-inspector-pick.png)
+![真实记录第三帧：底盘＋五个模型弧度＋TCP 位置点已按部件门控驱动，逐值表列出这一帧真正施加的原值，未驱动部分仍是固定参考](../reports/m1-front-geometry-20261028T120719Z-43e7556d3445-real/frames/pose-rgbd_e553d6b.png)
+
+![真实记录上点击拾取后的 Inspector 与只读选择](../reports/m1-front-geometry-20261028T120719Z-43e7556d3445-real/frames/pose-inspector-pick.png)
 
 ## 未覆盖与下一步
 
@@ -101,8 +112,9 @@
 
 ## 可操作预览与本轮清理
 
-- 交付预览：**19040 → 18970**（服务器回环），根目录 `releases/m1-front-geometry-20261028T111708Z-6461c5cb1838/frontend/dist`，随本轮进程与 SSH 隧道存活，登记 round `m28d-real`；同一 dist 的合成对照预览在 **19043**（round `m28c-synth`）。上一切片的交付预览 **19030 / 19031 → 18970**（`…T105132Z-d61eb284e6f7`，round `m27-real` / `m27-synth`）**保留未停**，可直接对照本轮新增的逐值表；更早目标的 **19013 → 18969** 与 **18986 → 18964** 同样未动。用法：左栏“历史 Episode”→ 打开 COMPLETE 记录 → 逐帧步进/播放即可看到底盘位置、五个模型弧度与 TCP 点随记录变化，未驱动部件保持固定参考；面板“未驱动清单”下面那张表就是本轮新增的逐值溯源（第一列是被真正施加的记录原值，第二列是仅供对照的用户角），装配说明一行直接写出清单路由自述的 `data_source`，`data-model-tree-reads` 是读取普查属性，Inspector 的 `worldPositionsSim` / `tcpPositionSim` 是数值核对读的逆变换结果。
-- 本 Goal 内被后续切片取代的预览已按台账停止：`m22b`（19018/19019）、`m23d`（19022/19023）、`m24`（19024/19025）、`m25`（19026/19027）共 8 个进程，逐个在 PID／start tick／uid／cmdline／监听归属匹配后收到 SIGTERM，`needed_sigkill` 全为 false；本轮另停掉自己刚起的 **19040（PID 2383648，round `m28c-real`）**——它属于那次 geometry flake 中断的 pass，同样按身份匹配停止后才用同一端口重跑。对应 `var/reports/<release>-{real,synthetic}` 与 `releases/<release>` 全部保留（含两次构建/单测失败与一次 flake 的目录，分别改名标注 `…-synthetic-buildfail-ts-narrowing`、`…-synthetic-unitfail-wrong-tcp-row`、`…-real-geometry-flake`），回看任何一次切片可用同一登记命令重新起服务。服务器上的 18974/18990-18998 与 19041/19042/19046/19047/19081 经只读探测确认属**其它会话**（其网关对同一 `/api/v1/episodes/{id}/frames` 返回自己的拒绝页），本轮未停止、未复用。后端候选 18969/18970 与 native 8792 全程未重启、未替换，8792 只经 GET 探测。
+- 交付预览（本轮，最新）：**19045 → 18970**（服务器回环），根目录 `releases/m1-front-geometry-20261028T120719Z-43e7556d3445/frontend/dist`，随本轮进程与 SSH 隧道存活，登记 round `m29-real`；同一 dist 的合成对照预览在 **19044**（round `m29-synth`）。用法：左栏“历史 Episode”→ 打开 COMPLETE 记录 → 逐帧步进/播放即可看到底盘位置、五个模型弧度与 TCP 点随记录变化，未驱动部件保持固定参考；面板“未驱动清单”下面第一张表是逐值溯源（第一列＝被真正施加的记录原值，第二列＝仅供对照的用户角），紧接其下第二张表是本轮新增的**跨帧运动覆盖**（每个被驱动项在本会话已访问帧里出现过几个不同值，只有 1 个值就明写没有运动覆盖证据）；装配说明一行直接写出清单路由自述的 `data_source`，`data-model-tree-reads` 是读取普查属性，`data-motion-visited-frames` / `data-motion-visited-key` 是访问普查属性，Inspector 的 `worldPositionsSim` / `tcpPositionSim` 是数值核对读的逆变换结果。
+- 同一 Goal 更早切片的交付预览**保留未停**，可作为对照历史：**19040 / 19043 → 18970**（`…T120719Z` 的上一版 `…T111708Z-6461c5cb1838`，round `m28d-real` / `m28c-synth`）与 **19030 / 19031 → 18970**（`…T105132Z-d61eb284e6f7`，round `m27-real` / `m27-synth`）；更早目标的 **19013 → 18969** 与 **18986 → 18964** 同样未动。要确认“现在这一版”只看 19045/19044。
+- 本 Goal 内被后续切片取代的预览已按台账停止：`m22b`（19018/19019）、`m23d`（19022/19023）、`m24`（19024/19025）、`m25`（19026/19027）共 8 个进程，逐个在 PID／start tick／uid／cmdline／监听归属匹配后收到 SIGTERM，`needed_sigkill` 全为 false；本轮另停掉自己刚起的 **19040（PID 2383648，round `m28c-real`）**——它属于那次 geometry flake 中断的 pass，同样按身份匹配停止后才用同一端口重跑。对应 `var/reports/<release>-{real,synthetic}` 与 `releases/<release>` 全部保留（含两次构建/单测失败与一次 flake 的目录，分别改名标注 `…-synthetic-buildfail-ts-narrowing`、`…-synthetic-unitfail-wrong-tcp-row`、`…-real-geometry-flake`），回看任何一次切片可用同一登记命令重新起服务。服务器上的 18974/18990-18998 与 19041/19042/19046/19047/19081 经只读探测确认属**其它会话**（其网关对同一 `/api/v1/episodes/{id}/frames` 返回自己的拒绝页），本轮未停止、未复用。后端候选 18969/18970 与 native 8792 全程未重启、未替换，8792 只经 GET 探测。运动覆盖切片本身**没有停掉任何进程**：两个 pass 各一次通过（无构建/单测失败、无 flake 重跑），新预览端口 19044/19045 用 `preview-registry.py free-port` 事先确认可绑定后才使用，未复用他人端口。
 
 # M1.9 frame-link-2 联调与历史固定模型参考装配（2026-10-26）
 
