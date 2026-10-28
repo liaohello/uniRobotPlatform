@@ -34,7 +34,7 @@ p.add_argument('--failed-run', default='run_1f6fb34853f94130aadedb8fa486705b')
 p.add_argument('--failed-episode', default='episode_879cf70489064a3b83bb15b5395a8341')
 a = p.parse_args(); a.output.mkdir(parents=True, exist_ok=True)
 report = {'scope': f'{a.mode} frame-link-2 + history-pose-1 acceptance against {a.url}', 'mode': a.mode,
-          'checks': [], 'errors': [], 'requests': [], 'real': {}, 'status': 'failed'}
+          'checks': [], 'errors': [], 'requests': [], 'real': {}, 'synthetic': {}, 'status': 'failed'}
 SOURCE_ID = 'mobilecar-server-history-20261017'
 FRAME_SCHEMA = 'unirobot-mobilecar-frame-link-2'
 POSE_SCHEMA = 'unirobot-mobilecar-history-pose-1'
@@ -145,6 +145,32 @@ async def pick_model_link(page):
             'new_requests': report['requests'][before:]}
 
 
+def static_tree_reads(mark):
+    """Placement-tree reads in the window since `mark`. The tree is a property of the Episode's content
+    identity, so frame steps, view switches and picker clicks must not add a single one."""
+    return [urlsplit(r['url']).path for r in report['requests'][mark:] if urlsplit(r['url']).path == '/api/v1/mobilecar/scene']
+
+
+def frame_reads_of(mark):
+    """robot-state reads in the same window and the distinct frames they were asked for: the other side
+    of the census, so "one tree read" can not be trivially true because no frame was ever read."""
+    urls = [r['url'] for r in report['requests'][mark:] if urlsplit(r['url']).path.endswith('/robot-state')]
+    samples = {value for u in urls for value in parse_qs(urlsplit(u).query).get('sample_id', [])}
+    return {'poses': len(urls), 'samples': sorted(samples)}
+
+
+def history_asset_reads(mark):
+    return [urlsplit(r['url']).path for r in report['requests'][mark:] if '/model/assets/' in urlsplit(r['url']).path]
+
+
+async def open_episode_tree_reads(page, run_id, episode_id, expect='frames'):
+    """Open an Episode and report the placement-tree reads the switch caused: only an Episode identity
+    change is allowed to re-read the static tree, and then exactly once."""
+    mark = len(report['requests'])
+    await open_episode(page, run_id, episode_id, expect)
+    return static_tree_reads(mark)
+
+
 async def read_direct(page, path, params=None):
     url = a.url + path
     if params: url += '?' + '&'.join(f'{k}={v}' for k, v in params.items())
@@ -232,6 +258,8 @@ def page_attrs(page):
         modelBase:g('[data-model-pane]','data-model-base-applied'),modelTcp:g('[data-model-pane]','data-model-tcp-applied'),
         modelJoints:g('[data-model-pane]','data-model-joints-applied'),modelRootHeight:g('[data-model-pane]','data-model-root-height'),
         modelCompiledRoot:g('[data-model-pane]','data-model-compiled-root-height'),
+        modelTreeReads:g('[data-model-pane]','data-model-tree-reads'),
+        modelTreeReadEpisode:g('[data-model-pane]','data-model-tree-read-episode'),
         modelDrive:g('[data-model-drive-summary]','data-model-drive-summary'),modelStage:g('[data-model-stage]','data-model-stage'),
         modelWithheld:g('[data-model-withheld-count]','data-model-withheld-count'),mappingStatuses:q('[data-mapping-row]','data-mapping-status'),
         partCaps:q('[data-part-row]','data-part-row'),partStatuses:q('[data-part-row]','data-part-status'),partDrivable:q('[data-part-row]','data-part-drivable'),
@@ -257,6 +285,7 @@ def state_of(frame):
 
 async def real_flow(page):
     await wait_list(page)
+    episode_mark = len(report['requests'])
     await open_episode(page, a.complete_run, a.complete_episode)
     direct = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/frames', {'run_id': a.complete_run, 'limit': 5, 'offset': 0})
     view = await page_attrs(page)
@@ -384,6 +413,9 @@ async def real_flow(page):
 
     # ---- the fixed model reference on the real selected frame ----
     await wait_model(page, 'ready')
+    # One placement-tree read for this Episode's content identity; everything after must be pose-only traffic.
+    assembly_reads = len(static_tree_reads(episode_mark))
+    frame_mark = len(report['requests'])
     pose = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/robot-state', {'run_id': a.complete_run, 'sample_id': first['sample_id']})
     model = await page_attrs(page)
     pose_reads = [r for r in report['requests'] if urlsplit(r['url']).path.endswith('/robot-state')]
@@ -515,6 +547,21 @@ async def real_flow(page):
           and after_pick['modelDisplayed'] == after_pick['modelRequested'] and after_pick['modelJoints'] == '5'
           and after_pick['modelRootHeight'] != 'null', picked)
     await page.screenshot(path=str(a.output / 'pose-inspector-pick.png'), full_page=False)
+    # The three standard views on the real record: only the camera may move, the posed tree stays put.
+    views = {}
+    for name in ('side', 'front', 'top'):
+        await page.locator(f'[data-model-view="{name}"]').click()
+        await page.locator('[data-model-inspect]').click()
+        views[name] = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+    report['real']['standard_views'] = {name: item['camera'] for name, item in views.items()}
+    check('front/side/top on the real model move only the camera and keep the posed frame and tree',
+          abs(views['side']['camera']['azimuthDeg'] - views['front']['camera']['azimuthDeg']) > 20
+          and views['top']['camera']['polarDeg'] < 20
+          and all(abs(item['camera']['distance'] - views['front']['camera']['distance']) < 1e-6 for item in views.values())
+          and all(item['attribution']['displayedSample'] == observations[-1]['sample'] for item in views.values())
+          and all(item['links'] == views['front']['links'] and item['worldPositions'] == views['front']['worldPositions'] for item in views.values())
+          and all(item['pendingLoads'] == 0 and item['assetFailures'] == [] for item in views.values()),
+          {name: item['camera'] for name, item in views.items()})
     await page.locator('[data-frame-pick]').first.click()
     await wait_model(page, 'ready')
     check('the run manifest and the frozen bundle agree on all four identity fields',
@@ -627,11 +674,35 @@ async def real_flow(page):
           cleared['windowBase'] == 'null' and cleared['contextSample'] == 'none' and cleared['pageKind'] == 'frames'
           and len(cleared['rowSamples']) == 5 and cleared['windowFrom'] == 'null' and cleared['windowTo'] == 'null', cleared['windowBase'])
 
+    # The census of the whole stepping session: the tree belongs to the Episode's content identity, so
+    # all these frame changes must arrive as pose traffic only — no second placement read.
+    stepping = await page_attrs(page)
+    census = {'tree_reads_since_stepping': static_tree_reads(frame_mark),
+              'tree_reads_for_this_episode': assembly_reads,
+              'pane_tree_reads': stepping['modelTreeReads'], 'pane_tree_read_episode': stepping['modelTreeReadEpisode'],
+              'frames': frame_reads_of(frame_mark),
+              'history_asset_bytes': len(history_asset_reads(frame_mark)),
+              'live_scene_asset_bytes': len([r for r in report['requests'][frame_mark:] if '/mobilecar/scene/assets/' in urlsplit(r['url']).path])}
+    report['real']['static_tree_census'] = census
+    check('the fixed tree is read once for the Episode identity and never again per frame',
+          census['tree_reads_since_stepping'] == [] and assembly_reads == 1
+          and stepping['modelTreeReads'] == '1' and stepping['modelTreeReadEpisode'] == a.complete_episode
+          and len(census['frames']['samples']) >= 5 and census['frames']['poses'] >= 5
+          and census['history_asset_bytes'] >= 1 and census['live_scene_asset_bytes'] == 0, census)
+
     # The FAILED / INCOMPLETE record.
     failed = await read_direct(page, f'/api/v1/episodes/{a.failed_episode}/frames', {'run_id': a.failed_run, 'limit': 5, 'offset': 0})
+    switch_mark = len(report['requests'])
     await open_episode(page, a.failed_run, a.failed_episode)
     await wait_asset_settled(page)
     await wait_model(page, 'ready')
+    switched = await page_attrs(page)
+    check('a different Episode re-reads the placement tree exactly once, not once per frame of it',
+          static_tree_reads(switch_mark) == ['/api/v1/mobilecar/scene']
+          and switched['modelEpisode'] == a.failed_episode
+          and switched['modelTreeReads'] == '1' and switched['modelTreeReadEpisode'] == a.failed_episode,
+          {'reads': static_tree_reads(switch_mark), 'pane': [switched['modelTreeReads'], switched['modelTreeReadEpisode']],
+           'poses': frame_reads_of(switch_mark)['poses']})
     view = await page_attrs(page)
     check('the incomplete record’s frames are read as the reader returns them',
           failed['paging']['returned'] == len(failed['frames']) and view['returned'] == str(len(failed['frames']))
@@ -1355,6 +1426,7 @@ async def scene_handler(route):
 
 async def synthetic_flow(page):
     await wait_list(page)
+    episode_mark = len(report['requests'])
     await open_episode(page, 'run_a', 'episode_ok')
     view = await page_attrs(page)
     check('the synthetic pane binds frame-link-2 and shows the fixture’s three frames',
@@ -1372,6 +1444,8 @@ async def synthetic_flow(page):
           and len(view['corrections']) == len(CORRECTIONS)
           and all(line in ' '.join(view['corrections']) for line in CORRECTIONS), (view['simKeys'], view['corrections'][:1]))
     await wait_model(page, 'ready')
+    assembly_reads = len(static_tree_reads(episode_mark))
+    frame_mark = len(report['requests'])
     model = await page_attrs(page)
     check('the tree assembles from the frozen bundle with history bytes and a pose attributable to the frame',
           model['modelStatus'] == 'ready' and model['modelCanvas'] == 1 and model['modelAttribution'] == 'matched'
@@ -1440,8 +1514,29 @@ async def synthetic_flow(page):
           landed['modelAttribution'] == 'matched' and landed['modelDisplayed'] == 'rgbd_2' and landed['modelRequested'] == 'rgbd_2'
           and landed['modelFramePose'] == 'true' and landed['modelJoints'] == '5', (landed['modelAttribution'], landed['modelDisplayed']))
 
-    await open_episode(page, 'run_a', 'episode_pose_verified')
+    # Census across frame steps, view switches, picks and a late-response switch. The fixture refuses the
+    # live workbench's own native read, so that path retries on this same route: the pane's own counter is
+    # the attributed measurement and the route window is only recorded.
+    stepping = await page_attrs(page)
+    census = {'pane_tree_reads': stepping['modelTreeReads'], 'pane_tree_read_episode': stepping['modelTreeReadEpisode'],
+              'route_tree_reads_before_stepping': assembly_reads,
+              'route_tree_reads_since_stepping': len(static_tree_reads(frame_mark)),
+              'frames': frame_reads_of(frame_mark),
+              'live_scene_asset_bytes': len([r for r in report['requests'][frame_mark:] if '/mobilecar/scene/assets/' in urlsplit(r['url']).path])}
+    report['synthetic']['static_tree_census'] = census
+    check('the pane downloads the fixed tree once for its Episode identity and never again per frame',
+          stepping['modelTreeReads'] == '1' and stepping['modelTreeReadEpisode'] == 'episode_ok'
+          and census['frames']['poses'] >= 2 and len(census['frames']['samples']) >= 2
+          and census['live_scene_asset_bytes'] == 0, census)
+
+    switch_reads = await open_episode_tree_reads(page, 'run_a', 'episode_pose_verified')
+    report['synthetic']['episode_switch_tree_reads'] = switch_reads
     await wait_model(page, 'ready')
+    switched = await page_attrs(page)
+    check('switching Episodes re-reads the placement tree once, under the new Episode identity',
+          switched['modelTreeReads'] == '1' and switched['modelTreeReadEpisode'] == 'episode_pose_verified'
+          and switched['modelEpisode'] == 'episode_pose_verified',
+          {'pane': [switched['modelTreeReads'], switched['modelTreeReadEpisode']], 'route': switch_reads})
     legacy = await page_attrs(page)
     arm = legacy['mappingTargets'].index('arm_joint_positions')
     check('a verified mapping without any part_readiness still drives nothing (the gate is the readiness)',
