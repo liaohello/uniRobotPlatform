@@ -272,6 +272,11 @@ export function poseDriveOf(dto: HistoryPoseDto | null): PoseDrive {
     decide('arm_local_pose', false, `本帧没有单一选中的状态记录（single_state_selected=${text(dto.state?.single_state_selected)}、recorded_payload=${payload ? '有' : 'null'}）：不挑候选、不补 0、不沿用上一帧。`);
     decide('base_pose_placement', false, '本帧没有单一选中的状态记录：底盘保持编译初始布局。');
     decide('tcp_position_marker', false, '本帧没有单一选中的状态记录：不画 TCP 点。');
+    // The reader answered every other capability for this frame too; each of them keeps its own reason
+    // (status, frontend_rule, gaps) instead of collapsing into one generic "nothing to draw" line.
+    (dto.part_readiness ?? []).filter((part) => !parts.some((row) => row.capability === part.capability)).forEach((part) => {
+      decide(part.capability, false, `本帧没有单一选中的状态记录，且该能力自身 status=${part.status}：按 frontend_rule${part.gaps?.length ? `（缺口：${part.gaps.join('；')}）` : ''}不驱动。`);
+    });
     return { joints, base, tcp, parts, withheld, attributable, summary: `本帧状态不可归属（single_state_selected=${text(dto.state?.single_state_selected)}）：画面保持固定参考姿态，未驱动 ${withheld.length} 项。` };
   }
   // arm_local_pose — five model radians onto the five bundle hinges, no user-zero conversion.
