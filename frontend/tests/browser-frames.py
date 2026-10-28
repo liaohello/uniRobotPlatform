@@ -260,6 +260,7 @@ def page_attrs(page):
         modelCompiledRoot:g('[data-model-pane]','data-model-compiled-root-height'),
         modelTreeReads:g('[data-model-pane]','data-model-tree-reads'),
         modelTreeReadEpisode:g('[data-model-pane]','data-model-tree-read-episode'),
+        modelTreeSource:g('[data-model-pane]','data-model-tree-source'),
         modelDrive:g('[data-model-drive-summary]','data-model-drive-summary'),modelStage:g('[data-model-stage]','data-model-stage'),
         modelWithheld:g('[data-model-withheld-count]','data-model-withheld-count'),mappingStatuses:q('[data-mapping-row]','data-mapping-status'),
         partCaps:q('[data-part-row]','data-part-row'),partStatuses:q('[data-part-row]','data-part-status'),partDrivable:q('[data-part-row]','data-part-drivable'),
@@ -470,6 +471,17 @@ async def real_flow(page):
                                                   'link_count', 'arm_hinge_joints'} <= set(model['treeFields'])
           and model['comparisonEqual'] == ['true'] * 4
           and model['assetEqual'] == ['true'] * len(pose['model_resource']['assets']), model['treeFields'])
+    # What the placement route says about itself is shown as stated: the bundle content is identity-bound to
+    # the record, but the route is still the live-native one, because no Episode-scoped manifest exists yet.
+    scene_envelope = await read_direct(page, '/api/v1/mobilecar/scene')
+    report['real']['tree_source'] = {'data_source': scene_envelope.get('data_source'), 'world_pose_semantics': scene_envelope.get('world_pose_semantics'),
+                                     'runtime_identity': scene_envelope.get('runtime_identity'), 'shown_on_pane': model['modelTreeSource']}
+    check('the pane states the placement route in that route’s own words instead of claiming an Episode-scoped manifest',
+          model['modelTreeSource'] == scene_envelope['data_source']
+          and f"data_source={scene_envelope['data_source']}" in model['modelStage']
+          and 'Episode 作用域的静态 manifest 尚未发布' in model['modelStage']
+          and scene_envelope['world_pose_semantics'] == 'compiled_initial_layout_not_live_object_state'
+          and (scene_envelope.get('runtime_identity') or {}).get('episode_id') != a.complete_episode, report['real']['tree_source'])
 
     # ---- real multi-frame pose linkage: the picture must follow the record, frame by frame ----
     distinct, seen_values = [], set()
@@ -1452,6 +1464,10 @@ async def synthetic_flow(page):
           and model['modelDisplayed'] == model['modelRequested'] and model['modelFramePose'] == 'true'
           and model['comparisonEqual'] == ['true'] * 4 and set(model['treeEqual']) == {'true'}
           and '本帧历史姿态（按部件门控）' in model['modelText'], (model['modelAttribution'], model['treeFields']))
+    check('the pane names the placement route’s own data_source rather than an Episode-scoped manifest',
+          model['modelTreeSource'] == 'live_native_http_with_verified_compiled_geometry'
+          and 'data_source=live_native_http_with_verified_compiled_geometry' in model['modelStage']
+          and 'Episode 作用域的静态 manifest 尚未发布' in model['modelStage'], (model['modelTreeSource'], model['modelStage'][:200]))
     check('the readiness gate drives the arm, the chassis and the TCP point and withholds the rest by name',
           model['partCaps'] == PART_CAPS and model['partDrivable'] == ['true', 'true', 'true', 'false', 'true', 'false', 'false', 'false', 'false']
           and model['partStatuses'] == ['ready', 'ready_with_caveats', 'ready_with_caveats', 'conditional', 'ready_with_caveats', 'blocked', 'blocked', 'blocked', 'not_required']
