@@ -1244,15 +1244,19 @@ SYNTH_EPISODES = ['episode_ok', 'episode_no_frames', 'episode_bad_frame_schema',
                   'episode_tree_identity', 'episode_link_order_swap', 'episode_pose_order_swap', 'episode_no_sim_keys']
 # The placement tree is one read per Episode and carries no episode in its URL, so a case that needs a
 # different tree sets this explicitly before it switches Episodes — no ordering race inside the fixture.
-SCENE = {'content_identity': CONTENT_ID, 'arm_order': None}
+SCENE = {'content_identity': CONTENT_ID, 'arm_order': None, 'mode': 'ok'}
 # The nine capabilities, in the order the reader lists them on 18970.
 PART_CAPS = ['fixed_model_reference_assembly', 'arm_local_pose', 'base_pose_placement', 'gripper_visual_appearance', 'tcp_position_marker',
              'tcp_orientation_frame', 'camera_view_from_record', 'dynamic_scene_objects_from_record', 'wheel_pose_from_record']
 
 
-def set_scene_variant(content_identity=CONTENT_ID, arm_order=None):
+def set_scene_variant(content_identity=CONTENT_ID, arm_order=None, mode='ok'):
+    """`mode` drives how the placement-tree route answers: 'ok' serves the frozen bundle, 'unavailable'
+    refuses it the way a candidate without a loaded bundle does, 'live' answers with a live-object tree
+    that must never be drawn as history."""
     SCENE['content_identity'] = content_identity
     SCENE['arm_order'] = arm_order
+    SCENE['mode'] = mode
 
 
 def ambiguous_frame(sample='rgbd_ambiguous'):
@@ -1462,9 +1466,18 @@ async def synthetic_handler(route):
 
 async def scene_handler(route):
     """The placement tree is a platform-side read; in synthetic mode it is a fixture too, so this suite
-    never needs a live robot to exercise the assembly, the identity binding and the pose drive."""
-    await route.fulfill(json=geometry_payload(content_identity=SCENE['content_identity'], arm_order=SCENE['arm_order'],
-                                              world_link_count=len(WORLD_LINK_NAMES)))
+    never needs a live robot to exercise the assembly, the identity binding and the pose drive. The mode
+    also lets a case refuse the route or answer it with a live-object tree."""
+    if SCENE['mode'] == 'unavailable':
+        await route.fulfill(status=503, content_type='application/json',
+                            json={'detail': {'code': 'geometry_bundle_unavailable',
+                                             'message': '该候选没有加载冻结 geometry bundle：没有历史模型资产可读'}})
+        return
+    envelope = geometry_payload(content_identity=SCENE['content_identity'], arm_order=SCENE['arm_order'],
+                                world_link_count=len(WORLD_LINK_NAMES))
+    if SCENE['mode'] == 'live':
+        envelope['world_pose_semantics'] = 'live_native_object_state_not_compiled_layout'
+    await route.fulfill(json=envelope)
 
 
 async def synthetic_flow(page):
@@ -1620,7 +1633,33 @@ async def synthetic_flow(page):
     swapped = await page_attrs(page)
     check('the same meshes hung on a re-ordered joint chain are refused by the joint-name binding',
           swapped['modelStatus'] == 'blocked' and 'arm_hinge_joints' in swapped['modelStage'] and swapped['canvas'] == 0, swapped['modelStage'][:200])
+    # The placement tree itself failing: a candidate without a loaded bundle, and a candidate whose tree
+    # is live object state rather than the compiled layout. Neither may leave a model on screen.
+    set_scene_variant(mode='unavailable')
+    await open_episode(page, 'run_a', 'episode_pose_verified')
+    await wait_model(page, 'failed')
+    no_tree = await page_attrs(page)
+    check('a refused placement tree fails the pane by code, with no canvas and nothing driven',
+          no_tree['modelStatus'] == 'failed' and 'geometry bundle 清单读取失败' in no_tree['modelStage']
+          and 'geometry_bundle_unavailable' in no_tree['modelStage'] and no_tree['canvas'] == 0 and no_tree['modelCanvas'] == 0
+          and no_tree['modelJoints'] == '0' and no_tree['modelBase'] == 'false' and no_tree['modelTcp'] == 'false'
+          and no_tree['modelFramePose'] == 'false' and no_tree['modelDisplayed'] == 'none'
+          and no_tree['modelTreeReads'] == '1' and no_tree['modelTreeReadEpisode'] == 'episode_pose_verified', no_tree['modelStage'][:200])
+    set_scene_variant(mode='live')
+    await open_episode(page, 'run_a', 'episode_zero_angles')
+    await wait_model(page, 'failed')
+    live_tree = await page_attrs(page)
+    check('a tree that says it carries live object state is refused as a history reference, not rendered',
+          live_tree['modelStatus'] == 'failed' and 'bundle 语义不是编译初始布局' in live_tree['modelStage']
+          and '不用它装配历史参考' in live_tree['modelStage'] and live_tree['canvas'] == 0
+          and live_tree['modelJoints'] == '0' and live_tree['modelTreeSource'] == 'none', live_tree['modelStage'][:200])
     set_scene_variant()
+    await open_episode(page, 'run_a', 'episode_ok')
+    await wait_model(page, 'ready')
+    recovered = await page_attrs(page)
+    check('the same Episode assembles again once the route answers, so the failure was not sticky',
+          recovered['modelStatus'] == 'ready' and recovered['modelCanvas'] == 1 and recovered['modelJoints'] == '5'
+          and recovered['modelAttribution'] == 'matched' and recovered['modelTreeReads'] == '1', (recovered['modelStatus'], recovered['modelStage'][:160]))
 
     await open_episode(page, 'run_a', 'episode_pose_identity_mismatch')
     await wait_model(page, 'blocked')
