@@ -368,6 +368,36 @@ export function drivenValuesOf(dto: HistoryPoseDto, shown: { joints: Record<stri
   }
   return rows;
 }
+
+/** Cross-frame motion coverage, judged only over the frames this surface actually visited and applied.
+ *  One visited value is not motion: an axis seen once gets no "verified by movement" claim, and an item
+ *  that a later visit does not drive keeps what it saw instead of being filled with a zero. */
+export interface VisitedDrivenValues { sample: string; values: Record<string, string> }
+export interface MotionCoverageRow { name: string; distinct: number; seenCount: number; samples: string[]; verdict: string }
+export function mergeVisitedValues(previous: VisitedDrivenValues[], entry: VisitedDrivenValues): VisitedDrivenValues[] {
+  const rest = previous.filter((row) => row.sample !== entry.sample);
+  return entry.sample ? [...rest, entry] : previous;
+}
+export function motionCoverageOf(visited: VisitedDrivenValues[]): MotionCoverageRow[] {
+  const order: string[] = [];
+  const buckets = new Map<string, Map<string, string>>();
+  const seenCount = new Map<string, number>();
+  visited.forEach((entry) => Object.entries(entry.values).forEach(([name, value]) => {
+    if (!buckets.has(name)) { buckets.set(name, new Map()); seenCount.set(name, 0); order.push(name); }
+    buckets.get(name)!.set(value, entry.sample);
+    seenCount.set(name, (seenCount.get(name) ?? 0) + 1);
+  }));
+  return order.map((name) => {
+    const bucket = [...buckets.get(name)!.entries()];
+    const visits = seenCount.get(name) ?? 0;
+    return {
+      name, distinct: bucket.length, seenCount: visits, samples: bucket.map((entry) => entry[1]),
+      verdict: bucket.length > 1
+        ? `驱动过它的 ${visits} 个已访问帧里出现 ${bucket.length} 个不同记录值（${bucket.map(([value, sample]) => `${sample}=${value}`).join('，')}）：有跨帧运动证据，且只对已访问帧成立。`
+        : `只在 ${visits} 个已访问帧里见过 1 个记录值（${bucket[0][1]}=${bucket[0][0]}）：没有跨帧运动覆盖证据，不宣称该轴已被验证。`,
+    };
+  });
+}
 /** `single_state_selected=false` / `recorded_payload=null` are reported as answers, not patched. */
 export function poseStateText(dto: HistoryPoseDto | null): string {
   if (!dto) return '未读取 robot-state。';

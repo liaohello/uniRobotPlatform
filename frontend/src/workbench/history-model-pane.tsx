@@ -20,9 +20,9 @@ import { HistoryReferenceScene, type PoseAttribution, type ReferenceSelection } 
 import type { MeshAsset, SceneManifest } from '../adapters/types';
 import {
   assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, drivenValuesOf, fkCrossCheckOf, mappingRowsOf,
-  modelResourceText, modelVsUserText, notProvenText, partReadinessOf, poseBoundaryText, poseDriveOf, poseReadinessText,
-  poseStateText, readHistoryModelAsset, readRobotState, renderingText, treeBindingRowsOf, versionBindingText,
-  type HistoryPoseDto,
+  mergeVisitedValues, modelResourceText, modelVsUserText, motionCoverageOf, notProvenText, partReadinessOf,
+  poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText, readHistoryModelAsset, readRobotState, renderingText,
+  treeBindingRowsOf, versionBindingText, type HistoryPoseDto, type VisitedDrivenValues,
 } from '../adapters/platform-history-pose';
 
 /** The placement tree comes from the platform's own frozen geometry envelope. */
@@ -74,6 +74,9 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
   /** Placement-tree downloads issued for the Episode this pane instance shows. The route is shared with
    *  the live workbench's own native read, so this counter is what attributes a re-read to the history. */
   const [treeReads, setTreeReads] = useState<{ count: number; episode: string }>({ count: 0, episode: '' });
+  /** The driven values of every frame this Episode has actually shown, kept only to judge cross-frame
+   *  motion coverage. It says nothing about frames that were never read, and never fills an absent value. */
+  const [visited, setVisited] = useState<{ key: string; rows: VisitedDrivenValues[] }>({ key: '', rows: [] });
 
   const host = useRef<HTMLDivElement | null>(null);
   const view = useRef<HistoryReferenceScene | null>(null);
@@ -201,6 +204,13 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
     const drive = poseDriveOf(pose);
     scene.applyFramePose({ sample: pose.frame.sample_id, joints: drive.joints, base: drive.base, tcp: drive.tcp });
     setDisplayed(scene.attribution());
+    // Record what this visit actually moved, keyed by the Episode identity: coverage may only ever be
+    // judged over frames that were read and attributed, never over the frames still sitting in the record.
+    const applied: VisitedDrivenValues = {
+      sample: pose.frame.sample_id,
+      values: Object.fromEntries(drivenValuesOf(pose, { joints: drive.joints, baseApplied: Boolean(drive.base), tcpApplied: Boolean(drive.tcp) }).map((row) => [row.name, row.model])),
+    };
+    setVisited((previous) => ({ key, rows: mergeVisitedValues(previous.key === key ? previous.rows : [], applied) }));
     setStage({ status: 'ready', reason: `固定模型树已装配：放置树来自 ${GEOMETRY_SCHEMA} 清单（${geometry.data.links.length} 条 link、${geometry.data.world_links.length} 条 world link，内容身份与记录一致；该路由自述 data_source=${geometry.data_source ?? '未声明'}，Episode 作用域的静态 manifest 尚未发布，前端不假造路由），${rows.length} 个网格字节按声明摘要从历史端点读取。屏幕姿态归属见“显示帧”。` });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geometry, pose]);
@@ -224,6 +234,7 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
   const values = pose && attributed && displayed
     ? drivenValuesOf(pose, { joints: displayed.jointValues, baseApplied: Boolean(displayed.baseApplied), tcpApplied: Boolean(displayed.tcpApplied) })
     : [];
+  const coverage = motionCoverageOf(visited.rows);
 
   /** One asset's bytes on demand: the reader re-computes the digest and 409s if the content changed. */
   function readOne(assetId: string) {
@@ -254,6 +265,7 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
     data-model-root-height={String(displayed?.rootHeightWorldSimM ?? 'null')}
     data-model-compiled-root-height={String(displayed?.compiledRootHeightWorldSimM ?? 'null')}
     data-model-tree-reads={String(treeReads.count)} data-model-tree-read-episode={treeReads.episode || 'none'}
+    data-motion-visited-frames={String(visited.rows.length)} data-motion-visited-key={visited.key || 'none'}
     data-model-tree-source={geometry?.data_source ?? 'none'}>
     <h3>固定模型树 · 按部件历史姿态 <small data-model-current-sample={displayedSample || '—'}>{displayedSample ? `显示帧 ${displayedSample}` : '编译初始布局'}</small></h3>
     <p className="session-note" data-model-attribution-line={`请求帧 ${sampleId ?? '无'} · 显示帧 ${displayedSample || '无（当前是编译初始布局）'}`}>
@@ -290,6 +302,17 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
             <td><small>{row.source}</small></td></tr>)}
             {!values.length && <tr data-model-value-none="true"><td colSpan={4}>
               本帧没有可归属的已驱动值：画面是编译初始布局，或该帧的 robot-state 尚未读回／被 reader 拒绝。不从上一帧借值，也不补 0。</td></tr>}
+          </tbody></table>
+        <p className="session-note" data-motion-summary={`本会话在本 Episode 已归属 ${visited.rows.length} 个访问帧 · 被驱动过的项目 ${coverage.length} 项`}>
+          跨帧运动覆盖（第四类说法，与“本帧输入完整”“同帧运动学一致”“硬件标定”互不推出）：只统计<b>本会话真读过并归属过的帧</b>，
+          不推断整条记录、也不推断未访问的帧；只见过一个值的轴<b>没有运动覆盖证据</b>，界面不称它已验证。</p>
+        <table className="frame-record-table" data-motion-table="true">
+          <thead><tr><th>被驱动的部件／轴</th><th>每个不同记录值的来源帧</th><th>覆盖判定</th></tr></thead>
+          <tbody>{coverage.map((row) => <tr key={row.name} data-motion-row={row.name} data-motion-distinct={String(row.distinct)} data-motion-visits={String(row.seenCount)}
+            data-motion-samples={row.samples.join(',')}>
+            <td>{row.name}</td><td><small>{row.samples.join(' / ')}</small></td><td><small>{row.verdict}</small></td></tr>)}
+            {!coverage.length && <tr data-motion-none="true"><td colSpan={3}>
+              还没有任何被归属的已驱动帧：不宣称任何轴有跨帧运动覆盖证据（装配本身不受影响）。</td></tr>}
           </tbody></table>
         <div className="session-inline">
           <button data-model-fit disabled={!view.current} onClick={() => view.current?.fitView()}>适应视图</button>
