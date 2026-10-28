@@ -1,0 +1,41 @@
+{
+  "frontend_release": "m1-front-geometry-20261026T092830Z-2d2c53330b76",
+  "backend_release": "m1x-20261026T065320Z-platform",
+  "checks": {
+    "frontend-build": {
+      "exit_code": 0,
+      "duration_seconds": 23.19,
+      "summary": []
+    },
+    "frontend-unit": {
+      "exit_code": 0,
+      "duration_seconds": 5.06,
+      "summary": [
+        " Test Files  11 passed (11)",
+        "      Tests  142 passed (142)"
+      ]
+    },
+    "backend-unit": {
+      "exit_code": 1,
+      "duration_seconds": 43.95,
+      "summary": [
+        "FAILED tests/test_catalog.py::test_catalog_loads_real_tasks - AssertionError:...",
+        "FAILED tests/test_catalog.py::test_every_task_has_existing_evidence - Asserti...",
+        "FAILED tests/test_migrate.py::test_manifest_sources_exist - AssertionError: a...",
+        "3 failed, 179 passed, 1 warning in 40.08s"
+      ]
+    }
+  },
+  "native_processes_started": false,
+  "browser_tests_run": false,
+  "tested_source_files": 167,
+  "tested_source_mismatches": [],
+  "node_version": "v20.20.2",
+  "python_version": "Python 3.14.6",
+  "backend_environment_limitations": [
+    "test_catalog_loads_real_tasks: sibling native project roots are absent from the isolated recovery directory",
+    "test_every_task_has_existing_evidence: native project reports are not included in the platform snapshot",
+    "test_manifest_sources_exist: external native migration sources are not included in the platform snapshot"
+  ],
+  "scope": "Frontend build/typecheck and unit tests; backend unit tests in an isolated server copy. No native service, motion, recording or browser checks were started."
+}

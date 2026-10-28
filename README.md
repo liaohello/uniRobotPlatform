@@ -1,7 +1,9 @@
 # uniRobotPlatform
 A MuJoCo-based embodied AI simulation and 3D interaction data collection platform with LiDAR/SLAM navigation, RGB-D perception, robotic arm manipulation, teleoperation data recording, and policy evaluation for BC, ACT, Diffusion Policy, VLA, and hierarchical VLN.
 
-换笔记本继续开发先看 [Git 追踪与恢复清单](docs/laptop-migration.md)：本仓库包含规范、参考素材、项目规则和网关源码；三个原生工程仍需分别恢复，虚拟环境/私人配置/运行数据不随 Git 搬迁。
+当前平台源码包含 [React/TypeScript 3D 工作台](frontend/)、[FastAPI 网关及业务逻辑](backend/src/unirobot/)、前后端测试、公共配置和冻结模型样本。整体入口、调用关系及运行依赖见 [代码导览](docs/code-overview.md)。2026-10-27 从服务器实际交付的前端和配套网关恢复完整发布源码；本次是源码归档与同步，不代表真实运动、录制或 M1 闭环通过验收。
+
+换笔记本继续开发先看 [Git 追踪与恢复清单](docs/laptop-migration.md)：本仓库包含前后端源码、规范、参考素材和项目规则；三个原生工程仍需分别恢复，虚拟环境/私人配置/运行数据不随 Git 搬迁。
 
 另开会话继续工作先读 [交接说明](docs/handoff.md)，需要讨论原貌时查看 [本次会话公开消息存档](docs/conversations/2026-10-22-scene-setup-dialogue.md)。
 
@@ -21,4 +23,4 @@ A MuJoCo-based embodied AI simulation and 3D interaction data collection platfor
 
 ### V0.7 统一 3D 工作台计划复评
 
-[最新前端实施计划](docs/specs/00-overview/09-page-design-delivery-plan.md)：先统一 React/TS 外壳、Three.js SceneView 复用边界，再逐项接通 mobileCar；下一份前端产物为对象树/视口/Inspector、相机与 Joint/TCP Target 可操作样板，继而接控制、录制和只读回放。诊断/元数据草案只代表接入基础。M1/M2 范围不变，前端实现继续暂停，本轮仅修订设计和计划。
+[前端实施计划](docs/specs/00-overview/09-page-design-delivery-plan.md)：先统一 React/TS 外壳、Three.js SceneView 复用边界，再逐项接通 mobileCar。2026-10-23 当轮仅修订设计和计划，暂停声明是该轮历史状态；后续工作台与网关的实际源码现已恢复，当前实现入口及限制见 [代码导览](docs/code-overview.md)。M1/M2 范围不变。

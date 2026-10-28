@@ -1,10 +1,10 @@
 # 2D 地图与 Waypoint 路线编辑
 
-规范 ID：`FE-SCENE-WAYPOINTS` · 责任层：前端 · 版本：V0.3（2026-10-21）
+规范 ID：`FE-SCENE-WAYPOINTS` · 责任层：前端 · 版本：V0.4（2026-10-24）
 
-状态：设计草案；S08/S09 是用户提供的分析文本，不自动视为所有细节已确认。Waypoint 范围以 S10 的用户明确选择为准。实现及产品验收均未执行。
+状态：设计草案；S08/S09 是用户提供的分析文本，不自动视为所有细节已确认。Waypoint 范围以 S10 的用户明确选择为准，M1.3 必填 yaw 以 S18 补充。后端 Route Draft/Version 资源候选已可接线；前端页面实现及端到端验收未执行。
 
-来源：[S09](../../90-governance/sources/S09-unified-development-reuse-analysis.md)、[S10](../../90-governance/sources/S10-waypoint-scope-confirmation.md)。
+来源：[S09](../../90-governance/sources/S09-unified-development-reuse-analysis.md)、[S10](../../90-governance/sources/S10-waypoint-scope-confirmation.md)、[S18](../../90-governance/sources/S18-navigation-map-route-slice.md)。
 
 [上级目录](README.md) · [总索引](../../README.md)
 
@@ -18,11 +18,11 @@ S10 已确认 V1 在 Scene Setup 创建、编辑、保存 Waypoint；Simulation 
 |---|---|---|
 | 地图加载 | 显示当前 map 身份、分辨率、原点/旋转及有效区域 | 未加载或参考系不明时不提交路线 |
 | 创建/选择 | 点击生成路线草案点；与地图平移工具互斥 | 当前点、编号、map 坐标明确 |
-| 编辑 | 拖动/数值修改 XY；朝向用独立箭头或字段 | 是否要求朝向由任务定义，不把缺省值伪装成用户目标 |
+| 编辑 | 拖动/数值修改 XY；朝向用独立箭头或字段 | **本切片每个 waypoint 必须显式 yaw**；缺省/null 报错，显式 0 合法，不把缺省值伪装成用户目标 |
 | 序列 | 删除、调整顺序、重编号作为建议交互 | 点稳定 ID 与显示序号分开 |
 | 校验 | 显示地图外、未知/障碍区域、配置不匹配 | 格子有效不等于完整路径可达 |
 | 保存/加载 | 保存路线修订、map/Frame 绑定，再加载核对 | CSV/YAML 只是候选交换格式，精确 schema 待核对 |
-| 启动 | 将已保存版本绑定本次实验，经后端校验与导航授权执行 | 编辑器不直接发布速度或把点击变成在线控制 |
+| 启动 | 本切片不提供路线采用/导航执行；版本只供显示和后续显式采用 | 编辑器不直接发布速度、目标或把点击变成在线控制 |
 
 ## 草案与活动路线
 
@@ -30,7 +30,7 @@ S10 已确认 V1 在 Scene Setup 创建、编辑、保存 Waypoint；Simulation 
 
 ## 坐标与失败
 
-像素/地图转换必须包含缩放、平移、图像轴方向、分辨率和地图原点姿态；见 [导航路线契约](../../30-contracts/08-navigation-map-route.md)。后端地图版本失配、不可通行、定位未就绪或授权失败均应保留具体原因，不能只弹“导航失败”。
+像素/地图转换必须包含缩放、平移、图像轴方向、分辨率和地图原点姿态；map +X 随图像列增大，图像行向下对应 map -Y，origin 为图像左下角；见 [导航路线契约](../../30-contracts/08-navigation-map-route.md)。后端地图版本失配、不可通行、定位未就绪或授权失败均应保留具体原因，不能只弹“导航失败”。
 
 后端职责：[地图与路线执行](../../20-backend/03-observation-algorithms/03-map-waypoint-execution.md)。验收：[TEST-NAV-003](../../40-verification/04-task-config-workflow-acceptance.md#test-nav-003)、[TEST-NAV-004](../../40-verification/04-task-config-workflow-acceptance.md#test-nav-004)、[TEST-NAV-006](../../40-verification/04-task-config-workflow-acceptance.md#test-nav-006)。
 

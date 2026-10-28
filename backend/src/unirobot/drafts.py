@@ -14,6 +14,8 @@ from pydantic import Field, StrictInt, StrictStr
 
 from .contracts import Contract, utc_now
 from .mobilecar import MobileCarIntegration
+from .prepare import PreparationService, PreparationStore, Validator
+from .recipe import Recipe, load_recipe
 
 
 class DraftMetadata(Contract):
@@ -48,9 +50,12 @@ class DraftConflict(ValueError):
 
 
 class DraftStore:
-    def __init__(self, path: Path, integration: MobileCarIntegration) -> None:
+    def __init__(self, path: Path, integration: MobileCarIntegration, recipe: Recipe | None = None,
+                 preparation: PreparationService | None = None) -> None:
         self.path = path
         self.integration = integration
+        self.recipe = recipe or load_recipe()
+        self.preparation = preparation or PreparationService(PreparationStore(path), Validator(self.recipe, integration), self.recipe)
         path.parent.mkdir(parents=True, exist_ok=True)
         with closing(sqlite3.connect(path)) as db, db:
             db.execute("CREATE TABLE IF NOT EXISTS drafts (id TEXT PRIMARY KEY, revision INTEGER NOT NULL, document TEXT NOT NULL)")
@@ -72,6 +77,10 @@ class DraftStore:
             draft["validation"]["status"] = "stale"
             draft["validation"]["reason"] = "Fixed preset dependencies changed; create a new draft to adopt the new preset"
             db.execute("UPDATE drafts SET document=? WHERE id=?", (json.dumps(draft), draft_id))
+        elif draft.get("recipe_fingerprint") != self.recipe.fingerprint and draft["validation"]["status"] != "stale":
+            draft["validation"]["status"] = "stale"
+            draft["validation"]["reason"] = "Execution recipe changed; create a new draft to adopt the new recipe"
+            db.execute("UPDATE drafts SET document=? WHERE id=?", (json.dumps(draft), draft_id))
         return draft
 
     def create(self, request: CreateDraft) -> dict:
@@ -80,6 +89,7 @@ class DraftStore:
             "draft_revision": 1,
             "execution_revision": 1,
             "fingerprint": self._fingerprint(),
+            "recipe_fingerprint": self.recipe.fingerprint,
             "preset": self._execution(),
             "name": request.name,
             "description": request.description,
@@ -121,20 +131,29 @@ class DraftStore:
     def validate(self, draft_id: str, request: ValidateDraft) -> dict:
         before = self.get(draft_id)
         self._check_execution(before, request)
-        preflight = self.integration.check()  # Four GETs only; no Session creation.
-        result = {"validation_id": "validation-" + uuid4().hex,
-                  "execution_revision": request.execution_revision,
-                  "fingerprint": request.fingerprint,
-                  "checked_at": preflight["checked_at"],
-                  "status": "failed", "checks": preflight["checks"],
-                  "validated_snapshot_id": None}
+        snapshot, reused = self.preparation.snapshot(before)  # GET reads only; no Session, motion, RESET or recording.
+        result = {
+            "validation_id": "validation-" + uuid4().hex,
+            "execution_revision": request.execution_revision,
+            "fingerprint": request.fingerprint,
+            "recipe_fingerprint": snapshot["recipe_fingerprint"],
+            "checked_at": snapshot["created_at"],
+            "snapshot_id": snapshot["snapshot_id"],
+            "snapshot_sha256": snapshot["snapshot_sha256"],
+            "status": snapshot["validation_status"],
+            "checks": snapshot["checks"],
+            "execution_eligible": snapshot["execution_eligible"],
+            "blocking_reasons": snapshot["blocking_reasons"],
+            "validated_snapshot_id": snapshot["validated_snapshot_id"],
+            "reused": reused,
+        }
         with closing(sqlite3.connect(self.path)) as db, db:
             db.execute("BEGIN IMMEDIATE")
             current = self._load(db, draft_id)
             # Load again after network I/O so metadata saves are preserved and
             # a response for old execution dependencies cannot revive a check.
             self._check_execution(current, request)
-            current["validation"] = {"status": "failed", "result": result}
+            current["validation"] = {"status": snapshot["validation_status"], "result": result}
             db.execute("UPDATE drafts SET document=? WHERE id=?", (json.dumps(current), draft_id))
             return current
 

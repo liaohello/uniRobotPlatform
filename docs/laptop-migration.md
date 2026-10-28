@@ -1,6 +1,6 @@
 # 换笔记本开发：Git 追踪与恢复清单
 
-本清单针对当前 uniRobotPlatform 仓库。Specification 为 V0.6，M1 仍是 mobileCar 场景→运行→录制→回放；本次只补齐源码追踪、忽略规则和迁移说明，不启动仿真或改变三工程的运行边界。
+本清单针对当前 uniRobotPlatform 仓库。2026-10-27 已恢复服务器发布的前后端源码及配套 V0.8 Specification，M1 仍是 mobileCar 场景→运行→录制→回放；源码入口和外部依赖见 [整体代码导览](code-overview.md)。迁移不启动仿真或改变三工程的运行边界。
 
 ## 应提交到本仓库
 
@@ -10,11 +10,11 @@
 | `AGENTS.md` | 项目级协作/设计/开发规则；备份不作为权威版本 |
 | `docs/` | Specification、需求/来源/机器索引、M1 计划、原始设计图/PPT 和历史支持材料 |
 | `backend/pyproject.toml` | Python 包元数据、依赖范围与命令入口 |
-| `backend/src/unirobot/` | 网关源码及当前静态任务目录页面；不是已经完成的 M1 产品前端 |
+| `backend/src/unirobot/` | 网关、配置/Session、地图路线、历史读取与几何适配源码；保留早期静态工具页 |
 | `backend/config/catalog.yaml`、`backend/migration_manifest.json` | 无凭据的公共任务/适配模板和迁移计划数据 |
 | `backend/tests/`、`backend/.gitignore` | 现有测试源码及后端输出排除规则；纳入不等于测试已通过 |
 
-`frontend/` 当前为空，没有可迁移的独立应用源码。Git 不保存空目录，不为显示目录创建占位应用。
+`frontend/` 已包含独立 React/TypeScript 3D 工作台、锁文件、测试、工具和显式冻结模型样本，应随 Git 迁移。`node_modules` 与 `dist` 不提交；按前端 README 的服务器执行政策安装、构建和验证。源码齐备不表示 M1 产品已完整验收。
 
 ## 保留本机或另行恢复，不提交
 

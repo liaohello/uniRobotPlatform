@@ -4,11 +4,11 @@
 
 换笔记本时使用 [Git 追踪与恢复清单](laptop-migration.md)，区分本仓库源码、三个外部工程和本机私有环境。
 
-当前优先阅读 [V0.7 统一 3D 工作台实施计划](specs/00-overview/09-page-design-delivery-plan.md)：先统一 React/TS 外壳与 Three.js 复用边界，下一份前端产物为可操作 3D 样板，再在同一工作台接配置、控制、录制与回放。前端实现继续暂停，本轮只重新规划。[M1.1](m1.1-integration-check.md) 与 [M1.2 草案切片](m1.2-drafts.md) 的诊断/草案证据保留，不代表主工作台或真实闭环完成。
+当前先阅读 [整体代码导览](code-overview.md)：2026-10-27 已恢复服务器交付版本的 `frontend/` 与配套网关逻辑，包含 3D 工作台、配置/Session、地图路线及历史读取代码。设计约束继续见 [统一 3D 工作台实施计划](specs/00-overview/09-page-design-delivery-plan.md)。[M1.1](m1.1-integration-check.md) 与 [M1.2 草案切片](m1.2-drafts.md) 保留为历史交付证据；代码恢复不等于真实闭环验收。
 
 另开会话时先读 [新会话交接说明](handoff.md)；本次讨论的可读用户/助手正文保存在 [2026-10-22 会话存档](conversations/2026-10-22-scene-setup-dialogue.md)，历史建议以当前规范取代关系为准。
 
-当前组织版本为 V0.7，未修改的规范保留各自版本。[mobileCar 四步闭环与 bimanual 复用](specs/00-overview/10-first-task-closed-loop.md) 次序不变：先场景→运行→录制→回放，再验证多宿主下组件复用，训练/预测后续。完整演变见 [修订记录](specs/90-governance/07-change-log.md)。
+当前同步的 Specification 组织版本为 V0.8，未修改的规范保留各自版本。[mobileCar 四步闭环与 bimanual 复用](specs/00-overview/10-first-task-closed-loop.md) 次序不变：先场景→运行→录制→回放，再验证多宿主下组件复用，训练/预测后续。完整演变见 [修订记录](specs/90-governance/07-change-log.md)。
 
 | 阅读目的 | 入口 |
 |---|---|

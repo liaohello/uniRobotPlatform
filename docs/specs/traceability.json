@@ -1,6 +1,6 @@
 {
-  "version": "0.7",
-  "date": "2026-10-23",
+  "version": "0.8",
+  "date": "2026-10-25",
   "timezone": "America/Chicago",
   "source_book": "../设计过程与Specification总册_20261021.md",
   "source_sha256": "995e4bf3c3fdc19f6874e1d221d5e52195db5f38e79fcac8c082b8ac9939119a",
@@ -887,10 +887,11 @@
     {
       "id": "REQ-NAV-003",
       "confirmation": "用户明确",
-      "summary": "V1 Scene Setup 创建/编辑/保存 Waypoint，Simulation 展示进度",
+      "summary": "V1 Scene Setup 创建/编辑/保存带必填朝向的 Waypoint，Simulation 展示进度",
       "source_ids": [
         "S09",
-        "S10"
+        "S10",
+        "S18"
       ],
       "primary_spec": "10-frontend/02-scene-setup/04-map-waypoint-editor.md",
       "tests": [
@@ -903,9 +904,10 @@
     {
       "id": "REQ-NAV-004",
       "confirmation": "接口草案",
-      "summary": "地图/路线版本、坐标转换、检查、授权与进度可追踪",
+      "summary": "版本化地图/Route、坐标与朝向转换、点位检查、执行授权和进度可追踪",
       "source_ids": [
-        "S09"
+        "S09",
+        "S18"
       ],
       "primary_spec": "30-contracts/08-navigation-map-route.md",
       "tests": [
@@ -1140,9 +1142,10 @@
     {
       "id": "REQ-NAV-005",
       "confirmation": "用户明确目标；协议细化为建议",
-      "summary": "Waypoint/Route 为独立版本资源，采用和执行分开，历史引用固定",
+      "summary": "Waypoint/Route 为独立版本资源，保存/采用/执行分开，历史引用固定且冲突不静默合并",
       "source_ids": [
-        "S15"
+        "S15",
+        "S18"
       ],
       "primary_spec": "30-contracts/08-navigation-map-route.md",
       "tests": [
@@ -1505,6 +1508,31 @@
       "path": "90-governance/sources/S17-3d-workbench-replan.md",
       "sha256": "81779eaae6a980aa615e62dba8d8cc717c5cc44c02546b19c1039ad63b17b870",
       "kind": "current_user_3d_workbench_replan_request"
+    },
+    "S18": {
+      "path": "90-governance/sources/S18-navigation-map-route-slice.md",
+      "sha256": "e85757352660bd8574c997ab5b84a51b28fd41007bef631830f20cf922a12c17",
+      "kind": "current_user_navigation_map_route_slice_request"
+    },
+    "S19": {
+      "path": "90-governance/sources/S19-session-stop-recording-end.md",
+      "sha256": "42af4fb49fce69b5b427b6cff1e11058c67729d2956369c16b770d43163cd6b3",
+      "kind": "current_user_session_stop_recording_end_goal"
+    },
+    "S20": {
+      "path": "90-governance/sources/S20-unified-candidate-release-identity.md",
+      "sha256": "04f4fc83df31e9ca92df01f768d3359629035822462ffecd3e1fd0b8c316e989",
+      "kind": "current_user_unified_candidate_release_identity_goal"
+    },
+    "S21": {
+      "path": "90-governance/sources/S21-history-episode-read-slice.md",
+      "sha256": "13147c106694266b963c624c1bd9dea2b8c1ad1288d6d565ab66d80432a31e72",
+      "kind": "current_user_history_episode_read_slice_goal"
+    },
+    "S22": {
+      "path": "90-governance/sources/S22-history-readonly-hardening.md",
+      "sha256": "8d648513e33309885bf4261854610c273a66381f3e13a10484a8d6b7390c660f",
+      "kind": "current_user_history_readonly_hardening_goal"
     }
   },
   "visual_registry": "references/visual-assets.json"

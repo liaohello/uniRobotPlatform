@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .adapters import build_adapters
@@ -24,6 +25,7 @@ from .contracts import (
     RunSpec,
     TaskView,
     TemplateId,
+    utc_now,
 )
 from .runtime import (
     InvalidMode,
@@ -33,8 +35,23 @@ from .runtime import (
     TaskNotFound,
 )
 from .mobilecar import MobileCarIntegration
+from .mobilecar_read import CapabilitiesRead, MobileCarReadService, ReadServiceError, SceneRead, SnapshotRead
+from .mobilecar_geometry import CompiledGeometryReadService, CompiledSceneRead, GeometryBundle
 from .drafts import CreateDraft, CreateSession, DraftConflict, DraftNotFound, DraftStore, SaveDraft, ValidateDraft
-from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH
+from .prepare import (
+    BeginRecording, ConfigurationSnapshot, EndRecording, PreparationError, PreparationService, PreparationStore,
+    PreparedSession, SessionEnvelope, SessionList, StopSession, Validator,
+)
+from .recipe import Recipe, load_recipe
+from .maps import MapError, MapList, MapStore, MapVersionView
+from .routes import (
+    CreateRouteDraft, MapRef, PublishRouteDraft, PublishResult, RouteDraft, RouteError, RouteService,
+    RouteVersion, RouteVersionList, SaveRouteDraft,
+)
+from .episodes import EpisodeArchive, HistoryError, load_history_source
+from .frames import FrameLinkReader
+from .history_pose import HistoryPoseReader
+from .settings import ALLOW_LAUNCH, CONFIG_PATH, DRAFT_DB_PATH, EPISODE_ROOT_OVERRIDE, HISTORY_SOURCE_PATH, MAP_CATALOG_PATH, MAPS_ROOT
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -47,7 +64,14 @@ def _catalog(request: Request) -> Catalog:
     return request.app.state.catalog
 
 
-def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | None = None) -> FastAPI:
+def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | None = None,
+               compiled_geometry_path: Path | None = None,
+               mobilecar_integration: MobileCarIntegration | None = None,
+               recipe: Recipe | None = None,
+               map_catalog_path: Path | None = None,
+               maps_root: Path | None = None,
+               history_source_path: Path | None = None,
+               episode_root: Path | None = None) -> FastAPI:
     path = Path(catalog_path) if catalog_path else CONFIG_PATH
 
     catalog = load_catalog(path)
@@ -72,8 +96,48 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     application.state.catalog = catalog
     application.state.adapters = adapters
     application.state.manager = manager
-    application.state.mobilecar_integration = MobileCarIntegration(catalog.adapters.get("mobilecar"))
-    application.state.drafts = DraftStore(draft_db_path or DRAFT_DB_PATH, application.state.mobilecar_integration)
+    application.state.mobilecar_integration = mobilecar_integration or MobileCarIntegration(catalog.adapters.get("mobilecar"))
+    geometry_path = compiled_geometry_path or os.environ.get("UNIROBOT_GEOMETRY_BUNDLE")
+    geometry = GeometryBundle(Path(geometry_path)) if geometry_path else None
+
+    def scene_service(request: Request):
+        integration = request.app.state.mobilecar_integration
+        return CompiledGeometryReadService(integration, geometry) if geometry else MobileCarReadService(integration)
+    recipe = recipe or load_recipe()
+    preparation_store = PreparationStore(draft_db_path or DRAFT_DB_PATH)
+    preparation = PreparationService(preparation_store, Validator(recipe, application.state.mobilecar_integration), recipe)
+    application.state.recipe = recipe
+    application.state.preparation = preparation
+    application.state.drafts = DraftStore(draft_db_path or DRAFT_DB_PATH, application.state.mobilecar_integration,
+                                          recipe=recipe, preparation=preparation)
+    map_store = MapStore(
+        map_catalog_path or MAP_CATALOG_PATH,
+        maps_root or MAPS_ROOT,
+        reference_scene_id=recipe.expected.get("scene_id"),
+        reference_model_sha256=recipe.expected.get("model_sha256"),
+    )
+    application.state.maps = map_store
+    application.state.routes = RouteService(draft_db_path or DRAFT_DB_PATH, map_store)
+    history_path = Path(history_source_path) if history_source_path else HISTORY_SOURCE_PATH
+    history_override = Path(episode_root) if episode_root else (Path(EPISODE_ROOT_OVERRIDE) if EPISODE_ROOT_OVERRIDE else None)
+    archive = None
+    history_unavailable = None
+    if history_path.is_file():
+        try:
+            history_source, history_root = load_history_source(history_path, history_override)
+        except HistoryError as exc:
+            history_unavailable = {"code": exc.code, "message": str(exc), "detail": exc.detail,
+                                   "source_file": str(history_path)}
+        else:
+            archive = EpisodeArchive(history_source, history_root,
+                                     reference_model_sha256=recipe.expected.get("model_sha256"),
+                                     reference_scene_id=recipe.expected.get("scene_id"))
+    else:
+        history_unavailable = {"code": "history_source_not_configured",
+                               "message": f"no history source declaration at {history_path}", "detail": {},
+                               "source_file": str(history_path)}
+    application.state.episodes = archive
+    application.state.history_unavailable = history_unavailable
     application.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -98,6 +162,38 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     def mobilecar_preflight(request: Request) -> dict[str, Any]:
         return request.app.state.mobilecar_integration.check()
 
+    @application.exception_handler(ReadServiceError)
+    async def native_read_error(request: Request, exc: ReadServiceError):
+        return JSONResponse(status_code=exc.status_code, content={"detail": {
+            "code": exc.code, "message": str(exc), "read_only": True, "session_ready": False,
+        }})
+
+    @application.get("/api/v1/mobilecar/capabilities", response_model=CapabilitiesRead)
+    def mobilecar_capabilities(request: Request):
+        return MobileCarReadService(request.app.state.mobilecar_integration).capabilities()
+
+    @application.get("/api/v1/mobilecar/scene", response_model=CompiledSceneRead if geometry else SceneRead)
+    def mobilecar_scene(request: Request):
+        return scene_service(request).scene()
+
+    @application.get("/api/v1/mobilecar/snapshot", response_model=SnapshotRead)
+    def mobilecar_snapshot(request: Request):
+        return MobileCarReadService(request.app.state.mobilecar_integration).snapshot()
+
+    @application.get("/api/v1/mobilecar/scene/assets/{asset_id}")
+    def mobilecar_scene_asset(asset_id: str, request: Request, sha256: str = Query(pattern=r"^[0-9a-f]{64}$")):
+        body = scene_service(request).asset(asset_id, sha256)
+        return Response(body, media_type="model/stl", headers={"ETag": f'"{sha256}"', "Cache-Control": "no-store"})
+
+    @application.middleware("http")
+    async def no_stale_workbench_reads(request: Request, call_next):
+        response = await call_next(request)
+        if (request.url.path.startswith("/api/v1/mobilecar/") or request.url.path.startswith("/api/v1/sessions")
+            or request.url.path.startswith("/api/v1/maps") or request.url.path.startswith("/api/v1/routes")
+            or request.url.path.startswith("/api/v1/route-drafts") or request.url.path.startswith("/api/v1/episodes")):
+            response.headers["Cache-Control"] = "no-store"
+        return response
+
     @application.exception_handler(DraftNotFound)
     async def missing_draft(request: Request, exc: DraftNotFound):
         from fastapi.responses import JSONResponse
@@ -107,6 +203,95 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     async def stale_draft(request: Request, exc: DraftConflict):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=409, content={"detail": {"code": "conflict", "message": str(exc)}})
+
+    @application.exception_handler(PreparationError)
+    async def preparation_failure(request: Request, exc: PreparationError):
+        return JSONResponse(status_code=exc.status_code,
+                            content={"detail": {"code": exc.code, "message": str(exc), **exc.detail}})
+
+    @application.exception_handler(MapError)
+    async def map_failure(request: Request, exc: MapError):
+        return JSONResponse(status_code=exc.status_code,
+                            content={"detail": {"code": exc.code, "message": str(exc), **exc.detail}})
+
+    @application.exception_handler(RouteError)
+    async def route_failure(request: Request, exc: RouteError):
+        return JSONResponse(status_code=exc.status_code,
+                            content={"detail": {"code": exc.code, "message": str(exc), **exc.detail}})
+
+    @application.exception_handler(HistoryError)
+    async def history_failure(request: Request, exc: HistoryError):
+        return JSONResponse(status_code=exc.status_code,
+                            content={"detail": {"code": exc.code, "message": str(exc), "read_only": True,
+                                                **exc.detail}})
+
+    def _archive(request: Request) -> EpisodeArchive:
+        archive = request.app.state.episodes
+        if archive is None:
+            info = request.app.state.history_unavailable or {"code": "history_source_not_configured", "message": "no history source", "detail": {}}
+            raise HistoryError(info["code"], info["message"], 503, info.get("detail") or {})
+        return archive
+
+    @application.get("/api/v1/episodes")
+    def episodes_list(request: Request, limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
+                      run_id: str | None = None, recording_status: str | None = None,
+                      episode_id: str | None = None) -> dict[str, Any]:
+        return _archive(request).list_episodes(limit=limit, offset=offset, run_id=run_id,
+                                               recording_status=recording_status, episode_id=episode_id)
+
+    @application.get("/api/v1/episodes/{episode_id}")
+    def episode_detail(request: Request, episode_id: str, run_id: str | None = None) -> dict[str, Any]:
+        return _archive(request).detail(episode_id, run_id)
+
+    @application.get("/api/v1/episodes/{episode_id}/streams")
+    def episode_streams(request: Request, episode_id: str, run_id: str | None = None) -> dict[str, Any]:
+        return _archive(request).stream_catalog(episode_id, run_id)
+
+    @application.get("/api/v1/episodes/{episode_id}/streams/{stream_id}/records")
+    def episode_records(request: Request, episode_id: str, stream_id: str, run_id: str | None = None,
+                        limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
+                        event_seq_from: int | None = None, event_seq_to: int | None = None,
+                        time_base: str | None = None, time_from: float | None = None,
+                        time_to: float | None = None) -> dict[str, Any]:
+        return _archive(request).records(episode_id, stream_id, run_id=run_id, limit=limit, offset=offset,
+                                        event_seq_from=event_seq_from, event_seq_to=event_seq_to,
+                                        time_base=time_base, time_from=time_from, time_to=time_to)
+
+    @application.get("/api/v1/episodes/{episode_id}/frames")
+    def episode_frames(request: Request, episode_id: str, run_id: str | None = None,
+                       stream: str = Query("rgbd", pattern=r"^[A-Za-z0-9_-]{1,64}$"),
+                       limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
+                       time_base: str | None = None, time_from: float | None = None,
+                       time_to: float | None = None, sample_id: str | None = None) -> dict[str, Any]:
+        return FrameLinkReader(_archive(request)).frames(episode_id, run_id=run_id, stream=stream, limit=limit,
+                                                        offset=offset, time_base=time_base, time_from=time_from,
+                                                        time_to=time_to, sample_id=sample_id)
+
+    def _pose(request: Request) -> HistoryPoseReader:
+        if geometry is None:
+            raise HistoryError("history_model_bundle_not_configured",
+                               "no frozen compiled geometry bundle is configured for this process", 503,
+                               {"configure": "UNIROBOT_GEOMETRY_BUNDLE"})
+        return HistoryPoseReader(_archive(request), geometry, recipe.kinematics)
+
+    @application.get("/api/v1/episodes/{episode_id}/robot-state")
+    def episode_robot_state(request: Request, episode_id: str, run_id: str | None = None,
+                            sample_id: str | None = None) -> dict[str, Any]:
+        return _pose(request).robot_state(episode_id, run_id=run_id, sample_id=sample_id)
+
+    @application.get("/api/v1/episodes/{episode_id}/model/assets/{asset_id}")
+    def episode_model_asset(request: Request, episode_id: str, asset_id: str, run_id: str | None = None,
+                            sha256: str | None = Query(None, pattern=r"^[0-9a-f]{64}$")):
+        body, media_type, headers = _pose(request).model_asset(episode_id, asset_id, run_id=run_id, sha256=sha256)
+        return Response(body, media_type=media_type, headers=headers)
+
+    @application.get("/api/v1/episodes/{episode_id}/assets/{asset_path:path}")
+    def episode_asset(request: Request, episode_id: str, asset_path: str, run_id: str | None = None,
+                      sha256: str | None = Query(None, pattern=r"^[0-9a-f]{64}$")):
+        body, media_type, headers = _archive(request).asset(episode_id, asset_path, run_id, sha256)
+        return Response(body, media_type=media_type,
+                        headers={**headers, "ETag": f'"{sha256 or headers["X-Episode-Asset-Sha256"]}"',
+                                 "Cache-Control": "no-store"})
 
     @application.get("/api/v1/experiment-drafts")
     def list_drafts(request: Request) -> list[dict]:
@@ -128,9 +313,135 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
     def validate_draft(draft_id: str, spec: ValidateDraft, request: Request) -> dict:
         return request.app.state.drafts.validate(draft_id, spec)
 
-    @application.post("/api/v1/sessions")
-    def create_session(spec: CreateSession) -> dict:
-        raise HTTPException(status_code=409, detail={"code": "unsupported", "message": "Native Session binding and explicit Start are not implemented; no validated snapshot or Session was created"})
+    @application.post("/api/v1/sessions", response_model=SessionEnvelope, status_code=201)
+    def create_session(spec: CreateSession, request: Request, response: Response):
+        session, replayed = request.app.state.preparation.create_session(spec.model_dump())
+        response.status_code = 200 if replayed else 201
+        return {"session": session, "replayed": replayed}
+
+    @application.get("/api/v1/sessions", response_model=SessionList)
+    def list_sessions(request: Request) -> dict:
+        return {
+            "source": "stored",
+            "live": False,
+            "retrieved_at": utc_now(),
+            "sessions": request.app.state.preparation.store.list_sessions(),
+        }
+
+    @application.get("/api/v1/sessions/{session_id}", response_model=PreparedSession)
+    def get_session(session_id: str, request: Request) -> dict:
+        preparation: PreparationService = request.app.state.preparation
+        session = preparation.store.get_session(session_id)
+        current = preparation.current_observation(session)
+        return {**session, "current": current.model_dump()}
+
+    @application.post("/api/v1/sessions/{session_id}/start", response_model=PreparedSession)
+    def start_session(session_id: str, request: Request) -> dict:
+        return request.app.state.preparation.start(session_id)
+
+    @application.post("/api/v1/sessions/{session_id}/recording/begin", response_model=SessionEnvelope)
+    def begin_recording(session_id: str, spec: BeginRecording, request: Request, response: Response):
+        session, replayed = request.app.state.preparation.begin_recording(session_id, spec.model_dump())
+        response.status_code = 200 if replayed else 201
+        return {"session": session, "replayed": replayed}
+
+    @application.post(
+        "/api/v1/sessions/{session_id}/stop",
+        response_model=SessionEnvelope,
+        summary="Latched robot STOP for this Session's runtime identity",
+        description=(
+            "Sends the native latched STOP inside the lifecycle critical section and returns dispatch, "
+            "parking and coverage evidence separately. It is not POST /api/v1/runs/{run_id}/stop, it never "
+            "RESETs, never clears the safety latch and never ends the recording."
+        ),
+    )
+    def stop_session(session_id: str, spec: StopSession, request: Request, response: Response):
+        session, replayed = request.app.state.preparation.stop_session(session_id, spec.model_dump())
+        response.status_code = 200 if replayed else 201
+        return {"session": session, "replayed": replayed}
+
+    @application.post(
+        "/api/v1/sessions/{session_id}/recording/end",
+        response_model=SessionEnvelope,
+        summary="Stop and reliably finalize the recording segment this Session began",
+        description=(
+            "Identity-bound end of the Session's own recording segment. The receipt separates STOP dispatch, "
+            "parking evidence, Recorder drain, finalize proof and episode integrity; a tail file alone is not "
+            "reported as a complete recording."
+        ),
+    )
+    def end_recording(session_id: str, spec: EndRecording, request: Request, response: Response):
+        session, replayed = request.app.state.preparation.end_recording(session_id, spec.model_dump())
+        response.status_code = 200 if replayed else 201
+        return {"session": session, "replayed": replayed}
+
+    @application.get("/api/v1/config-snapshots", response_model=list[ConfigurationSnapshot])
+    def list_snapshots(request: Request) -> list[dict]:
+        return request.app.state.preparation.store.list_snapshots()
+
+    @application.get("/api/v1/config-snapshots/{snapshot_id}", response_model=ConfigurationSnapshot)
+    def get_snapshot(snapshot_id: str, request: Request) -> dict:
+        return request.app.state.preparation.store.get_snapshot(snapshot_id)
+
+    @application.get("/api/v1/mobilecar/execution-recipe")
+    def execution_recipe(request: Request) -> dict:
+        return request.app.state.recipe.document()
+
+    @application.get("/api/v1/mobilecar/kinematics")
+    def mobilecar_kinematics(request: Request) -> dict:
+        preparation: PreparationService = request.app.state.preparation
+        observation = preparation.validator.observe()
+        evidence, _ = preparation.validator.kinematics(observation)
+        return {
+            "schema_version": "unirobot-mobilecar-kinematics-1",
+            "profile_id": preparation.recipe.kinematics["profile_id"],
+            "digest": preparation.recipe.kinematics_digest,
+            "authority": preparation.recipe.kinematics["authority"],
+            "profile": preparation.recipe.kinematics,
+            "sources": preparation.recipe.kinematics["sources"],
+            "runtime_identity": observation.runtime_identity.model_dump(),
+            "consistency": evidence.model_dump(exclude={"profile_id", "digest", "authority", "limitations"}),
+            "limitations": preparation.recipe.kinematics["limitations"],
+        }
+
+    @application.get("/api/v1/maps", response_model=MapList)
+    def list_maps(request: Request):
+        return request.app.state.maps.list_maps()
+
+    @application.get("/api/v1/maps/{map_id}/versions/{version}", response_model=MapVersionView)
+    def get_map_version(map_id: str, version: str, request: Request, frame: str | None = None):
+        return request.app.state.maps.get_version(map_id, version, frame)
+
+    @application.get("/api/v1/maps/{map_id}/versions/{version}/image")
+    def get_map_image(map_id: str, version: str, request: Request,
+                      sha256: str = Query(pattern=r"^[0-9a-f]{64}$")):
+        body, digest = request.app.state.maps.read_image(map_id, version, sha256)
+        return Response(body, media_type="image/x-portable-graymap",
+                        headers={"ETag": f'"{digest}"', "Cache-Control": "no-store"})
+
+    @application.post("/api/v1/route-drafts", response_model=RouteDraft, status_code=201)
+    def create_route_draft(spec: CreateRouteDraft, request: Request):
+        return request.app.state.routes.create(spec)
+
+    @application.get("/api/v1/route-drafts/{route_id}", response_model=RouteDraft)
+    def get_route_draft(route_id: str, request: Request):
+        return request.app.state.routes.get(route_id)
+
+    @application.put("/api/v1/route-drafts/{route_id}", response_model=RouteDraft)
+    def save_route_draft(route_id: str, spec: SaveRouteDraft, request: Request):
+        return request.app.state.routes.save(route_id, spec)
+
+    @application.post("/api/v1/route-drafts/{route_id}/publish", response_model=PublishResult)
+    def publish_route_draft(route_id: str, spec: PublishRouteDraft, request: Request):
+        return request.app.state.routes.publish(route_id, spec)
+
+    @application.get("/api/v1/routes/{route_id}/versions", response_model=RouteVersionList)
+    def list_route_versions(route_id: str, request: Request):
+        return request.app.state.routes.list_versions(route_id)
+
+    @application.get("/api/v1/routes/{route_id}/versions/{version}", response_model=RouteVersion)
+    def get_route_version(route_id: str, version: str, request: Request):
+        return request.app.state.routes.get_version(route_id, version)
 
     @application.get("/api/v1/platform", response_model=PlatformSummary)
     def platform(request: Request) -> PlatformSummary:

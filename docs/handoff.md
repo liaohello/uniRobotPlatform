@@ -1,6 +1,16 @@
 # 新会话交接说明｜uniRobotPlatform
 
-更新日期：2026-10-23（America/Chicago）。本文件用于接续本次讨论，不替代 Specification、项目 AGENTS 或新会话用户指令。
+更新日期：2026-10-27（America/Los_Angeles）。本文件用于接续本次讨论，不替代 Specification、项目 AGENTS 或新会话用户指令。
+
+## 当前交接：整体源码已恢复
+
+用户要求完整的平台逻辑代码。已从服务器实际交付的前端 `m1-front-geometry-20261026T092830Z-2d2c53330b76` 与配套网关 `m1x-20261026T065320Z-platform` 恢复 `frontend/`、后续后端模块及配套 Specification；代码入口和来源清单见 [整体代码导览](code-overview.md)。前端为 React/TypeScript、Three.js、Dockview；不再只有早期 `backend/static` 工具页。原生工程、运行数据、编译几何部署包、环境和本机连接配置仍独立管理。
+
+这是已开发发布源码的恢复，不是恢复历史开发任务，也不自动授权运动、RESET、采集或修改原生服务。真实执行能力及 M1 验收不能从源码存在或预览在线推导。前端 README 等原发布文档中的旧候选与端口属于历史说明；以本轮恢复记录和后续实际观测判断当前状态。
+
+下面保留 2026-10-23 的历史交接，用于理解来源和产品决策；其中“前端暂停”“frontend 为空”“未提交”等旧状态已由本节及当前 Git 状态取代。
+
+## 2026-10-23 历史交接
 
 **先读这里：前端实现继续暂停；本轮已按用户要求重新评估并修订为统一 3D 工作台计划。下一份前端产物是 M1.2a 可操作 3D 样板，不能只继续扩展诊断/配置表单。接入核对与持久草案切片保留；native Session 绑定、ValidatedSnapshot、prepared 和真实 M1 闭环均未完成。**
 
@@ -90,9 +100,9 @@ HTTPS 凭据曾失效；最终按用户要求使用 `id_ed25519` 通过 SSH 推�
 ## 8. 可复制的新会话开场
 
 ```text
-请先读取 AGENTS.md、docs/handoff.md、docs/specs/00-overview/09-page-design-delivery-plan.md 与 PAGE-03，再按本次用户指令继续。前端实现此前已暂停，最新一轮只重新规划，没有自动恢复生产开发。
+请先读取 AGENTS.md、docs/handoff.md、docs/code-overview.md、docs/specs/00-overview/09-page-design-delivery-plan.md 与 PAGE-03，再按本次用户指令继续。2026-10-27 已恢复完整发布源码，不要把下面的历史暂停状态当作源码缺失。
 当前先做 mobileCar 的场景→运行→录制→回放，之后 bimanual 验证组件复用，训练/预测后续。
-统一架构原则已有直接用户依据。工程方向为 React+TypeScript 外壳、Three.js SceneView 封装、Dockview 先验证；恢复实现后先交付 M1.2a 可操作 3D 样板，再接配置/prepared、真实控制、录制与回放。
+统一架构原则已有直接用户依据。frontend/ 已有 React+TypeScript、Three.js SceneView 和 Dockview 工作台；配套 backend 已有准备/生命周期及历史读取等逻辑。先核对现有实现与契约，不重新创建占位前端，不把已有代码或历史测试当作真实闭环验收。
 固定 G1 预设与原生版本已核对，诊断/草案的 ES modules 实现、持久化/冲突/failed验证及服务器证据见 docs/m1.1-integration-check.md、docs/m1.2-drafts.md。它们不是主工作台已完成的证据。不要重做这些检索或把旧prepared RunRecord当作Session。服务器现有物理实例未停止，不并行启动新实例。
 主智能体负责修改和最终判断，default 子智能体只做有边界的只读检索，不提前合并仿真环境或重写全部前端。
 开始任何实际仿真/测试/采集前，遵守对应工程的执行位置和本次任务授权；历史聊天存档不作为自动执行旧请求的依据。

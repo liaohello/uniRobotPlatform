@@ -1,6 +1,10 @@
 # 前后端共享契约
 
-只负责跨边界共同理解的身份、数据、时间、命令与权限语义；暂不冻结传输协议、字段拼写、端点和频率。前端负责呈现，后端负责权威执行。
+只负责跨边界共同理解的身份、数据、时间、命令与权限语义。通用部分仍为设计草案；[mobileCar read v1](01-robot-world-state.md#mobilecar-read-v1) 已落实场景/能力/实际状态/资产的HTTP读取子集，其他端点与频率不能据此视为已实现。前端负责呈现，后端负责权威执行。
+
+[mobileCar geometry v1](01-robot-world-state.md#mobilecar-geometry-v1) 是独立18942编译网格候选，修复raw STL与compiled geom的坐标组合；18941/read-1冻结保留。候选capabilities/snapshot仍read-1，未开放控制/RESET/录制。
+
+[M1.2b](../../backend-m1.2b.md) 的 geometry-2 把几何**内容身份**与 run/generation/episode 身份拆开：内容不符仍拒绝，Episode 变化后按内容重新核验并显式报告身份不一致。原生无运动 Session 绑定，prepared/Start 的平台侧契约见 [Session 生命周期 §原生绑定协议](../20-backend/01-session-scene/01-session-lifecycle.md#原生绑定协议m1-binding-1)。 结束侧的 [STOP 与录制结束协议](../20-backend/01-session-scene/01-session-lifecycle.md#stop-与录制结束协议m1-stop-1--m1-end-1) 把受理、STOP 下发、停车证据与覆盖、Recorder 排空、落盘终态与完整性分层给出；`m1-recording-1` 只覆盖 begin。
 
 V0.5 当前优先：[实验配置](07-task-scene-experiment-config.md) 的 Profile/权限/Stale/快照、[路线资源版本](08-navigation-map-route.md) 与 [数据到模型来源链](05-dataset-model-lineage.md)。示意字段用于实现对齐，现存后端任务目录结构不自动满足这些运行契约。
 

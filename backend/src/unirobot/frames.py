@@ -1,0 +1,845 @@
+"""Read-only frame linkage for one historical Episode: image frame to recorded robot state.
+
+This answers the question a historical replay cursor needs first — "which robot state does the
+recorder itself tie to this image frame?" — using only keys and clocks present in the native
+records. Measured on the real source
+(run_0104613ff7364ae78cf2f3946bd45f7b / episode_27bfed5427684795b361cd2ec21e9aa7, 303 persisted
+frames): observations/persist -> observations/index joins 303/303 by ``sample_id``, -> transforms
+joins 303/303 by ``sample_id``, -> the state feedback event joins 303/303 by
+``capture_control_tick_id`` == ``control_tick_id``, while the declared ``feedback_sample_id``
+resolves to an observation row in only 3/303 frames. That case is returned as an unresolved
+reference, never as a match: no filename guessing, no line ordering, no nearest-by-closeness, no
+interpolation, and no state carried over from a neighbouring frame.
+
+A role is complete only when the records its own semantics demand are present exactly once: an
+image frame needs one ``rgb`` row and one ``depth`` row, so two rows of one kind are never a
+complete pair, and repeated state, transform or timing candidates for one key are reported as
+ambiguous with every candidate listed rather than resolved to the first line in the file.
+
+Everything here reads. A joined record whose own ``run_id``/``episode_id`` differs from the
+anchor's is reported as an identity mismatch instead of being merged into the frame.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from typing import Any, Iterator
+
+from .episodes import (DEFAULT_PAGE, ID_TOKEN, MAX_PAGE, MAX_RECORD_BYTES, STREAMS, EpisodeArchive,
+                       EpisodeLocation, HistoryError, _now)
+
+FRAME_LINK_SCHEMA = "unirobot-mobilecar-frame-link-2"
+
+# Only the time bases that actually exist on the anchor records, measured on the real source.
+FRAME_TIME_BASES = {
+    "capture_backend_monotonic_s": "seconds, native backend monotonic clock at capture",
+    "capture_sim_time_s": "seconds, simulator time at capture",
+    "persist_backend_monotonic_s": "seconds, native backend monotonic clock at persist",
+}
+
+# role -> (source stream, recorded join key, what satisfying the role means)
+ROLE_SEMANTICS = {
+    "image_observation": ("observations-index", "sample_id",
+                          "the rgb and depth observation rows recorded for this frame, each with its own media uri"),
+    "camera_transform": ("transforms", "sample_id",
+                         "camera extrinsics recorded for this frame; not a per-body pose sequence"),
+    "capture_timing_event": ("events", "payload.sample_id",
+                             "the recorder's own capture-timing event for this frame"),
+    "state_feedback_event": ("events", "control_tick_id",
+                             "recorded robot state feedback carried on the frame's capture tick"),
+    "feedback_observation_row": ("observations-index", "sample_id",
+                                 "an observation row whose own sample_id equals the frame's declared feedback_sample_id"),
+}
+
+# Completeness is decided by what the role means, not by how many lines happened to carry the key.
+ROLE_REQUIREMENTS: dict[str, dict[str, Any]] = {
+    "image_observation": {"required_kinds": ("rgb", "depth"), "kind_cardinality": 1,
+                          "rule": "one row per required sensor_kind, matched by the row's own sensor_kind field"},
+    "camera_transform": {"exact_records": 1, "rule": "exactly one transform row for this sample_id"},
+    "capture_timing_event": {"exact_records": 1, "rule": "exactly one rgbd_capture_timing event naming this sample_id"},
+    "state_feedback_event": {"exact_records": 1, "rule": "exactly one state event carrying this control_tick_id"},
+    "feedback_observation_row": {"exact_records": 1, "rule": "exactly one observation row whose sample_id equals the declared feedback id"},
+}
+
+PRIMARY_ROLES = ("image_observation", "camera_transform", "capture_timing_event", "state_feedback_event")
+STATE_EVENT_TYPES = ("feedback", "feedback_initial")
+TIMING_EVENT_TYPE = "rgbd_capture_timing"
+
+STATUS_MEANING = {
+    "matched": "every record the role requires was found by its recorded key, once",
+    "partial": "some but not all records the role requires were found",
+    "missing": "no record for this role carried the key",
+    "unresolved_reference": "the frame declares a reference whose target record is not in this Episode",
+    "identity_mismatch": "a candidate record named a different run or Episode and was excluded",
+    "stream_absent": "the source stream is not recorded in this Episode",
+    "ambiguous_kind": "a sensor_kind the role requires was recorded more than once for the same frame key",
+    "ambiguous_candidates": "more than one record claimed this role's key, so no single record can be reported",
+}
+
+# Stated precedence so a diagnosis never depends on accidental iteration order.
+STATUS_PRECEDENCE = ["stream_absent", "identity_mismatch", "ambiguous_kind", "ambiguous_candidates",
+                     "partial", "missing", "unresolved_reference", "matched"]
+
+SELECTION_RULES = {
+    "joins": "exact equality of the recorded join key named on each role; never a filename, line order or browser arrival order",
+    "when_nothing_matches": "the role is reported as missing, unresolved_reference or stream_absent, with the key that was looked for",
+    "when_several_match": "ambiguous_kind or ambiguous_candidates with every candidate line index listed; the first line in the file is not chosen",
+    "completeness": "judged by the required sensor_kind set and per-kind cardinality, never by a record count alone",
+    "status_precedence": STATUS_PRECEDENCE,
+    "state_hold": "not applied: a frame never inherits another frame's state",
+    "interpolation": "none",
+    "nearest_in_time": "not used; numeric closeness is not treated as identity or as simultaneity",
+}
+
+# Each quantity is a named subtraction of two recorded numbers on a named record and field.
+TIMING_QUANTITIES: tuple[dict[str, str], ...] = (
+    {"key": "state_event_write_minus_frame_capture", "record": "events state feedback envelope",
+     "field": "backend_monotonic_s", "relative_to": "persisted frame capture_backend_monotonic_s", "unit": "s",
+     "clock": "named backend_monotonic by the record",
+     "meaning": "when the recorder wrote the state event; it is not the instant the state was sampled"},
+    {"key": "state_payload_feedback_time_minus_frame_capture", "record": "events state feedback payload",
+     "field": "feedback_time_monotonic", "relative_to": "persisted frame capture_backend_monotonic_s", "unit": "s",
+     "clock": "named backend_monotonic by feedback_clock",
+     "meaning": "the as-of time the state payload carries for its own sample"},
+    {"key": "state_payload_feedback_time_minus_state_event_write", "record": "events state feedback payload and envelope",
+     "field": "feedback_time_monotonic minus backend_monotonic_s", "relative_to": "the same event record", "unit": "s",
+     "clock": "named backend_monotonic by the record",
+     "meaning": "how long before the event was written the payload says its sample was taken"},
+    {"key": "recorder_declared_feedback_time_minus_frame_capture", "record": "events rgbd_capture_timing payload",
+     "field": "feedback_time_s", "relative_to": "persisted frame capture_backend_monotonic_s", "unit": "s",
+     "clock": "named by payload.feedback_clock",
+     "meaning": "the recorder's own declared feedback time for this frame, a third stamp beside the two above"},
+    {"key": "timing_payload_capture_minus_anchor_capture", "record": "events rgbd_capture_timing payload",
+     "field": "capture_backend_monotonic_s", "relative_to": "persisted frame capture_backend_monotonic_s", "unit": "s",
+     "clock": "named backend_monotonic by the record",
+     "meaning": "cross-check that the timing event and the persisted frame name the same capture stamp"},
+    {"key": "observation_measurement_minus_frame_capture", "record": "observations index row",
+     "field": "measurement_time_s", "relative_to": "persisted frame capture_backend_monotonic_s", "unit": "s",
+     "clock": "row clock_id", "meaning": "the sensor's own measurement stamp for this frame's stream"},
+    {"key": "observation_arrival_minus_frame_capture", "record": "observations index row",
+     "field": "arrival_time_s", "relative_to": "persisted frame capture_backend_monotonic_s", "unit": "s",
+     "clock": "row clock_id", "meaning": "when the bridge says the observation arrived"},
+    {"key": "persist_minus_capture", "record": "persisted frame", "field": "persist_backend_monotonic_s",
+     "relative_to": "its own capture_backend_monotonic_s", "unit": "s", "clock": "named backend_monotonic by the record",
+     "meaning": "the recorder's own capture-to-disk latency for this frame"},
+)
+
+# Two separate simulator-time quantities: the payload's own stamp and the event envelope's stamp.
+# A missing payload value is never filled from the envelope, because that would present an
+# envelope field under a payload label.
+SIM_TIME_QUANTITIES: tuple[dict[str, str], ...] = (
+    {"key": "state_sim_time_minus_frame_capture_sim_time", "record": "events state feedback payload",
+     "field": "sim_time_s", "relative_to": "persisted frame capture_sim_time_s", "unit": "s", "clock": "sim",
+     "missing_behaviour": "not emitted when the payload has no numeric sim_time_s",
+     "meaning": "simulator-time separation from the state sample the payload itself carries, a different clock "
+                "from every *_backend_monotonic_* quantity above"},
+    {"key": "state_event_envelope_sim_time_minus_frame_capture_sim_time",
+     "record": "events state feedback envelope", "field": "sim_time_s",
+     "relative_to": "persisted frame capture_sim_time_s", "unit": "s", "clock": "sim",
+     "missing_behaviour": "not emitted when the envelope has no numeric sim_time_s",
+     "meaning": "simulator time recorded on the event envelope; it is not the payload's sample stamp"},
+)
+
+# The recorder writes its own per-frame latency numbers; they are copied, never re-derived here.
+RECORDER_DECLARED_LATENCY_FIELDS = ("observation_age_ms", "arrival_to_persist_ms", "capture_to_persist_ms",
+                                    "capture_to_copy_ms", "capture_to_render_complete_ms", "render_ms",
+                                    "render_start_to_render_complete_ms", "encode_ms", "publish_ms",
+                                    "capture_to_publish_complete_ms")
+
+FRAME_LINK_VERSION_MIGRATION = {
+    "from_schema": "unirobot-mobilecar-frame-link-1",
+    "to_schema": FRAME_LINK_SCHEMA,
+    "changed": [
+        "paging.has_more is decided by finding the next qualifying anchor line rather than by comparing a "
+        "prefiltered record count with a raw file line index",
+        "paging reports which lines were actually read, and blank, oversize, unparseable and non-object lines "
+        "separately from records examined",
+        "role completeness is judged by the required sensor_kind set and per-kind cardinality; repeated candidates "
+        "are ambiguous_kind or ambiguous_candidates instead of a silent first-wins match",
+        "times.quantities names each recorded difference by record, field, unit and meaning, and "
+        "times.recorder_declared copies the recorder's own latency fields",
+        "time.clock_sameness separates the fields that name a shared clock base from what the reader can verify, and "
+        "states how far the record's writing version can be bound",
+    ],
+    "removed_fields": {"times.age_of_state_relative_to_frame":
+                       "it merged the state event's write stamp with the state sample stamps; read "
+                       "times.quantities keys state_event_write_minus_frame_capture, "
+                       "state_payload_feedback_time_minus_frame_capture and "
+                       "recorder_declared_feedback_time_minus_frame_capture instead"},
+    "corrections": [
+        "state_sim_time_minus_frame_capture_sim_time now names only the state feedback PAYLOAD stamp and is absent "
+        "when the payload carries no numeric sim_time_s; earlier builds of this version silently filled it from the "
+        "event envelope while still labelling the payload as the source",
+        "the envelope's own simulator time is a separate quantity, "
+        "state_event_envelope_sim_time_minus_frame_capture_sim_time",
+        "no quantity is ever filled from another record: absence is reported as absence",
+    ],
+    "compatibility_note": "consumers must read schema_version: frame-link-1 and frame-link-2 pages are not the same contract",
+}
+
+NOT_PROVEN = [
+    "that two records naming the same clock base were stamped by one writer at one instant: naming is not verification",
+    "which native build wrote these records: the run manifest pins contract_version and a software name/version only",
+    "a cross-stream or cross-episode replay cursor: this page links records inside one Episode only",
+    "rendered 3D replay: a transform row is camera extrinsics plus the joint values recorded with it",
+    "archive-wide integrity: only the files this request opened are covered",
+]
+
+FRAME_FIELDS = ("stream_id", "sample_id", "sensor_kind", "frame_id", "clock_id", "source", "quality",
+                "measurement_time_s", "arrival_time_s", "asset_uri", "valid_mask_uri", "capture_sim_time_s",
+                "capture_backend_monotonic_s", "capture_control_tick_id", "feedback_sample_id")
+EVENT_FIELDS = ("event_seq", "event_type", "control_tick_id", "backend_monotonic_s", "sim_time_s", "wall_utc")
+TRANSFORM_FIELDS = ("stream_id", "sample_id", "frame_id", "clock_id", "source", "measurement_time_s", "arrival_time_s")
+
+
+def _relative(stream_id: str) -> str:
+    return STREAMS[stream_id][0]
+
+
+def _stream_lines(path, tokens: tuple[str, ...],
+                  stats: dict[str, int] | None = None) -> Iterator[tuple[int, dict[str, Any]]]:
+    """Yield only the records that can carry one of the wanted keys, keeping the native line index.
+
+    The substring test filters raw text and never changes provenance: ``line_index`` stays the
+    real line number in the file, so every returned linkage can be pointed back to its position.
+    Lines dropped on the way are counted rather than silently lost.
+    """
+    needles = tuple(f'"{token}"' for token in tokens)
+    with path.open("r", encoding="utf-8", errors="replace") as handle:
+        for index, raw in enumerate(handle):
+            if stats is not None:
+                stats["lines_read"] += 1
+            if not raw.strip():
+                if stats is not None:
+                    stats["blank_lines_skipped"] += 1
+                continue
+            if len(raw) > MAX_RECORD_BYTES:
+                if stats is not None:
+                    stats["oversize_lines_skipped"] += 1
+                continue
+            if not any(item in raw for item in needles):
+                if stats is not None:
+                    stats["prefiltered_lines_skipped"] += 1
+                continue
+            try:
+                record = json.loads(raw)
+            except json.JSONDecodeError:
+                if stats is not None:
+                    stats["unparseable_lines_skipped"] += 1
+                continue
+            if isinstance(record, dict):
+                yield index, record
+            elif stats is not None:
+                stats["non_object_lines_skipped"] += 1
+
+
+def _new_line_stats() -> dict[str, int]:
+    return {"lines_read": 0, "blank_lines_skipped": 0, "oversize_lines_skipped": 0, "unparseable_lines_skipped": 0,
+            "non_object_lines_skipped": 0, "prefiltered_lines_skipped": 0}
+
+
+def _number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _delta(capture: Any, other: Any, meta: dict[str, str], *, line_index: int | None = None) -> dict[str, Any] | None:
+    """Subtraction of two recorded numbers with the sign kept; never a synchronisation claim."""
+    if not _number(capture) or not _number(other):
+        return None
+    value = other - capture
+    item = {"key": meta["key"], "source_record": meta["record"], "field": meta["field"],
+            "relative_to": meta["relative_to"], "unit": meta["unit"], "clock": meta["clock"],
+            "meaning": meta["meaning"], "capture_value": capture, "other_value": other, "value": value,
+            "abs_ms": abs(value) * 1000.0 if meta["unit"] == "s" else None,
+            "direction": "earlier" if value < 0 else "later" if value > 0 else "equal"}
+    if line_index is not None:
+        item["line_index"] = line_index
+    return item
+
+
+def _identity(record: dict[str, Any], location: EpisodeLocation) -> dict[str, Any]:
+    return {"run_id_matches": record.get("run_id") == location.run_id,
+            "episode_id_matches": record.get("episode_id") == location.episode_id,
+            "declared_run_id": record.get("run_id"), "declared_episode_id": record.get("episode_id")}
+
+
+def _clocks(record: dict[str, Any]) -> dict[str, Any]:
+    keys = ("clock_id", "measurement_time_s", "arrival_time_s", "backend_monotonic_s", "sim_time_s", "wall_utc",
+            "capture_backend_monotonic_s", "capture_sim_time_s", "persist_backend_monotonic_s",
+            "arrival_backend_monotonic_s", "arrival_to_persist_ms", "capture_to_persist_ms")
+    return {key: record.get(key) for key in keys if key in record}
+
+
+def _declared_media(record: dict[str, Any]) -> list[dict[str, Any]]:
+    """Media this row itself cites, with the digest the recorder declared next to it."""
+    metadata = record.get("metadata") if isinstance(record.get("metadata"), dict) else {}
+    out = []
+    for field in ("asset_uri", "valid_mask_uri"):
+        uri = record.get(field)
+        if isinstance(uri, str):
+            out.append({"uri": uri, "declared_sha256": metadata.get("asset_sha256") if field == "asset_uri" else None,
+                        "declared_bytes": metadata.get("asset_bytes") if field == "asset_uri" else None})
+    return out
+
+
+class FrameLinkReader:
+    def __init__(self, archive: EpisodeArchive) -> None:
+        self.archive = archive
+
+    # ---- public entry point ------------------------------------------------------
+
+    def frames(self, episode_id: str, *, run_id: str | None = None, stream: str = "rgbd",
+               limit: int = DEFAULT_PAGE, offset: int = 0, time_base: str | None = None,
+               time_from: float | None = None, time_to: float | None = None,
+               sample_id: str | None = None) -> dict[str, Any]:
+        location = self.archive.location(episode_id, run_id)
+        anchor_path = location.path_of("observations-persist")
+        if not anchor_path.is_file():
+            raise HistoryError("episode_stream_unavailable", "this Episode recorded no persisted frames", 404,
+                               {"stream_id": "observations-persist", "relative_path": _relative("observations-persist")})
+        if time_base and time_base not in FRAME_TIME_BASES:
+            raise HistoryError("time_base_unsupported", f"unknown frame time base: {time_base}", 400,
+                               {"supported": sorted(FRAME_TIME_BASES),
+                                "note": "only bases present on the persisted frame records are selectable here"})
+        if time_base and time_from is None and time_to is None:
+            raise HistoryError("time_range_required", "time_base needs time_from or time_to in that base", 400)
+        if sample_id and not re.fullmatch(ID_TOKEN, sample_id):
+            raise HistoryError("sample_id_invalid", "sample id is not a native id token", 400)
+
+        limit = max(1, min(limit, MAX_PAGE))
+        anchors, counters, lines, next_anchor = self._anchors(
+            location, anchor_path, stream=stream, limit=limit, offset=offset, sample_id=sample_id,
+            # The selectable base is the recorded field name itself; the mapping only describes it.
+            selected_field=time_base, time_from=time_from, time_to=time_to)
+        links = self._collect(location, anchors)
+        frames = [self._frame(location, line_index, record, links) for line_index, record in anchors]
+        ambiguous_primary = sum(1 for item in frames
+                                if any(entry["status"] in ("ambiguous_kind", "ambiguous_candidates")
+                                       for entry in item["roles"] if entry["role"] in PRIMARY_ROLES))
+        return {
+            "schema_version": FRAME_LINK_SCHEMA,
+            "read_only": True,
+            "source": self._source_view(location),
+            "retrieved_at": _now(),
+            "identity": {"run_id": location.run_id, "episode_id": location.episode_id,
+                         "episode_directory": str(location.directory),
+                         "run_directory_identity": "the run directory was re-validated as itself before this read",
+                         "native_contract_version": self.archive.source.contract_version},
+            "anchor": {"stream_id": "observations-persist", "relative_path": _relative("observations-persist"),
+                       "semantics": "one persisted image frame per record, carrying the recorder's own capture and persist clocks",
+                       "requested_stream": stream},
+            "paging": {"limit": limit, "offset": offset, "returned": len(frames),
+                       "has_more": next_anchor is not None,
+                       "next_offset": anchors[-1][0] + 1 if next_anchor is not None and anchors else None,
+                       "next_qualifying_anchor_line_index": next_anchor,
+                       "offset_semantics": "next_offset is the raw line index after the last returned anchor in the "
+                                           "anchor file; the following request re-tests every line at or above it "
+                                           "against the same eligibility rules",
+                       "skipped_before_offset": counters["skipped_before"],
+                       "excluded_anchor_identity_mismatch": counters["excluded_identity_mismatch"],
+                       "excluded_stream_mismatch": counters["excluded_stream_mismatch"],
+                       "excluded_without_sample_id": counters["excluded_without_sample_id"],
+                       "excluded_by_sample_id_filter": counters["excluded_by_sample_id_filter"],
+                       "excluded_outside_time_window": counters["excluded_outside_time_window"],
+                       "records_missing_selected_time_base": counters["records_missing_selected_time_base"],
+                       "anchor_records_examined": counters["examined"],
+                       "post_page_records_examined": counters["post_page_records_examined"],
+                       "anchor_lines": lines,
+                       "scan": {"whole_file_scanned": next_anchor is None,
+                                "stopped_after_full_page_at_line_index": next_anchor,
+                                "note": "a full page stops at the first further qualifying anchor, so the counts "
+                                        "above describe the lines actually read and are not a whole-file census"}},
+            "cursor": {"order": "native_append_order_of_the_anchor_stream",
+                       "line_index_is_not_a_clock": True,
+                       "persist_sequence_is_the_recorders_own_counter": True,
+                       "first_line_index": anchors[0][0] if anchors else None,
+                       "last_line_index": anchors[-1][0] if anchors else None,
+                       "first_persist_sequence": anchors[0][1].get("persist_sequence") if anchors else None,
+                       "last_persist_sequence": anchors[-1][1].get("persist_sequence") if anchors else None},
+            "time": {"selected_time_base": time_base, "time_from": time_from, "time_to": time_to,
+                     "selectable_time_bases": sorted(FRAME_TIME_BASES),
+                     "units": {"*_s": "seconds", "*_ms": "milliseconds", "*_rad": "radians", "*_m": "metres"},
+                     "synchronized_across_streams": False,
+                     "same_clock_verified": False,
+                     "clock_sameness": self._clock_sameness(),
+                     "deltas_are_recorded_arithmetic": True,
+                     "browser_arrival_order_is_not_used": True},
+            "linkage": {"roles": {role: {"source_stream": info[0], "join_key": info[1], "meaning": info[2],
+                                         "requirement": ROLE_REQUIREMENTS[role]}
+                                  for role, info in ROLE_SEMANTICS.items()},
+                        "status_meaning": STATUS_MEANING,
+                        "status_precedence": STATUS_PRECEDENCE,
+                        "selection_rules": SELECTION_RULES,
+                        "primary_roles": list(PRIMARY_ROLES),
+                        "role_coverage_on_this_page": self._coverage(frames)},
+            "version_migration": FRAME_LINK_VERSION_MIGRATION,
+            "summary": {"frames_returned": len(frames),
+                        "frames_with_all_primary_roles_matched": sum(1 for item in frames if item["linkage_status"] == "matched"),
+                        "frames_with_some_primary_roles_missing": sum(1 for item in frames if item["linkage_status"] == "partial"),
+                        "frames_with_no_primary_role_matched": sum(1 for item in frames if item["linkage_status"] == "missing"),
+                        "frames_with_ambiguous_primary_role": ambiguous_primary,
+                        "frames_without_a_linked_state": sum(1 for item in frames
+                                                             if item["state"]["status"] != "matched"),
+                        "frames_with_unresolved_feedback_reference": sum(1 for item in frames
+                                                                         if item["declared_reference_status"] == "unresolved_reference")},
+            "frames": frames,
+            "not_proven": NOT_PROVEN,
+            "three_d_replay": {"this_slice_does_not_enable_3d_replay": True,
+                               "live_geometry_or_actual_may_be_applied": False,
+                               "transforms_are_full_per_body_pose_sequences": False,
+                               "robot_pose_readiness_slice": "GET /api/v1/episodes/{episode_id}/robot-state"},
+            "capability_limits": ["no replay execution", "no cross-episode cursor", "no native validate proxy",
+                                  "no control, RESET, recording or physics stepping"],
+        }
+
+    # ---- anchors ------------------------------------------------------------------
+
+    def _anchor_rejection(self, location: EpisodeLocation, record: dict[str, Any], *, stream: str,
+                          sample_id: str | None, selected_field: str | None, time_from: float | None,
+                          time_to: float | None) -> str | None:
+        """The first failed eligibility rule names the counter this record consumed."""
+        # The frame record names its own run and Episode; a page never serves a frame that
+        # declares someone else's identity, even when the directory itself looked legitimate.
+        if record.get("run_id") != location.run_id or record.get("episode_id") != location.episode_id:
+            return "excluded_identity_mismatch"
+        if record.get("stream_id") != stream:
+            return "excluded_stream_mismatch"
+        if not isinstance(record.get("sample_id"), str):
+            return "excluded_without_sample_id"
+        if sample_id and record.get("sample_id") != sample_id:
+            return "excluded_by_sample_id_filter"
+        if selected_field:
+            stamp = record.get(selected_field)
+            if not _number(stamp):
+                return "records_missing_selected_time_base"
+            if (time_from is not None and stamp < time_from) or (time_to is not None and stamp > time_to):
+                return "excluded_outside_time_window"
+        return None
+
+    def _anchors(self, location: EpisodeLocation, path, *, stream: str, limit: int, offset: int,
+                 sample_id: str | None, selected_field: str | None, time_from: float | None,
+                 time_to: float | None) -> tuple[list[tuple[int, dict[str, Any]]], dict[str, int],
+                                                  dict[str, int], int | None]:
+        anchors: list[tuple[int, dict[str, Any]]] = []
+        counters = {"examined": 0, "skipped_before": 0, "excluded_identity_mismatch": 0,
+                    "excluded_stream_mismatch": 0, "excluded_without_sample_id": 0,
+                    "excluded_by_sample_id_filter": 0, "excluded_outside_time_window": 0,
+                    "records_missing_selected_time_base": 0, "post_page_records_examined": 0}
+        lines = _new_line_stats()
+        next_anchor: int | None = None
+        for line_index, record in _stream_lines(path, (stream,), lines):
+            counters["examined"] += 1
+            rejection = self._anchor_rejection(location, record, stream=stream, sample_id=sample_id,
+                                               selected_field=selected_field, time_from=time_from, time_to=time_to)
+            if rejection:
+                counters[rejection] += 1
+                continue
+            if line_index < offset:
+                counters["skipped_before"] += 1
+                continue
+            if len(anchors) >= limit:
+                # One further qualifying anchor is enough to say a next page exists. Scanning on
+                # would only inflate the counters with lines this page never served.
+                counters["post_page_records_examined"] += 1
+                next_anchor = line_index
+                break
+            anchors.append((line_index, record))
+        return anchors, counters, lines, next_anchor
+
+    # ---- join collection ----------------------------------------------------------
+
+    def _collect(self, location: EpisodeLocation,
+                 anchors: list[tuple[int, dict[str, Any]]]) -> dict[str, Any]:
+        sample_ids = tuple(record["sample_id"] for _, record in anchors)
+        ticks = tuple(item for item in (record.get("capture_control_tick_id") for _, record in anchors)
+                      if isinstance(item, str))
+        feedback_ids = tuple(item for item in (record.get("feedback_sample_id") for _, record in anchors)
+                             if isinstance(item, str))
+        links: dict[str, Any] = {"observations-index": {}, "transforms": {}, "events": {},
+                                 "sample_ids": set(sample_ids), "feedback_ids": set(feedback_ids)}
+
+        for stream_id, tokens in (("observations-index", tuple(dict.fromkeys(sample_ids + feedback_ids))),
+                                  ("transforms", sample_ids)):
+            path = location.path_of(stream_id)
+            links[stream_id]["absent"] = not path.is_file()
+            if not path.is_file() or not tokens:
+                continue
+            wanted = set(tokens)
+            for line_index, record in _stream_lines(path, tokens):
+                key = record.get("sample_id")
+                if isinstance(key, str) and key in wanted:
+                    links[stream_id].setdefault("rows", {}).setdefault(key, []).append((line_index, record))
+
+        path = location.path_of("events")
+        links["events"]["absent"] = not path.is_file()
+        if path.is_file() and (ticks or sample_ids):
+            tick_set, sample_set = set(ticks), set(sample_ids)
+            for line_index, record in _stream_lines(path, tuple(dict.fromkeys(ticks + sample_ids))):
+                event_type = record.get("event_type")
+                payload = record.get("payload") if isinstance(record.get("payload"), dict) else {}
+                tick = record.get("control_tick_id")
+                if event_type in STATE_EVENT_TYPES and isinstance(tick, str) and tick in tick_set:
+                    links["events"].setdefault("state", {}).setdefault(tick, []).append((line_index, record))
+                elif event_type == TIMING_EVENT_TYPE and payload.get("sample_id") in sample_set:
+                    links["events"].setdefault("timing", {}).setdefault(payload["sample_id"], []).append((line_index, record))
+        return links
+
+    # ---- one frame ---------------------------------------------------------------
+
+    def _entry(self, location: EpisodeLocation, stream_id: str, line_index: int, record: dict[str, Any],
+               fields: tuple[str, ...], *, with_media: bool = False, with_payload: bool = False) -> dict[str, Any]:
+        metadata = record.get("metadata") if isinstance(record.get("metadata"), dict) else None
+        entry = {"stream_id": stream_id, "relative_path": _relative(stream_id), "line_index": line_index,
+                 "record_position": f"{_relative(stream_id)}#{line_index}",
+                 "identity": _identity(record, location), "clocks": _clocks(record),
+                 "projection": {key: record.get(key) for key in fields if key in record},
+                 "metadata_keys": sorted(metadata) if metadata else None,
+                 "present_fields": sorted(key for key in record if key not in ("payload", "value", "metadata"))}
+        if with_media:
+            entry["declared_media"] = _declared_media(record)
+        if with_payload and isinstance(record.get("payload"), dict):
+            entry["payload"] = record["payload"]
+        return entry
+
+    def _role(self, location: EpisodeLocation, role: str, key_value: Any,
+              sources: list[tuple[int, dict[str, Any]]], *, stream_absent: bool, fields: tuple[str, ...],
+              unresolved_when_absent: bool = False, with_media: bool = False,
+              with_payload: bool = False) -> dict[str, Any]:
+        stream_id, join_key, meaning = ROLE_SEMANTICS[role]
+        requirement = ROLE_REQUIREMENTS[role]
+        entries: list[dict[str, Any]] = []
+        mismatched = 0
+        for line_index, record in sources:
+            entry = self._entry(location, stream_id, line_index, record, fields,
+                                with_media=with_media, with_payload=with_payload)
+            if entry["identity"]["run_id_matches"] and entry["identity"]["episode_id_matches"]:
+                entries.append(entry)
+            else:
+                mismatched += 1
+
+        required_kinds = requirement.get("required_kinds")
+        line_indexes = [item["line_index"] for item in entries]
+        detail: dict[str, Any] = {"role": role, "join_key": join_key, "key_value": key_value, "meaning": meaning,
+                                  "requirement": requirement, "candidate_records": len(sources),
+                                  "matched_records": len(entries), "identity_mismatched_records": mismatched,
+                                  "candidate_line_indexes": [item[0] for item in sources],
+                                  "sources": entries}
+        if required_kinds:
+            rows_by_kind: dict[str, list[int]] = {}
+            for item in entries:
+                kind = item["projection"].get("sensor_kind")
+                if isinstance(kind, str):
+                    rows_by_kind.setdefault(kind, []).append(item["line_index"])
+                else:
+                    rows_by_kind.setdefault("sensor_kind_absent", []).append(item["line_index"])
+            duplicate_kinds = sorted(kind for kind, indexes in rows_by_kind.items() if len(indexes) > 1)
+            missing_kinds = sorted(kind for kind in required_kinds if not rows_by_kind.get(kind))
+            detail.update({"kind_inventory": rows_by_kind, "required_kinds": list(required_kinds),
+                           "matched_kinds": sorted(kind for kind in required_kinds if rows_by_kind.get(kind)),
+                           "missing_kinds": missing_kinds, "duplicate_kinds": duplicate_kinds,
+                           "unexpected_kinds": sorted(kind for kind in rows_by_kind if kind not in required_kinds)})
+        elif len(entries) > 1:
+            detail["ambiguous_records"] = [
+                {"line_index": item["line_index"], "record_position": item["record_position"],
+                 "conflicts_with_first": _conflicts(item, entries[0])}
+                for item in entries]
+
+        if stream_absent:
+            status = "stream_absent"
+        elif mismatched:
+            status = "identity_mismatch"
+        elif required_kinds:
+            if detail["duplicate_kinds"]:
+                status = "ambiguous_kind"
+            elif not entries:
+                status = "missing"
+            elif detail["missing_kinds"]:
+                status = "partial" if detail["matched_kinds"] else "missing"
+            else:
+                status = "matched"
+        elif not entries:
+            status = "unresolved_reference" if (unresolved_when_absent and key_value is not None) else "missing"
+        elif len(entries) > 1:
+            status = "ambiguous_candidates"
+        else:
+            status = "matched"
+        detail["status"] = status
+        return detail
+
+    def _frame(self, location: EpisodeLocation, line_index: int, record: dict[str, Any],
+               links: dict[str, Any]) -> dict[str, Any]:
+        sample_id = record["sample_id"]
+        tick = record.get("capture_control_tick_id")
+        feedback_id = record.get("feedback_sample_id")
+        index_rows = links["observations-index"].get("rows", {}).get(sample_id, [])
+        transform_rows = links["transforms"].get("rows", {}).get(sample_id, [])
+        timing_rows = links["events"].get("timing", {}).get(sample_id, [])
+        state_rows = links["events"].get("state", {}).get(tick, []) if isinstance(tick, str) else []
+        # A feedback id that happens to be one of this page's own frame ids is not a reference target.
+        feedback_rows = (links["observations-index"].get("rows", {}).get(feedback_id, [])
+                         if isinstance(feedback_id, str) and feedback_id not in links["sample_ids"] else [])
+        index_absent = links["observations-index"].get("absent", False)
+        events_absent = links["events"].get("absent", False)
+
+        roles = [
+            self._role(location, "image_observation", sample_id, index_rows, stream_absent=index_absent,
+                       fields=FRAME_FIELDS, with_media=True),
+            self._role(location, "camera_transform", sample_id, transform_rows,
+                       stream_absent=links["transforms"].get("absent", False), fields=TRANSFORM_FIELDS),
+            self._role(location, "capture_timing_event", sample_id, timing_rows, stream_absent=events_absent,
+                       fields=EVENT_FIELDS, with_payload=True),
+            self._role(location, "state_feedback_event", tick, state_rows, stream_absent=events_absent,
+                       fields=EVENT_FIELDS, with_payload=True),
+            self._role(location, "feedback_observation_row", feedback_id, feedback_rows, stream_absent=index_absent,
+                       unresolved_when_absent=True,
+                       fields=("stream_id", "sample_id", "sensor_kind", "frame_id", "clock_id",
+                               "measurement_time_s", "arrival_time_s")),
+        ]
+        by_role = {item["role"]: item for item in roles}
+        primary = [by_role[name] for name in PRIMARY_ROLES]
+        matched_primary = sum(1 for item in primary if item["status"] == "matched")
+        ambiguous_primary = [item["role"] for item in primary
+                             if item["status"] in ("ambiguous_kind", "ambiguous_candidates")]
+        linkage_status = ("matched" if matched_primary == len(primary)
+                          else "missing" if matched_primary == 0 else "partial")
+        return {
+            "sample_id": sample_id,
+            "stream_id": record.get("stream_id"),
+            "anchor": {"line_index": line_index, "relative_path": _relative("observations-persist"),
+                       "persist_sequence": record.get("persist_sequence"), "identity": _identity(record, location),
+                       "clocks": _clocks(record), "declared_keys": sorted(record),
+                       "reference_keys": {"capture_control_tick_id": tick, "feedback_sample_id": feedback_id},
+                       "profile": {"profile_id": record.get("profile_id"), "profile_version": record.get("profile_version"),
+                                   "profile_sha256": record.get("profile_sha256"),
+                                   "interface_profile": record.get("interface_profile"), "kinds": record.get("kinds")}},
+            "linkage_status": linkage_status,
+            "primary_roles_matched": [item["role"] for item in primary if item["status"] == "matched"],
+            "primary_roles_ambiguous": ambiguous_primary,
+            "declared_reference_status": by_role["feedback_observation_row"]["status"],
+            "media": self._media(location, record, by_role["image_observation"]),
+            "state": self._state(record, by_role),
+            "times": self._times(record, by_role, anchor_line_index=line_index),
+            "roles": roles,
+        }
+
+    # ---- frame sections ---------------------------------------------------------
+
+    def _media(self, location: EpisodeLocation, record: dict[str, Any],
+               image_role: dict[str, Any]) -> dict[str, Any]:
+        """Media the frame declares, its availability as observed, and what the rows declare.
+
+        The anchor uri and the row uri are compared as recorded strings. When more than one row
+        carries a kind, every candidate is listed and agreement means "some candidate declares
+        this uri" — the first row is not silently picked. Digests stay declared here: they are
+        recomputed only when the asset endpoint actually serves a file.
+        """
+        rows_by_kind: dict[str, list[dict[str, Any]]] = {}
+        for entry in image_role["sources"]:
+            kind = entry["projection"].get("sensor_kind")
+            if isinstance(kind, str):
+                rows_by_kind.setdefault(kind, []).append(entry)
+        items: list[dict[str, Any]] = []
+        for field, kind in (("rgb_uri", "rgb"), ("depth_uri", "depth"), ("valid_mask_uri", "depth")):
+            uri = record.get(field)
+            entry: dict[str, Any] = {"field": field, "uri": uri if isinstance(uri, str) else None}
+            if not isinstance(uri, str):
+                entry.update({"availability": "not_recorded_on_this_frame", "observation_row_line_indexes": [],
+                              "observation_row_candidates": 0, "agrees_with_observation_row": None,
+                              "declared_sha256_by_row": None})
+                items.append(entry)
+                continue
+            rows = rows_by_kind.get(kind, [])
+            row_uris = [item["uri"] for row in rows for item in row.get("declared_media") or []]
+            entry.update({"observation_row_line_indexes": [row["line_index"] for row in rows],
+                          "observation_row_candidates": len(rows),
+                          "agrees_with_observation_row": (uri in row_uris) if row_uris else None,
+                          "declared_sha256_by_row": next((item["declared_sha256"] for row in rows
+                                                          for item in row.get("declared_media") or []
+                                                          if item["uri"] == uri), None),
+                          "declared_bytes_by_row": next((item["declared_bytes"] for row in rows
+                                                         for item in row.get("declared_media") or []
+                                                         if item["uri"] == uri), None)})
+            if len(rows) > 1:
+                differing = {json.dumps(row.get("declared_media"), sort_keys=True) for row in rows}
+                entry["observation_rows_conflict"] = len(differing) > 1
+            try:
+                path = location.checked(uri, scope="assets")
+            except HistoryError as exc:
+                entry.update({"availability": "refused", "refusal_code": exc.code})
+                items.append(entry)
+                continue
+            present = path.is_file()
+            entry.update({"availability": "present" if present else "absent",
+                          "bytes_on_disk": path.stat().st_size if present else None})
+            items.append(entry)
+        return {"declared_by": "the persisted frame record and its observation rows, copied verbatim",
+                "uri_convention": "assets/<kind>/<file>, served only from this episode's assets tree",
+                "digest_verification": "declared only; recomputed when the asset endpoint serves the file",
+                "duplicate_row_rule": "every candidate row for the kind is listed; none is silently chosen",
+                "items": items}
+
+    def _state(self, record: dict[str, Any], by_role: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        role = by_role["state_feedback_event"]
+        candidates = role["sources"]
+        single = candidates[0] if len(candidates) == 1 else None
+        timing_role = by_role["capture_timing_event"]
+        timing_single = timing_role["sources"][0] if len(timing_role["sources"]) == 1 else None
+        payload = (timing_single or {}).get("payload") or {} if timing_single else {}
+        return {"status": role["status"], "join_key": role["join_key"], "key_value": role["key_value"],
+                "candidate_records": len(candidates),
+                "source": None if single is None else {"stream_id": single["stream_id"],
+                                                       "relative_path": single["relative_path"],
+                                                       "line_index": single["line_index"],
+                                                       "event_seq": single["projection"].get("event_seq"),
+                                                       "event_type": single["projection"].get("event_type")},
+                "recorded_fields": single["projection"] if single else None,
+                "recorded_state": (single or {}).get("payload") if single else None,
+                "candidates": [{"line_index": item["line_index"], "record_position": item["record_position"],
+                                "event_seq": item["projection"].get("event_seq"),
+                                "event_type": item["projection"].get("event_type"),
+                                "backend_monotonic_s": item["projection"].get("backend_monotonic_s"),
+                                "sim_time_s": item["projection"].get("sim_time_s"),
+                                "payload": item.get("payload")} for item in candidates],
+                "single_state_selected": single is not None,
+                "multiple_candidates_note": None if single is not None or not candidates else
+                                            "several state records carry this control_tick_id; all are listed and none is chosen",
+                "declared_reference": {"feedback_sample_id": record.get("feedback_sample_id"),
+                                       "row_status": by_role["feedback_observation_row"]["status"]},
+                "recorder_declared_feedback": {"available": payload.get("feedback_time_s") is not None if timing_single else None,
+                                               "timing_event_status": timing_role["status"],
+                                               "feedback_time_s": payload.get("feedback_time_s") if timing_single else None,
+                                               "feedback_clock": payload.get("feedback_clock") if timing_single else None,
+                                               "capture_clocks_declared": payload.get("capture_clocks") if timing_single else None,
+                                               "meaning": "the recorder's own declared feedback time for this frame, copied, not re-derived"},
+                "units": {"*_rad": "radians", "*_rad_s": "radians per second", "*_m": "metres", "*_nm": "newton metres",
+                          "*_xyzw": "quaternion x,y,z,w", "*_s": "seconds"},
+                "carried_over_from_another_frame": False,
+                "interpolated": False,
+                "note": "this is the state the recorder placed on the frame's capture tick, not a verified same-instant sample of the scene"}
+
+    def _times(self, record: dict[str, Any], by_role: dict[str, dict[str, Any]], *,
+               anchor_line_index: int | None = None) -> dict[str, Any]:
+        """Every difference names its own two records; nothing here is called one state sample age."""
+        capture = record.get("capture_backend_monotonic_s")
+        sim_capture = record.get("capture_sim_time_s")
+        quantities: list[dict[str, Any]] = []
+        meta = {item["key"]: item for item in TIMING_QUANTITIES}
+        sim_meta = {item["key"]: item for item in SIM_TIME_QUANTITIES}
+
+        state_role = by_role["state_feedback_event"]
+        for item in state_role["sources"]:
+            projection = item["projection"]
+            payload = item.get("payload") or {}
+            for key, value in (("state_event_write_minus_frame_capture", projection.get("backend_monotonic_s")),
+                               ("state_payload_feedback_time_minus_frame_capture", payload.get("feedback_time_monotonic"))):
+                delta = _delta(capture, value, meta[key], line_index=item["line_index"])
+                if delta:
+                    quantities.append(delta)
+            between = _delta(projection.get("backend_monotonic_s"), payload.get("feedback_time_monotonic"),
+                             meta["state_payload_feedback_time_minus_state_event_write"], line_index=item["line_index"])
+            if between:
+                between["capture_value"] = projection.get("backend_monotonic_s")
+                quantities.append(between)
+            # A payload stamp is never taken from the envelope: if the payload carries no numeric
+            # sim_time_s, that quantity is absent instead of being filled from another record.
+            for key, value in ((sim_meta["state_sim_time_minus_frame_capture_sim_time"]["key"], payload.get("sim_time_s")),
+                               (sim_meta["state_event_envelope_sim_time_minus_frame_capture_sim_time"]["key"],
+                                projection.get("sim_time_s"))):
+                delta = _delta(sim_capture, value if _number(value) else None, sim_meta[key],
+                               line_index=item["line_index"])
+                if delta:
+                    quantities.append(delta)
+
+        for item in by_role["capture_timing_event"]["sources"]:
+            payload = item.get("payload") or {}
+            for key, value in (("recorder_declared_feedback_time_minus_frame_capture", payload.get("feedback_time_s")),
+                               ("timing_payload_capture_minus_anchor_capture", payload.get("capture_backend_monotonic_s"))):
+                delta = _delta(capture, value, meta[key], line_index=item["line_index"])
+                if delta:
+                    quantities.append(delta)
+
+        for item in by_role["image_observation"]["sources"]:
+            projection = item["projection"]
+            for key, field in (("observation_measurement_minus_frame_capture", "measurement_time_s"),
+                               ("observation_arrival_minus_frame_capture", "arrival_time_s")):
+                delta = _delta(capture, projection.get(field), meta[key], line_index=item["line_index"])
+                if delta:
+                    delta["sensor_kind"] = projection.get("sensor_kind")
+                    quantities.append(delta)
+
+        persist_delta = _delta(capture, record.get("persist_backend_monotonic_s"), meta["persist_minus_capture"],
+                               line_index=anchor_line_index)
+        if persist_delta:
+            quantities.append(persist_delta)
+
+        timing_sources = by_role["capture_timing_event"]["sources"]
+        timing_payload = timing_sources[0].get("payload") or {} if len(timing_sources) == 1 else {}
+        declared = {key: value for key in RECORDER_DECLARED_LATENCY_FIELDS
+                    for source in (timing_payload, record) if (value := source.get(key)) is not None}
+        arrival = timing_payload.get("arrival_backend_monotonic_s")
+        recomputed = (arrival - capture) * 1000.0 if _number(arrival) and _number(capture) else None
+        return {"quantities": quantities,
+                "semantics_rule": "each quantity is one named subtraction of two recorded fields; two records naming "
+                                  "the same clock base are not merged into one instant",
+                "recorder_declared": {"fields": declared,
+                                      "observation_age_ms_note": "the recorder's observation_age_ms is its own "
+                                                                 "capture-to-arrival figure for this frame, not the "
+                                                                 "difference between a state sample and the capture",
+                                      "recomputed_arrival_minus_capture_ms": recomputed,
+                                      "agrees_with_recomputation": None if recomputed is None or declared.get("observation_age_ms") is None
+                                      else abs(recomputed - declared["observation_age_ms"]) < 1e-6},
+                "state_time_quantity_keys": ["state_event_write_minus_frame_capture",
+                                             "state_payload_feedback_time_minus_frame_capture",
+                                             "recorder_declared_feedback_time_minus_frame_capture"],
+                "sim_time_quantity_keys": [item["key"] for item in SIM_TIME_QUANTITIES],
+                "same_clock_verified": False,
+                "removed_in_this_version": "age_of_state_relative_to_frame"}
+
+    @staticmethod
+    def _coverage(frames: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+        out: dict[str, dict[str, int]] = {}
+        for role in ROLE_SEMANTICS:
+            counts: dict[str, int] = {}
+            for frame in frames:
+                entry = next(item for item in frame["roles"] if item["role"] == role)
+                counts[entry["status"]] = counts.get(entry["status"], 0) + 1
+            out[role] = counts
+        return out
+
+    def _clock_sameness(self) -> dict[str, Any]:
+        """What the records name, what the reader can verify, and how far the writer can be bound."""
+        return {"fields_that_name_a_shared_base": ["persisted frame clock and capture_clocks, transform row clock_id, "
+                                                   "state event backend_monotonic_s, timing payload feedback_clock",
+                                                   "on the representative frame all of them name backend_monotonic"],
+                "declared_by_recorder": True,
+                "verified_by_reader": False,
+                "verified_claim": "naming one clock base is not proof that two writers stamped it at one instant",
+                "writer_version_binding": {
+                    "recorded": ["run manifest contract_version and software name/version",
+                                 "each record's own contract_version",
+                                 "observation profile_id, profile_version and profile_sha256 on the persisted frame"],
+                    "not_recorded": ["the native build or release that wrote the archive",
+                                     "a source commit for the writer"],
+                    "consequence": "current native source can describe how these fields are produced, but cannot be "
+                                   "cited as proof that this archive's writer behaved identically",
+                    "synchronized_upgraded_by_numeric_closeness": False}}
+
+    @staticmethod
+    def _source_view(location: EpisodeLocation) -> dict[str, Any]:
+        reference = location.relative_reference()
+        source = location.source
+        return {"source_id": source.source_id, "adapter_id": source.adapter_id, "robot_id": source.robot_id,
+                "native_release_id": source.native_release_id, "native_contract_version": source.contract_version,
+                "recording_root": source.recording_root, "recording_root_resolved": reference["recording_root_resolved"],
+                "access": source.access, "declaring_instance": source.declaring_instance,
+                "archive_baseline": source.archive_baseline, "platform_writes": False,
+                "path_boundary": "every derived path is re-resolved and must stay inside the declared root and, for "
+                                 "episode contents, inside that episode's resolved directory; the run directory must "
+                                 "additionally resolve to itself"}
+
+
+def _conflicts(entry: dict[str, Any], first: dict[str, Any]) -> bool:
+    """Whether a repeated candidate differs from the others on the fields this role projects."""
+    return (json.dumps(entry["projection"], sort_keys=True) != json.dumps(first["projection"], sort_keys=True)
+            or json.dumps(entry.get("payload"), sort_keys=True) != json.dumps(first.get("payload"), sort_keys=True))

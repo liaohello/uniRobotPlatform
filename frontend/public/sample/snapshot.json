@@ -1,0 +1,461 @@
+{
+  "contract_version": "mobilecar-1.0",
+  "run_id": "run_9c88e3e36e7648a3852c9f590e43ed5f",
+  "backend_generation": 1,
+  "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+  "episode_started_backend_monotonic_s": 558366.667448889,
+  "backend_monotonic_s": 927905.508812857,
+  "sim_time_s": 369536.1375914525,
+  "feedback_time_s": 927905.507408494,
+  "wall_utc": "2026-10-23T11:27:20.994560Z",
+  "clock_id": "backend_monotonic",
+  "control_tick_id": "tick_036953614",
+  "task_phase": "OBSERVE",
+  "base": {
+    "frame_id": "base_link",
+    "position_world_sim_m": [
+      0.1386513174901792,
+      -1.9292933918643318e-05,
+      0.05321414659290786
+    ],
+    "orientation_world_sim_xyzw": [
+      -1.1200977681179727e-06,
+      5.463690980384313e-05,
+      1.1716396377631685e-06,
+      0.9999999985060893
+    ],
+    "vx_m_s": -4.0905059020521926e-16,
+    "vy_m_s": -3.107283377056003e-17,
+    "wz_rad_s": -3.0450635133921224e-16,
+    "requested_vx_m_s": 0.0,
+    "requested_vy_m_s": 0.0,
+    "requested_wz_rad_s": 0.0,
+    "stopped": true,
+    "stop_latched": true
+  },
+  "arm": {
+    "user_joint_positions_rad": [
+      -2.1849533072579616e-12,
+      3.3428391750937404e-14,
+      2.25675782866221e-14,
+      -4.6629367034256575e-15,
+      -1.0156425690206312e-12
+    ],
+    "user_joint_targets_rad": [
+      -2.1849604256104818e-12,
+      3.344156860706527e-14,
+      2.2578702971480356e-14,
+      -4.6629367034256575e-15,
+      -1.0156417584983402e-12
+    ],
+    "model_joint_positions_rad": [
+      -2.1849533072579616e-12,
+      3.3428391750937404e-14,
+      2.25675782866221e-14,
+      -1.5707963267949012,
+      -1.0156425690206312e-12
+    ],
+    "model_joint_targets_rad": [
+      -2.1849604256104818e-12,
+      3.344156860706527e-14,
+      2.2578702971480356e-14,
+      -1.5707963267949012,
+      -1.0156417584983402e-12
+    ],
+    "joint_velocities_rad_s": [
+      -2.8510930870214665e-16,
+      5.540349467936336e-16,
+      1.8294573112483314e-16,
+      2.1178008644467064e-14,
+      2.0878218179454024e-16
+    ],
+    "joint_torques_nm": [
+      0.0014711721051490938,
+      0.1685392734227604,
+      0.16542863598162266,
+      0.16056687327878194,
+      -1.6194806373876077e-05
+    ],
+    "joint_margin_rad": [
+      2.089999999997815,
+      2.0899999999999666,
+      2.089999999999977,
+      0.5192036732050986,
+      2.0899999999989842
+    ],
+    "model_limits_rad": [
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ],
+      [
+        -2.09,
+        2.09
+      ]
+    ],
+    "coordinates_status": "user_defined_photo_pose_not_hardware_500"
+  },
+  "gripper": {
+    "width_m": 0.024999990231479703,
+    "target_width_m": 0.024999991920466903,
+    "model_drive_position_rad": -1.0776330776100003,
+    "model_drive_target_rad": -1.0776330048507736,
+    "left_contact_force_n": 0.0,
+    "right_contact_force_n": 0.0,
+    "bilateral_contact": false
+  },
+  "tcp": {
+    "frame_id": "world_sim",
+    "position_m": [
+      0.31675496511988505,
+      0.0024434952463265997,
+      0.30092144299073775
+    ],
+    "orientation_xyzw": [
+      -0.0029808810522314036,
+      0.7097262160226523,
+      -0.0031127639697958666,
+      0.7044644230468908
+    ],
+    "position_error_m": null,
+    "orientation_error_rad": null,
+    "held": false
+  },
+  "sensors": [
+    {
+      "kind": "rgb",
+      "available": true,
+      "fresh": true,
+      "sample_id": "rgbd_da4d80e456ab4cec82a2db5364005545",
+      "stream_id": "rgbd",
+      "measurement_time_s": 927905.296569162,
+      "arrival_time_s": 927905.305825865,
+      "clock_id": "backend_monotonic",
+      "valid_fraction": 0.35639322916666666,
+      "asset_uri": null,
+      "quality": "simulated_nominal_preview",
+      "capture_sim_time_s": 369535.94759145455,
+      "capture_backend_monotonic_s": 927905.296569162,
+      "capture_control_tick_id": "tick_036953595",
+      "feedback_sample_id": "joint_feedback_036953595",
+      "observation_age_s": 0.009256702964194119,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1"
+    },
+    {
+      "kind": "depth",
+      "available": true,
+      "fresh": true,
+      "sample_id": "rgbd_da4d80e456ab4cec82a2db5364005545",
+      "stream_id": "rgbd",
+      "measurement_time_s": 927905.296569162,
+      "arrival_time_s": 927905.305825865,
+      "clock_id": "backend_monotonic",
+      "valid_fraction": 0.35639322916666666,
+      "asset_uri": null,
+      "quality": "simulated_nominal_preview",
+      "capture_sim_time_s": 369535.94759145455,
+      "capture_backend_monotonic_s": 927905.296569162,
+      "capture_control_tick_id": "tick_036953595",
+      "feedback_sample_id": "joint_feedback_036953595",
+      "observation_age_s": 0.009256702964194119,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1"
+    },
+    {
+      "kind": "lidar",
+      "available": true,
+      "fresh": true,
+      "sample_id": "laser_036953610",
+      "stream_id": "lidar",
+      "measurement_time_s": 927905.474235947,
+      "arrival_time_s": 927905.474235947,
+      "clock_id": "backend_monotonic",
+      "valid_fraction": null,
+      "asset_uri": null,
+      "quality": "simulated_raycast",
+      "capture_sim_time_s": 369536.09759145294,
+      "capture_backend_monotonic_s": 927905.474235947,
+      "capture_control_tick_id": "tick_036953610",
+      "feedback_sample_id": null,
+      "observation_age_s": 0.0,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1"
+    },
+    {
+      "kind": "imu",
+      "available": true,
+      "fresh": true,
+      "sample_id": "imu_036953614",
+      "stream_id": "imu",
+      "measurement_time_s": 927905.507410431,
+      "arrival_time_s": 927905.507410431,
+      "clock_id": "backend_monotonic",
+      "valid_fraction": null,
+      "asset_uri": null,
+      "quality": "simulated_nominal",
+      "capture_sim_time_s": 369536.1375914525,
+      "capture_backend_monotonic_s": 927905.507410431,
+      "capture_control_tick_id": "tick_036953614",
+      "feedback_sample_id": null,
+      "observation_age_s": 0.0,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1"
+    },
+    {
+      "kind": "encoders",
+      "available": true,
+      "fresh": true,
+      "sample_id": "encoders_036953614",
+      "stream_id": "encoders",
+      "measurement_time_s": 927905.507410431,
+      "arrival_time_s": 927905.507410431,
+      "clock_id": "backend_monotonic",
+      "valid_fraction": null,
+      "asset_uri": null,
+      "quality": "simulated_nominal",
+      "capture_sim_time_s": 369536.1375914525,
+      "capture_backend_monotonic_s": 927905.507410431,
+      "capture_control_tick_id": "tick_036953614",
+      "feedback_sample_id": null,
+      "observation_age_s": 0.0,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1"
+    },
+    {
+      "kind": "joint_feedback",
+      "available": true,
+      "fresh": true,
+      "sample_id": "joint_feedback_036953614",
+      "stream_id": "joint_feedback",
+      "measurement_time_s": 927905.507410431,
+      "arrival_time_s": 927905.507410431,
+      "clock_id": "backend_monotonic",
+      "valid_fraction": null,
+      "asset_uri": null,
+      "quality": "simulated_nominal",
+      "capture_sim_time_s": 369536.1375914525,
+      "capture_backend_monotonic_s": 927905.507410431,
+      "capture_control_tick_id": "tick_036953614",
+      "feedback_sample_id": null,
+      "observation_age_s": 0.0,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1"
+    },
+    {
+      "kind": "image_transforms",
+      "available": true,
+      "fresh": true,
+      "sample_id": "rgbd_da4d80e456ab4cec82a2db5364005545",
+      "stream_id": "rgbd",
+      "measurement_time_s": 927905.296569162,
+      "arrival_time_s": 927905.305825865,
+      "clock_id": "backend_monotonic",
+      "valid_fraction": 0.35639322916666666,
+      "asset_uri": null,
+      "quality": "simulated_nominal_preview",
+      "capture_sim_time_s": 369535.94759145455,
+      "capture_backend_monotonic_s": 927905.296569162,
+      "capture_control_tick_id": "tick_036953595",
+      "feedback_sample_id": "joint_feedback_036953595",
+      "observation_age_s": 0.009256702964194119,
+      "profile_id": "g4a1-link4-rgbd-proprio-v1"
+    }
+  ],
+  "plan": null,
+  "active_session_id": null,
+  "active_operator_id": null,
+  "active_operator_kind": null,
+  "base_owner_session_id": null,
+  "arm_owner_session_id": null,
+  "safety_latched": true,
+  "recording": {
+    "status": "IDLE",
+    "episode_id": null,
+    "recording_segment_id": null,
+    "command_capture_ready": false,
+    "queued_events": 0,
+    "dropped_events": 0,
+    "error": null
+  },
+  "contact_summary": {
+    "unexpected_contact": false,
+    "unexpected": [],
+    "bilateral_grasp": false,
+    "left_force_n": 0.0,
+    "right_force_n": 0.0
+  },
+  "diagnostics": {
+    "mode": "GT_DEBUG",
+    "interface_profile": "g2a-1.0",
+    "observation_profile_id": "g4a1-link4-rgbd-proprio-v1",
+    "observation_profile_version": "1.0",
+    "observation_profile_sha256": "f466a438374d52927bf582a3fe0fb03e837e6472041f04a3e119ec41d8252fdd",
+    "transform_version": "g2a-transform-1",
+    "rgbd_schedule": {
+      "period_s": 0.2,
+      "schedule_index": 1847694,
+      "skipped_slots": 99,
+      "skip_reasons": {
+        "deadline_overrun": 99
+      },
+      "last_capture": {
+        "interface_profile": "g4a1-1.0",
+        "capture_clocks": {
+          "sim": "sim",
+          "backend_monotonic": "backend_monotonic",
+          "wall_utc": "wall_utc"
+        },
+        "capture_sim_time_s": 369535.94759145455,
+        "capture_backend_monotonic_s": 927905.296569162,
+        "capture_control_tick_id": "tick_036953595",
+        "feedback_sample_id": "joint_feedback_036953595",
+        "feedback_time_s": 927905.291451535,
+        "feedback_clock": "backend_monotonic",
+        "render_start_backend_monotonic_s": 927905.296920111,
+        "render_complete_backend_monotonic_s": 927905.304383019,
+        "publish_backend_monotonic_s": 927905.305825865,
+        "arrival_backend_monotonic_s": 927905.305825865,
+        "capture_to_copy_ms": 0.980609911493957,
+        "lock_acquire_ms": 0.0031350646167993546,
+        "state_copy_ms": 0.023218919523060322,
+        "capture_to_forward_ms": 0.35074190236628056,
+        "render_ms": 7.462907931767404,
+        "encode_ms": 0.0,
+        "capture_to_render_complete_ms": 7.813856936991215,
+        "render_complete_to_publish_ms": 1.4428460272029042,
+        "observation_age_ms": 9.256702964194119,
+        "lock_wait_ms": 0.0031350646167993546,
+        "schedule": {
+          "schedule_index": 1847693,
+          "deadline_lateness_ms": 0.10335259139537811,
+          "missed_slots": 0
+        },
+        "publish_ms": 0.7687319302931428,
+        "capture_to_publish_complete_ms": 10.025434894487262,
+        "wall_utc": "2026-10-23T11:27:20.791523Z"
+      }
+    },
+    "planning_last": {},
+    "model_id": "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a",
+    "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "scene_id": "mobile_pick",
+    "sensor_error": null,
+    "object_pose_world_sim": {
+      "status": "AVAILABLE",
+      "position_m": [
+        0.4,
+        3.444123296196578e-12,
+        0.10990787854182482
+      ],
+      "orientation_xyzw": [
+        2.727663572723947e-17,
+        -6.145787231358322e-19,
+        1.0198066605873714e-30,
+        1.0
+      ]
+    },
+    "base_drive_gate": {
+      "blocked": true,
+      "code": "SOFTWARE_STOP_LATCHED",
+      "reason": "软件停止已锁存：需先解除停止，或开始新的录制后再驾驶。",
+      "action": "unlock_stop",
+      "recording_required": true,
+      "owner_session_id": null,
+      "lease_remaining_s": 0.0
+    },
+    "navigation": {
+      "interface_profile": "g3a-1.0",
+      "profile_id": null,
+      "profile_sha256": null,
+      "enabled": false,
+      "backend_generation": 1,
+      "episode_id": "episode_43c22f95536f4517be04e4b195d6d354",
+      "navigation_epoch": 0,
+      "navigation_session_id": null,
+      "authorized_g3b_goal": null,
+      "last_g3b_goal_generation": 0,
+      "navigation_cancel_epoch": 5,
+      "revoked_session_count": 0,
+      "health_stop_latched_until_new_session": false,
+      "active_faults": [],
+      "last_health": {
+        "status": "UNKNOWN",
+        "stop_required": false
+      },
+      "reference_ring_size": 0
+    },
+    "camera_body": "depth_cam_link",
+    "camera_branch_root": "link4"
+  },
+  "model_joint_positions_rad": {
+    "front_left_joint": -0.2617848318544786,
+    "front_left_roller_0_joint": 1.6946757078738695e-07,
+    "front_left_roller_1_joint": 1.2475760852997871e-07,
+    "front_left_roller_2_joint": 1.0101513210666166e-07,
+    "front_left_roller_3_joint": 1.0468809893209942e-07,
+    "front_left_roller_4_joint": 1.3471412220418964e-07,
+    "front_left_roller_5_joint": 1.8318614540979873e-07,
+    "front_left_roller_6_joint": 0.006693181149306049,
+    "front_left_roller_7_joint": -0.08367698677799519,
+    "front_left_roller_8_joint": 3.0516013484028265e-07,
+    "front_left_roller_9_joint": 3.014600779586323e-07,
+    "front_left_roller_10_joint": 2.7153308522038746e-07,
+    "front_left_roller_11_joint": 2.232187429973685e-07,
+    "rear_left_joint": -0.2619676035177585,
+    "rear_left_roller_0_joint": -3.015584050341665e-07,
+    "rear_left_roller_1_joint": -3.14026931177978e-07,
+    "rear_left_roller_2_joint": -2.9690102868037746e-07,
+    "rear_left_roller_3_joint": -2.5472029302616426e-07,
+    "rear_left_roller_4_joint": -1.9886936848009983e-07,
+    "rear_left_roller_5_joint": -1.4456483902327921e-07,
+    "rear_left_roller_6_joint": 0.012002664705608792,
+    "rear_left_roller_7_joint": 0.06869814533889099,
+    "rear_left_roller_8_joint": -1.0995321281950641e-07,
+    "rear_left_roller_9_joint": -1.5181018955006736e-07,
+    "rear_left_roller_10_joint": -2.0798877845540646e-07,
+    "rear_left_roller_11_joint": -2.627936633836769e-07,
+    "front_right_joint": -0.2617795276679339,
+    "front_right_roller_0_joint": -3.101366514601886e-07,
+    "front_right_roller_1_joint": -3.092095487266887e-07,
+    "front_right_roller_2_joint": -2.7989796556159114e-07,
+    "front_right_roller_3_joint": -2.2991153659217332e-07,
+    "front_right_roller_4_joint": -1.7289298548023153e-07,
+    "front_right_roller_5_joint": -1.236174775214868e-07,
+    "front_right_roller_6_joint": -0.01934255102400628,
+    "front_right_roller_7_joint": -0.042562330475814196,
+    "front_right_roller_8_joint": -1.2625278764247047e-07,
+    "front_right_roller_9_joint": -1.7622609102038466e-07,
+    "front_right_roller_10_joint": -2.3331380314322493e-07,
+    "front_right_roller_11_joint": -2.823596605175177e-07,
+    "rear_right_joint": -0.261972949110626,
+    "rear_right_roller_0_joint": 1.6782786201393064e-07,
+    "rear_right_roller_1_joint": 1.0469518867656773e-07,
+    "rear_right_roller_2_joint": 6.78312804543263e-08,
+    "rear_right_roller_3_joint": 6.751290256832654e-08,
+    "rear_right_roller_4_joint": 1.0376455597299955e-07,
+    "rear_right_roller_5_joint": 1.6647389035009548e-07,
+    "rear_right_roller_6_joint": -0.004805689736489997,
+    "rear_right_roller_7_joint": 0.004489520154917093,
+    "rear_right_roller_8_joint": 3.3940769198314477e-07,
+    "rear_right_roller_9_joint": 3.3979600410378496e-07,
+    "rear_right_roller_10_joint": 3.0359502153751994e-07,
+    "rear_right_roller_11_joint": 2.4076042046449146e-07,
+    "joint1": -2.1849533072579616e-12,
+    "joint2": 3.3428391750937404e-14,
+    "joint3": 2.25675782866221e-14,
+    "joint4": -1.5707963267949012,
+    "joint5": -1.0156425690206312e-12,
+    "gripper_base_joint": -1.0776330776100003,
+    "gripper_left_join": 1.6164555010235442,
+    "gripper_right_joint": 1.6164437321936282,
+    "left_jaw_joint": 0.012484051952558441,
+    "right_jaw_joint": -0.012515957816161872
+  }
+}

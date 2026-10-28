@@ -1,0 +1,16 @@
+{
+  "map_id": "offline-test-map",
+  "version": "v1",
+  "frame": "map",
+  "source": "offline_test_fixture",
+  "image_url": "./offline-map.svg",
+  "width_px": 800,
+  "height_px": 600,
+  "resolution_m_per_px": 0.05,
+  "origin": { "x_m": -20, "y_m": -15, "yaw_rad": 0 },
+  "image_y_axis": "down",
+  "scene_compatibility": {
+    "status": "not_applicable",
+    "reason": "Offline synthetic map; not bound to the current mobile_pick scene and not a SLAM or navigation map."
+  }
+}

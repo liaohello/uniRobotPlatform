@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -90,23 +91,7 @@ class MobileCarIntegration:
     def _read(self, path: str) -> dict[str, Any]:
         if path not in READ_PATHS:
             raise ValueError(f"not a mobileCar preflight read path: {path}")
-        if self.config is None or not self.config.base_url:
-            raise NativeReadError("not_configured", "mobileCar service URL is not configured")
-        url = self.config.base_url.rstrip("/") + path
-        request = urllib.request.Request(url, headers={"Accept": "application/json"})
-        if self.config.auth_env:
-            token = os.environ.get(self.config.auth_env)
-            if token:
-                request.add_header("Authorization", f"Bearer {token}")
-        try:
-            with self._opener.open(request, timeout=PROBE_TIMEOUT_S) as response:
-                body = response.read(MAX_RESPONSE_BYTES + 1)
-        except urllib.error.HTTPError as exc:
-            raise NativeReadError("error", f"{path}: HTTP {exc.code}") from exc
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            raise NativeReadError("offline", f"{path}: service unreachable or timed out") from exc
-        if len(body) > MAX_RESPONSE_BYTES:
-            raise NativeReadError("error", f"{path}: JSON response exceeds size limit")
+        body = self._read_body(path, accept="application/json", limit=MAX_RESPONSE_BYTES)
         try:
             value = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -114,6 +99,33 @@ class MobileCarIntegration:
         if not isinstance(value, dict):
             raise NativeReadError("incompatible", f"{path}: expected a JSON object")
         return value
+
+    def read_scene_asset(self, asset_id: str) -> bytes:
+        if not re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", asset_id) or asset_id in {".", ".."}:
+            raise ValueError("invalid scene asset ID")
+        return self._read_body(
+            f"/api/v1/scene/assets/{asset_id}", accept="model/stl", limit=32 * 1024 * 1024
+        )
+
+    def _read_body(self, path: str, *, accept: str, limit: int) -> bytes:
+        if self.config is None or not self.config.base_url:
+            raise NativeReadError("not_configured", "mobileCar service URL is not configured")
+        url = self.config.base_url.rstrip("/") + path
+        request = urllib.request.Request(url, headers={"Accept": accept})
+        if self.config.auth_env:
+            token = os.environ.get(self.config.auth_env)
+            if token:
+                request.add_header("Authorization", f"Bearer {token}")
+        try:
+            with self._opener.open(request, timeout=PROBE_TIMEOUT_S) as response:
+                body = response.read(limit + 1)
+        except urllib.error.HTTPError as exc:
+            raise NativeReadError("error", f"{path}: HTTP {exc.code}") from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise NativeReadError("offline", f"{path}: service unreachable or timed out") from exc
+        if len(body) > limit:
+            raise NativeReadError("error", f"{path}: response exceeds size limit")
+        return body
 
     def check(self) -> dict[str, Any]:
         checks: list[dict[str, str]] = []

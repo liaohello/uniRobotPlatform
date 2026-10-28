@@ -1,6 +1,6 @@
 # Specification 修订记录
 
-规范 ID：`GOV-CHANGELOG` · 责任层：治理 · 版本：V0.7（2026-10-23）
+规范 ID：`GOV-CHANGELOG` · 责任层：治理 · 版本：V0.8（2026-10-24）
 
 状态：设计草案；S08/S09 是用户提供的分析文本，不自动视为所有细节已确认。Waypoint 范围以 S10 的用户明确选择为准。诊断/草案实现证据见独立交付记录，正式 M1/M2 与工作台验收未执行。
 
@@ -8,7 +8,69 @@
 
 [上级目录](README.md) · [总索引](../README.md)
 
+## V0.8｜2026-10-25
+
+### 2026-10-25 M1.5b 历史 reader 只读整改、根目录隔离与可复现发布
+- 按 S22/DEC-059 把只读改成由构造保证：新增 `backend/tools/native_get_probe.py`（只有 GET 方法、无 method/body 形参、逐条写 JSONL 日志），历史检查与事实提取都经它发请求；冻结候选实测 51 次请求 methods 仅 `GET`、`non_get=[]`，另有 8 次 GET 用于事实提取；重算派生结论只允许在隔离副本上进行。
+- 统一受限路径解析（`episodes.py` 内 `_real` + `confined_within` 单一检查）：root/run/`episodes`/Episode 目录/run manifest/episode/tail/sidecar/assessments/固定流/`assets/` 的解析结果都必须位于对应边界；索引拒绝软链目录，读取时每次重新解析，缓存索引不能绕过；新增 `history_path_escape`、`episode_path_escape`，软链 assets 与越界资产返回 `episode_asset_escape`，媒体清单逐文件排除并计数。
+- `event_seq` 区间过滤修复：缺失、非整数与 bool 序号被排除且计数（`filtering.event_seq_range.anomalies[]` 带 `line_index/reason/value_type`），不补造序号；`observations-index/persist` 合法无 `event_seq` 时返回空页 + 计数；合法数据的 `offset/next_offset/has_more`、原生追加顺序与身份语义不变；`wall_utc` 拒绝数值边界（400 `time_base_not_numeric`），未知基仍 400 `time_base_unsupported`。
+- 表述纠正：撤回超出证据的"所有原始文件未变/全程仅 GET"写法。保留上一轮违规记录与 native 现有派生 `quality_report.json`（摘要 `53314c84…`，前置摘要未快照，不声称内容未变、不回滚）；不变性只对事前记录并事后复核的同一集合成立（696 个 `episode.json`/`episode_complete.json` 聚合 `60c0c696…`，本轮另覆盖 946 文件集合 `drift=[]`）。同时更正 `transforms.jsonl` 语义：实测为带 frame/时钟标记的变换观测，不是逐 body 位姿，故模型摘要相等仍不等于历史 3D 渲染可用。
+- 发布身份闭合：新增 `backend/tools/source_digest.py`（唯一实现，roots `src/unirobot`+`config`+`tools`），启动器写清单、两个检查工具重算并断言与清单相等；新不可变 release `m1p-20261025T053030Z-platform`（清单 sha256 `832bf518274600a9…`，源码聚合 `4090935b4c45c900…`，45 文件）常驻 `http://127.0.0.1:18964`，独立新 SQLite；旧 `m1k` 的 61/61 与 27/27 报告及 `58a737…`/`e86a709f…` 记录保留为原版本证据，不倒填。
+- 服务器验证：新候选读取检查 69/69（含 8 项新断言）与既有能力回归 28/28；冻结发布内聚焦 19 passed；平台全量 147 passed / 3 failed（同历史三项，链条 140/3 → 147/3）。机器目录新增 S22，现为 150 个文档节点、17 个补充来源；REQ 仍 89 项。本轮不是同步回放、不是归档全量验证，也不是正式 M1.5/M1 验收。
+
+### 2026-10-25 M1.5a 真实历史 Episode/segment 只读 reader 首个切片
+- 按 S21/DEC-058 新增平台受限只读历史面：`backend/src/unirobot/episodes.py` 与五条 GET（列表 / 轻量详情 / 可用流 / 按流有界记录页 / Episode `assets/` 内媒体资产），统一 `unirobot-mobilecar-episode-read-1` 与 `read_only=true`；来源固定在 `backend/config/mobilecar-history-source.json`（`mobilecar-server-history-20261017` → `/home/liaozhengyan/Desktop/mobileCar/var/runs`，native `drvfix-20261019T044549Z-0a80415b2577`）。原始数据留在服务器，不搬运、不重写、不重算导出，不修改或重启 8792。
+- 完整性分四层：记录声明状态、`complete_tail` 存在性、tail 声明校验和条目、本次读取实际重算结果。实测发现 native tail 对自身 `episode.json` 的声明是**过期自校验**（抽样 16/16 条真实记录 `mismatch_present`，COMPLETE 记录声明 924 条摘要），平台如实报告且不改写生命周期状态；`FAILED`/`audit_status=INCOMPLETE` 记录标为 `incomplete_terminal_recorded` 且仍可读；`training_qualified=false` 不阻止原始读取。
+- 身份与时间动作语义逐字保留：source/adapter+run+episode+segment+contract 版本+目录原始引用；同名跨 run 409 `episode_id_ambiguous`；`backend_generation` 只按记录 payload 如实标注；`wall/backend_monotonic/sim/measurement/arrival` 时间与单位不转换，游标声明"文件顺序不是时钟、不跨流同步"，Actual/记录 Target/命令意图/执行反馈分类不合并；legacy 无 sidecar 时关联明确未知，不伪造 ValidatedSnapshot。
+- 3D 身份取自记录内 `manifest.json` 与 `transforms.jsonl`：与生产 pin 可比对时 `identity_verified_rendering_unverified`，否则 `restricted`；禁止套用在线 geometry/Actual。路径受限并复用既有保护：`..`/绝对路径/软链越界/非 `assets/` 目标/摘要不符/不支持后缀/超大小分别定位，不代理 validate、控制、RESET、录制或步进。
+- 服务器验证：历史候选 release `m1k-20261025T040435Z-platform` 常驻 `127.0.0.1:18960`，`tools/episode_history_check.py` 61/61 通过（348 条与 native 列表一致；events 12561 条实际计数；303 张 rgb/depth/masks 资产摘要核验；平台详情 21,031 字节对 native 整条 20,946,833 字节；归档聚合摘要 `60c0c696…` 读取前后不变；8792 前后一致且仍无 stop/end 协议）；同一候选统一能力回归 27/27；聚焦 12 passed；平台全量 140 passed / 3 failed（同一历史三项，链条 128/3 → 140/3，未新增失败）。见 [M1.5a 交付记录](../../backend-m1.5a-history-reader.md) 与 [证据册](../../evidence/m1.5a-history/README.md)。
+- 顺带闭合发布身份缺口：`launch_unified_gateway.py` 的平台源码摘要现覆盖 `src/unirobot + config + tools`（42 文件，`e86a709fb6e59f44…`），启动器与检查工具不再落在身份之外；native 完整清单与生产 pin 的边界不变。
+- 机器目录新增 S21，现为 150 个文档节点、16 个补充来源；REQ 仍 89 项。本切片不是同步回放 UI、不是新采集闭环，也不是正式 M1.5/M1 验收。
+
+### 2026-10-25 M1.4b 统一可联调候选与部署前发布身份
+
+- 统一候选 release `m1j-20261025T020857Z-platform`：`tools/launch_unified_gateway.py` 用一份启动清单在一个进程内同时提供 geometry-2 scene 与 23 资产、capabilities/snapshot/kinematics、Map/Route 资源、Draft/validate、Session/`current` 与 STOP/end schema；`tools/unified_candidate_check.py` 27/27 通过，正向生命周期 39/39。候选以 `http://127.0.0.1:18959` 常驻保留为前端联调基址（独立 SQLite、对真实 native 仅 GET），在该存活地址重跑同一套检查 27/27；18954/18956 两个 test-only 服务检查后已停止；18949/18953 未替换。
+- 几何读取兼容与执行资格分开记录：生产 recipe + 真实 8792 下 validate 真实失败、capabilities 不声明 stop/end 协议，prepared/Start/begin/STOP/end 继续按真实原因被拒；未换标签、未放宽 pin、未改生产 recipe/pin；`runs/{run_id}/stop` 仍与机器人 STOP 分离。
+- 候选身份澄清并更正 M1.4 文档：`c550a4e4…` 为旧白名单 155 中存在的 152 子集摘要，不覆盖 `attestation.py`/`session_binding.py`，不等于完整 release pin，也不表示 drvfix+m1h 已组装验证；198 行历史清单未改写。
+- 新增 `tools/release_identity.py` + `config/release-identity.native-m1h.json` + 回归 `tests/test_release_identity.py`：必需路径缺失即失败且不发布摘要，`extends` 闭包覆盖执行配置，受监视源码根的未列入文件被报告；m1h 副本 154/154、摘要 `41b9c80c…`，纯 drvfix 副本按预期失败，verify 复算匹配。
+- 维护流程顺序修正：先冻结 release/完整 pin/recipe/protocol/config/scene/lock 并核验，再进入已获授权窗口；生产 pin 更新不再排在 begin/STOP/end 成功之后。G1/G4A2、a5/drvfix 与新 pin 仍待用户决定，推荐不等于授权。
+- 服务器验证：平台全量 128 passed / 3 failed（同 `test_catalog_loads_real_tasks`、`test_every_task_has_existing_evidence`、`test_manifest_sources_exist` 历史布局失败，链条 74/3 → 90/3 → 98/3 → 108/3 → 123/3 → 128/3，均为读取仓库文档布局/外部工程资产的断言，在不含 `docs/` 的服务器 release 副本上必然失败）；机器目录新增 S20，补充来源 15 个、文档节点 150、REQ 仍 89。本轮不是部署、不是物理验证。
+
+## V0.8｜2026-10-24
+
+- 按 S18 将 PointGoal/waypoint 朝向改为必填，明确 m/rad、map +X/+Y、yaw 正方向与归一化、地图 origin 为图像左下角、图像列 +X/行 -Y；未给 yaw 报错，显式 0 合法。
+- 新增版本化地图读取与 Route Draft/Version 资源切片；地图来源区分 G3B 历史离线包与 live SLAM，未证明兼容的运行时不授予导航资格。
+- Route 保存只写资源，不发导航/机器人命令；点位、footprint、整条路径可达、动态执行分别表达，未实现检查为 unsupported。
+- M1.3 候选 `m1g-20261024T113913Z-platform` 在服务器 18953 完成真实 Room A/B 读取、Route v1/v2、409 与固定版本不可变验证；平台全量 108 passed / 3 failed，三项仍为既有外部工程/native docs 布局失败。OpenAPI、真实地图资产、route evidence 与 native before/after 见 [M1.3 交付记录](../../backend-m1.3.md)。
+- 机器目录新增 S18，现为 150 个文档节点、13 个补充来源；REQ 仍 89 项。本切片不是导航执行、部署或真实 M1 验收。
+
+### 2026-10-24 M1.4 身份绑定 STOP 与可靠录制结束候选
+
+- 按 S19 新增 `m1-stop-1`（`POST /api/v1/session/stop`）与 `m1-end-1`（`POST /api/v1/recording/end`）候选协议与平台侧 `sessions/{id}/stop`、`sessions/{id}/recording/end`；能力必须显式声明，`m1-recording-1` 不解释为含 end。
+- 回执分层为受理/STOP 下发/停车证据与覆盖/Recorder 排空/落盘终态与完整性；`parking.coverage_complete` 与 `integrity` 共同决定"整机停稳且录制完整"，`accepted`、`base.stopped`、`complete_tail` 或尾文件存在都不再是单独判据。
+- 明确拒绝规则：身份不符在副作用前拒绝；已 finalize 的 segment 走磁盘重放 `end_already_finalized`，不产生第二个 `episode_terminal`，不结束更新的 segment；同一 `request_id` 重放返回同一回执；结果未知只记 attempt。安全 STOP 不以 `motion_ready`/`recording_ready`/owner/lease 为前置条件。
+- legacy `episodes/stop` 只有 reason，平台"先 GET 校验再 POST"不再被描述为原子身份保护；`POST /api/v1/runs/{run_id}/stop` 明确为进程/记录管理，不是机器人停止。
+- native 候选补丁 `native-m1h.patch`（10 文件，sha256 `d182801d…a99f`）与冻结 release `m1h-20261024T152235Z-native` 记录候选源码摘要 `c550a4e4…49de`（生产 recipe 白名单中该 release 内存在的 152 路径），生产 pin `a0109804…911c` 未修改也未复用；native 保持未提交、未部署。
+- 服务器验证：平台聚焦 66 passed，全量 123 passed / 3 failed（历史布局失败不变，未跳过、不称全绿）；native 聚焦 31 passed，适用全量 122 testcases（120 passed / 2 项历史失败）；隔离 cross-HTTP 集成 39/39 断言通过并核对 Recorder 落盘文件与摘要。
+- 机器目录新增 S19，现为 150 个文档节点、14 个补充来源；REQ 仍 89 项。本轮不是部署、不是真机停车验证，也不改变正式 M1 验收状态。
+
 ## V0.7｜2026-10-23
+
+### 2026-10-24 M1.2d 准备链路 P1 与状态 freshness
+
+- 修复 native 录制生命周期竞态：commands RESET、legacy `episodes/start`、`recording/begin`、stop 与失败停止共享 lifecycle 锁，锁序 lifecycle → backend → recorder；状态检查与 RESET/开录在同一临界区重检，活动录制不能穿透。增加屏障回归，修复前对照 2 failed。
+- binding 准备 TTL 只约束 prepared；started 由 RESET、release、身份变化或未来明确定义的结束事件失效。回读显式 `expires_scope=prepared`，不以短租约替代持续 Session。
+- 单 Session GET 增加只读 `current`（source/observed_at/valid/status/blockers、runtime/binding/recording/owner/safety、ready/available）；`GET /sessions` 明确为 `source=stored`，刷新不续租/重绑/Start/清锁/启停录制，失联/身份变化/terminal binding 不报告 ready。
+- 平台实际 `NativeBindingClient` 与隔离 native mock 完成真实 HTTP prepare/readback/start/begin/release、幂等和拒绝；测试 recipe 明示 mock，不改生产 G1 recipe/pin。生产 8792 未部署，真实 G1 与物理验证未执行。
+- 平台聚焦 93 passed；全量 97 passed / 3 failed（历史 90/3 的同三项布局失败）；native 聚焦 57 passed。候选冻结身份与维护窗口决策见 M1.2d 交付记录。
+
+
+### 2026-10-24 M1.2c 实现澄清（不改变 V0.7 范围）
+
+- 修正 M1.2b “逐文件核验”的不准确描述：`requirements.lock` 现为 native `a5cef52` 的固定发布输入，启动读取字节、比对源摘要并核对 8 个精确版本；配方声明、发布文件核验、native 自报运行环境版本分开表述。
+- 固定 `config_manifest_sha256`（extends 链/有效配置/profile/arm_spec）与 `scene_manifest_sha256`（编译场景规范 JSON）的覆盖范围；平台要求声明、实际响应和固定期望同口径一致，不以根 XML 摘要或 155 文件源清单替代；缺省即 unsupported。
+- 补全 `m1-binding-1` 的 readback 状态、start 的 owner/lease/recording-ready/motion-ready 字段、RESET 失效和无 owner 获取；新增 `m1-recording-1` 无 RESET begin 的最小语义、持久化确认和 out-of-scope（stop/finalize/停车/回放）。
+- 原生候选补丁与平台候选已在服务器隔离验证；8792 未部署、未重启，真实 G1 prepared/Start 和在线录制 begin 仍未发生。产品验收状态不因本轮实现或测试上升为通过。
 
 - 按 S17 复评前端计划，恢复 S11/DEC-036 的统一架构原则与 PAGE-03 的可操作 3D 工作台交付形态；不改变 M1 mobileCar / M2 bimanual 和训练后续次序。
 - 纠正把诊断页/元数据草案的 FastAPI 静态 ES modules 选择当作主前端架构的偏差。工程方向沿既有分析采用 React + TypeScript、Three.js SceneView 封装，Dockview 先验证再采用；不重写整套 native renderer 或迁移仿真后端。

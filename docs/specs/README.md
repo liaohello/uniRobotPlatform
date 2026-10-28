@@ -1,6 +1,6 @@
 # uniRobotPlatform Specification 总索引
 
-组织版本：V0.7 · 2026-10-23（America/Chicago）。状态：**Specification 文档体系；本轮为前端计划复评，非工作台实现/验收声明。** 未修改节点保留各自版本。
+组织版本：V0.8 · 2026-10-25（America/Chicago）。状态：**Specification 文档体系；M1.3 地图/Route 资源切片与 M1.4 STOP/录制收尾候选已完成，分别不等于导航执行与真实停车；8792 未部署，M1 闭环验收未执行。** 未修改节点保留各自版本。
 
 本文档树吸收设计总册，将现有规则落到可继续讨论的功能节点。保留需求确认程度、建议和未决项；产品验收尚未执行。前端目录按业务工作区＋共享交互组织，后端按能力域组织，另提供按界面区域和完整功能链查找的入口。
 
@@ -132,7 +132,24 @@ docs/specs/
 - [状态域](00-overview/04-runtime-state-domains.md) 补 Session lifecycle；[Collection/版本](30-contracts/05-dataset-model-lineage.md) 明确可编辑选择和不可变成员清单；[术语表](00-overview/05-glossary.md) 区分导航、工作区、页面和组件。
 - 当前 **89 项 REQ、26 PNG/25 独特内容**；旧数字保留历史标签。[新增四项验收](40-verification/06-scene-setup-first-loop.md) 与既有条目均未执行。本轮仅修改文档/机器索引，不修改产品代码、原生工程或图片。
 
-## V0.7 当前更新：统一 3D 工作台计划复评
+## V0.8 当前更新：身份绑定 STOP 与可靠录制结束候选（M1.4）
+
+- [S19](90-governance/sources/S19-session-stop-recording-end.md) 明确本轮 Goal：STOP 与录制结束必须受 Session/运行身份约束，回执分层，且候选实现不等于部署或真实停车验证。
+- [Session 生命周期](20-backend/01-session-scene/01-session-lifecycle.md#stop-与录制结束协议m1-stop-1--m1-end-1) 增加 `m1-stop-1`/`m1-end-1` 端点、拒绝与并发规则，允许访问的 native 路径由五个改为七个。
+- [Episode 采集契约](30-contracts/03-episode-events-annotations.md#m14-身份绑定-stop-与可靠录制结束候选m1-stop-1--m1-end-1) 与 [控制命令契约](30-contracts/02-control-intervention-commands.md#stop-回执分层m14-候选) 固定"受理 / STOP 下发 / 停车证据与覆盖 / Recorder 排空 / 落盘终态与完整性"五层；`coverage_complete` + `integrity` 才是"整机停稳且录制完整"。
+- [控制权契约](30-contracts/06-control-authority.md#stop-与控制权m14-候选) 明确安全 STOP 不是接管流程，也不得被新增 owner/lease 门槛挡住。
+- 机器目录新增 S22 与 DEC-059，补充来源 17 个、文档节点 150 个、REQ 仍 89 项。历史 reader 只读整改与可复现发布（候选 `m1p-20261025T053030Z-platform`，`127.0.0.1:18964`）：只读由构造保证（51 次请求全为 GET）、路径解析覆盖索引与读取两侧、`event_seq` 区间过滤排除并计数非法序号、报告重算并绑定冻结摘要 `4090935b4c45c900…`；69/69 与 28/28、全量 147 passed / 3 项历史失败，并撤回超出证据的"全部原始文件未变"表述、更正 `transforms.jsonl` 非逐 body 位姿。见 [M1.5b 交付记录](../backend-m1.5b-history-readonly-hardening.md) 与 [证据册](../evidence/m1.5b-history-readonly-hardening/README.md)。
+- 机器目录新增 S21 与 DEC-058，补充来源 16 个、文档节点 150 个、REQ 仍 89 项。真实历史 Episode/segment 只读 reader 首个切片（候选 `m1k-20261025T040435Z-platform`，`127.0.0.1:18960`）以五条受限 GET 读取 348 条真实录制，服务器 61/61 断言、已覆盖的 696 个身份文件摘要前后不变（其余文件无前置摘要，属未覆盖；一次人工 native validate 重写 1 个派生文件）；同步回放与新采集闭环未做。实现与证据见 [M1.5a 交付记录](../backend-m1.5a-history-reader.md) 与 [M1.5a 证据册](../evidence/m1.5a-history/README.md)，契约条款并入 [Episode/采集契约](30-contracts/03-episode-events-annotations.md)。
+- 机器目录新增 S19，补充来源 14 个、文档节点 150 个、REQ 仍 89 项。实现与无物理集成证据见 [M1.4 交付记录](../backend-m1.4.md)。
+
+## V0.8 当前更新：版本化地图与带朝向 Route 切片
+
+- [S18](90-governance/sources/S18-navigation-map-route-slice.md) 补充本次明确需求：PointGoal 与每个 Waypoint 必须显式 `x/y/yaw`，缺失或 `null` 报错，显式 `0.0` 合法。S10 原文保留，不改写历史范围确认。
+- [地图/Route 契约](30-contracts/08-navigation-map-route.md)、[任务模板](10-frontend/02-scene-setup/02-task-template-configuration.md)、[Waypoint 编辑器](10-frontend/02-scene-setup/04-map-waypoint-editor.md) 与 [后端执行边界](20-backend/03-observation-algorithms/03-map-waypoint-execution.md) 固定 m/rad、map +X/+Y、yaw 正方向、`[-π,π)` 归一化、origin 图像左下角、图像列 +X/行 -Y。
+- 地图来源区分 G3B 历史离线与 live SLAM；Route Draft、不可变 Route Version、固定版本引用和 baseRevision 冲突进入主责契约。保存仅创建资源/显示数据，不执行导航、运动、RESET 或录制。
+- 机器目录新增 S18 至 150 个文档节点、13 个补充来源；需求仍 89 项，图片不变。M1.3 后端候选已完成，产品端到端验收仍未执行。
+
+## V0.7 更新：统一 3D 工作台计划复评
 
 - [S17](90-governance/sources/S17-3d-workbench-replan.md) 重申统一主架构和好操作的 3D 界面；补 DEC-052～054，保留 M1/M2、专项轻宿主及既有后端。
 - [实施计划](00-overview/09-page-design-delivery-plan.md) 增加架构/复用决定、A–H 工作台形态、交互服务与 M1.2a 样板门槛；[PAGE-03](10-frontend/page-designs/03-simulation.md) 同步。无新增产品需求或 TEST 编号。

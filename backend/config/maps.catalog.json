@@ -1,0 +1,25 @@
+{
+  "schema_version": "unirobot-map-catalog-1",
+  "maps": [
+    {
+      "map_id": "map_room_a_g3b_release_v1",
+      "version": "v1",
+      "frame": "map",
+      "package": "map_room_a_g3b_release_v1",
+      "manifest_sha256": "aaee75864a1a1edc7bdf73734640078640b0b40b69020574e80eef81c1b6fd34",
+      "source": "g3b_historical_offline",
+      "interface_profile": "g3b-1.0",
+      "test_only": false
+    },
+    {
+      "map_id": "map_room_b_g3b_release_v1",
+      "version": "v1",
+      "frame": "map",
+      "package": "map_room_b_g3b_release_v1",
+      "manifest_sha256": "a6e641a570c85e21523863f75e1346469c668993c1af0d75fe92ff4d1ea0382c",
+      "source": "g3b_historical_offline",
+      "interface_profile": "g3b-1.0",
+      "test_only": false
+    }
+  ]
+}

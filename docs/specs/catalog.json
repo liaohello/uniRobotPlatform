@@ -1,7 +1,7 @@
 {
-  "version": "0.7",
-  "date": "2026-10-23",
-  "status": "base_specification_draft",
+  "version": "0.8",
+  "date": "2026-10-25",
+  "status": "V0.8：新增 S20/S21 与 S22 历史只读整改来源；150 个文档节点、17 个补充来源。",
   "source_sha256": "995e4bf3c3fdc19f6874e1d221d5e52195db5f38e79fcac8c082b8ac9939119a",
   "packages": [
     {
@@ -228,7 +228,7 @@
       "title": "Scene Setup 任务配置与实验配置流程",
       "layer": "前端",
       "source_chapter": null,
-      "last_revision": "0.6"
+      "last_revision": "0.7"
     },
     {
       "path": "10-frontend/02-scene-setup/03-so101-tabletop-layout.md",
@@ -244,7 +244,7 @@
       "title": "2D 地图与 Waypoint 路线编辑",
       "layer": "前端",
       "source_chapter": null,
-      "last_revision": "0.2"
+      "last_revision": "0.4"
     },
     {
       "path": "10-frontend/02-scene-setup/README.md",
@@ -710,7 +710,7 @@
       "title": "地图与 Waypoint 校验、授权和执行",
       "layer": "后端",
       "source_chapter": null,
-      "last_revision": "0.2"
+      "last_revision": "0.3"
     },
     {
       "path": "20-backend/03-observation-algorithms/04-task-assessment.md",
@@ -818,7 +818,8 @@
       "id": "CT-STATE",
       "title": "Robot / World State 契约草案",
       "layer": "共享契约",
-      "source_chapter": 31
+      "source_chapter": 31,
+      "last_revision": "0.8"
     },
     {
       "path": "30-contracts/02-control-intervention-commands.md",
@@ -872,7 +873,7 @@
       "title": "地图、Waypoint 路线与执行反馈契约",
       "layer": "共享契约",
       "source_chapter": null,
-      "last_revision": "0.5"
+      "last_revision": "0.6"
     },
     {
       "path": "30-contracts/09-evaluation-comparison.md",
@@ -1236,6 +1237,14 @@
       "layer": "来源归档",
       "source_chapter": null,
       "last_revision": "0.7"
+    },
+    {
+      "path": "90-governance/sources/S18-navigation-map-route-slice.md",
+      "id": "SRC-S18-NAVIGATION-MAP-ROUTE-SLICE",
+      "title": "S18｜版本化地图与带朝向 Waypoint 路线切片",
+      "layer": "来源归档",
+      "source_chapter": null,
+      "last_revision": "0.8"
     }
   ],
   "supplement_sources": {
@@ -1298,6 +1307,31 @@
       "path": "90-governance/sources/S17-3d-workbench-replan.md",
       "sha256": "81779eaae6a980aa615e62dba8d8cc717c5cc44c02546b19c1039ad63b17b870",
       "kind": "current_user_3d_workbench_replan_request"
+    },
+    "S18": {
+      "path": "90-governance/sources/S18-navigation-map-route-slice.md",
+      "sha256": "e85757352660bd8574c997ab5b84a51b28fd41007bef631830f20cf922a12c17",
+      "kind": "current_user_navigation_map_route_slice_request"
+    },
+    "S19": {
+      "path": "90-governance/sources/S19-session-stop-recording-end.md",
+      "sha256": "42af4fb49fce69b5b427b6cff1e11058c67729d2956369c16b770d43163cd6b3",
+      "kind": "current_user_session_stop_recording_end_goal"
+    },
+    "S20": {
+      "path": "90-governance/sources/S20-unified-candidate-release-identity.md",
+      "sha256": "04f4fc83df31e9ca92df01f768d3359629035822462ffecd3e1fd0b8c316e989",
+      "kind": "current_user_unified_candidate_release_identity_goal"
+    },
+    "S21": {
+      "path": "90-governance/sources/S21-history-episode-read-slice.md",
+      "sha256": "13147c106694266b963c624c1bd9dea2b8c1ad1288d6d565ab66d80432a31e72",
+      "kind": "current_user_history_episode_read_slice_goal"
+    },
+    "S22": {
+      "path": "90-governance/sources/S22-history-readonly-hardening.md",
+      "sha256": "8d648513e33309885bf4261854610c273a66381f3e13a10484a8d6b7390c660f",
+      "kind": "current_user_history_readonly_hardening_goal"
     }
   },
   "page_design_index": "10-frontend/page-designs/README.md",

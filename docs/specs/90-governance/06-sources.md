@@ -87,3 +87,24 @@ S08/S09 原文件按字节归档；其中远程图片/仓库声明不构成本�
 ## V0.7 前端执行计划复评
 
 [S17](sources/S17-3d-workbench-replan.md)：当前用户要求依据已有设计和 Specification 重新规划好操作的 3D 界面，并明确可用多 agent 核定。重申 S11 的统一前端架构原则，保留 S16 的阶段/轻量宿主边界。具体 React/TS、SceneView 封装、Dockview 验证与样板顺序是本轮工程建议，不虚构历史库选型确认；本轮仅修订文档，前端实现继续暂停。来源字节哈希登记于 catalog.json 与 traceability.json。
+
+## V0.8 地图/路线切片来源
+
+[S18](sources/S18-navigation-map-route-slice.md)：本次用户要求版本化地图读取、带朝向 Waypoint 的 Draft/Version 保存链路、地图/姿态约定和执行隔离。S10 原文保留；S18 是新增需求来源，不重写 S10 的历史范围确认。
+
+
+## V0.8 STOP 与录制收尾切片来源
+
+[S19](sources/S19-session-stop-recording-end.md)：本次用户 Goal 要求交付受 Session/运行身份约束的机器人 STOP 与录制可靠结束候选，明确回执五层分离、身份在 lifecycle 临界区重检、安全 STOP 不受 motion/recording ready 门控、并发与幂等规则、隔离无物理集成范围以及"候选≠部署"。历史 S14/S15 关于停止/结束录制的表述保持原样，S19 只补充其未定义的结束侧原子性。来源字节哈希登记于 catalog.json 与 traceability.json。
+
+## V0.8 统一候选与发布身份来源
+
+[S20](sources/S20-unified-candidate-release-identity.md)：本次用户 Goal 要求把已验证能力收敛为一个统一可联调候选（同一冻结源码/启动配置/OpenAPI），把几何读取兼容与执行资格分开判定，把候选身份升级为缺项必失败的完整发布身份，并修正维护窗口顺序。历史 S14～S19 原文与事实保持不变。来源字节哈希登记于 catalog.json 与 traceability.json。
+
+## V0.8 真实历史读取来源
+
+[S21](sources/S21-history-episode-read-slice.md)：本次用户 Goal 要求完成真实历史 Episode/segment 只读 reader 首个切片——固定一个历史来源与实际 recording_root、冻结最小读取契约与 OpenAPI、保留复合身份与原生时间/动作语义、把声明状态与实际读取验证分层、路径受限只读并把启动器纳入发布身份。历史 S14～S20 原文与事实保持不变。来源字节哈希登记于 catalog.json 与 traceability.json。
+
+## V0.8 历史只读整改与可复现发布来源
+
+[S22](sources/S22-history-readonly-hardening.md)：本次用户 Goal 要求把历史 reader 整改为构造级只读（只经不接受 method/body 的 GET-only 入口访问 native，重算只在隔离副本）、统一受限路径解析（索引与读取两侧都不得借目录或文件软链越界，缓存索引不得绕过读取时检查）、修复 `event_seq` 区间过滤（缺失/非整数/bool 排除并计数，不补造），修正超出证据的"全部原始文件未改"表述，并让报告重算并绑定冻结启动清单的源码摘要；保留违规记录、旧清单值与旧报告，不倒填、不猜测回滚。历史 S14～S21 原文与事实保持不变。来源字节哈希登记于 catalog.json 与 traceability.json。

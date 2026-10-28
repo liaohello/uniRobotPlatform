@@ -10,7 +10,7 @@
 
 | 节点 | 规范 ID | 内容 |
 |---|---|---|
-| [01-session-lifecycle.md](01-session-lifecycle.md) | `BE-SESSION-LIFECYCLE` | 仿真 Session 与运行生命周期 |
+| [01-session-lifecycle.md](01-session-lifecycle.md) | `BE-SESSION-LIFECYCLE` | 仿真 Session 与运行生命周期；含 `m1-binding-1` 绑定、`m1-recording-1` 无 RESET 开录与 `m1-stop-1`/`m1-end-1` STOP/录制结束 |
 | [02-scene-config-versions.md](02-scene-config-versions.md) | `BE-SCENE-CONFIG` | 场景配置、初态检查与版本 |
 | [03-scene-builder-assets.md](03-scene-builder-assets.md) | `BE-SCENE-BUILDER` | 受限对象配置与 MuJoCo 场景构建 |
 

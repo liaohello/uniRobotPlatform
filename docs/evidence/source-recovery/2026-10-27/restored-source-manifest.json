@@ -1,0 +1,867 @@
+{
+  "schema_version": 1,
+  "recovered_on": "2026-10-27",
+  "frontend_release": "m1-front-geometry-20261026T092830Z-2d2c53330b76",
+  "backend_release": "m1x-20261026T065320Z-platform",
+  "frontend_original_aggregate_sha256": "2d2c53330b767a4c90e15d9dc7647fe177a7d7763c892446fefda5b2a5f4c3ec",
+  "excluded_frontend_generated_files": [
+    "tests/__pycache__/browser-config.cpython-312.pyc",
+    "tests/__pycache__/browser-frames.cpython-312.pyc",
+    "tests/__pycache__/browser-history.cpython-312.pyc",
+    "tests/__pycache__/browser-lifecycle.cpython-312.pyc",
+    "tests/__pycache__/browser-map.cpython-312.pyc",
+    "tests/__pycache__/browser-session.cpython-312.pyc",
+    "tests/__pycache__/browser-usability.cpython-312.pyc",
+    "tools/__pycache__/check-release.cpython-312.pyc",
+    "tools/__pycache__/release-source.cpython-312.pyc",
+    "tools/__pycache__/serve-readonly.cpython-312.pyc"
+  ],
+  "source_files": [
+    {
+      "path": "frontend/README.md",
+      "sha256": "319cd8c44862ee3aa48d0f0f949ce99b5f513c9deec59edf43119491be28f179",
+      "size_bytes": 12792
+    },
+    {
+      "path": "frontend/docs/backend-gaps.md",
+      "sha256": "268707dd8f2edc7f53db3fad6b0e39925df67c3bd2d4270ffff8f98b43bbc806",
+      "size_bytes": 47040
+    },
+    {
+      "path": "frontend/docs/provenance.md",
+      "sha256": "395f991e6a88816c5f4556049dd6753df8ba890017549467774053e5fd3a5682",
+      "size_bytes": 4241
+    },
+    {
+      "path": "frontend/index.html",
+      "sha256": "f02d1d7e935883b240161fe48555f96313c8db0b14f244accdd2377369e1c1b9",
+      "size_bytes": 318
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "sha256": "1bb055b6e003c960e116b8561b174dad8100dec2ab282c29370b0b10aa7a04bd",
+      "size_bytes": 59850
+    },
+    {
+      "path": "frontend/package.json",
+      "sha256": "db14be8e25acd34baf23201dab3785b3cd08727bfc61498c1c516b7e5d1de9de",
+      "size_bytes": 659
+    },
+    {
+      "path": "frontend/public/sample/arm-spec.json",
+      "sha256": "8d1dc917c7c76c58dcd96ab07525e247479d6295f427dd75c8ba3a13c0ecdfa9",
+      "size_bytes": 2886
+    },
+    {
+      "path": "frontend/public/sample/capabilities.json",
+      "sha256": "767312d2191e3e89c0d1c2319959f5abdbf2cc31daa4e172adf6ae3047c6e67d",
+      "size_bytes": 2206
+    },
+    {
+      "path": "frontend/public/sample/meshes/back_shell_black_link.stl",
+      "sha256": "a627a199d90359c2182d5a6025d76b61066bd144f42a5132ce9e229a856ef049",
+      "size_bytes": 371284
+    },
+    {
+      "path": "frontend/public/sample/meshes/back_shell_middle_link.stl",
+      "sha256": "b504a935d155ad497a5a2face7e9d9d251ea7ce32053ee8ae4277e9b86d0a030",
+      "size_bytes": 293384
+    },
+    {
+      "path": "frontend/public/sample/meshes/base_link.stl",
+      "sha256": "9eb685251829f79fb36a29c5bcafb7a8d6775eb6c9cae5e99a9451c633934223",
+      "size_bytes": 525884
+    },
+    {
+      "path": "frontend/public/sample/meshes/camera_connect_link.stl",
+      "sha256": "1156fdb49bdedf570506387acb39b98c3b6ce8e033c60a3f8443b0ec51e69212",
+      "size_bytes": 41084
+    },
+    {
+      "path": "frontend/public/sample/meshes/depth_cam_link.stl",
+      "sha256": "4ad7e968fb8ba34b01a1939d367cd5f68a818108a6ec749b59351a3ee2116958",
+      "size_bytes": 1169884
+    },
+    {
+      "path": "frontend/public/sample/meshes/gripper_base_link.stl",
+      "sha256": "46047b43edf6f203618af880c5e2f82bf64b0c353c612b8889556272118734a8",
+      "size_bytes": 105284
+    },
+    {
+      "path": "frontend/public/sample/meshes/gripper_left_link.stl",
+      "sha256": "9790add143854be2c2c50be3a9d9eccc357c8c85af5567f4108c7d2b21465d9f",
+      "size_bytes": 19284
+    },
+    {
+      "path": "frontend/public/sample/meshes/gripper_link.stl",
+      "sha256": "31f69653788f8339ff9d14d486eb51fcd84f73b2b7fe6b719ba92067e45ee28a",
+      "size_bytes": 1041384
+    },
+    {
+      "path": "frontend/public/sample/meshes/gripper_right_link.stl",
+      "sha256": "5fcf464ac950736273f4023e849c7a5b66e1e10a30b813106891673fa3766598",
+      "size_bytes": 19284
+    },
+    {
+      "path": "frontend/public/sample/meshes/guide_rod_link.stl",
+      "sha256": "d47dc3b796981df4defcdbe953cfe50a9dc0c3e4a7b56904f12dff958c1d1b5a",
+      "size_bytes": 12084
+    },
+    {
+      "path": "frontend/public/sample/meshes/imu_link.stl",
+      "sha256": "2d3f2e16a2150d97c01ed0ff6101fb5815bfde44143871dc8368149cd024e222",
+      "size_bytes": 293384
+    },
+    {
+      "path": "frontend/public/sample/meshes/left_jaw_link.stl",
+      "sha256": "47d550e00b7971ab61a95430c08308daa2a684d5eafe7df0367474a7f27807e5",
+      "size_bytes": 46684
+    },
+    {
+      "path": "frontend/public/sample/meshes/lidar_frame.stl",
+      "sha256": "94ff17dd84bd434fe0cb49af626d4a3c6a481bc75c8862c50f315ea657984096",
+      "size_bytes": 191734
+    },
+    {
+      "path": "frontend/public/sample/meshes/link1.stl",
+      "sha256": "7c43ff0fe65cc55b1dde53885d07742f2f4a6b098bc5f7e90779863051693894",
+      "size_bytes": 1020984
+    },
+    {
+      "path": "frontend/public/sample/meshes/link2.stl",
+      "sha256": "553c85693482028363733cd179e828322b5585d3a43e1175776cfe5810cc65f5",
+      "size_bytes": 1215334
+    },
+    {
+      "path": "frontend/public/sample/meshes/link3.stl",
+      "sha256": "cc2ddec626432331860666fb51a0122f4220c70bb340e2ec8e718bb8146e88fd",
+      "size_bytes": 1215634
+    },
+    {
+      "path": "frontend/public/sample/meshes/link4.stl",
+      "sha256": "158ab3082cb53349e3858188ce1028d84de566b0afa20e037181a4f21d7149aa",
+      "size_bytes": 1174984
+    },
+    {
+      "path": "frontend/public/sample/meshes/link5.stl",
+      "sha256": "c3c12b9178e197a7b53fe969f3b938f242463d436f3527f704897d8e1f01cfa7",
+      "size_bytes": 94084
+    },
+    {
+      "path": "frontend/public/sample/meshes/right_jaw_link.stl",
+      "sha256": "37a3b2262fbcf0015a3788698cad2c3b58ab9fee8bc7490fafeda1f5055eb02c",
+      "size_bytes": 49584
+    },
+    {
+      "path": "frontend/public/sample/meshes/wheel_left_back_link.stl",
+      "sha256": "22adbfc6f1da5f57954382cace61c5e75517c36661cf8b64cc1dca86613610f2",
+      "size_bytes": 3278784
+    },
+    {
+      "path": "frontend/public/sample/meshes/wheel_left_front_link.stl",
+      "sha256": "2c9369f001a82a870ca8ed001bfcdb9dd5588bec96f5e98e952f4e76dbe40680",
+      "size_bytes": 3299084
+    },
+    {
+      "path": "frontend/public/sample/meshes/wheel_right_back_link.stl",
+      "sha256": "68902b20fffd44b24232033c485671b557ebeacbc68cbe3a3098cb1a2a9c3cc8",
+      "size_bytes": 4184384
+    },
+    {
+      "path": "frontend/public/sample/meshes/wheel_right_front_link.stl",
+      "sha256": "9c13e8416c227985da5419ae48e6d40aa15f00aecb87803d947bfb5c463fd3f9",
+      "size_bytes": 3276484
+    },
+    {
+      "path": "frontend/public/sample/offline-map.json",
+      "sha256": "ff5e75d0e19ce6cb346e2e520579cf04c2c660b2cd2aa450ce9612bdf0776219",
+      "size_bytes": 474
+    },
+    {
+      "path": "frontend/public/sample/offline-map.svg",
+      "sha256": "a6e4f13558116c09bfcb40a44cdd97de0248bb9cf1c26e1195d144ca6c10e9bf",
+      "size_bytes": 1407
+    },
+    {
+      "path": "frontend/public/sample/provenance.json",
+      "sha256": "0bcdc534f6098e55323fceba41119bb2317a4fd9057b4436a718fc796fcd2be8",
+      "size_bytes": 5757
+    },
+    {
+      "path": "frontend/public/sample/scene.json",
+      "sha256": "4ae29235013ba992f723971e5e0870f2dd08f1161361f864b2009ebb774aee6e",
+      "size_bytes": 116370
+    },
+    {
+      "path": "frontend/public/sample/snapshot.json",
+      "sha256": "759aa9947c1241119d2946f05d18dbb09b67461012ce16af16f27f7c1418a05f",
+      "size_bytes": 15741
+    },
+    {
+      "path": "frontend/src/adapters/mobilecar-read.ts",
+      "sha256": "ef6eede21540000a5da976707e5a872161f341e888db0743df850846cafd5b7b",
+      "size_bytes": 11586
+    },
+    {
+      "path": "frontend/src/adapters/platform-config.ts",
+      "sha256": "dcdf5c6becb4cfc88ac7c7fc6083bc1361b2c32dd3367bc295429223d43c12c2",
+      "size_bytes": 16447
+    },
+    {
+      "path": "frontend/src/adapters/platform-episodes.ts",
+      "sha256": "35e4bca9eea35fec7810fb186651268619a25bdd15d953a9204dda9932d05dd4",
+      "size_bytes": 38641
+    },
+    {
+      "path": "frontend/src/adapters/platform-frames.ts",
+      "sha256": "1d1da5437df85115630dbf990d30d08a4424dfb5e4b4908391d397ed5dc261ee",
+      "size_bytes": 43896
+    },
+    {
+      "path": "frontend/src/adapters/platform-history-pose.ts",
+      "sha256": "c98a14f546be9d13a862bfb629e4aefe83b0b07e711a1cb679b09a58ba3d5d29",
+      "size_bytes": 19482
+    },
+    {
+      "path": "frontend/src/adapters/platform-navigation.ts",
+      "sha256": "59616430d1b8d4d1ac07e2e3eb13406bf7e345b89f3cf308755cc7e8576053a7",
+      "size_bytes": 14023
+    },
+    {
+      "path": "frontend/src/adapters/robot-profile.ts",
+      "sha256": "a26393ba630ac3fb98b6dfedbc95e542a1364b186121e340167199b655918d8c",
+      "size_bytes": 10167
+    },
+    {
+      "path": "frontend/src/adapters/services.ts",
+      "sha256": "49da1a067c87d5061852b6a78011e984b5eb07bd993a586581480f9b01362fff",
+      "size_bytes": 4692
+    },
+    {
+      "path": "frontend/src/adapters/types.ts",
+      "sha256": "87c187e678de4f7f2a07fabf1753044d0ccc2a75b9c15737acfc76e59071607e",
+      "size_bytes": 7075
+    },
+    {
+      "path": "frontend/src/app/App.tsx",
+      "sha256": "9ec31c3d38f741e0d0b1d7250c0d67266da0c3339bdad1e7cacbe3152cbce18b",
+      "size_bytes": 18381
+    },
+    {
+      "path": "frontend/src/app/context.tsx",
+      "sha256": "acf0b44cf3a7695e694872c5ca82971fa553e3fd5422f7b71d2c53758e16e94e",
+      "size_bytes": 1656
+    },
+    {
+      "path": "frontend/src/app/state.ts",
+      "sha256": "c9be91e0d83e6d7d4b02c0f7a8066df5936b7b4c2f09d57a31a5f099ffbca44d",
+      "size_bytes": 2279
+    },
+    {
+      "path": "frontend/src/app/ui-state.ts",
+      "sha256": "0581d149ce5b4d535d17a0436540711686d2a0d75baee9a80bc30c5ff89f5a91",
+      "size_bytes": 720
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "sha256": "b4d0cc34d5467be3a26c595b60106a9c23f9344267d0dcfb56a79000773d1dda",
+      "size_bytes": 236
+    },
+    {
+      "path": "frontend/src/map/MapWaypointEditor.tsx",
+      "sha256": "aeb10d4360d7d3b72bbacd2c5adac0abb4fe997f5e2f83ac90b7e5ae0aeccc21",
+      "size_bytes": 10284
+    },
+    {
+      "path": "frontend/src/map/pgm.ts",
+      "sha256": "f469fc2262f1096ac3595f00f64715bcec884ed7b9fa73d24acc5ccd29d38254",
+      "size_bytes": 4833
+    },
+    {
+      "path": "frontend/src/map/route.ts",
+      "sha256": "cdcb4e34913b2812675c4d3f9ad04a90c4dfc8507a14a0ae76c2cc7e21a4fca7",
+      "size_bytes": 7926
+    },
+    {
+      "path": "frontend/src/map/use-route-workspace.ts",
+      "sha256": "6de5829893b62f864a34071ebb78e0a1f8664486baccfbf19617ce83d3303839",
+      "size_bytes": 23907
+    },
+    {
+      "path": "frontend/src/viewport/history-reference-scene.ts",
+      "sha256": "127a52348ecadcc1ae0a1bab20e49a839814b23b7b6b7e96eebdcc1705f611e7",
+      "size_bytes": 4959
+    },
+    {
+      "path": "frontend/src/viewport/kinematics.ts",
+      "sha256": "d6118d9fdc3b4f27129a9f434c73bca0cc793d958a73c83373700329184079cc",
+      "size_bytes": 3002
+    },
+    {
+      "path": "frontend/src/viewport/native-scene-view.d.ts",
+      "sha256": "d800b8cb11eb71603545ead67685295391b211de2114f5910672817065e1b791",
+      "size_bytes": 1991
+    },
+    {
+      "path": "frontend/src/viewport/native-scene-view.js",
+      "sha256": "3d0c05283c738be7e1b9a793d1227083d8479a7df9d6cd84a51e85a157dd4687",
+      "size_bytes": 27876
+    },
+    {
+      "path": "frontend/src/viewport/workbench-scene.ts",
+      "sha256": "800fb7518913f3d6abaded224d3e8829da532923c130f5258f0f0d579d930afc",
+      "size_bytes": 22835
+    },
+    {
+      "path": "frontend/src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
+      "size_bytes": 38
+    },
+    {
+      "path": "frontend/src/workbench/Icon.tsx",
+      "sha256": "3cb8e2756f3c3fdd95d64db4c174e006cb5b1fd1d2ff3c0c06d803c359e3690a",
+      "size_bytes": 1672
+    },
+    {
+      "path": "frontend/src/workbench/Layout.tsx",
+      "sha256": "f71fd1607c9f6951c75ea7486bf052a54a64d784b1749f879ef9814c9561c8ba",
+      "size_bytes": 11282
+    },
+    {
+      "path": "frontend/src/workbench/frame-browser.tsx",
+      "sha256": "dee6fa2ddb88285d2e86e4150b61ddd400b32b86f66abb3e8922d8f4fd5a3e9e",
+      "size_bytes": 46117
+    },
+    {
+      "path": "frontend/src/workbench/history-model-pane.tsx",
+      "sha256": "cc1cdcf026c1e319311c617f36bcdfd651fea7ee39e461cf33161f73199e346c",
+      "size_bytes": 20904
+    },
+    {
+      "path": "frontend/src/workbench/history-view.tsx",
+      "sha256": "82095706c0989a93e83cc8a92f2004e9bee3719ddc88f97378e3c7ef736781de",
+      "size_bytes": 54120
+    },
+    {
+      "path": "frontend/src/workbench/lifecycle.ts",
+      "sha256": "e15e006f29e717b413310abc1ee69630848af793834ca34fea5866de793f71ed",
+      "size_bytes": 11189
+    },
+    {
+      "path": "frontend/src/workbench/panels.tsx",
+      "sha256": "96e3534a654ae76ab09772cc751bb2817533a8a79e9bc583fb3061286239f227",
+      "size_bytes": 21874
+    },
+    {
+      "path": "frontend/src/workbench/scene-setup.tsx",
+      "sha256": "d660bb294cabdc856dc36e5e9359a7d8dc4f5748bba7da66399cc97f9554a577",
+      "size_bytes": 24080
+    },
+    {
+      "path": "frontend/src/workbench/session-panel.tsx",
+      "sha256": "3a692ebae37ff9052533ecd4a8179e46a2cb83d5bdeaf762da62295093d08287",
+      "size_bytes": 78762
+    },
+    {
+      "path": "frontend/src/workbench/styles.css",
+      "sha256": "6926eafb83632c35278b20c3ff0305ee58434b4eeb45ead285a6eda7c0966556",
+      "size_bytes": 45087
+    },
+    {
+      "path": "frontend/tests/browser-config.py",
+      "sha256": "8d6b54e2116fc0f05af2cc79f3f84ed161cea7447d927d110d1b5e9b90e5a482",
+      "size_bytes": 23077
+    },
+    {
+      "path": "frontend/tests/browser-frames.py",
+      "sha256": "e15d13767f2c8ad0b184939e82924de5c7976b622c4b9072b40f674bbfb9ca16",
+      "size_bytes": 119186
+    },
+    {
+      "path": "frontend/tests/browser-geometry.py",
+      "sha256": "b2300f2e014741efcd4b1f4f811a62e9553891130207d591ff7564deaf9e6700",
+      "size_bytes": 9811
+    },
+    {
+      "path": "frontend/tests/browser-history.py",
+      "sha256": "768e1babf4e0745308677cb46d5c3caf37e0b5c28df85e50d31ef32cb2131300",
+      "size_bytes": 93912
+    },
+    {
+      "path": "frontend/tests/browser-lifecycle.py",
+      "sha256": "b338e74f1bdefae1201be311ed9e590db8c0c0b56453a8d5ff74468b00d90cf0",
+      "size_bytes": 40906
+    },
+    {
+      "path": "frontend/tests/browser-map.py",
+      "sha256": "6b9ce09f8b0a3c087e1cbf62b83f42b8fce6e2483666755faa99ec337ad39f39",
+      "size_bytes": 42471
+    },
+    {
+      "path": "frontend/tests/browser-readonly.py",
+      "sha256": "930835ea61ec94aa0d3014d7220439438506bbaaad01c7b1b27b963393f18995",
+      "size_bytes": 18077
+    },
+    {
+      "path": "frontend/tests/browser-session.py",
+      "sha256": "b52c169bb7fe24ffbb60df5e0cb15112c7fd5052114ad79e85eb4172319da749",
+      "size_bytes": 40195
+    },
+    {
+      "path": "frontend/tests/browser-usability.py",
+      "sha256": "e04ee11d56d5da62b095f51e71364c0a683bbddc18adbd54103ee5ee8083e556",
+      "size_bytes": 36156
+    },
+    {
+      "path": "frontend/tests/browser-workbench.py",
+      "sha256": "e99107c03d3ea1f9d068d61be01d79b0064ff7247f06a52c9aa38dd9b4027526",
+      "size_bytes": 11392
+    },
+    {
+      "path": "frontend/tests/geometry-visibility.test.ts",
+      "sha256": "1711412fe9092eb0964a26b3444adbb08922ceda115cd4cd67a7d3a66866c28e",
+      "size_bytes": 2638
+    },
+    {
+      "path": "frontend/tests/lifecycle.test.ts",
+      "sha256": "7a4f5dfb423cb940e1b9b35733cc888fa1436477bec42746dc18aa64b66af855",
+      "size_bytes": 9803
+    },
+    {
+      "path": "frontend/tests/mobilecar-read.test.ts",
+      "sha256": "dc138560c504a20d7ccc400ca7cac772adcb9dd7c0200b5f682db57f94807fad",
+      "size_bytes": 12172
+    },
+    {
+      "path": "frontend/tests/pgm.test.ts",
+      "sha256": "45ea7e13039fa3a76d6c5ffa502a2795981975edb5a7b65d32bb4706a017474a",
+      "size_bytes": 2591
+    },
+    {
+      "path": "frontend/tests/platform-config.test.ts",
+      "sha256": "206d1a4f3154b97770cf20d2e3cd2c9af5270a2fb56405c333d91f2a689f3ed9",
+      "size_bytes": 5110
+    },
+    {
+      "path": "frontend/tests/platform-episodes.test.ts",
+      "sha256": "761ea6d7988f86ebeddb9615ce9ae5447031c79a90d33241b617c21855d66f32",
+      "size_bytes": 29625
+    },
+    {
+      "path": "frontend/tests/platform-frames.test.ts",
+      "sha256": "02b28ae9740da2233a798581bcace002f700b6a1dbee59a2ee2e739f2de7f09d",
+      "size_bytes": 34097
+    },
+    {
+      "path": "frontend/tests/platform-history-pose.test.ts",
+      "sha256": "c332a5d0ce7b73c9bc9fda7f57f03c0253c6e37a41a9117daa0aca28a7cba4a6",
+      "size_bytes": 18944
+    },
+    {
+      "path": "frontend/tests/platform-navigation.test.ts",
+      "sha256": "26b5d35ba38ff9bcea7f932187a5801c4dd67076484573256d473d88dda7eb83",
+      "size_bytes": 11010
+    },
+    {
+      "path": "frontend/tests/route.test.ts",
+      "sha256": "e94353efb5e11313cfe4d143fa8e93fe3915ee44208dedf26727b41d3aa8a77b",
+      "size_bytes": 5828
+    },
+    {
+      "path": "frontend/tests/targets.test.ts",
+      "sha256": "205768469b3483157cc07558001d1e81ca37bdc0dffb076c6308e4848b5db704",
+      "size_bytes": 2585
+    },
+    {
+      "path": "frontend/tests/view_settle.py",
+      "sha256": "d8f5ce904433dac6d436e6de4ca23624cfe4552a567e69805a7f499da241e99c",
+      "size_bytes": 2914
+    },
+    {
+      "path": "frontend/tools/check-release.py",
+      "sha256": "b6369480115d1ca0318ede2456e5ca55f94646536add26b3d3991c59b08920a8",
+      "size_bytes": 7055
+    },
+    {
+      "path": "frontend/tools/freeze-scene.py",
+      "sha256": "d063d2fe89bb43872d3baf02734251a201d38c2e295366f1b0f9f0b34af88a18",
+      "size_bytes": 2238
+    },
+    {
+      "path": "frontend/tools/preview-registry.py",
+      "sha256": "9c707fd8b3d9c6e73067c0d18175ac6cd3f1a27841f1f5610b1c02ee4adb12fe",
+      "size_bytes": 8629
+    },
+    {
+      "path": "frontend/tools/release-source.py",
+      "sha256": "e059f287b7587634fa0798e1c460a38e659660c54371b158b07b11c71f0512f8",
+      "size_bytes": 1300
+    },
+    {
+      "path": "frontend/tools/serve-readonly.py",
+      "sha256": "61bd7c971a8d50422f7c0b1f19b0b9e350e3bf4e14ebcd2f82ebffd5e302b85e",
+      "size_bytes": 7757
+    },
+    {
+      "path": "frontend/tsconfig.json",
+      "sha256": "ff8726ea9b510f1c1fd7b8cb2979e8c451f6d38305643b71611b0325f9bc6187",
+      "size_bytes": 369
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "sha256": "fcb8cdaff179c25ec62f725dbe3d9548fdd380033f1aef393099aeb005bd7148",
+      "size_bytes": 142
+    },
+    {
+      "path": "backend/config/catalog.yaml",
+      "sha256": "3b7b277a04358a9e2aad19bcbed5ca10828c6dc434e12691e8f0403bc72cff50",
+      "size_bytes": 10979
+    },
+    {
+      "path": "backend/config/maps.catalog.json",
+      "sha256": "3cbd3a9410e59bdf488425bf5eb5df2fd6be0c6533da7b258648b55a6199a9f9",
+      "size_bytes": 759
+    },
+    {
+      "path": "backend/config/mobilecar-g1-recipe-v2.json",
+      "sha256": "632f268245d77c19bf42d78832e7dcf806375fc9d0c855e663cf700ba708a8c2",
+      "size_bytes": 2251
+    },
+    {
+      "path": "backend/config/mobilecar-g1-source.json",
+      "sha256": "146d331f7b1e72316432835a648238eadce57fec78d89b48b4fe062f283d9768",
+      "size_bytes": 29636
+    },
+    {
+      "path": "backend/config/mobilecar-history-source.json",
+      "sha256": "fbfcc6a69edb9472007e9076c39e9677b2797b4a7e7bb2e4b8eac432fde9c394",
+      "size_bytes": 1913
+    },
+    {
+      "path": "backend/config/mobilecar-landerpi-kinematics-v1.json",
+      "sha256": "6e2d3d08f6b30a8e7424d808bcff1212b44b996d54d44369e067827f419f3fd5",
+      "size_bytes": 2655
+    },
+    {
+      "path": "backend/config/pins/mobilecar-a5cef52/requirements.lock",
+      "sha256": "c1cad889649bcf3cdc56560c86019af1081c166b030021ad8ebf1679f1fc8439",
+      "size_bytes": 121
+    },
+    {
+      "path": "backend/config/release-identity.native-m1h.json",
+      "sha256": "32d4322a61063fa24bb86938d6e9b557cca2d8745fbaff33721e87301d97c1f3",
+      "size_bytes": 4582
+    },
+    {
+      "path": "backend/migration_manifest.json",
+      "sha256": "1876fc487f5e4cb9bb3874148e5d337bd0c2a01d1dce5242f0b2e596af1b2ecc",
+      "size_bytes": 8127
+    },
+    {
+      "path": "backend/pyproject.toml",
+      "sha256": "e8337cfc17d4e700cffd342247b48e6df867e223f9247da85e6ec13efaa68b86",
+      "size_bytes": 692
+    },
+    {
+      "path": "backend/src/unirobot/__init__.py",
+      "sha256": "d420e2db76b2650af8361ded2892d984086dd8b539b43e2a93be04682fdd651a",
+      "size_bytes": 88
+    },
+    {
+      "path": "backend/src/unirobot/__main__.py",
+      "sha256": "466e1c3162113201a16d7f2bf9837f57a0f3e799870eacc5bf5963513d9c6dd8",
+      "size_bytes": 807
+    },
+    {
+      "path": "backend/src/unirobot/adapters.py",
+      "sha256": "2c62e8ce4f9dec4ab2365528d7bbd555fe719a6066522c0dfdac7d539adbfe44",
+      "size_bytes": 7536
+    },
+    {
+      "path": "backend/src/unirobot/api.py",
+      "sha256": "ce1d0d3d2345c73443162dd19aeef2187e1ff175a5057de49f54a8031141d783",
+      "size_bytes": 29774
+    },
+    {
+      "path": "backend/src/unirobot/catalog.py",
+      "sha256": "35bb44461993601cd02972dcc5b473ab964ede2f2ec90329917abb64dfcc0e3a",
+      "size_bytes": 7184
+    },
+    {
+      "path": "backend/src/unirobot/contracts.py",
+      "sha256": "674464a27f09815f96cdda4be0ecab8acf5feab354a4cec9064ef1ac70e9c30c",
+      "size_bytes": 5619
+    },
+    {
+      "path": "backend/src/unirobot/drafts.py",
+      "sha256": "3c1979f749b557b211fb6b037c3657e21de96677076e1034435f2adf7906bcbd",
+      "size_bytes": 7564
+    },
+    {
+      "path": "backend/src/unirobot/episodes.py",
+      "sha256": "590f0290c1bd9990d335bde49e1c8f8ddba26f740fba64a891413d4c904390f5",
+      "size_bytes": 46680
+    },
+    {
+      "path": "backend/src/unirobot/frames.py",
+      "sha256": "e205a136d6424fe68d28fcb698fd1ceaacd9a3ffa1405e5380d024e1890b24a6",
+      "size_bytes": 57252
+    },
+    {
+      "path": "backend/src/unirobot/history_fk.py",
+      "sha256": "2822e6641eb363296b9b37d0f204bb7523710c0ede8f7283321199a2cd5be2ee",
+      "size_bytes": 10837
+    },
+    {
+      "path": "backend/src/unirobot/history_pose.py",
+      "sha256": "3fd4ea8b63e117752ebc15db69970125e647af8821ada0632863aac9f923b0ab",
+      "size_bytes": 49480
+    },
+    {
+      "path": "backend/src/unirobot/maps.py",
+      "sha256": "ea4afd1c76bdac68aff9438419ed8824d101c782ac1138932c8ce95a296bf86d",
+      "size_bytes": 22024
+    },
+    {
+      "path": "backend/src/unirobot/migrate.py",
+      "sha256": "5f7f7ff0875d9379838b6d1e87657b6a0dd8636ee7c21164eb68eb11c006e41a",
+      "size_bytes": 4706
+    },
+    {
+      "path": "backend/src/unirobot/mobilecar.py",
+      "sha256": "cd7049ec40bad73193eb9ffa3bc10994a3379fb74f2460848c3ddd34a6c3130c",
+      "size_bytes": 10146
+    },
+    {
+      "path": "backend/src/unirobot/mobilecar_geometry.py",
+      "sha256": "257c28c32d6043b94e7256503cb0dfb58d7f98969048b19d2bd3a7c1282cd8c4",
+      "size_bytes": 7919
+    },
+    {
+      "path": "backend/src/unirobot/mobilecar_read.py",
+      "sha256": "07c1c2a602dc400d8505288f2a40f56594494d5969f047f0a4a5f7370c919f4a",
+      "size_bytes": 16579
+    },
+    {
+      "path": "backend/src/unirobot/prepare.py",
+      "sha256": "36b4e6571d272e49d1c0715f593096e672cd413062b2f968af82c7d1b7f137ed",
+      "size_bytes": 95592
+    },
+    {
+      "path": "backend/src/unirobot/recipe.py",
+      "sha256": "149a0b3dfe61ddb37cc0f31df9b8858a6c8e9cac5b215e9b19b20ad1779d9bd8",
+      "size_bytes": 10252
+    },
+    {
+      "path": "backend/src/unirobot/routes.py",
+      "sha256": "dc2b32dfb59d7da4f73d2a4ad7265c7b8c238dfd9ad83feca9304d5f1adb11a8",
+      "size_bytes": 15872
+    },
+    {
+      "path": "backend/src/unirobot/runtime.py",
+      "sha256": "7cc0fc18c720b9b40d52c6b0ecbdaf8d8c4c63a13d4cd7e0b64b22b3877cd086",
+      "size_bytes": 6144
+    },
+    {
+      "path": "backend/src/unirobot/settings.py",
+      "sha256": "1d298b8ac9ae91190c9d934c5fb4007c3f38d399e3cb1c3fed7432c3b7c6dbee",
+      "size_bytes": 1429
+    },
+    {
+      "path": "backend/src/unirobot/static/index.html",
+      "sha256": "c481d84b3b17659d3829a2e19dc737da6554b188d619c10991340562507a5340",
+      "size_bytes": 30531
+    },
+    {
+      "path": "backend/src/unirobot/static/mobilecar/app.js",
+      "sha256": "3767444673a28af72a11a1e686530eec3b0e552c6d8bbff9615edc60f346fcf6",
+      "size_bytes": 1453
+    },
+    {
+      "path": "backend/src/unirobot/static/mobilecar/drafts.js",
+      "sha256": "19a2f0bf0d71887128fa00af289ebf5fa690c69dd8b23304f807bd439e3761a5",
+      "size_bytes": 4726
+    },
+    {
+      "path": "backend/src/unirobot/static/mobilecar/index.html",
+      "sha256": "31cecbde8da80ba6dfcbe71783f5a1876d1043bf40504c66cd5c6ff595b9ccec",
+      "size_bytes": 3130
+    },
+    {
+      "path": "backend/src/unirobot/static/mobilecar/panel.js",
+      "sha256": "25c87a19946790295583660255850398c5033aeda8f7419dcaa52a333efc600b",
+      "size_bytes": 3450
+    },
+    {
+      "path": "backend/src/unirobot/static/mobilecar/styles.css",
+      "sha256": "a9f48915298d5c9713ceab5c66c95cb340e589d22fc073c6fbe5aaef18a5e51c",
+      "size_bytes": 2401
+    },
+    {
+      "path": "backend/tests/browser_drafts.py",
+      "sha256": "d3d0fa31e9ce02dee89516ff647682b7adb7140d8868e151d59d1e3913f826df",
+      "size_bytes": 5340
+    },
+    {
+      "path": "backend/tests/browser_mobilecar.py",
+      "sha256": "c8338f4b9a8988fcc4fce2b81a9e08beebe5cdc49e213f9b3b0095d21f8aa4f7",
+      "size_bytes": 5907
+    },
+    {
+      "path": "backend/tests/native_fixtures.py",
+      "sha256": "7cc6bafb53afe9079c144a1c935dfe0cd2eb164b945344d65028206db30b6434",
+      "size_bytes": 26395
+    },
+    {
+      "path": "backend/tests/test_api.py",
+      "sha256": "cf121ba8cb9480db94fe414d1beca751c94b7813318a7072d224e73b4fbe71c3",
+      "size_bytes": 3015
+    },
+    {
+      "path": "backend/tests/test_catalog.py",
+      "sha256": "f3a9f2e38349bd9482259b883547b4f8d47d2f083dc7907fb71ca80004919cb4",
+      "size_bytes": 2014
+    },
+    {
+      "path": "backend/tests/test_drafts.py",
+      "sha256": "b1a2fc5a0e57e2804deeb0fe5d91afb780caf0b528ad47457e51a0f4f634f6b8",
+      "size_bytes": 7490
+    },
+    {
+      "path": "backend/tests/test_episodes.py",
+      "sha256": "c6b77d69fe2ae282c2ccc172b46a8055ec45fcd4bfe5d4eb1e688cba470fbc11",
+      "size_bytes": 31487
+    },
+    {
+      "path": "backend/tests/test_frames.py",
+      "sha256": "522d299960f66a8946048aeb70a73ea36882f0621ce714513a2f006a3027b883",
+      "size_bytes": 52008
+    },
+    {
+      "path": "backend/tests/test_history_fk.py",
+      "sha256": "0b75a2f6c2ed14621d84785969df5d1fac19ac02a62ca795a95e0eede788ab02",
+      "size_bytes": 4793
+    },
+    {
+      "path": "backend/tests/test_migrate.py",
+      "sha256": "680c98be5d9d1f7e69b91000d473c462203f0d2fd00c967c8abbaea53176be5e",
+      "size_bytes": 678
+    },
+    {
+      "path": "backend/tests/test_mobilecar.py",
+      "sha256": "2fa0781bb392291daa22755a568a339dfe60ea1b4dea8adfe94fd8b38ff3c3d7",
+      "size_bytes": 5471
+    },
+    {
+      "path": "backend/tests/test_mobilecar_geometry.py",
+      "sha256": "e5187ea904fa2076708815a2bce2f30ba4808e5c2250cfc5ce41330833127f0e",
+      "size_bytes": 6997
+    },
+    {
+      "path": "backend/tests/test_mobilecar_read.py",
+      "sha256": "977c4ac1c0ee012b135a42cec2bdb8b42518338ac0a7b9a555adb9523c6df85a",
+      "size_bytes": 12607
+    },
+    {
+      "path": "backend/tests/test_navigation_maps.py",
+      "sha256": "261ab65da73cdf069e9ba46b43109e8d2dcada66760c0534ed9256bb9d707fef",
+      "size_bytes": 13966
+    },
+    {
+      "path": "backend/tests/test_prepare.py",
+      "sha256": "15c270e905f972472a3a8fe3b0c29df1bd1f3582326c6d9cd65d39db75e1d3e5",
+      "size_bytes": 31509
+    },
+    {
+      "path": "backend/tests/test_release_identity.py",
+      "sha256": "ea0b98b498cf74a7089c55e99fc170f4e5d92a1111f48c8a0eda31602381bc4e",
+      "size_bytes": 5724
+    },
+    {
+      "path": "backend/tests/test_stop_end.py",
+      "sha256": "0a73b19b0db44a1d65af7fed6a18b4dba1507b1a2a9fea3e18fff8515a78e93f",
+      "size_bytes": 17563
+    },
+    {
+      "path": "backend/tools/check_compiled_geometry.py",
+      "sha256": "ce975a3b5bf9503ea702fa3d990a7c7d81beb75de2b5d31fa262abb69a5a8aae",
+      "size_bytes": 2359
+    },
+    {
+      "path": "backend/tools/cross_http_protocol_check.py",
+      "sha256": "b65bc5739b5aaa3e0f389ee8dd3910209ab7a461e4c0159eb2155cad14fa42de",
+      "size_bytes": 10875
+    },
+    {
+      "path": "backend/tools/cross_http_stop_end_check.py",
+      "sha256": "1224b5222f7aacc4c12c0a31fbeba208f4c1287f720461d3679bcbb0a0e55f1c",
+      "size_bytes": 21775
+    },
+    {
+      "path": "backend/tools/episode_history_check.py",
+      "sha256": "e56fa0ca2370a62ec771de4f58a2b164ae124fce6cf4dc16ca48d1cc9aa65e15",
+      "size_bytes": 61119
+    },
+    {
+      "path": "backend/tools/export_compiled_geometry.py",
+      "sha256": "b58742cca32b621d7fd6d6b4336c9f61c5a3363561ffecdc8f47bfd58775fb56",
+      "size_bytes": 7757
+    },
+    {
+      "path": "backend/tools/history_fk_check.py",
+      "sha256": "8ab92d4fb9f53d588b239044e088ebffa14348a4907455c86c2228eab76050e6",
+      "size_bytes": 14151
+    },
+    {
+      "path": "backend/tools/history_replay_facts.py",
+      "sha256": "238108b42dce1f2d9f895b11685f663fb947e23b9e16fcf257c53a2c8d519da0",
+      "size_bytes": 7162
+    },
+    {
+      "path": "backend/tools/launch_unified_gateway.py",
+      "sha256": "6d3d9c05f914a5c9e337b59109a63da4ea97d8ba318aaebf765d3f5a3e29a1cd",
+      "size_bytes": 7796
+    },
+    {
+      "path": "backend/tools/mock_native_protocol_app.py",
+      "sha256": "22879091b1a220354d5c528290d465701f7d6503cf6a47593661c956ac98c5ea",
+      "size_bytes": 8007
+    },
+    {
+      "path": "backend/tools/native_get_probe.py",
+      "sha256": "36ec686932a0b8c87f8d773a8165af54f942c84ba3b7ab2959a3609952f82fd7",
+      "size_bytes": 2924
+    },
+    {
+      "path": "backend/tools/native_recipe_identity.py",
+      "sha256": "d4b36500cbce0d75ce6ae071e576e4678054b7f5e30579769660f9081fc83274",
+      "size_bytes": 2349
+    },
+    {
+      "path": "backend/tools/release_identity.py",
+      "sha256": "453cdd08ee7b0c795055a0215ab6b8007a80cd324efe916bc93e1014c3839827",
+      "size_bytes": 9293
+    },
+    {
+      "path": "backend/tools/source_digest.py",
+      "sha256": "4514a0f8195dcd9b8f571243c3b902950ea97122ef65bced6767f3605876c6af",
+      "size_bytes": 2204
+    },
+    {
+      "path": "backend/tools/unified_candidate_check.py",
+      "sha256": "45b47c537f10bac9097367cf96e9a15f3b41aca0aa8573d1e0d2416b7a791c10",
+      "size_bytes": 19431
+    }
+  ],
+  "source_file_count": 167,
+  "restored_aggregate_sha256": "f172147e0c8e8aef4566a93bc16bd45c3d966f74fd2b1d1acd2a587ef425ffaf",
+  "exclusions": [
+    "server.local.json and other *.local.* files",
+    "node_modules, dist, environments, caches, Python bytecode",
+    "runtime databases, Episode recordings, reports and live geometry/map deployment bundles"
+  ],
+  "notes": [
+    "Frontend source bytes matched the supplied release manifest. Its 10 Python bytecode entries were intentionally excluded.",
+    "Backend files were copied from the gateway release used by the delivered preview; this recovery digest is not a native deployment qualification."
+  ]
+}

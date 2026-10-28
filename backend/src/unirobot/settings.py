@@ -27,3 +27,13 @@ MIGRATION_MANIFEST = BACKEND_ROOT / "migration_manifest.json"
 ALLOW_LAUNCH = os.environ.get("UNIROBOT_ALLOW_LAUNCH", "0") == "1"
 PROBE_TIMEOUT_S = float(os.environ.get("UNIROBOT_PROBE_TIMEOUT", "0.6"))
 DRAFT_DB_PATH = Path(os.environ.get("UNIROBOT_DRAFT_DB", BACKEND_ROOT / "var" / "drafts.sqlite3")).expanduser()
+MAP_CATALOG_PATH = Path(
+    os.environ.get("UNIROBOT_MAP_CATALOG", BACKEND_ROOT / "config" / "maps.catalog.json")
+).expanduser()
+MAPS_ROOT = Path(
+    os.environ.get("UNIROBOT_MAPS_ROOT", BACKEND_ROOT / "config" / "maps")
+).expanduser()
+HISTORY_SOURCE_PATH = Path(
+    os.environ.get("UNIROBOT_HISTORY_SOURCE", BACKEND_ROOT / "config" / "mobilecar-history-source.json")
+).expanduser()
+EPISODE_ROOT_OVERRIDE = os.environ.get("UNIROBOT_EPISODE_ROOT")
