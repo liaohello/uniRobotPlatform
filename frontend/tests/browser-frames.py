@@ -504,10 +504,20 @@ async def real_flow(page):
         state = (candidate.get('state') or {}).get('recorded_state') or {}
         shown = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
         attrs = await page_attrs(page)
+        # That frame's own answer from the reader: the recorded site, the reader's same-frame FK of it, and
+        # the tolerance it declares for that agreement, all compared against what actually rendered.
+        frame_pose = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/robot-state',
+                                       {'run_id': a.complete_run, 'sample_id': candidate['sample_id']})
+        fk_of_frame = frame_pose['tcp_kinematic_cross_check']
         observations.append({'sample': candidate['sample_id'], 'camera': shown['camera'], 'links': shown['links'],
                              'joints': shown['selectedJointDriven'], 'base': shown['attribution']['rootHeightWorldSimM'],
                              'baseVector': tuple(state['base_position_world_sim_m']), 'armVector': tuple(state['arm_model_qpos_rad']),
-                             'tip': shown['worldPositions'].get('gripper_link') or shown['worldPositions'].get('link5') or [], 'attrs': attrs})
+                             'tip': shown['worldPositions'].get('gripper_link') or shown['worldPositions'].get('link5') or [],
+                             'baseSim': shown['worldPositionsSim'].get('base_link'), 'tcpSim': shown['tcpPositionSim'],
+                             'tipSim': shown['worldPositionsSim'].get('gripper_link') or shown['worldPositionsSim'].get('link5'),
+                             'recordedTcp': fk_of_frame['recorded_tcp_position_m'], 'computedTcp': fk_of_frame['computed_tcp_position_m'],
+                             'fkAbs': fk_of_frame['abs_error_m'], 'fkTolerance': fk_of_frame['consistency_tolerance_m'],
+                             'fkToleranceAuthority': fk_of_frame['tolerance_authority'], 'attrs': attrs})
         check(f'frame {position + 1} binds the pose, the numbers and the image to its own sample',
               shown['attribution']['displayedSample'] == candidate['sample_id']
               and shown['selectedJointDriven'] == {name: value for name, value in zip(pose['model_resource']['arm_hinge_joints'], state['arm_model_qpos_rad'])}
@@ -534,6 +544,27 @@ async def real_flow(page):
               and abs(item['camera']['azimuthDeg'] - observations[0]['camera']['azimuthDeg']) < 1e-6
               and abs(item['camera']['polarDeg'] - observations[0]['camera']['polarDeg']) < 1e-6 for item in observations)
           and all(item['links'] == observations[0]['links'] for item in observations), [item['camera'] for item in observations])
+    # What actually rendered, converted back into the record's own axes, must land where the record says —
+    # this is the numeric half of the acceptance, not a re-reading of the DOM attribute.
+    base_residuals = [max(abs(a - b) for a, b in zip(item['baseSim'], item['baseVector'])) for item in observations]
+    tcp_vs_record = [tip_gap(item['tcpSim'], item['recordedTcp']) for item in observations]
+    tcp_vs_backend_fk = [tip_gap(item['tcpSim'], item['computedTcp']) for item in observations]
+    site_offsets = [tip_gap(item['tcpSim'], item['tipSim']) for item in observations]
+    report['real']['rendered_geometry_vs_record'] = {
+        'frames': [item['sample'] for item in observations],
+        'rendered_base_vs_record_max_component_error_m': base_residuals,
+        'rendered_tcp_vs_recorded_m': tcp_vs_record, 'rendered_tcp_vs_backend_fk_m': tcp_vs_backend_fk,
+        'reader_abs_error_m_per_frame': [item['fkAbs'] for item in observations],
+        'tolerance_m': observations[0]['fkTolerance'], 'tolerance_authority': observations[0]['fkToleranceAuthority'],
+        'rendered_tcp_to_gripper_link_m': site_offsets}
+    check('the rendered tree lands on the record’s world_sim vectors and re-derives the backend’s same-frame FK agreement',
+          all(v < 1e-9 for v in base_residuals) and all(v < 1e-9 for v in tcp_vs_record)
+          and all(v <= observations[0]['fkTolerance'] for v in tcp_vs_backend_fk)
+          and all(abs(ours - theirs) < 1e-12 for ours, theirs in zip(tcp_vs_backend_fk, [item['fkAbs'] for item in observations]))
+          and all(len(item['baseSim']) == 3 and len(item['tcpSim']) == 3 and len(item['tipSim']) == 3 for item in observations)
+          # The site rides on the same rigid chain as the gripper origin, so that distance may not change
+          # between frames: it is the one arm-geometry invariant both the record and the render can agree on.
+          and max(site_offsets) - min(site_offsets) < 1e-12, report['real']['rendered_geometry_vs_record'])
     report['real']['pose_linkage'] = {'frames': [item['sample'] for item in observations],
                                       'root_heights': [item['base'] for item in observations],
                                       'recorded_base_vectors': [list(item['baseVector']) for item in observations],
