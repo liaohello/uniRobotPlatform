@@ -300,6 +300,18 @@ describe('per-capability drive gate', () => {
     expect(poseStateText(dto)).toContain('recorded_payload=null（不按第一条候选绘制，不补 0，不沿用上一帧）');
   });
 
+  it('keeps every capability’s own reason when the frame carries no single selected record', () => {
+    const dto = m15eFixture({ state: { ...m15eFixture().state, recorded_payload: null, single_state_selected: false } });
+    const drive = poseDriveOf(dto);
+    expect([...drive.parts.map((row) => row.capability)].sort()).toEqual((m15eFixture().part_readiness ?? []).map((row) => row.capability).sort());
+    expect(drive.parts.filter((row) => row.allowed).map((row) => row.capability)).toEqual(['fixed_model_reference_assembly']);
+    expect(drive.parts.filter((row) => row.capability !== 'fixed_model_reference_assembly')
+      .every((row) => row.reason.includes('本帧没有单一选中的状态记录'))).toBe(true);
+    expect(drive.withheld.length).toBe(drive.parts.length - 1);
+    expect(drive.parts.find((row) => row.capability === 'gripper_visual_appearance')?.status).toBe('conditional');
+    expect(drive.parts.find((row) => row.capability === 'camera_view_from_record')?.status).toBe('blocked');
+  });
+
   it('says so when no pose is readable at all', () => {
     expect(poseDriveOf(null).summary).toContain('未读取 robot-state');
     expect(poseDriveOf(null).parts).toEqual([]);

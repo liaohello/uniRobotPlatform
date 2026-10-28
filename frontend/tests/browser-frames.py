@@ -32,6 +32,12 @@ p.add_argument('--complete-run', default='run_0104613ff7364ae78cf2f3946bd45f7b')
 p.add_argument('--complete-episode', default='episode_27bfed5427684795b361cd2ec21e9aa7')
 p.add_argument('--failed-run', default='run_1f6fb34853f94130aadedb8fa486705b')
 p.add_argument('--failed-episode', default='episode_879cf70489064a3b83bb15b5395a8341')
+# A second episode of the SAME run (2026-10-28 18970): the static bundle identity matches the driving
+# archive, but its own per-part contract is unusable — arm blocked, base/TCP/gripper conditional, no
+# single state record. Measured through GET only; it is the real-data counterpart of the synthetic
+# "no readiness / conditional stays off" cases.
+p.add_argument('--partial-run', default='run_0104613ff7364ae78cf2f3946bd45f7b')
+p.add_argument('--partial-episode', default='episode_9285f8146bf44f99a3a4e796c7e20359')
 a = p.parse_args(); a.output.mkdir(parents=True, exist_ok=True)
 report = {'scope': f'{a.mode} frame-link-2 + history-pose-1 acceptance against {a.url}', 'mode': a.mode,
           'checks': [], 'errors': [], 'requests': [], 'real': {}, 'synthetic': {}, 'status': 'failed'}
@@ -826,6 +832,55 @@ async def real_flow(page):
                                   'mapping': pose['pose_readiness']['mapped_targets_partially_or_fully_verified'],
                                   'assets': len(pose['model_resource']['assets'])}
     report['real']['failed'] = {'frames': failed['paging']['returned'], 'statuses': view['rowStatuses'], 'declared_refs': view['rowDeclaredRefs']}
+
+    # ---- a second real archive of the same run: identical static bundle, unusable per-part contract ----
+    partial = await read_direct(page, f'/api/v1/episodes/{a.partial_episode}/frames', {'run_id': a.partial_run, 'limit': 3, 'offset': 0})
+    partial_first = partial['frames'][0]['sample_id']
+    partial_pose = await read_direct(page, f'/api/v1/episodes/{a.partial_episode}/robot-state', {'run_id': a.partial_run, 'sample_id': partial_first})
+    partial_mark = len(report['requests'])
+    await open_episode(page, a.partial_run, a.partial_episode)
+    await wait_asset_settled(page)
+    await wait_model(page, 'ready')
+    pmodel = await page_attrs(page)
+    partial_parts = [(row['capability'], row['status']) for row in (partial_pose.get('part_readiness') or [])]
+    report['real']['partial_archive'] = {
+        'episode': a.partial_episode, 'run': a.partial_run, 'frames_read': len(partial['frames']), 'sample': partial_first,
+        'linkage_status': partial_pose['frame']['linkage_status'],
+        'recorded_payload': partial_pose['state']['recorded_payload'],
+        'single_state_selected': partial_pose['state'].get('single_state_selected'),
+        'mapping': [(row['target'], row['status']) for row in partial_pose['mapping']],
+        'parts': partial_parts,
+        'fk_verdict': (partial_pose.get('tcp_kinematic_cross_check') or {}).get('verdict'),
+        'bundle_sha256': (partial_pose.get('model_resource') or {}).get('bundle_sha256'),
+        'content_identity_sha256': (partial_pose.get('model_resource') or {}).get('content_identity_sha256'),
+        'tree_reads_on_switch': static_tree_reads(partial_mark), 'pane_tree_reads': pmodel['modelTreeReads'],
+        'driven_joints': pmodel['modelJoints'], 'base_applied': pmodel['modelBase'], 'tcp_applied': pmodel['modelTcp'],
+        'withheld': int(pmodel['modelWithheld']), 'value_rows': pmodel['valueNames'], 'motion_rows': pmodel['motionNames'],
+        'tree_binding_equal': pmodel['treeEqual'],
+    }
+    check('真实第二档：同一条 run 的另一 Episode 按自己的分部契约判定——固定模型装配成立，但一个记录部件都不驱动',
+          pmodel['modelEpisode'] == a.partial_episode and pmodel['modelStatus'] == 'ready'
+          and pmodel['modelJoints'] == '0' and pmodel['modelBase'] == 'false' and pmodel['modelTcp'] == 'false'
+          and pmodel['modelFramePose'] == 'false' and pmodel['valueNames'] == [] and pmodel['valueNoneRow'] == 1
+          and pmodel['motionNames'] == [] and pmodel['motionNoneRow'] == 1
+          and pmodel['partStatuses'] == [status for _, status in partial_parts]
+          and int(pmodel['modelWithheld']) == len(partial_parts) - 1
+          and len(pmodel['partCaps']) == len(partial_parts) and pmodel['partDrivable'].count('true') == 1
+          and '界面没有该能力的处理规则' not in pmodel['modelText'], report['real']['partial_archive'])
+    check('真实第二档：conditional/blocked 都留在未驱动一侧，本帧缺状态被原样写成缺而不是 0',
+          'conditional' in pmodel['modelText'] and 'blocked' in pmodel['modelText'] and '不驱动' in pmodel['modelText']
+          and 'recorded_payload=null' in pmodel['modelText']
+          and '本帧没有可归属的历史姿态' in pmodel['modelText']
+          and partial_pose['state']['recorded_payload'] is None
+          and all(status != 'verified' for _, status in report['real']['partial_archive']['mapping'][:5]),
+          (pmodel['modelDrive'], pmodel['modelStage']))
+    check('真实第二档：这份档案的静态树同样按内容身份绑定，并按自己的 Episode 身份恰好重读一次',
+          static_tree_reads(partial_mark) == ['/api/v1/mobilecar/scene']
+          and pmodel['modelTreeReads'] == '1' and pmodel['modelTreeReadEpisode'] == a.partial_episode
+          and set(pmodel['treeEqual']) == {'true'} and pmodel['modelCanvas'] == 1
+          and pmodel['modelTreeSource'] == 'live_native_http_with_verified_compiled_geometry',
+          {'reads': static_tree_reads(partial_mark), 'equal': pmodel['treeEqual'], 'canvas': pmodel['modelCanvas']})
+    await page.screenshot(path=str(a.output / 'pose-second-archive-no-drive.png'), full_page=False)
 
 
 # ---- synthetic ---------------------------------------------------------------------------------------
@@ -1813,7 +1868,10 @@ async def synthetic_flow(page):
           after_ambiguous['modelStatus'] == 'ready' and after_ambiguous['modelJoints'] == '0'
           and after_ambiguous['modelBase'] == 'false' and after_ambiguous['modelTcp'] == 'false'
           and after_ambiguous['modelFramePose'] == 'false' and after_ambiguous['modelDisplayed'] == 'rgbd_state_ambiguous'
-          and after_ambiguous['modelAttribution'] == 'matched' and int(after_ambiguous['modelWithheld']) == 3
+          and after_ambiguous['modelAttribution'] == 'matched' and int(after_ambiguous['modelWithheld']) == 8
+          and len(after_ambiguous['partCaps']) == 9 and after_ambiguous['partDrivable'].count('true') == 1
+          and after_ambiguous['partCaps'][0] == 'fixed_model_reference_assembly'
+          and '界面没有该能力的处理规则' not in after_ambiguous['modelText']
           and '不挑候选、不补 0、不沿用上一帧' in after_ambiguous['modelText']
           and 'candidate_records=2' in after_ambiguous['modelText'] and 'no single record can be reported' in after_ambiguous['modelText'],
           (after_ambiguous['modelDrive'], after_ambiguous['modelWithheld']))
