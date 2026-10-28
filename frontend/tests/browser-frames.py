@@ -263,6 +263,10 @@ def page_attrs(page):
         modelTreeSource:g('[data-model-pane]','data-model-tree-source'),
         modelDrive:g('[data-model-drive-summary]','data-model-drive-summary'),modelStage:g('[data-model-stage]','data-model-stage'),
         modelWithheld:g('[data-model-withheld-count]','data-model-withheld-count'),mappingStatuses:q('[data-mapping-row]','data-mapping-status'),
+        valueNames:q('[data-model-value]','data-model-value'),valueKinds:q('[data-model-value]','data-value-kind'),
+        valueModels:q('[data-model-value]','data-value-model'),valueDisplays:q('[data-model-value]','data-value-display'),
+        valueSources:q('[data-model-value]','data-value-source'),valuesTable:g('[data-model-values-table]','data-model-values-table'),
+        valueNoneRow:document.querySelectorAll('[data-model-value-none]').length,
         partCaps:q('[data-part-row]','data-part-row'),partStatuses:q('[data-part-row]','data-part-status'),partDrivable:q('[data-part-row]','data-part-drivable'),
         fkVerdicts:q('[data-fk-row]','data-fk-verdict'),fkCheck:g('[data-fk-check]','data-fk-check'),
         treeFields:q('[data-tree-binding-row]','data-tree-binding-row'),treeEqual:q('[data-tree-binding-row]','data-tree-binding-equal'),
@@ -444,6 +448,25 @@ async def real_flow(page):
           and posed['selectedJointDriven']['joint4'] == recorded['arm_model_qpos_rad'][3]
           and abs(posed['selectedJointDriven']['joint4'] - (recorded['arm_model_qpos_rad'][3] - (-1.5707963267948966))) > 1.0
           and pose['model_vs_user_angles']['conversion_is_required_for_drawing'] is False, posed['selectedJointDriven'])
+    readout_names = pose['model_resource']['arm_hinge_joints'] + ['base_link', pose['model_resource']['tcp_site']]
+    report['real']['driven_value_readout'] = {'table': model['valuesTable'], 'names': model['valueNames'],
+                                              'models': model['valueModels'], 'displays': model['valueDisplays']}
+    check('the pane prints one row per driven value, named by the frame it belongs to and taken verbatim from the record',
+          model['valuesTable'] == pose['frame']['sample_id'] and model['valueNames'] == readout_names
+          and model['valueKinds'] == ['arm'] * 5 + ['base', 'tcp'] and model['valueNoneRow'] == 0
+          and [float(value) for value in model['valueModels'][:5]] == recorded['arm_model_qpos_rad']
+          and json.loads(model['valueModels'][5].split(' / ')[0]) == recorded['base_position_world_sim_m']
+          and json.loads(model['valueModels'][6]) == recorded['tcp_position_world_m']
+          and model['valueSources'][5].startswith('base_position_world_sim_m')
+          and 'local_position_m' in model['valueDisplays'][5] and '未再叠加' in model['valueDisplays'][5]
+          and '不合成朝向' in model['valueDisplays'][6], (model['valueNames'], model['valueModels']))
+    check('the user angle shown beside each joint is the reader’s formula, and it is not what was drawn',
+          all('未参与绘制' in cell for cell in model['valueDisplays'][:5])
+          and abs(float(model['valueDisplays'][3].split('（')[0]) - recorded['arm_model_qpos_rad'][3]) > 1.0
+          and abs(float(model['valueDisplays'][3].split('（')[0]) - (recorded['arm_model_qpos_rad'][3] - (-1.5707963267948966))) < 1e-12
+          and float(model['valueDisplays'][0].split('（')[0]) == float(model['valueModels'][0])
+          and all(f'arm_model_qpos_rad[{index}]' == source.split(' ·')[0]
+                  for index, source in enumerate(model['valueSources'][:5])), (model['valueDisplays'][:5], model['valueSources'][:5]))
     check('the chassis is placed at the recorded world pose and the compiled root offset is not re-added',
           abs(float(model['modelRootHeight']) - recorded['base_position_world_sim_m'][2]) < 1e-12
           and abs(float(model['modelRootHeight']) - (recorded['base_position_world_sim_m'][2] + pose['model_resource']['root_joint']['local_position_m'][2])) > 0.05
@@ -509,6 +532,7 @@ async def real_flow(page):
         frame_pose = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/robot-state',
                                        {'run_id': a.complete_run, 'sample_id': candidate['sample_id']})
         fk_of_frame = frame_pose['tcp_kinematic_cross_check']
+        payload_of_frame = frame_pose['state']['recorded_payload']
         observations.append({'sample': candidate['sample_id'], 'camera': shown['camera'], 'links': shown['links'],
                              'joints': shown['selectedJointDriven'], 'base': shown['attribution']['rootHeightWorldSimM'],
                              'baseVector': tuple(state['base_position_world_sim_m']), 'armVector': tuple(state['arm_model_qpos_rad']),
@@ -517,7 +541,14 @@ async def real_flow(page):
                              'tipSim': shown['worldPositionsSim'].get('gripper_link') or shown['worldPositionsSim'].get('link5'),
                              'recordedTcp': fk_of_frame['recorded_tcp_position_m'], 'computedTcp': fk_of_frame['computed_tcp_position_m'],
                              'fkAbs': fk_of_frame['abs_error_m'], 'fkTolerance': fk_of_frame['consistency_tolerance_m'],
-                             'fkToleranceAuthority': fk_of_frame['tolerance_authority'], 'attrs': attrs})
+                             'fkToleranceAuthority': fk_of_frame['tolerance_authority'], 'attrs': attrs,
+                             'readout': attrs['valueModels'][:5], 'readoutBase': attrs['valueModels'][5], 'readoutTcp': attrs['valueModels'][6]})
+        check(f'frame {position + 1}’s own value rows carry that frame’s numbers, not the previous frame’s',
+              attrs['valuesTable'] == candidate['sample_id'] and attrs['valueNames'] == readout_names
+              and [float(value) for value in attrs['valueModels'][:5]] == payload_of_frame['arm_model_qpos_rad']
+              and json.loads(attrs['valueModels'][5].split(' / ')[0]) == payload_of_frame['base_position_world_sim_m']
+              and json.loads(attrs['valueModels'][6]) == payload_of_frame['tcp_position_world_m'],
+              (attrs['valuesTable'], attrs['valueModels'][:5]))
         check(f'frame {position + 1} binds the pose, the numbers and the image to its own sample',
               shown['attribution']['displayedSample'] == candidate['sample_id']
               and shown['selectedJointDriven'] == {name: value for name, value in zip(pose['model_resource']['arm_hinge_joints'], state['arm_model_qpos_rad'])}
@@ -539,6 +570,12 @@ async def real_flow(page):
           and all(item['links'] == observations[0]['links'] for item in observations)
           and all(len(item['tip']) == 3 for item in observations),
           {'bases': [item['base'] for item in observations], 'arm_variants': len(arm_variants), 'moved_pairs': len(moved)})
+    report['real']['driven_value_readout_per_frame'] = [{'sample': item['sample'], 'arm': item['readout'], 'base': item['readoutBase'], 'tcp': item['readoutTcp']} for item in observations]
+    check('the printed rows move exactly where the record moves: distinct recorded values give distinct printed values',
+          len({tuple(item['readout']) for item in observations}) == len(arm_variants)
+          and len({item['readoutBase'] for item in observations}) == len(base_variants)
+          and len({item['readoutTcp'] for item in observations}) == len({tuple(item['recordedTcp']) for item in observations})
+          and all(item['attrs']['valueNoneRow'] == 0 for item in observations), report['real']['driven_value_readout_per_frame'])
     check('stepping frames never resets the camera or rebuilds the tree',
           all(abs(item['camera']['distance'] - observations[0]['camera']['distance']) < 1e-6
               and abs(item['camera']['azimuthDeg'] - observations[0]['camera']['azimuthDeg']) < 1e-6
@@ -1567,12 +1604,19 @@ async def synthetic_flow(page):
     check('while the next frame is being read the dynamic pose is hidden, not relabelled',
           pending['modelAttribution'] == 'pending' and pending['modelDisplayed'] == 'none' and pending['modelRequested'] == 'rgbd_2'
           and pending['modelFramePose'] == 'false' and pending['modelBase'] == 'false' and pending['modelTcp'] == 'false' and pending['modelJoints'] == '0'
-          and '回到编译初始布局' in pending['modelStage'], (pending['modelAttribution'], pending['modelStage'][:160]))
+          and pending['valueNames'] == [] and pending['valuesTable'] == 'no-frame' and pending['valueNoneRow'] == 1
+          and '回到编译初始布局' in pending['modelStage'], (pending['modelAttribution'], pending['valueNames'], pending['modelStage'][:160]))
     await wait_model(page, 'ready')
     landed = await page_attrs(page)
     check('once it lands the pose belongs to that frame and only that frame',
           landed['modelAttribution'] == 'matched' and landed['modelDisplayed'] == 'rgbd_2' and landed['modelRequested'] == 'rgbd_2'
-          and landed['modelFramePose'] == 'true' and landed['modelJoints'] == '5', (landed['modelAttribution'], landed['modelDisplayed']))
+          and landed['modelFramePose'] == 'true' and landed['modelJoints'] == '5'
+          and landed['valuesTable'] == 'rgbd_2' and landed['valueNames'] == ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'base_link', 'grasp_tcp']
+          and [float(value) for value in landed['valueModels'][:5]] == ARM_RAD
+          and json.loads(landed['valueModels'][5].split(' / ')[0]) == [0.1, 0.2, 0.05]
+          and json.loads(landed['valueModels'][6]) == [0.17, 0.0, 0.3]
+          and abs(float(landed['valueDisplays'][3].split('（')[0]) - (-1.57 - (-1.5707963267948966))) < 1e-12,
+          (landed['valuesTable'], landed['valueModels']))
 
     # Census across frame steps, view switches, picks and a late-response switch. The fixture refuses the
     # live workbench's own native read, so that path retries on this same route: the pane's own counter is
@@ -1601,22 +1645,29 @@ async def synthetic_flow(page):
     arm = legacy['mappingTargets'].index('arm_joint_positions')
     check('a verified mapping without any part_readiness still drives nothing (the gate is the readiness)',
           legacy['mappingStatuses'][arm] == 'verified' and legacy['modelJoints'] == '0' and legacy['modelBase'] == 'false'
-          and legacy['modelFramePose'] == 'false' and 'reader 未返回该能力的就绪状态' in legacy['modelText'], legacy['modelDrive'])
+          and legacy['modelFramePose'] == 'false' and 'reader 未返回该能力的就绪状态' in legacy['modelText']
+          and legacy['valueNames'] == [] and legacy['valueNoneRow'] == 1, legacy['modelDrive'])
 
     await open_episode(page, 'run_a', 'episode_zero_angles')
     await wait_model(page, 'ready')
     await page.locator('[data-model-inspect]').click()
     zeros = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+    zero_attrs = await page_attrs(page)
     check('zero angles are legal values and are driven as recorded, not treated as missing',
           all(value == 0.0 for value in zeros['selectedJointDriven'].values()) and len(zeros['selectedJointDriven']) == 5
-          and '0 是合法数值' in (await page_attrs(page))['modelText'], zeros['selectedJointDriven'])
+          and '0 是合法数值' in zero_attrs['modelText']
+          and zero_attrs['valueModels'][:5] == ['0', '0', '0', '0', '0'] and zero_attrs['valueNoneRow'] == 0
+          and abs(float(zero_attrs['valueDisplays'][3].split('（')[0]) - 1.5707963267948966) < 1e-12,
+          (zeros['selectedJointDriven'], zero_attrs['valueModels'][:5]))
 
     await open_episode(page, 'run_a', 'episode_no_world_pose_convention')
     await wait_model(page, 'ready')
     unconvention = await page_attrs(page)
     check('an unstated root convention withholds only the chassis; the arm keeps driving',
           unconvention['modelBase'] == 'false' and unconvention['modelJoints'] == '5' and unconvention['modelTcp'] == 'true'
-          and 'supported_hypotheses' in unconvention['modelText'], (unconvention['modelBase'], unconvention['modelJoints']))
+          and 'supported_hypotheses' in unconvention['modelText']
+          and unconvention['valueNames'] == ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'grasp_tcp']
+          and 'base_link' not in unconvention['valueNames'], (unconvention['modelBase'], unconvention['valueNames']))
 
     # Same mesh bytes, different tree: only the content identity can catch this one.
     set_scene_variant(content_identity='d' * 64)
@@ -1644,6 +1695,7 @@ async def synthetic_flow(page):
           and 'geometry_bundle_unavailable' in no_tree['modelStage'] and no_tree['canvas'] == 0 and no_tree['modelCanvas'] == 0
           and no_tree['modelJoints'] == '0' and no_tree['modelBase'] == 'false' and no_tree['modelTcp'] == 'false'
           and no_tree['modelFramePose'] == 'false' and no_tree['modelDisplayed'] == 'none'
+          and no_tree['valueNames'] == [] and no_tree['valueNoneRow'] == 1
           and no_tree['modelTreeReads'] == '1' and no_tree['modelTreeReadEpisode'] == 'episode_pose_verified', no_tree['modelStage'][:200])
     set_scene_variant(mode='live')
     await open_episode(page, 'run_a', 'episode_zero_angles')

@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EpisodeContractError, describeHistoryError } from '../src/adapters/platform-episodes';
 import {
-  HISTORY_POSE_SCHEMA, assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, etagDigest, fkCrossCheckOf,
-  mappingRowsOf, modelAssetRowsOf, modelResourceText, modelVsUserText, notProvenText, partReadinessOf, poseBoundaryText,
-  poseDriveOf, poseReadinessText, poseStateText, readHistoryModelAsset, readRobotState, renderingText, treeBindingRowsOf,
-  versionBindingText, type HistoryPoseDto,
+  HISTORY_POSE_SCHEMA, assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, drivenValuesOf, etagDigest,
+  fkCrossCheckOf, mappingRowsOf, modelAssetRowsOf, modelResourceText, modelVsUserText, notProvenText, partReadinessOf,
+  poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText, readHistoryModelAsset, readRobotState, renderingText,
+  treeBindingRowsOf, versionBindingText, type HistoryPoseDto,
 } from '../src/adapters/platform-history-pose';
 
 // The base fixture copies the shape of the `unirobot-mobilecar-history-pose-1` payload the 18969
@@ -65,6 +65,7 @@ const poseFixture = (patch: Partial<HistoryPoseDto> = {}): HistoryPoseDto => ({
   status_meaning: { verified: 'the record and the fixed bundle agree on this mapping, and nothing had to be assumed', partially_verified: 'some parts of the mapping are attested', unverified: 'the value is recorded, but its frame, order, sign or convention is not attested', missing: 'the value a renderer would need is not recorded at all', not_required_for_pose: 'recorded data that this slice does not need to place the robot' },
   pose_readiness: { model_identity: 'match', mapping_valid_for_this_episode: true, mapped_targets_partially_or_fully_verified: '1/9', robot_state_can_be_rebuilt_without_assumptions: false, blocking_fields: ['base_position', 'base_orientation', 'gripper_joints', 'tcp_site_position', 'camera_extrinsics', 'dynamic_scene_objects'], next_round_owner: 'frontend assembly plus an attested base/gripper mapping source', note: 'resource identity, digests and joint-length checks pass; the remaining gaps are attestation gaps' },
   model_resource: { status: 'match', comparison: equalComparison, bundle_sha256: BUNDLE_SHA, content_identity_sha256: CONTENT_SHA, compiler: { name: 'MuJoCo', version: '3.1.6' },
+    tcp_site: 'grasp_tcp',
     link_count: 71, arm_hinge_joints: ['joint1', 'joint2', 'joint3', 'joint4', 'joint5'], gripper_slide_joints: ['left_jaw_joint', 'right_jaw_joint'], wheel_hinge_joints: ['front_left_joint', 'rear_left_joint', 'front_right_joint', 'rear_right_joint'],
     root_joint: { name: 'base_link', parent_name: null, joint_name: 'base_free', joint_type: 'free', joint_axis: [0, 0, 1], local_position_m: [0, 0, 0.0556], local_orientation_xyzw: [0, 0, 0, 1] },
     assets: [{ asset_id: 'base_link', sha256: 'a'.repeat(64), media_type: 'model/stl', coordinate_space: 'mujoco_compiled_mesh', units: 'm', bytes: 525884 },
@@ -302,6 +303,66 @@ describe('per-capability drive gate', () => {
   it('says so when no pose is readable at all', () => {
     expect(poseDriveOf(null).summary).toContain('未读取 robot-state');
     expect(poseDriveOf(null).parts).toEqual([]);
+  });
+});
+
+describe('driven value readout (the numbers that moved the screen)', () => {
+  /** The readout is asked for exactly what the gate handed the scene, so a row can only exist for a part
+   *  that was really driven — never for one that was withheld. */
+  const shownOf = (dto: HistoryPoseDto) => {
+    const drive = poseDriveOf(dto);
+    return { joints: drive.joints, baseApplied: Boolean(drive.base), tcpApplied: Boolean(drive.tcp) };
+  };
+
+  it('lists one row per driven joint plus the base and the TCP site, carrying the record values verbatim', () => {
+    const rows = drivenValuesOf(m15eFixture(), shownOf(m15eFixture()));
+    expect(rows.map((row) => row.name)).toEqual(['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'base_link', 'grasp_tcp']);
+    expect(rows.slice(0, 5).map((row) => row.model)).toEqual(ARM_RAD.map((value) => String(value)));
+    expect(rows[5].model).toBe(`${JSON.stringify(BASE_POS)} / ${JSON.stringify(BASE_QUAT)}`);
+    expect(rows[5].display).toContain('未再叠加');
+    expect(rows[5].display).toContain('0.0556');
+    expect(rows[6].model).toBe(JSON.stringify(TCP_POS));
+    expect(rows[6].display).toContain('不合成朝向');
+    expect(rows[6].source).toContain('tcp_position_world_m');
+  });
+
+  it('keeps the drawn value in model radians and marks the user angle as display-only', () => {
+    const rows = drivenValuesOf(m15eFixture(), shownOf(m15eFixture()));
+    const joint4 = rows.find((row) => row.name === 'joint4')!;
+    expect(joint4.model).toBe(String(ARM_RAD[3]));
+    expect(Number(joint4.display.split('（')[0])).toBeCloseTo(ARM_RAD[3] + Math.PI / 2, 12);
+    expect(joint4.display).toContain('未参与绘制');
+    expect(joint4.source).toContain('arm_model_qpos_rad[3]');
+    expect(joint4.source).toContain('arm_model_qpos_rad applied to the bundle hinge joints');
+    const joint1 = rows.find((row) => row.name === 'joint1')!;
+    expect(Number(joint1.display.split('（')[0])).toBeCloseTo(ARM_RAD[0], 12);
+  });
+
+  it('has no row for a withheld part: the base drops out with the kinematic check, the other parts keep theirs', () => {
+    const dto = m15eFixture({ tcp_kinematic_cross_check: undefined });
+    const rows = drivenValuesOf(dto, shownOf(dto));
+    expect(rows.map((row) => row.kind)).toEqual(['arm', 'arm', 'arm', 'arm', 'arm', 'tcp']);
+    expect(rows.some((row) => row.name === 'base_link')).toBe(false);
+  });
+
+  it('lists nothing at all when the reader offered no readiness, instead of showing the reference layout as values', () => {
+    const dto = poseFixture();
+    expect(drivenValuesOf(dto, shownOf(dto))).toEqual([]);
+  });
+
+  it('reports a zero model radian as a real row rather than as absence', () => {
+    const dto = m15eFixture({ state: { ...m15eFixture().state, recorded_payload: { ...PAYLOAD, arm_model_qpos_rad: [0, 0, 0, 0, 0] } } });
+    const rows = drivenValuesOf(dto, shownOf(dto));
+    expect(rows.filter((row) => row.kind === 'arm').map((row) => row.model)).toEqual(['0', '0', '0', '0', '0']);
+    expect(Number(rows[3].display.split('（')[0])).toBeCloseTo(Math.PI / 2, 12);
+  });
+
+  it('refuses to convert an axis the reader gave no zero or direction for, rather than guessing one', () => {
+    const dto = m15eFixture({ model_vs_user_angles: { ...m15eFixture().model_vs_user_angles!, user_angle_formula: { q_user: 'q_user = (q_model - zero_model_rad) / user_direction', used_for: 'display only' } } });
+    const rows = drivenValuesOf(dto, shownOf(dto)).filter((row) => row.kind === 'arm');
+    expect(rows).toHaveLength(5);
+    expect(rows.every((row) => row.display.startsWith('reader 未给'))).toBe(true);
+    expect(rows.map((row) => row.model)).toEqual(ARM_RAD.map((value) => String(value)));
   });
 });
 
