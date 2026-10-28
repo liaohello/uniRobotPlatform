@@ -66,6 +66,9 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
   const [inspected, setInspected] = useState('');
   /** Which frame the pixels on screen actually belong to — never inferred from `sampleId`. */
   const [displayed, setDisplayed] = useState<PoseAttribution | null>(null);
+  /** Placement-tree downloads issued for the Episode this pane instance shows. The route is shared with
+   *  the live workbench's own native read, so this counter is what attributes a re-read to the history. */
+  const [treeReads, setTreeReads] = useState<{ count: number; episode: string }>({ count: 0, episode: '' });
 
   const host = useRef<HTMLDivElement | null>(null);
   const view = useRef<HistoryReferenceScene | null>(null);
@@ -78,13 +81,15 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
   const trackPose = (controller: AbortController) => { poseControllers.current.push(controller); return controller; };
   const releaseView = useCallback(() => { view.current?.dispose(); view.current = null; assemblyKey.current = ''; setSelection(null); setInspected(''); setDisplayed(null); }, []);
 
-  // The placement tree is one read per Episode/run: stepping frames must not re-download it, and an
-  // older answer never replaces the bundle the current Episode was assembled from. Its controllers are
-  // separate from the pose read's: a frame step must not cancel the bundle it still needs.
+  // The placement tree is read when the Episode identity changes and counted per read: stepping frames
+  // must not re-download it, and an older answer never replaces the bundle the current Episode was
+  // assembled from. Its controllers are separate from the pose read's: a frame step must not cancel the
+  // bundle it still needs.
   useEffect(() => {
     const token = ++geometrySerial.current;
     geometryControllers.current.forEach((controller) => controller.abort()); geometryControllers.current = [];
     if (!episodeId) { setGeometry(null); return; }
+    setTreeReads((previous) => ({ count: previous.count + 1, episode: episodeId }));
     void fetch(GEOMETRY_PATH, { method: 'GET', signal: trackGeometry(new AbortController()).signal, cache: 'no-store', headers: { Accept: 'application/json' } })
       .then(async (response) => {
         const body = await response.json();
@@ -237,7 +242,8 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
     data-model-base-applied={String(Boolean(displayed?.baseApplied))} data-model-tcp-applied={String(Boolean(displayed?.tcpApplied))}
     data-model-joints-applied={String(displayed?.jointsApplied ?? 0)}
     data-model-root-height={String(displayed?.rootHeightWorldSimM ?? 'null')}
-    data-model-compiled-root-height={String(displayed?.compiledRootHeightWorldSimM ?? 'null')}>
+    data-model-compiled-root-height={String(displayed?.compiledRootHeightWorldSimM ?? 'null')}
+    data-model-tree-reads={String(treeReads.count)} data-model-tree-read-episode={treeReads.episode || 'none'}>
     <h3>固定模型树 · 按部件历史姿态 <small data-model-current-sample={displayedSample || '—'}>{displayedSample ? `显示帧 ${displayedSample}` : '编译初始布局'}</small></h3>
     <p className="session-note" data-model-attribution-line={`请求帧 ${sampleId ?? '无'} · 显示帧 ${displayedSample || '无（当前是编译初始布局）'}`}>
       请求帧 {sampleId ?? '无'} · 显示帧 {displayedSample || '无（画面上是编译初始布局）'}
