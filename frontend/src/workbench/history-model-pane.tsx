@@ -32,6 +32,10 @@ const GEOMETRY_SEMANTICS = 'compiled_initial_layout_not_live_object_state';
 
 interface GeometryEnvelope {
   schema_version: string; read_only: boolean; world_pose_semantics: string;
+  /** The route's own words for where this tree came from — geometry-2 says it is served over the live
+   *  native HTTP path with verified compiled geometry, which is exactly the dependency the still-missing
+   *  Episode-scoped manifest would remove. Passed through as stated, never relabelled as frozen-only. */
+  data_source?: string;
   geometry_binding?: { bundle_sha256?: string; content_identity_sha256?: string; exported_runtime_identity?: Record<string, unknown> | null } | null;
   geometry_provenance?: { model_inputs_sha256?: string; compiled_scene_sha256?: string; resource_identity?: Record<string, unknown> | null } | null;
   data: SceneManifest;
@@ -196,7 +200,7 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
     const drive = poseDriveOf(pose);
     scene.applyFramePose({ sample: pose.frame.sample_id, joints: drive.joints, base: drive.base, tcp: drive.tcp });
     setDisplayed(scene.attribution());
-    setStage({ status: 'ready', reason: `固定模型树已装配：放置树来自冻结 geometry bundle（${GEOMETRY_SCHEMA}，${geometry.data.links.length} 条 link、${geometry.data.world_links.length} 条 world link），${rows.length} 个网格字节按声明摘要从历史端点读取，内容身份与记录一致。屏幕姿态归属见“显示帧”。` });
+    setStage({ status: 'ready', reason: `固定模型树已装配：放置树来自 ${GEOMETRY_SCHEMA} 清单（${geometry.data.links.length} 条 link、${geometry.data.world_links.length} 条 world link，内容身份与记录一致；该路由自述 data_source=${geometry.data_source ?? '未声明'}，Episode 作用域的静态 manifest 尚未发布，前端不假造路由），${rows.length} 个网格字节按声明摘要从历史端点读取。屏幕姿态归属见“显示帧”。` });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geometry, pose]);
 
@@ -243,7 +247,8 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
     data-model-joints-applied={String(displayed?.jointsApplied ?? 0)}
     data-model-root-height={String(displayed?.rootHeightWorldSimM ?? 'null')}
     data-model-compiled-root-height={String(displayed?.compiledRootHeightWorldSimM ?? 'null')}
-    data-model-tree-reads={String(treeReads.count)} data-model-tree-read-episode={treeReads.episode || 'none'}>
+    data-model-tree-reads={String(treeReads.count)} data-model-tree-read-episode={treeReads.episode || 'none'}
+    data-model-tree-source={geometry?.data_source ?? 'none'}>
     <h3>固定模型树 · 按部件历史姿态 <small data-model-current-sample={displayedSample || '—'}>{displayedSample ? `显示帧 ${displayedSample}` : '编译初始布局'}</small></h3>
     <p className="session-note" data-model-attribution-line={`请求帧 ${sampleId ?? '无'} · 显示帧 ${displayedSample || '无（当前是编译初始布局）'}`}>
       请求帧 {sampleId ?? '无'} · 显示帧 {displayedSample || '无（画面上是编译初始布局）'}
