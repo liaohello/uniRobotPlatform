@@ -330,6 +330,44 @@ export function poseDriveOf(dto: HistoryPoseDto | null): PoseDrive {
     summary: `已驱动 ${Object.keys(joints).length} 个臂关节模型弧度、底盘位姿=${base ? '已按记录世界位姿放置' : '未放置（保持编译初始布局）'}、TCP 点=${tcp ? '已画位置点' : '未画'}；未驱动 ${withheld.length} 项；whole_robot_pose_rebuildable=${text(dto.capability_summary?.whole_robot_pose_rebuildable)}（驱动 ${driven} 项不升级为整车重建）。`,
   };
 }
+/** The values the surface really applied, one row per moved item, named by the frame they belong to.
+ *  `model` is what moved the joint; `display` is the reader's user angle computed here only to make it
+ *  visible that drawing never passed through it. A withheld part never gets a row, and nothing is filled
+ *  with zero. */
+export interface DrivenValueRow { kind: 'arm' | 'base' | 'tcp'; name: string; model: string; display: string; source: string }
+export function drivenValuesOf(dto: HistoryPoseDto, shown: { joints: Record<string, number>; baseApplied: boolean; tcpApplied: boolean }): DrivenValueRow[] {
+  const payload = (dto.state?.recorded_payload ?? {}) as Record<string, unknown>;
+  const order = dto.model_resource?.arm_hinge_joints ?? [];
+  const radians = numbersOf(payload.arm_model_qpos_rad) ?? [];
+  const formula = dto.model_vs_user_angles?.user_angle_formula ?? null;
+  const renderSource = text(dto.model_vs_user_angles?.render_source);
+  const rows: DrivenValueRow[] = [];
+  order.forEach((name, index) => {
+    const value = shown.joints[name];
+    if (value === undefined) return;
+    const zero = formula?.zero_model_rad?.[index];
+    const direction = formula?.user_direction?.[index];
+    const convertible = typeof zero === 'number' && Number.isFinite(zero) && typeof direction === 'number' && Number.isFinite(direction) && direction !== 0;
+    rows.push({
+      kind: 'arm', name, model: String(value),
+      display: convertible ? `${String((value - (zero as number)) / (direction as number))}（本界面按 reader 公式换算，仅展示，未参与绘制）`
+        : 'reader 未给该轴的 zero_model_rad / user_direction：不换算、不猜测',
+      source: `arm_model_qpos_rad[${index}] · 绘制来源=${renderSource}`,
+    });
+  });
+  if (shown.baseApplied) {
+    rows.push({ kind: 'base', name: 'base_link',
+      model: `${JSON.stringify(numbersOf(payload.base_position_world_sim_m) ?? null)} / ${JSON.stringify(numbersOf(payload.base_quaternion_xyzw) ?? null)}`,
+      display: `替换编译初始位姿；root joint local_position_m=${JSON.stringify(dto.model_resource?.root_joint?.local_position_m ?? null)} 未再叠加`,
+      source: 'base_position_world_sim_m + base_quaternion_xyzw（同帧运动学核对背书）' });
+  }
+  if (shown.tcpApplied) {
+    rows.push({ kind: 'tcp', name: text(dto.model_resource?.tcp_site), model: JSON.stringify(numbersOf(payload.tcp_position_world_m) ?? null),
+      display: `只画位置点，不合成朝向（tcp_orientation_frame=${text(partOf(dto, 'tcp_orientation_frame')?.status)}）`,
+      source: 'tcp_position_world_m · 帧归属见显示帧' });
+  }
+  return rows;
+}
 /** `single_state_selected=false` / `recorded_payload=null` are reported as answers, not patched. */
 export function poseStateText(dto: HistoryPoseDto | null): string {
   if (!dto) return '未读取 robot-state。';

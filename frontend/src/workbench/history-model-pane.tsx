@@ -19,9 +19,10 @@ import { describeHistoryError } from '../adapters/platform-episodes';
 import { HistoryReferenceScene, type PoseAttribution, type ReferenceSelection } from '../viewport/history-reference-scene';
 import type { MeshAsset, SceneManifest } from '../adapters/types';
 import {
-  assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, fkCrossCheckOf, mappingRowsOf, modelResourceText,
-  modelVsUserText, notProvenText, partReadinessOf, poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText,
-  readHistoryModelAsset, readRobotState, renderingText, treeBindingRowsOf, versionBindingText, type HistoryPoseDto,
+  assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, drivenValuesOf, fkCrossCheckOf, mappingRowsOf,
+  modelResourceText, modelVsUserText, notProvenText, partReadinessOf, poseBoundaryText, poseDriveOf, poseReadinessText,
+  poseStateText, readHistoryModelAsset, readRobotState, renderingText, treeBindingRowsOf, versionBindingText,
+  type HistoryPoseDto,
 } from '../adapters/platform-history-pose';
 
 /** The placement tree comes from the platform's own frozen geometry envelope. */
@@ -218,6 +219,11 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
   const canRead = Boolean(episodeId) && Boolean(pose?.model_resource);
   const displayedSample = displayed?.displayedSample ?? '';
   const attributed = Boolean(displayedSample) && displayedSample === sampleId;
+  // Readback of what is actually on screen, only when the screen is this frame's: a pending or refused
+  // read has no rows, because the picture is the compiled layout and no recorded value moved it.
+  const values = pose && attributed && displayed
+    ? drivenValuesOf(pose, { joints: displayed.jointValues, baseApplied: Boolean(displayed.baseApplied), tcpApplied: Boolean(displayed.tcpApplied) })
+    : [];
 
   /** One asset's bytes on demand: the reader re-computes the digest and 409s if the content changed. */
   function readOne(assetId: string) {
@@ -273,6 +279,18 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
           {drive.withheld.map((line, index) => <li key={index} data-model-withheld={index}>{line}</li>)}
           {!drive.withheld.length && <li data-model-withheld-none="true">没有未驱动能力。</li>}
         </ul>
+        <p className="session-note" data-model-values-note={`归属显示帧 ${displayedSample || '无'} · 已列 ${values.length} 行`}>
+          本帧画面上真正施加的值（逐行对应被驱动的部件；未驱动的部件没有行）。<b>“绘制用的记录原值”就是移动关节/身体的那一份数</b>；
+          用户角一栏由 reader 公式在本界面换算，只作对照，绘制路径从未使用它。</p>
+        <table className="frame-record-table" data-model-values-table={attributed ? displayedSample || 'none' : 'no-frame'}>
+          <thead><tr><th>部件／轴</th><th>绘制用的记录原值</th><th>仅展示：按 reader 公式的用户角</th><th>来源字段</th></tr></thead>
+          <tbody>{values.map((row) => <tr key={`${row.kind}:${row.name}`} data-model-value={row.name} data-value-kind={row.kind}
+            data-value-model={row.model} data-value-display={row.display} data-value-source={row.source}>
+            <td>{row.name}<small>{row.kind}</small></td><td>{row.model}</td><td><small>{row.display}</small></td>
+            <td><small>{row.source}</small></td></tr>)}
+            {!values.length && <tr data-model-value-none="true"><td colSpan={4}>
+              本帧没有可归属的已驱动值：画面是编译初始布局，或该帧的 robot-state 尚未读回／被 reader 拒绝。不从上一帧借值，也不补 0。</td></tr>}
+          </tbody></table>
         <div className="session-inline">
           <button data-model-fit disabled={!view.current} onClick={() => view.current?.fitView()}>适应视图</button>
           {VIEWS.map((entry) => <button key={entry.id} data-model-view={entry.id} disabled={!view.current} title={entry.title}
