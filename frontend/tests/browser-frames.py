@@ -267,6 +267,13 @@ def page_attrs(page):
         valueModels:q('[data-model-value]','data-value-model'),valueDisplays:q('[data-model-value]','data-value-display'),
         valueSources:q('[data-model-value]','data-value-source'),valuesTable:g('[data-model-values-table]','data-model-values-table'),
         valueNoneRow:document.querySelectorAll('[data-model-value-none]').length,
+        motionVisited:g('[data-model-pane]','data-motion-visited-frames'),
+        motionKey:g('[data-model-pane]','data-motion-visited-key'),
+        motionNames:q('[data-motion-row]','data-motion-row'),
+        motionDistinct:q('[data-motion-row]','data-motion-distinct'),
+        motionVisits:q('[data-motion-row]','data-motion-visits'),
+        motionSamples:q('[data-motion-row]','data-motion-samples'),
+        motionNoneRow:document.querySelectorAll('[data-motion-none]').length,
         partCaps:q('[data-part-row]','data-part-row'),partStatuses:q('[data-part-row]','data-part-status'),partDrivable:q('[data-part-row]','data-part-drivable'),
         fkVerdicts:q('[data-fk-row]','data-fk-verdict'),fkCheck:g('[data-fk-check]','data-fk-check'),
         treeFields:q('[data-tree-binding-row]','data-tree-binding-row'),treeEqual:q('[data-tree-binding-row]','data-tree-binding-equal'),
@@ -576,6 +583,24 @@ async def real_flow(page):
           and len({item['readoutBase'] for item in observations}) == len(base_variants)
           and len({item['readoutTcp'] for item in observations}) == len({tuple(item['recordedTcp']) for item in observations})
           and all(item['attrs']['valueNoneRow'] == 0 for item in observations), report['real']['driven_value_readout_per_frame'])
+    last_attrs = observations[-1]['attrs']
+    visited_over_time = [int(item['attrs']['motionVisited']) for item in observations]
+    episode_samples = {c['sample_id'] for c in direct['frames']} | {item['sample'] for item in observations}
+    contributing = {s for cell in last_attrs['motionSamples'] for s in cell.split(',') if s}
+    arm_distinct_printed = [int(value) for value in last_attrs['motionDistinct'][:5]]
+    report['real']['motion_coverage'] = {'visited_frames': last_attrs['motionVisited'], 'key': last_attrs['motionKey'],
+                                         'names': last_attrs['motionNames'], 'distinct': last_attrs['motionDistinct'],
+                                         'visits': last_attrs['motionVisits'], 'contributing_samples': sorted(contributing),
+                                         'visited_counts_during_loop': visited_over_time,
+                                         'arm_variants_in_loop_frames': len(arm_variants)}
+    check('运动覆盖只统计本会话真归属过的帧：帧数逐次增长、来源帧属于本 Episode、记录里变化的轴如实显出多个值',
+          last_attrs['motionNames'] == readout_names and last_attrs['motionNoneRow'] == 0
+          and visited_over_time == sorted(visited_over_time) and visited_over_time[-1] > visited_over_time[0]
+          and visited_over_time[-1] >= len(observations)
+          and contributing <= episode_samples and last_attrs['motionKey'].startswith(a.complete_episode)
+          and max(arm_distinct_printed) >= len(arm_variants)
+          and len(set(last_attrs['motionVisits'][:5])) == 1
+          and int(last_attrs['motionVisits'][0]) <= visited_over_time[-1], report['real']['motion_coverage'])
     check('stepping frames never resets the camera or rebuilds the tree',
           all(abs(item['camera']['distance'] - observations[0]['camera']['distance']) < 1e-6
               and abs(item['camera']['azimuthDeg'] - observations[0]['camera']['azimuthDeg']) < 1e-6
@@ -1618,6 +1643,13 @@ async def synthetic_flow(page):
           and abs(float(landed['valueDisplays'][3].split('（')[0]) - (-1.57 - (-1.5707963267948966))) < 1e-12,
           (landed['valuesTable'], landed['valueModels']))
 
+    check('驱动成立不等于运动被验证：两个归属帧值相同时运动覆盖明说“没有跨帧运动覆盖证据”',
+          int(landed['motionVisited']) >= 2 and landed['motionNoneRow'] == 0
+          and landed['motionNames'] == ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'base_link', 'grasp_tcp']
+          and landed['motionDistinct'] == ['1'] * 7 and landed['motionVisits'] == [landed['motionVisited']] * 7
+          and '没有跨帧运动覆盖证据' in landed['modelText'] and '不推断整条记录' in landed['modelText'],
+          (landed['motionVisited'], landed['motionDistinct']))
+
     # Census across frame steps, view switches, picks and a late-response switch. The fixture refuses the
     # live workbench's own native read, so that path retries on this same route: the pane's own counter is
     # the attributed measurement and the route window is only recorded.
@@ -1641,12 +1673,17 @@ async def synthetic_flow(page):
           switched['modelTreeReads'] == '1' and switched['modelTreeReadEpisode'] == 'episode_pose_verified'
           and switched['modelEpisode'] == 'episode_pose_verified',
           {'pane': [switched['modelTreeReads'], switched['modelTreeReadEpisode']], 'route': switch_reads})
+    check('换 Episode 会把运动覆盖观测重新起算，不混入上一个 Episode 的帧',
+          switched['motionKey'].startswith('episode_pose_verified|') and switched['motionVisited'] == '1'
+          and switched['motionNames'] == [] and switched['motionNoneRow'] == 1,
+          (switched['motionKey'], switched['motionVisited'], switched['motionNames']))
     legacy = await page_attrs(page)
     arm = legacy['mappingTargets'].index('arm_joint_positions')
     check('a verified mapping without any part_readiness still drives nothing (the gate is the readiness)',
           legacy['mappingStatuses'][arm] == 'verified' and legacy['modelJoints'] == '0' and legacy['modelBase'] == 'false'
           and legacy['modelFramePose'] == 'false' and 'reader 未返回该能力的就绪状态' in legacy['modelText']
-          and legacy['valueNames'] == [] and legacy['valueNoneRow'] == 1, legacy['modelDrive'])
+          and legacy['valueNames'] == [] and legacy['valueNoneRow'] == 1
+          and legacy['motionNames'] == [] and legacy['motionNoneRow'] == 1, legacy['modelDrive'])
 
     await open_episode(page, 'run_a', 'episode_zero_angles')
     await wait_model(page, 'ready')
@@ -1667,7 +1704,8 @@ async def synthetic_flow(page):
           unconvention['modelBase'] == 'false' and unconvention['modelJoints'] == '5' and unconvention['modelTcp'] == 'true'
           and 'supported_hypotheses' in unconvention['modelText']
           and unconvention['valueNames'] == ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'grasp_tcp']
-          and 'base_link' not in unconvention['valueNames'], (unconvention['modelBase'], unconvention['valueNames']))
+          and 'base_link' not in unconvention['valueNames']
+          and unconvention['motionNames'] == unconvention['valueNames'], (unconvention['modelBase'], unconvention['valueNames']))
 
     # Same mesh bytes, different tree: only the content identity can catch this one.
     set_scene_variant(content_identity='d' * 64)
@@ -1696,6 +1734,7 @@ async def synthetic_flow(page):
           and no_tree['modelJoints'] == '0' and no_tree['modelBase'] == 'false' and no_tree['modelTcp'] == 'false'
           and no_tree['modelFramePose'] == 'false' and no_tree['modelDisplayed'] == 'none'
           and no_tree['valueNames'] == [] and no_tree['valueNoneRow'] == 1
+          and no_tree['motionVisited'] == '0' and no_tree['motionNoneRow'] == 1
           and no_tree['modelTreeReads'] == '1' and no_tree['modelTreeReadEpisode'] == 'episode_pose_verified', no_tree['modelStage'][:200])
     set_scene_variant(mode='live')
     await open_episode(page, 'run_a', 'episode_zero_angles')

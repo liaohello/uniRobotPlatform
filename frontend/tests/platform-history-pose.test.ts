@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EpisodeContractError, describeHistoryError } from '../src/adapters/platform-episodes';
 import {
   HISTORY_POSE_SCHEMA, assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, drivenValuesOf, etagDigest,
-  fkCrossCheckOf, mappingRowsOf, modelAssetRowsOf, modelResourceText, modelVsUserText, notProvenText, partReadinessOf,
-  poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText, readHistoryModelAsset, readRobotState, renderingText,
-  treeBindingRowsOf, versionBindingText, type HistoryPoseDto,
+  fkCrossCheckOf, mappingRowsOf, mergeVisitedValues, modelAssetRowsOf, modelResourceText, modelVsUserText,
+  motionCoverageOf, notProvenText, partReadinessOf, poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText,
+  readHistoryModelAsset, readRobotState, renderingText, treeBindingRowsOf, versionBindingText, type HistoryPoseDto,
 } from '../src/adapters/platform-history-pose';
 
 // The base fixture copies the shape of the `unirobot-mobilecar-history-pose-1` payload the 18969
@@ -363,6 +363,52 @@ describe('driven value readout (the numbers that moved the screen)', () => {
     expect(rows).toHaveLength(5);
     expect(rows.every((row) => row.display.startsWith('reader 未给'))).toBe(true);
     expect(rows.map((row) => row.model)).toEqual(ARM_RAD.map((value) => String(value)));
+  });
+});
+
+describe('cross-frame motion coverage over visited frames only', () => {
+  it('refuses to read motion out of a single visited frame: one value is no coverage', () => {
+    const rows = motionCoverageOf([{ sample: 'a', values: { joint1: '0.1', base_link: '[0,0,0.05]' } }]);
+    expect(rows.map((row) => [row.name, row.distinct, row.seenCount])).toEqual([['joint1', 1, 1], ['base_link', 1, 1]]);
+    expect(rows.every((row) => row.verdict.includes('没有跨帧运动覆盖证据'))).toBe(true);
+  });
+
+  it('counts the distinct recorded values an item actually took across the visited frames', () => {
+    const rows = motionCoverageOf([
+      { sample: 'a', values: { joint1: '0.1', joint2: '0.5' } },
+      { sample: 'b', values: { joint1: '0.2', joint2: '0.5' } },
+      { sample: 'c', values: { joint1: '0.1', joint2: '0.7' } },
+    ]);
+    const joint1 = rows.find((row) => row.name === 'joint1')!;
+    const joint2 = rows.find((row) => row.name === 'joint2')!;
+    expect([joint1.distinct, joint1.seenCount, joint1.samples]).toEqual([2, 3, ['c', 'b']]);
+    expect([joint2.distinct, joint2.seenCount]).toEqual([2, 3]);
+    expect(joint1.verdict).toContain('有跨帧运动证据');
+    expect(joint1.verdict).toContain('只对已访问帧成立');
+  });
+
+  it('keeps an item that a later visit does not drive at what it really saw, without inventing a zero', () => {
+    const rows = motionCoverageOf([
+      { sample: 'a', values: { joint1: '0.1', base_link: '[0,0,0.05]' } },
+      { sample: 'b', values: { joint1: '0.2' } },
+    ]);
+    const base = rows.find((row) => row.name === 'base_link')!;
+    expect([base.distinct, base.seenCount, base.samples]).toEqual([1, 1, ['a']]);
+    expect(base.verdict).toContain('没有跨帧运动覆盖证据');
+    expect(rows.find((row) => row.name === 'joint1')!.distinct).toBe(2);
+  });
+
+  it('revisiting a frame rewrites its own entry instead of stacking a second observation', () => {
+    const once = mergeVisitedValues([], { sample: 'a', values: { joint1: '0.1' } });
+    const again = mergeVisitedValues(once, { sample: 'a', values: { joint1: '0.9' } });
+    expect(again).toEqual([{ sample: 'a', values: { joint1: '0.9' } }]);
+    expect(motionCoverageOf(again).map((row) => [row.distinct, row.seenCount])).toEqual([[1, 1]]);
+    expect(motionCoverageOf(mergeVisitedValues(once, { sample: 'b', values: { joint1: '0.1' } }))[0].seenCount).toBe(2);
+    expect(mergeVisitedValues(once, { sample: '', values: { joint1: '0.1' } })).toBe(once);
+  });
+
+  it('lists nothing when no frame has been attributed yet, so the surface claims no coverage', () => {
+    expect(motionCoverageOf([])).toEqual([]);
   });
 });
 
