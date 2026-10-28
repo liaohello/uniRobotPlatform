@@ -2,7 +2,7 @@
 
 本轮把上游从 18969 切到 **18970（M1.5e）**，并按该候选的**实测分部契约**开放有依据的历史姿态：底盘（`base_pose_placement`）、机械臂（`arm_local_pose`）与 TCP 位置点（`tcp_position_marker`）在真实记录上确实被驱动；夹爪保持 `conditional` 不默认开启，TCP 朝向/相机/动态物体保持 `blocked`。同时修掉切帧显示归属（请求帧与显示帧分开），把静态放置树与记录**按内容身份绑定**（不再只看网格摘要），并修正 `sim` 时间量与版本更正的措辞。只修改 `frontend/`；不发运动/RESET/录制/导航，不改后端、公共契约或 native。
 
-**本轮成熟度分层（不合并宣称）**：① 切帧归属修复已完成并在真实与合成两条路径验证；② 分部历史姿态在 18970 的真实记录上**已开放并渲染验证**（底盘＋五个模型弧度＋TCP 点）；③ 固定模型树已与记录按内容身份绑定，但**仍来自 `GET /api/v1/mobilecar/scene` 的冻结清单**——Episode 作用域的静态模型 manifest 后端尚未发布，前端不假造不存在的路由，因此“历史装配完全不依赖在线场景读取”这一条**未达成**；④ 整车完整重建、跨流同步、已验证 3D 历史回放与正式 M1 验收**均未宣称**。
+**本轮成熟度分层（不合并宣称）**：① 切帧归属修复已完成并在真实与合成两条路径验证；② 分部历史姿态在 18970 的真实记录上**已开放并渲染验证**（底盘＋五个模型弧度＋TCP 点）；③ 固定模型树已与记录按内容身份绑定，但**清单仍取自 `GET /api/v1/mobilecar/scene`**——该路由自述 `data_source=live_native_http_with_verified_compiled_geometry`，即内容由编译 geometry bundle 核验过、但读取路径仍需在线会话；Episode 作用域的静态模型 manifest 后端尚未发布，前端不假造不存在的路由，因此“历史装配完全不依赖在线场景读取”这一条**未达成**，界面把这句话原样写在装配说明里；④ 整车完整重建、跨流同步、已验证 3D 历史回放与正式 M1 验收**均未宣称**。
 
 ## 冻结版本与上游
 
@@ -36,6 +36,8 @@
 
 **读取普查（本轮新增验收）**：面板把“自己为当前 Episode 发起过几次静态树下载”写在 `data-model-tree-reads` 与 `data-model-tree-read-episode` 上，普查因此能归属到历史面板自身而不被同路由的其它读者污染——`/api/v1/mobilecar/scene` 同时是工作台自己的原生读取路径，合成模式下该路径被网关拒绝后会重试，路由级计数会把这类读取算进来（实测该 Episode 路由窗 2 条，面板自身 1 条）。真实路径的归属核对同时看路由窗：一个 Episode 的身份只有 1 次放置树读取，其后的 13 次 `robot-state`（6 个不同帧）、多次翻页、时间窗、视图切换与点击拾取之内**新增 0 次**；切到另一个 Episode 后路由窗仍恰好 1 次，面板计数重新为 1（换 Episode 时面板重新挂载，这与“换帧不重建视口”是两件事，后者由相机与 link 计数不变证明）。网格字节一律走 `GET /api/v1/episodes/{id}/model/assets/{asset_id}`，历史窗口内来自 `/mobilecar/scene/assets/` 的请求为 0 条。
 
+**清单来源按路由原文显示（本轮新增）**：装配说明不再只说“冻结 bundle”，而是把该路由自己的 `data_source` 原样写出来并紧跟缺口说明——实测 18970 答复 `data_source=live_native_http_with_verified_compiled_geometry`、`world_pose_semantics=compiled_initial_layout_not_live_object_state`，且其 `runtime_identity.episode_id=episode_43c22f95536f4517be04e4b195d6d354` 并不是被打开的 `episode_27bfed542768…`。也就是说：**内容由编译 bundle 核验过并与记录按身份绑定，但取到这份内容的路径仍需在线会话**。同值通过 `data-model-tree-source` 交给断言（真实路径与一次直接 GET 的答复逐字相等；合成路径按夹具声明的同值显示），操作者在屏幕上能看清这条差别，而不是被一句“冻结”糊过去。这条依赖只有后端发布 Episode 作用域 manifest 才能解除。
+
 ## 五、真实多帧验收
 
 同一 Episode 首页里选出三个底盘与关节值不完全相同的帧，逐帧断言：显示帧身份＝所选帧、渲染根高度＝该帧记录 z（`0.053540585735473954 / 0.05353981847658025 / 0.05353885338965963`，与编译初始 `0.0556` 不同）、五个关节值＝记录原值、图像＝该帧自己的 rgb 引用；三帧渲染高度互不相同、臂值不同的帧对之间 `gripper_link` 世界位置确实移动；整段步进相机距离/方位/俯仰与 link 计数不变。面板显式陈述 world_sim 轴向与 `mujocoRoot` 的 −90° 映射（`data-model-axis-convention`），并在真实模型上按网格点击完成一次**真实拾取**，Inspector 读取的相机/link/姿态归属在拾取后不变，且页面上不存在 Target/Ghost/工具元素。
@@ -52,13 +54,13 @@
 
 ## 同一冻结版本的实际验证
 
-最终交付 release：`m1-front-geometry-20261028T095056Z-76dfc8d77404`（109 个文件逐项摘要核对，聚合 `76dfc8d77404…`）。两个 pass 用**同一 dist、同一上游 18970**，不拼接 18969/18970 结果；本页是验证后记录，刻意排除在自身哈希之外。
+最终交付 release：`m1-front-geometry-20261028T100907Z-9ef64bbd5685`（109 个文件逐项摘要核对，聚合 `9ef64bbd5685…`）。两个 pass 用**同一 dist、同一上游 18970**，不拼接 18969/18970 结果；本页是验证后记录，刻意排除在自身哈希之外。前一次普查切片 `…T095056Z-76dfc8d77404` 两 pass 也全绿（真实 frames 77、合成 62），本轮在其上加了清单来源的透传显示，因此以最新一次为准。
 
 | pass | 实际执行（全部在授权服务器） | 结果 |
 |---|---|---|
 | 共同 | `npm run build`（含 `tsc --noEmit`）＋ `vitest` | 构建通过；**158/158** 单测通过（含按能力门控的驱动、内容身份绑定、时间措辞与 M1.5e 载荷形状） |
-| A · 真实 | `--frames --history --history-mode real --geometry --session --config --lifecycle --upstream http://127.0.0.1:18970` | frames **77**、history **78**、geometry **23**、session **38**、config **51**、lifecycle **48** 项检查全部通过，0 浏览器错误 |
-| B · 合成 | `--frames --history --history-mode synthetic`（同一 dist、同一上游） | frames **62**、history **42** 项检查全部通过，0 浏览器错误 |
+| A · 真实 | `--frames --history --history-mode real --geometry --session --config --lifecycle --upstream http://127.0.0.1:18970` | frames **78**、history **78**、geometry **23**、session **38**、config **51**、lifecycle **48** 项检查全部通过，0 浏览器错误 |
+| B · 合成 | `--frames --history --history-mode synthetic`（同一 dist、同一上游） | frames **63**、history **42** 项检查全部通过，0 浏览器错误 |
 
 真实多帧数值核对（pass A，`frames/browser.json → real.pose_linkage`）：三帧 `rgbd_e3213e6… / rgbd_e553d6b… / rgbd_9d0502b…` 的记录底盘 z 为 `0.053540585735473954 / 0.05353981847658025 / 0.05353885338965963`（编译初始 `0.0556`，未被再次叠加），三帧臂值互不相同（`arm_value_variants=3`、`chassis_variants=3`、`arm_moved_pairs=3`），`gripper_link` 渲染世界位置随帧移动；同帧运动学误差 `abs_error_m=1.6454375138849238e-14` 对容差 `0.005`（容差归属原文“not a calibration limit and not a contract threshold”），被排除的另一约定误差 `0.0556`。步进全程相机 `distance/azimuth/polar` 与 link/world link 计数不变。
 
@@ -66,23 +68,25 @@
 
 坐标轴与拾取（同一 pass 的 `real.picking`、`real.standard_views`）：面板另有 `data-model-axis-convention` 一行写明 world_sim 轴向、`mujocoRoot` 的 −90° 映射、关节轴取自 bundle `joint_axis`、底盘读 `base_link` 世界位姿与“TCP 只画位置点，不画朝向帧”；在真实模型上按网格点击拾取，命中 `link3`（hinge）并列出 `link3_collision`、`link3_visual` 两个 geom 及其 mesh 引用 `link3`，页面上 Target/Ghost/工具元素仍为 0，拾取后显示帧身份与已驱动关节数不变；前/侧/顶三视在真实记录上 `distance` 与 `target` 全等、只有方位/俯仰变化，且姿态归属与 `worldPositions` 不随之改变；合成路径同样点击命中 `base_link`。
 
-请求边界（pass A 历史窗口 145 条、全页 154 条）：全部为 GET，路径只落在 8 条精确历史 GET（列表、详情、streams、records、assets、`/frames`、`/robot-state`、`/model/assets/{asset_id}`）、`/api/v1/mobilecar/scene` 与外壳自身的只读监控 `GET /api/v1/mobilecar/snapshot`；控制、Session、RESET、录制与 native 透传为 0 次，网关对这些路径返回自己的 HTML 拒绝页且不转发。
+清单来源透传（本轮新增，`real.tree_source`）：面板显示的 `data-model-tree-source` 与一次直接 `GET /api/v1/mobilecar/scene` 的答复**逐字相等**，实测值 `data_source=live_native_http_with_verified_compiled_geometry`、`world_pose_semantics=compiled_initial_layout_not_live_object_state`，且该答复的 `runtime_identity` 是 `run_9c88e3e36e7648a3852c9f590e43ed5f` / `episode_43c22f95536f4517be04e4b195d6d354`，与被打开的 `episode_27bfed542768…` 不同——界面把这两件事一起写出来：内容与记录按身份绑定，但取内容的路由仍需在线会话。合成夹具声明同一 `data_source`，面板同样原样显示，断言它没有被改写成“Episode 作用域”。
 
-证据：真实 pass 的 [unit.json](../reports/m1-front-geometry-20261028T095056Z-76dfc8d77404-real/unit.json)、[frames/browser.json](../reports/m1-front-geometry-20261028T095056Z-76dfc8d77404-real/frames/browser.json)、[history/browser.json](../reports/m1-front-geometry-20261028T095056Z-76dfc8d77404-real/history/browser.json)、[geometry/geometry.json](../reports/m1-front-geometry-20261028T095056Z-76dfc8d77404-real/geometry/geometry.json)、[preview.json](../reports/m1-front-geometry-20261028T095056Z-76dfc8d77404-real/preview.json)；合成 pass 的 [frames/browser.json](../reports/m1-front-geometry-20261028T095056Z-76dfc8d77404-synthetic/frames/browser.json)。真实截图（同一 dist、同一 Episode）：
+请求边界（pass A 历史窗口 144 条、全页 176 条，非 GET **0** 条）：路径只落在 8 条精确历史 GET（列表、详情、streams、records、assets、`/frames`、`/robot-state`、`/model/assets/{asset_id}`）、`/api/v1/mobilecar/scene` 与外壳自身的只读监控 `GET /api/v1/mobilecar/snapshot`。全页 `/mobilecar/scene` 共 **3** 条且都能对上原因：两个 Episode 各 1 次装配读取 ＋ 本轮新增的那次“与直接 GET 逐字比对来源”的用例读取，没有一条来自换帧。控制、Session、RESET、录制与 native 透传为 0 次，网关对这些路径返回自己的 HTML 拒绝页且不转发。
 
-![真实记录第三帧：底盘＋五个模型弧度＋TCP 位置点已按部件门控驱动，未驱动部分仍是固定参考](../reports/m1-front-geometry-20261028T095056Z-76dfc8d77404-real/frames/pose-rgbd_e553d6b.png)
+证据：真实 pass 的 [unit.json](../reports/m1-front-geometry-20261028T100907Z-9ef64bbd5685-real/unit.json)、[frames/browser.json](../reports/m1-front-geometry-20261028T100907Z-9ef64bbd5685-real/frames/browser.json)、[history/browser.json](../reports/m1-front-geometry-20261028T100907Z-9ef64bbd5685-real/history/browser.json)、[geometry/geometry.json](../reports/m1-front-geometry-20261028T100907Z-9ef64bbd5685-real/geometry/geometry.json)、[preview.json](../reports/m1-front-geometry-20261028T100907Z-9ef64bbd5685-real/preview.json)；合成 pass 的 [frames/browser.json](../reports/m1-front-geometry-20261028T100907Z-9ef64bbd5685-synthetic/frames/browser.json)。真实截图（同一 dist、同一 Episode）：
 
-![真实记录上点击拾取后的 Inspector 与只读选择](../reports/m1-front-geometry-20261028T095056Z-76dfc8d77404-real/frames/pose-inspector-pick.png)
+![真实记录第三帧：底盘＋五个模型弧度＋TCP 位置点已按部件门控驱动，未驱动部分仍是固定参考](../reports/m1-front-geometry-20261028T100907Z-9ef64bbd5685-real/frames/pose-rgbd_e553d6b.png)
+
+![真实记录上点击拾取后的 Inspector 与只读选择](../reports/m1-front-geometry-20261028T100907Z-9ef64bbd5685-real/frames/pose-inspector-pick.png)
 
 ## 未覆盖与下一步
 
-- 历史装配仍依赖 `GET /api/v1/mobilecar/scene` 的冻结清单：后端需发布 Episode 作用域的静态模型 manifest（完整静态树、关节/geom/mesh 引用、资源身份与内容摘要），前端才能不再读在线场景；该读取的 `exported_runtime_identity` 属于当前会话（实测 `run_9c88e3e36e7648a3852c9f590e43ed5f` / `episode_43c22f95536f4517be04e4b195d6d354`），不是本 Episode。
+- 历史装配仍依赖 `GET /api/v1/mobilecar/scene`：该路由自述 `data_source=live_native_http_with_verified_compiled_geometry`，其 `runtime_identity` 属于当前在线会话（实测 `run_9c88e3e36e7648a3852c9f590e43ed5f` / `episode_43c22f95536f4517be04e4b195d6d354`），不是本 Episode。后端需发布 Episode 作用域的静态模型 manifest（完整静态树、关节/geom/mesh 引用、资源身份与内容摘要），前端才能不再读这条在线路径；本轮把这条差别写进界面说明与 `data-model-tree-source`，不让“冻结”二字掩盖它。
 - 夹爪只在消费者接受并显示平台常量时才可用；TCP 朝向、相机外参、动态物体仍无记录依据。逐帧运动覆盖只对所选帧成立，不推断全档所有轴都被验证。不做点云/NumPy 解码、不做跨流或跨 Episode 统一游标、不接采集闭环、不执行回放。
 
 ## 可操作预览与本轮清理
 
-- 交付预览：**19022 → 18970**（服务器回环），根目录 `releases/m1-front-geometry-20261028T095056Z-76dfc8d77404/frontend/dist`，随本轮进程与 SSH 隧道存活，登记 round `m23d-real`；同一 dist 的合成对照预览在 **19023**（round `m23d-synth`）。用法：左栏“历史 Episode”→ 打开 COMPLETE 记录 → 在帧表逐帧步进/播放，即可看到底盘位置、五个模型弧度与 TCP 点随记录变化，而未驱动部件保持固定参考；面板底部的 `data-model-tree-reads` 就是本轮普查读的计数属性。
-- 上一切片（`…T090133Z-b3ea0c28e7ec`）的交付预览 **19018 / 19019** 保留继续运行，作为那一次记录的入口；更早的 **19013 → 18969** 与 **18986 → 18964** 同样未动。本轮中途登记的 19020/19021（失败断言那一版 dist）在 PID／start tick／uid／cmdline／监听归属逐项匹配后停止，未触碰任何不属于自己的端口。服务器上新出现的 18974/18990-18998 等端口经只读探测确认是**其它会话的前端预览网关**（对同一 `/api/v1/episodes/{id}/frames` 返回自己的拒绝页），本轮未停止、未复用。后端候选 18969/18970 与 native 8792 全程未重启、未替换，8792 只经 GET 探测。
+- 交付预览：**19024 → 18970**（服务器回环，PID 1807983），根目录 `releases/m1-front-geometry-20261028T100907Z-9ef64bbd5685/frontend/dist`，随本轮进程与 SSH 隧道存活，登记 round `m24-real`；同一 dist 的合成对照预览在 **19025**（round `m24-synth`）。用法：左栏“历史 Episode”→ 打开 COMPLETE 记录 → 在帧表逐帧步进/播放，即可看到底盘位置、五个模型弧度与 TCP 点随记录变化，未驱动部件保持固定参考；面板的装配说明这一行现在直接写出清单路由自述的 `data_source`，`data-model-tree-reads` 就是本轮普查读的计数属性。
+- 同一 Goal 更早两次切片的预览保留可查且未改动：**19022 / 19023**（普查切片 `…T095056Z-76dfc8d77404`）与 **19018 / 19019**（拾取与轴向切片 `…T090133Z-b3ea0c28e7ec`）；更早的 **19013 → 18969** 与 **18986 → 18964** 同样保留。本轮没有需要停止的孤儿进程：上一轮失败断言那版登记的 19020/19021 已在 PID／start tick／uid／cmdline／监听归属逐项匹配后停止。服务器上新出现的 18974/18990-18998 等端口经只读探测确认是**其它会话的前端预览网关**（对同一 `/api/v1/episodes/{id}/frames` 返回自己的拒绝页），本轮未停止、未复用。后端候选 18969/18970 与 native 8792 全程未重启、未替换，8792 只经 GET 探测。
 
 # M1.9 frame-link-2 联调与历史固定模型参考装配（2026-10-26）
 
