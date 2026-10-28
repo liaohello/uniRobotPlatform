@@ -1,4 +1,81 @@
+# M2.0 已验证部件的真实历史姿态联动、切帧归属修复与按内容身份绑定的固定模型树（2026-10-28）
+
+本轮把上游从 18969 切到 **18970（M1.5e）**，并按该候选的**实测分部契约**开放有依据的历史姿态：底盘（`base_pose_placement`）、机械臂（`arm_local_pose`）与 TCP 位置点（`tcp_position_marker`）在真实记录上确实被驱动；夹爪保持 `conditional` 不默认开启，TCP 朝向/相机/动态物体保持 `blocked`。同时修掉切帧显示归属（请求帧与显示帧分开），把静态放置树与记录**按内容身份绑定**（不再只看网格摘要），并修正 `sim` 时间量与版本更正的措辞。只修改 `frontend/`；不发运动/RESET/录制/导航，不改后端、公共契约或 native。
+
+**本轮成熟度分层（不合并宣称）**：① 切帧归属修复已完成并在真实与合成两条路径验证；② 分部历史姿态在 18970 的真实记录上**已开放并渲染验证**（底盘＋五个模型弧度＋TCP 点）；③ 固定模型树已与记录按内容身份绑定，但**仍来自 `GET /api/v1/mobilecar/scene` 的冻结清单**——Episode 作用域的静态模型 manifest 后端尚未发布，前端不假造不存在的路由，因此“历史装配完全不依赖在线场景读取”这一条**未达成**；④ 整车完整重建、跨流同步、已验证 3D 历史回放与正式 M1 验收**均未宣称**。
+
+## 冻结版本与上游
+
+| 项 | 值 |
+|---|---|
+| 前端 release | 见下节“同一冻结版本的实际验证” |
+| 历史上游 | `http://127.0.0.1:18970` = 后端 M1.5e 候选（服务器 PID 3256687）：同一进程提供 episode-read-1 五条 GET、`frame-link-2` 的 `/frames`、`history-pose-1` 的 `/robot-state` 与 `/model/assets/{asset_id}`、以及 `geometry-2` 的 `/mobilecar/scene` |
+| 真实样本 | `run_0104613ff7364ae78cf2f3946bd45f7b` / `episode_27bfed5427684795b361cd2ec21e9aa7` / 首帧 `rgbd_e3213e6cb64b4cd693c17d485d064d09` |
+| 保留服务 | 上一轮交付预览 **19013 → 18969** 与 **18986 → 18964** 全程未停；18969/18970/8792 只经 GET 探测，native 写入路径未触碰 |
+
+## 一、切帧显示归属（真实产品缺陷修复）
+
+`sampleId` 是“请求帧”，`displayedSample` 是“显示帧”，两者分开存：帧切换时先把面板置空并调用 `applyFramePose(null)` 让树**回到编译初始布局**（阶段文案写明“画面暂时回到编译初始布局，不使用上一帧的姿态”），读回后才把该帧允许的部件摆上；读取失败同样回到初始布局，不保留上一帧姿态、不补 0、不沿用上一帧。面板头部同时打印“请求帧 / 显示帧”，`data-model-attribution` 取 `matched / pending / no-frame`，`data-frame-pose-verified` 只在“显示帧就是当前请求帧且确有动态姿态”时为 true。模型资源、相机与布局在换帧时不重建：装配键是 `episode|run`，逐帧只重读 robot-state 并重新摆位。
+
+## 二、按 18970 分部契约驱动姿态
+
+- 门控按**能力**而不是按关节数量：`part_readiness` 的 `status ∈ {ready, ready_with_caveats}` + 对应 `mapping` 行 `verified` + 本帧真带值 + 逐项 `frontend_rule` 的附加条件，四者同时成立才驱动；`conditional` 不默认开启，`blocked` 绝不从记录绘制，未知状态一律拒绝。`fixed_model_reference_assembly` 有自己独立的规则（“整车姿态缺口不阻断装配”），因此整车未就绪不影响其他部件。
+- 机械臂：五个值按 `arm_model_qpos_rad` 的**模型弧度**直接施加到 `arm_hinge_joints` 的五个铰链，要求 `requires_user_angle_conversion=false` 且 `draw_in_model_radians=true`，绝不做用户零位换算；数量不符即整条不驱动。0 是合法数值，照常驱动并写明“没有跨帧运动覆盖证据就不宣称某轴已验证”。
+- 底盘：记录的世界位姿**替换** `base_link` 根 free joint 的编译初始位姿，不再叠加 `root_joint.local_position_m=[0,0,0.0556]`；该排除由 reader 自己的同帧运动学核对背书——`supported_hypotheses` 含 `recorded_pose_is_base_body_world_pose`、总 `verdict=consistent`（`abs_error_m=1.6454375138849238e-14`，`consistency_tolerance_m=0.005`，容差归属原文“not a calibration limit and not a contract threshold”），另一条“需要叠加 bundle 根偏移”的假设被算成 `inconsistent`，误差恰为 `0.0556` m。按该能力 `frontend_rule` 的原文，“核对不一致就不放置底盘”，因此 verdict 非 consistent 或缺失时底盘不放置，而机械臂与 TCP 照旧。
+- TCP：只画位置点（自建 sphere，绝不复用 live `actualTcp`），`tcp_orientation_frame` 为 `blocked` 所以不合成朝向。
+- 真实记录实测：`mapping` 10 行 = 4 `verified`（臂关节、底盘位置、底盘朝向、TCP site）＋ 1 `unverified`（夹爪）＋ 3 `missing`（TCP 朝向、相机外参、动态物体）＋ 2 `not_required_for_pose`；`part_readiness` 9 项 = ready 1 / ready_with_caveats 3 / conditional 1 / blocked 3 / not_required 1；界面驱动 4 项（装配＋臂＋底盘＋TCP），逐条列出 5 项未驱动原因；`pose_readiness.mapped_targets_partially_or_fully_verified=4/10`、`robot_state_can_be_rebuilt_without_assumptions=false`、`capability_summary.whole_robot_pose_rebuildable=false` 原样保留。
+
+## 三、时间与姿态措辞
+
+- 帧面板显示 `times.sim_time_quantity_keys`（负载量与信封量各一条，缺就是缺、不互相回填）与 `version_migration.corrections`（本版把“取信封值却标为负载来源”的标注错误记为更正）；遇到不返回这两个键的旧候选答复，界面写“reader 未声明 sim 时间量清单（本版无该键）”并零条更正行，不自造。
+- 四类说法分开且不可互推：本帧输入完整（`single_state_selected`/`recorded_payload`）、同帧运动学一致（`tcp_kinematic_cross_check`）、跨帧运动覆盖（逐帧实际值是否变化）、硬件标定（`zero_pose_authority.zero_status=user_defined_photo_pose_not_hardware_500`、`calibration_session=uncalibrated`、能力限制里的 `no calibration claim`）。`version_binding.writer_identified=false` 与非同步声明继续显示在姿态旁边。
+
+## 四、静态树与记录的内容身份绑定
+
+装配前额外核对 7 个**可比**身份字段：`bundle_sha256`、`content_identity_sha256`、`model_inputs_sha256`、`compiled_scene_sha256`、`link_count`、`world_link_count`、臂铰链名与文档顺序；任一项不等就 `blocked` 并列出两侧值——这是“相同 mesh 字节、不同树内容”唯一能被拦下的地方（合成用例分别用 content_identity 与 joint 顺序调换验证）。真实数据两侧全等：`275389464eee…` / `cb7899642604…` / `9e1b60c04b8d…` / `a7b8b2c2d12d…` / 71 条 link / 2 条 world link / `joint1..joint5`，23 个网格摘要亦逐个相等。放置树仍按 `episode|run` 一次读取，换帧不重新下载；不要求逐 link 位姿表，屏幕位姿由固定树加本帧被允许的输入算出。
+
+## 五、真实多帧验收
+
+同一 Episode 首页里选出三个底盘与关节值不完全相同的帧，逐帧断言：显示帧身份＝所选帧、渲染根高度＝该帧记录 z（`0.053540585735473954 / 0.05353981847658025 / 0.05353885338965963`，与编译初始 `0.0556` 不同）、五个关节值＝记录原值、图像＝该帧自己的 rgb 引用；三帧渲染高度互不相同、臂值不同的帧对之间 `gripper_link` 世界位置确实移动；整段步进相机距离/方位/俯仰与 link 计数不变。前/侧/顶视只动相机且能跨帧保持，Inspector 与拾取列 link/geom 而不产生 Target。
+
+## 本轮测出并修掉的实际缺陷
+
+1. **内容身份绑定表里的“清单来源”行会让装配永远失败（真实缺陷，代码审查＋浏览器检查发现）**：把“树来自哪里”写成一行身份比较，两侧字符串永不相等，`unbound` 恒不为空、装配恒为 `blocked`。改为只比较可比较的身份字段，来源另在绑定表旁的说明里陈述。
+2. **底盘门控漏掉 reader 的一条 `frontend_rule`**：原实现只看 `supported_hypotheses`，未看总 verdict；规则原文是“运动学核对不一致就不放置底盘”，故补上“verdict 非 consistent 或缺失即不放置”，并加“相同状态歧义的帧仍装配但不驱动任何记录值”的用例。
+3. **TCP 标记在无标记时抛错**：`this.tcpMarker!.visible = false` 在未创建过标记时崩，改为显式判空，标记不再借用 live `actualTcp`。
+4. **测试自身的错误断言（不是产品缺陷，一并记录）**：① 用 `abs(底盘高度差) > 1e-6` 判“画面动了”，而真实帧间底盘位移只有微米级，改为“记录里不同→渲染里必不同，且臂值不同的帧对 `gripper_link` 必须移动”，把运动覆盖的判定权交给记录本身；② 断言 `0.0556` 出现在 `data-fk-check` 段落里，而该值只在被排除假设的表格行中，改断页面文本；③ “读取中不重贴旧姿态”用 `wait_for_function` 抓到 `pending` 后再读属性，快答复会让窗口滑走，改为夹具对该帧故意延迟 1.2 s，使“隐藏”成为可观测状态；④ 播放节拍用例把“显示帧＝当前帧”当成即时条件，而逐帧重读本身需要时间，改为暂停并等待归属重新 `matched` 后再断言；⑤ 时间更正行的采集读的是属性值（恒为 `true`），改读 `<li>` 文本；⑥ 夹具的 `part_readiness`/`mapping` 若干 `frontend_rule`/`gap` 用的是自拟短句，现按 18970 原文替换，避免前端规则被“测试自己写的话”满足。
+5. **验证轮次自身的中断（不作成功记录）**：一次把 node 目录拼成 `…/bin/bin` 导致 `tsc` 用旧 node 崩溃、一次 `nohup bash -c` 的变量传递写法让 PATH 失效、一次沿用已存在的 reports 目录被 `mkdir(exist_ok=False)` 拒绝；对应目录改名为 `…iter1-broken-env / …iter2-wrong-node-dir` 保留证据，不计入最终结果。
+
+## 同一冻结版本的实际验证
+
+最终交付 release：`m1-front-geometry-20261028T083212Z-388d68d6d802`（109 个文件逐项摘要核对，聚合 `388d68d6d802…`）。两个 pass 用**同一 dist、同一上游 18970**，不拼接 18969/18970 结果；本页是验证后记录，刻意排除在自身哈希之外。
+
+| pass | 实际执行（全部在授权服务器） | 结果 |
+|---|---|---|
+| 共同 | `npm run build`（含 `tsc --noEmit`）＋ `vitest` | 构建通过；**158/158** 单测通过（含按能力门控的驱动、内容身份绑定、时间措辞与 M1.5e 载荷形状） |
+| A · 真实 | `--frames --history --history-mode real --geometry --session --config --lifecycle --upstream http://127.0.0.1:18970` | frames **72**、history **78**、geometry **23**、session **38**、config **51**、lifecycle **48** 项检查全部通过，0 浏览器错误 |
+| B · 合成 | `--frames --history --history-mode synthetic`（同一 dist、同一上游） | frames **59**、history **42** 项检查全部通过，0 浏览器错误 |
+
+真实多帧数值核对（pass A，`frames/browser.json → real.pose_linkage`）：三帧 `rgbd_e3213e6… / rgbd_e553d6b… / rgbd_9d0502b…` 的记录底盘 z 为 `0.053540585735473954 / 0.05353981847658025 / 0.05353885338965963`（编译初始 `0.0556`，未被再次叠加），三帧臂值互不相同（`arm_value_variants=3`、`chassis_variants=3`、`arm_moved_pairs=3`），`gripper_link` 渲染世界位置随帧移动（`[0.118735,0.311031,-0.002549] → [0.118934,0.310686,-0.002552] → [0.118606,0.310726,-0.002567]`）；同帧运动学误差 `abs_error_m=1.6454375138849238e-14` 对容差 `0.005`（容差归属原文“not a calibration limit and not a contract threshold”），被排除的另一约定误差 `0.0556`。步进全程相机 `distance/azimuth/polar` 与 link/world link 计数不变。
+
+请求边界（pass A 历史窗口 144 条、全页 153 条）：全部为 GET，路径只落在 8 条精确历史 GET（列表、详情、streams、records、assets、`/frames`、`/robot-state`、`/model/assets/{asset_id}`）与 `/api/v1/mobilecar/scene`；控制、Session、RESET、录制与 native 透传为 0 次，网关对这些路径返回自己的 HTML 拒绝页且不转发。
+
+证据：真实 pass 的 [unit.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/unit.json)、[frames/browser.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/frames/browser.json)、[history/browser.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/history/browser.json)、[geometry/geometry.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/geometry/geometry.json)、[preview.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/preview.json)；合成 pass 的 [frames/browser.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-synthetic/frames/browser.json)。真实截图（同一 dist、同一 Episode）：
+
+![真实记录第三帧：底盘＋五个模型弧度＋TCP 位置点已按部件门控驱动，未驱动部分仍是固定参考](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/frames/pose-rgbd_e553d6b.png)
+
+## 未覆盖与下一步
+
+- 历史装配仍依赖 `GET /api/v1/mobilecar/scene` 的冻结清单：后端需发布 Episode 作用域的静态模型 manifest（完整静态树、关节/geom/mesh 引用、资源身份与内容摘要），前端才能不再读在线场景；该读取的 `exported_runtime_identity` 属于当前会话（实测 `run_9c88e3e36e7648a3852c9f590e43ed5f` / `episode_43c22f95536f4517be04e4b195d6d354`），不是本 Episode。
+- 夹爪只在消费者接受并显示平台常量时才可用；TCP 朝向、相机外参、动态物体仍无记录依据。逐帧运动覆盖只对所选帧成立，不推断全档所有轴都被验证。不做点云/NumPy 解码、不做跨流或跨 Episode 统一游标、不接采集闭环、不执行回放。
+
+## 可操作预览与本轮清理
+
+- 交付预览：**19016 → 18970**（服务器回环），根目录 `releases/m1-front-geometry-20261028T083212Z-388d68d6d802/frontend/dist`，随本轮进程与 SSH 隧道存活，登记 round `m20-deliver`；合成 dist 的对照预览在 **19017**（round `m20-deliver-synth`）。用法：左栏“历史 Episode”→ 打开 COMPLETE 记录 → 在帧表逐帧步进/播放，即可看到底盘位置、五个模型弧度与 TCP 点随记录变化，而未驱动部件保持固定参考。
+- 上一轮交付预览 **19013 → 18969** 与 **18986 → 18964** 保留未动；本轮中途的三个临时预览（迭代 dist 的 19014/19015 等）在 PID／start tick／uid／cmdline／监听归属逐项匹配后停止，未触碰任何不属于自己的端口。后端候选 18969/18970 与 native 8792 全程未重启、未替换，8792 只经 GET 探测。
+
 # M1.9 frame-link-2 联调与历史固定模型参考装配（2026-10-26）
+
 
 本轮做三件事：把前端从 `unirobot-mobilecar-frame-link-1` 迁到服务器 18969 的**实际 frame-link-2 载荷**（不是只改 schema 字符串）；新增 `history-pose-1` 两条只读客户端与代理白名单，把所选帧的状态/映射/模型资产读通；并在历史视图里装配**固定模型参考面**——放置树来自平台冻结 geometry bundle、网格字节只按摘要走历史资产端点、只有后端标 `verified` 的目标才允许驱动关节。只修改 `frontend/`。
 

@@ -37,9 +37,19 @@
   4. `frames` 面仍不回显请求的 `sample_id`（`paging.excluded_by_sample_id_filter` 只能证明条件被应用），空页解释继续标注条件由界面持有。
 - 因此本轮只主张“frame-link-2 v2 联调 + 固定模型参考装配”；**不主张**局部历史姿态已开放（真实数据无 `verified` 目标）、不主张跨流同步、不主张历史 3D 回放或 M1.5/M1 验收通过。
 
-### 更新候选 18970（M1.5e）与本轮契约的差异（已按只读 GET 核对，未切换）
+## 已接入（M2.0 · 分部历史姿态在 18970 上开放，Episode 作用域模型 manifest 仍未发布）
 
-按“新候选先核对契约再切换”的要求，2026-10-26 对 `m1x-20261026T065320Z-platform`（`http://127.0.0.1:18970`）做了只读比对，schema 仍是 `frame-link-2` / `history-pose-1`，但内容已前进，与本轮交付所依据的 18969 实测事实不同：
+- 上游已切到候选 `http://127.0.0.1:18970`（M1.5e，服务器 PID 3256687），并按其**实测载荷**重写真实断言：`mapping` 10 行中 `arm_joint_positions / base_position / base_orientation / tcp_site_position` 为 `verified`（各带 `verified_basis`，臂行另带 `draw_source` 与 `requires_user_angle_conversion=false`），`gripper_joints` 为 `unverified`，`tcp_site_orientation / camera_extrinsics / dynamic_scene_objects` 为 `missing`，两个速度量为 `not_required_for_pose`；`pose_readiness.mapped_targets_partially_or_fully_verified=4/10`，`blocking_fields=gripper_joints/tcp_site_orientation/camera_extrinsics/dynamic_scene_objects`。18969 继续存活，两条候选的结果不拼接。
+- 前端新增消费 `part_readiness`（9 项含逐项 `frontend_rule / requires / inputs_available / gaps`）、`part_status_meaning`、`capability_summary`、`tcp_kinematic_cross_check`、`version_binding`、`model_vs_user_angles`、`arm_mapping_chain` 与 `time.sim_time_quantity_keys` / `version_migration.corrections`。驱动门控按能力成立：`ready_with_caveats` 的臂、底盘与 TCP 点被驱动（实测同一冻结 dist 的真实页面 `data-model-joints-applied=5`、底盘与 TCP 已应用，未驱动 5 项逐条写明原因）；`conditional` 的夹爪不默认开启；`blocked` 的朝向/相机/动态物体不从记录绘制。
+- 底盘世界位姿约定由 reader 自己的同帧运动学核对背书：`verdict=consistent`、`abs_error_m=1.6454375138849238e-14`、`consistency_tolerance_m=0.005`（原文声明“not a calibration limit and not a contract threshold”），被排除的“需要叠加 bundle 根偏移”假设误差恰为 `0.0556` m。前端因此**直接替换**根 free joint 的编译初始位姿、不再叠加 `root_joint.local_position_m`，并按 `base_pose_placement` 的 `frontend_rule`（“核对不一致就不放置底盘”）在 verdict 非 `consistent` 或缺失时拒绝放置。`version_binding.writer_identified=false` 与 `no calibration claim`、`uncalibrated` 继续显示在姿态旁边。
+- 静态树与记录的内容身份绑定：新增比较 `bundle_sha256`、`content_identity_sha256`、`model_inputs_sha256`、`compiled_scene_sha256`、`link_count`、`world_link_count` 与臂铰链名/顺序（真实两侧全等：`275389464eee…`/`cb7899642604…`/`9e1b60c04b8d…`/`a7b8b2c2d12d…`/71/2/`joint1..joint5`），任一项不等即拒绝装配——用于拦下“网格摘要相同但树内容不同”。树按 `episode|run` 读取一次，换帧不重下载。
+- **仍未解除的阻塞：Episode 作用域的静态模型 manifest 尚未发布**。后端 M1.5e 文档把历史装配列为前端下一轮，实测该候选的路由仍只有 `GET /api/v1/episodes/{id}/model/assets/{asset_id}`（只给字节），没有 `model/manifest`、`model/tree` 一类端点；`docs/specs/30-contracts/03-episode-events-annotations.md` 仍声明历史面是八条 GET。因此放置树目前仍取自 `GET /api/v1/mobilecar/scene` 的 geometry-2 冻结清单，并按上表内容与记录绑定；该读取的 `exported_runtime_identity` 属于当前在线会话（实测 `run_9c88e3e36e7648a3852c9f590e43ed5f` / `episode_43c22f95536f4517be04e4b195d6d354`），不是本 Episode。**前端不假装已摆脱 `/mobilecar/scene`，也不假造不存在的路由。**需要的清单内容：完整静态 link 树（`parent_name/joint_name/joint_type/joint_axis/local_transform/geoms[].mesh_asset_id`）、关节/几何/网格引用、资源身份与内容摘要（至少上面七个字段），且必须与 `robot-state.model_resource` 同源一致。
+- 逐 link 位姿表仍不要求：屏幕上的历史姿态由固定树加“本帧被 `part_readiness` 允许的输入”计算，不由后端逐 link 下发；夹爪/朝向/相机/动态物体仍缺 attestation（`not_proven` 四项原文照录）。
+- 因此本轮只主张“已验证部件的真实历史姿态联动”；**不主张**整车位姿重建、跨流同步、已验证 3D 历史回放，也不主张正式 M1.5/M1 验收通过。
+
+### 更新候选 18970（M1.5e）与本轮契约的差异（2026-10-26 只读核对记录｜2026-10-28 已按此切换并验收，见上节）
+
+按“新候选先核对契约再切换”的要求，2026-10-26 对 `m1x-20261026T065320Z-platform`（`http://127.0.0.1:18970`）做了只读比对，schema 仍是 `frame-link-2` / `history-pose-1`，但内容已前进，与当时交付所依据的 18969 实测事实不同：
 
 1. `times` 多一个键 `sim_time_quantity_keys`，`sim` 基差值拆成两条（`state_sim_time_minus_frame_capture_sim_time` 只取负载、`state_event_envelope_sim_time_minus_frame_capture_sim_time` 取信封），`version_migration` 增加 `corrections`（明确旧行为“取信封值却标为负载来源”已被更正）。
 2. `mapping` 由 9 项变 10 项（新增 `tcp_site_orientation: missing`），且 `arm_joint_positions / base_position / base_orientation / tcp_site_position` 已升为 `verified`，每项另给 `verified_basis`；新增顶层 `arm_mapping_chain`、`version_binding`、`model_vs_user_angles`（`conversion_is_required_for_drawing=false`，`zero_model_rad` 索引 3 为精确 `-1.5707963267948966`）、`part_readiness`（9 项，含逐项 `frontend_rule/requires/inputs_available/gaps`）、`part_status_meaning`、`capability_summary`（`fixed_model_assembly_available=true`、`whole_robot_pose_rebuildable=false`、`escalation_forbidden`、`defaults_forbidden`、`abs_tcp_error_m=1.6454e-14`）与 `tcp_kinematic_cross_check`。
