@@ -122,6 +122,29 @@ async def wait_model_quiet(page, attempts=15):
     raise AssertionError(f'the reference view never settled on loads {previous[1]} / failures {previous[2]}')
 
 
+async def pick_model_link(page):
+    """Click-to-select on the reference surface: sweep a few points until a link is picked, and report
+    what the surface says afterwards. A pick is read-only — it must list link/geom and never create a
+    Target/Ghost/tool affordance or a write request."""
+    box = await page.locator('[data-model-canvas-host]').bounding_box()
+    before = len(report['requests'])
+    picked = 'none'
+    for fy in (0.45, 0.55, 0.62, 0.7, 0.76):
+        for fx in (0.4, 0.45, 0.5, 0.55, 0.6):
+            await page.mouse.click(box['x'] + box['width'] * fx, box['y'] + box['height'] * fy)
+            await page.wait_for_timeout(90)
+            picked = await attr(page, '[data-model-selection-link]', 'data-model-selection-link')
+            if picked != 'none':
+                break
+        if picked != 'none':
+            break
+    return {'link': picked, 'geoms': await attr_all(page, '[data-model-geom]', 'data-model-geom'),
+            'meshes': await attr_all(page, '[data-model-geom]', 'data-geom-mesh'),
+            'selection': await attr(page, '[data-model-selection]', 'data-model-selection'),
+            'controls': await count(page, '[data-target-readout],[data-ghost-toggle],[data-workbench-tool]'),
+            'new_requests': report['requests'][before:]}
+
+
 async def read_direct(page, path, params=None):
     url = a.url + path
     if params: url += '?' + '&'.join(f'{k}={v}' for k, v in params.items())
@@ -477,6 +500,21 @@ async def real_flow(page):
                                       'fk_abs_error_m': fk['abs_error_m'], 'fk_tolerance_m': fk['consistency_tolerance_m'],
                                       'fk_tolerance_authority': fk['tolerance_authority'],
                                       'camera_kept': observations[0]['camera']}
+    # The two things a person uses the surface for besides stepping: knowing which way the axes go, and
+    # clicking a part to inspect it. Both must hold without producing any control.
+    axes = await attr(page, '[data-model-axis-convention]', 'data-model-axis-convention')
+    check('the reference surface states the world_sim axis convention and that the TCP has no orientation frame',
+          'world_sim' in axes and '+X=车头' in axes and 'joint_axis' in axes and '不画朝向帧' in axes
+          and 'mujocoRoot' in axes, axes[:180])
+    picked = await pick_model_link(page)
+    after_pick = await page_attrs(page)
+    report['real']['picking'] = picked
+    check('click-to-select on the real reference model lists link and geom, and stays read-only',
+          picked['link'] not in ('none', None) and len(picked['geoms']) >= 1 and picked['controls'] == 0
+          and all(row['method'] == 'GET' for row in picked['new_requests'])
+          and after_pick['modelDisplayed'] == after_pick['modelRequested'] and after_pick['modelJoints'] == '5'
+          and after_pick['modelRootHeight'] != 'null', picked)
+    await page.screenshot(path=str(a.output / 'pose-inspector-pick.png'), full_page=False)
     await page.locator('[data-frame-pick]').first.click()
     await wait_model(page, 'ready')
     check('the run manifest and the frozen bundle agree on all four identity fields',
@@ -794,7 +832,7 @@ def geometry_payload(content_identity=CONTENT_ID, bundle_sha=BUNDLE_ID, arm_orde
     order = arm_order or ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
     links = [{'name': 'base_link', 'parent_name': None, 'joint_name': 'base_free', 'joint_type': 'free', 'joint_axis': [0.0, 0.0, 1.0],
               'local_transform': {'position_m': [0.0, 0.0, 0.055], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-              'geoms': [{'name': 'base_vis', 'geom_type': 'box', 'size_m': [0.09, 0.05, 0.02],
+              'geoms': [{'name': 'base_vis', 'geom_type': 'box', 'size_m': [0.3, 0.2, 0.08],
                          'local_transform': {'position_m': [0.0, 0.0, 0.0], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
                          'rgba': [0.3, 0.4, 0.5, 1.0], 'mesh_asset_id': None, 'collision': False, 'group': 0}]}]
     parent = 'base_link'
@@ -1375,6 +1413,16 @@ async def synthetic_flow(page):
     check('the standard views move only the camera and survive a frame step',
           abs(top['camera']['polarDeg'] - front['camera']['polarDeg']) > 20 and abs(top['camera']['distance'] - front['camera']['distance']) < 1e-6
           and front['attribution']['displayedSample'] == after['attribution']['displayedSample'], (top['camera'], front['camera']))
+    axes = await attr(page, '[data-model-axis-convention]', 'data-model-axis-convention')
+    picked = await pick_model_link(page)
+    picked_state = await page_attrs(page)
+    check('the axis statement and a real click-to-select work on the reference surface without any control',
+          'world_sim' in axes and '+X=车头' in axes and '不画朝向帧' in axes
+          and picked['link'] in ('base_link', 'joint1_link', 'joint2_link', 'joint3_link', 'joint4_link', 'joint5_link')
+          and len(picked['geoms']) >= 1 and picked['controls'] == 0
+          and all(row['method'] == 'GET' for row in picked['new_requests'])
+          and picked_state['modelDisplayed'] == picked_state['modelRequested'] and picked_state['modelJoints'] == '5',
+          (picked['link'], picked['geoms'], axes[:80]))
 
     # A read still in flight may never show the previous frame's pose under the new frame's title.
     await page.locator('[data-frame-pick="rgbd_1"]').click()

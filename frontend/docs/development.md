@@ -36,7 +36,7 @@
 
 ## 五、真实多帧验收
 
-同一 Episode 首页里选出三个底盘与关节值不完全相同的帧，逐帧断言：显示帧身份＝所选帧、渲染根高度＝该帧记录 z（`0.053540585735473954 / 0.05353981847658025 / 0.05353885338965963`，与编译初始 `0.0556` 不同）、五个关节值＝记录原值、图像＝该帧自己的 rgb 引用；三帧渲染高度互不相同、臂值不同的帧对之间 `gripper_link` 世界位置确实移动；整段步进相机距离/方位/俯仰与 link 计数不变。前/侧/顶视只动相机且能跨帧保持，Inspector 与拾取列 link/geom 而不产生 Target。
+同一 Episode 首页里选出三个底盘与关节值不完全相同的帧，逐帧断言：显示帧身份＝所选帧、渲染根高度＝该帧记录 z（`0.053540585735473954 / 0.05353981847658025 / 0.05353885338965963`，与编译初始 `0.0556` 不同）、五个关节值＝记录原值、图像＝该帧自己的 rgb 引用；三帧渲染高度互不相同、臂值不同的帧对之间 `gripper_link` 世界位置确实移动；整段步进相机距离/方位/俯仰与 link 计数不变。前/侧/顶视只动相机且能跨帧保持；面板显式陈述 world_sim 轴向与 `mujocoRoot` 的 −90° 映射（`data-model-axis-convention`），并在真实模型上按网格点击完成一次**真实拾取**（命中 `link2`，列出两个 geom 与其 mesh 引用），Inspector 读取的相机/link/姿态归属在拾取后不变，且页面上不存在 Target/Ghost/工具元素。
 
 ## 本轮测出并修掉的实际缺陷
 
@@ -48,21 +48,25 @@
 
 ## 同一冻结版本的实际验证
 
-最终交付 release：`m1-front-geometry-20261028T083212Z-388d68d6d802`（109 个文件逐项摘要核对，聚合 `388d68d6d802…`）。两个 pass 用**同一 dist、同一上游 18970**，不拼接 18969/18970 结果；本页是验证后记录，刻意排除在自身哈希之外。
+最终交付 release：`m1-front-geometry-20261028T090133Z-b3ea0c28e7ec`（109 个文件逐项摘要核对，聚合 `b3ea0c28e7ec…`）。两个 pass 用**同一 dist、同一上游 18970**，不拼接 18969/18970 结果；本页是验证后记录，刻意排除在自身哈希之外。
 
 | pass | 实际执行（全部在授权服务器） | 结果 |
 |---|---|---|
 | 共同 | `npm run build`（含 `tsc --noEmit`）＋ `vitest` | 构建通过；**158/158** 单测通过（含按能力门控的驱动、内容身份绑定、时间措辞与 M1.5e 载荷形状） |
-| A · 真实 | `--frames --history --history-mode real --geometry --session --config --lifecycle --upstream http://127.0.0.1:18970` | frames **72**、history **78**、geometry **23**、session **38**、config **51**、lifecycle **48** 项检查全部通过，0 浏览器错误 |
-| B · 合成 | `--frames --history --history-mode synthetic`（同一 dist、同一上游） | frames **59**、history **42** 项检查全部通过，0 浏览器错误 |
+| A · 真实 | `--frames --history --history-mode real --geometry --session --config --lifecycle --upstream http://127.0.0.1:18970` | frames **74**、history **78**、geometry **23**、session **38**、config **51**、lifecycle **48** 项检查全部通过，0 浏览器错误 |
+| B · 合成 | `--frames --history --history-mode synthetic`（同一 dist、同一上游） | frames **60**、history **42** 项检查全部通过，0 浏览器错误 |
 
 真实多帧数值核对（pass A，`frames/browser.json → real.pose_linkage`）：三帧 `rgbd_e3213e6… / rgbd_e553d6b… / rgbd_9d0502b…` 的记录底盘 z 为 `0.053540585735473954 / 0.05353981847658025 / 0.05353885338965963`（编译初始 `0.0556`，未被再次叠加），三帧臂值互不相同（`arm_value_variants=3`、`chassis_variants=3`、`arm_moved_pairs=3`），`gripper_link` 渲染世界位置随帧移动（`[0.118735,0.311031,-0.002549] → [0.118934,0.310686,-0.002552] → [0.118606,0.310726,-0.002567]`）；同帧运动学误差 `abs_error_m=1.6454375138849238e-14` 对容差 `0.005`（容差归属原文“not a calibration limit and not a contract threshold”），被排除的另一约定误差 `0.0556`。步进全程相机 `distance/azimuth/polar` 与 link/world link 计数不变。
 
+坐标轴与拾取（同一 pass 的 `real.picking`）：面板另有 `data-model-axis-convention` 一行写明 world_sim 轴向、`mujocoRoot` 的 −90° 映射、关节轴取自 bundle `joint_axis`、底盘读 `base_link` 世界位姿与“TCP 只画位置点，不画朝向帧”；在真实模型上按网格点击拾取，命中 `link2`（hinge）并列出 `link2_collision`、`link2_visual` 两个 geom 及其 mesh 引用 `link2`，页面上 Target/Ghost/工具元素仍为 0，拾取本身不发请求（该时间窗内只有外壳“真实只读监控”的 `GET /api/v1/mobilecar/snapshot` 轮询），拾取后显示帧身份与已驱动关节数不变；合成路径同样点击命中 `base_link`。
+
 请求边界（pass A 历史窗口 144 条、全页 153 条）：全部为 GET，路径只落在 8 条精确历史 GET（列表、详情、streams、records、assets、`/frames`、`/robot-state`、`/model/assets/{asset_id}`）与 `/api/v1/mobilecar/scene`；控制、Session、RESET、录制与 native 透传为 0 次，网关对这些路径返回自己的 HTML 拒绝页且不转发。
 
-证据：真实 pass 的 [unit.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/unit.json)、[frames/browser.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/frames/browser.json)、[history/browser.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/history/browser.json)、[geometry/geometry.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/geometry/geometry.json)、[preview.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/preview.json)；合成 pass 的 [frames/browser.json](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-synthetic/frames/browser.json)。真实截图（同一 dist、同一 Episode）：
+证据：真实 pass 的 [unit.json](../reports/m1-front-geometry-20261028T090133Z-b3ea0c28e7ec-real/unit.json)、[frames/browser.json](../reports/m1-front-geometry-20261028T090133Z-b3ea0c28e7ec-real/frames/browser.json)、[history/browser.json](../reports/m1-front-geometry-20261028T090133Z-b3ea0c28e7ec-real/history/browser.json)、[geometry/geometry.json](../reports/m1-front-geometry-20261028T090133Z-b3ea0c28e7ec-real/geometry/geometry.json)、[preview.json](../reports/m1-front-geometry-20261028T090133Z-b3ea0c28e7ec-real/preview.json)；合成 pass 的 [frames/browser.json](../reports/m1-front-geometry-20261028T090133Z-b3ea0c28e7ec-synthetic/frames/browser.json)。真实截图（同一 dist、同一 Episode）：
 
-![真实记录第三帧：底盘＋五个模型弧度＋TCP 位置点已按部件门控驱动，未驱动部分仍是固定参考](../reports/m1-front-geometry-20261028T083212Z-388d68d6d802-real/frames/pose-rgbd_e553d6b.png)
+![真实记录第三帧：底盘＋五个模型弧度＋TCP 位置点已按部件门控驱动，未驱动部分仍是固定参考](../reports/m1-front-geometry-20261028T090133Z-b3ea0c28e7ec-real/frames/pose-rgbd_e553d6b.png)
+
+![真实记录上点击拾取 link2 后的 Inspector 与只读选择](../reports/m1-front-geometry-20261028T090133Z-b3ea0c28e7ec-real/frames/pose-inspector-pick.png)
 
 ## 未覆盖与下一步
 
@@ -71,8 +75,8 @@
 
 ## 可操作预览与本轮清理
 
-- 交付预览：**19016 → 18970**（服务器回环），根目录 `releases/m1-front-geometry-20261028T083212Z-388d68d6d802/frontend/dist`，随本轮进程与 SSH 隧道存活，登记 round `m20-deliver`；合成 dist 的对照预览在 **19017**（round `m20-deliver-synth`）。用法：左栏“历史 Episode”→ 打开 COMPLETE 记录 → 在帧表逐帧步进/播放，即可看到底盘位置、五个模型弧度与 TCP 点随记录变化，而未驱动部件保持固定参考。
-- 上一轮交付预览 **19013 → 18969** 与 **18986 → 18964** 保留未动；本轮中途的三个临时预览（迭代 dist 的 19014/19015 等）在 PID／start tick／uid／cmdline／监听归属逐项匹配后停止，未触碰任何不属于自己的端口。后端候选 18969/18970 与 native 8792 全程未重启、未替换，8792 只经 GET 探测。
+- 交付预览：**19018 → 18970**（服务器回环），根目录 `releases/m1-front-geometry-20261028T090133Z-b3ea0c28e7ec/frontend/dist`，随本轮进程与 SSH 隧道存活，登记 round `m22b-real`；合成 dist 的对照预览在 **19019**（round `m22b-synth`）。用法：左栏“历史 Episode”→ 打开 COMPLETE 记录 → 在帧表逐帧步进/播放，即可看到底盘位置、五个模型弧度与 TCP 点随记录变化，而未驱动部件保持固定参考。
+- 上一轮交付预览 **19013 → 18969** 与 **18986 → 18964** 保留未动；本轮中途的临时预览（迭代 dist 的 19014/19015、19016/19017 与被端口占用打断的 19018/19019 首次尝试）在 PID／start tick／uid／cmdline／监听归属逐项匹配后停止，未触碰任何不属于自己的端口。后端候选 18969/18970 与 native 8792 全程未重启、未替换，8792 只经 GET 探测。
 
 # M1.9 frame-link-2 联调与历史固定模型参考装配（2026-10-26）
 

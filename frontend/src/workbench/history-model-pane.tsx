@@ -248,6 +248,9 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
         <p>三类内容分得很清楚：<b>静态参考</b>＝冻结 bundle 的编译初始布局；<b>本帧历史姿态</b>＝只有该能力的 <code>part_readiness</code> 被判为可用、对应 <code>mapping</code> 为 <code>verified</code>、且本帧真带值时才驱动（机械臂用 <code>arm_model_qpos_rad</code> 的模型弧度，不做用户零位换算；底盘按记录的世界位姿替换根 free joint，不再叠加初始根偏移；TCP 只画位置点，不合成朝向）；<b>未驱动部分</b>保持编译布局并逐条写明原因。0 是合法数值；没有跨帧运动覆盖证据就不宣称所有轴已验证，<code>writer_identified=false</code> 与非同步声明继续保留。</p></div>
     </div>
     <p className="session-note" data-model-stage={stage.reason}>{stage.reason}</p>
+    <p className="session-note" data-model-axis-convention="world_sim：+X=车头，+Y=车左，+Z=上（mujocoRoot 绕 X 轴 −90° 映射到 Three 的 Z-up）；关节轴取 bundle 的 joint_axis（模型弧度），底盘读 base_link 的世界位姿，TCP 只画位置点，不画朝向帧">
+      坐标与轴向：<b>world_sim</b> +X=车头、+Y=车左、+Z=上，长度 m、角度 rad；渲染根把 world_sim 映射为 Three 的 Z-up（绕 X 轴 −90°），模型根不为任何视图旋转。
+      关节轴取 bundle 的 <code>joint_axis</code>（子体坐标系），底盘用 <code>base_link</code> 的世界位姿，<b>TCP 只画位置点，不画朝向帧</b>。</p>
     {assetError && <p className="session-error" data-model-asset-error="true">网格字节读取失败（历史端点）：{assetError}</p>}
     {notices.length > 0 && <p className="session-note" data-model-notices={notices.join(' | ')}>{notices.join(' | ')}</p>}
 
@@ -266,7 +269,8 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
           <button data-model-inspect disabled={!view.current} onClick={() => setInspected(JSON.stringify(view.current?.inspect() ?? { error: '尚未装配视图' }))}>读取视图状态</button>
           <span className="chip masked" data-model-control-surface="none">历史面不挂 Target/Ghost/工具，也不轮询 live snapshot</span>
         </div>
-        <p className="session-note" data-model-selection={selection ? `${selection.linkName} · ${selection.jointType} · ${selection.geoms.length} 个 geom` : '未选中部件'}>
+        <p className="session-note" data-model-selection-link={selection?.linkName ?? 'none'}
+          data-model-selection={selection ? `${selection.linkName} · ${selection.jointType} · ${selection.geoms.length} 个 geom` : '未选中部件'}>
           选择（只读）：{selection ? `${selection.linkName} · joint ${selection.jointName}(${selection.jointType}) · parent ${selection.parentName}` : '点选模型上的部件即可列出 link/geom；不拖拽、不产生 Target、不发命令。'}</p>
         {selection && <table className="frame-record-table" data-model-selection-table="true"><thead><tr><th>geom</th><th>类型</th><th>mesh asset</th></tr></thead>
           <tbody>{selection.geoms.map((geom) => <tr key={geom.name} data-model-geom={geom.name} data-geom-mesh={geom.meshAssetId}><td>{geom.name}</td><td>{geom.geomType}</td><td>{geom.meshAssetId}</td></tr>)}</tbody></table>}
