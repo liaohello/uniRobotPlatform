@@ -1,3 +1,26 @@
+# M2.4 历史装配只剩一个来源：采用 18977 的 `include_model_tree`，在线场景读取被删除（2026-10-29）
+
+后端 M1.5f 把前端等待的那一项交付在**既有路由**上：`GET /api/v1/episodes/{id}/robot-state` 新增可选布尔查询参数 `include_model_tree`（默认 `false`；非布尔 422 `bool_parsing`；`schema_version` 未升版；历史面仍是八条 GET）。本节把历史固定模型树的来源从 `GET /api/v1/mobilecar/scene` 切换到该 Episode 自己的 `robot-state.model_resource.model_tree`，并删除历史装配对在线路由的读取与回退。**这关闭了 M2.0 第三节里"清单仍取自在线路由"那一条未达成项**；整车完整重建、跨流同步、已验证 3D 历史回放与正式 M1/M1.5 验收仍不宣称。
+
+## 一、按实际发布契约取树与装配
+
+- `readRobotState` 增加可选 `includeModelTree`；取树时保留 `run_id` 与当前 `sample_id`，读回后先 `assertHistoryFrameIdentity` 核对帧身份，再决定装配。树只认 `model_resource.model_tree`，不猜 `model_resource.links`，不新增路由、不放宽代理白名单（实测既有 exact 路由原样转发新参数：默认响应没有 `model_tree` 键，带 `include_model_tree=true` 的响应有，且 `links` 条数等于外层 `link_count`）。
+- 门控：只有 `model_resource.status=match`、`model_tree.requested=true`、`included=true`、`authority=frozen_compiled_geometry_bundle`、`live_native_scene_proxied=false`、`semantics.world_links=compiled_initial_layout_not_live_object_state`、`world_links_are_not_recorded_object_positions=true`、`is_recorded_state=false` 且 links/world_links 非空才装配；否则写出**拒绝条款**（`included=false · reason · links_are_substituted` 或"门控拒绝：authority/语义/空数组"）并阻塞，绝不退回在线树。装配用 `model_tree.links/world_links` 的完整 `local_transform`＋`geoms[]` 结合 `model_resource.assets` 构造内部 `SceneManifest`，网格字节仍只走本 Episode 的资产端点并按声明摘要寻址。
+- 绑定：12 行身份/计数/引用行（四个摘要取"树自述 `content_identity` vs 记录外层同名字段"两个各自发布的值；`link_count`、`world_link_count`；`arm_hinge_joints` 用"记录声明名单在树文档顺序里的同名子集"，不引入命名猜测；`counts.{links,world_links,geoms,mesh_geoms}` 与实体数组自洽；`mesh_asset_id 可解析`）＋ 记录点名节点的逐节点行（#35 交付）。任一行不等即拒绝装配。真实两侧全等：71/2/100/22、四个摘要、`joint1..joint5`、22 引用 0 未解析、23 个声明资产中 22 个被引用（`imu_link` 无树内引用，界面如实列出，不要求全部被引用）。
+- 缓存只管静态内容：以 `episode|run` 为命名空间、`content_identity_sha256` 为键，首次或内容身份变化时取一次完整树，其后逐帧请求省略该参数；默认响应没有 `model_tree` 属正常，不触发每帧重下；**条目不跨命名空间共享**（否则一份声称同一身份但内容不同的树会被别的 Episode 直接画出来——本轮就因此把共享键改成命名空间＋身份复合键）；不缓存整条 `robot-state`，不沿用旧帧 pose/mapping/part_readiness；动态响应无 `ETag` 是预期，不把 mesh 的内容 ETag 用到整条响应上。`data-model-tree-reads / -read-episode` 报的是"本页面会话内为该 Episode 发起的取树请求数"，回访已缓存的 Episode 报 0。
+
+## 二、真实与合成两条路径的联合验收（同一冻结 dist、同一上游 18977）
+
+真实路径（`http://127.0.0.1:18977`，release `m1z-20261029T075630Z-platform`，提交 `a64b522c93ceb0abbbb27c058801af29192334f0`；核活只用 `GET /api/v1/episodes?limit=1`，`/health` 未注册其 404 不是故障）：`frames` 92 项、`geometry` 23 项、`session` 38 项、`config` 51 项、`lifecycle` 48 项、`history` 78 项全部通过。其中该 Episode 取树 1 次、其后逐帧/翻页/时间窗/三视图/拾取之内 0 次，切 Episode 再恰好 1 次；历史面窗口内 `/api/v1/mobilecar/scene` 读取 0 次（应用自身的在线 `snapshot` 轮询单列记录，不与历史面板混计）；底盘＋五铰链＋TCP 点按本帧记录值驱动，同帧 FK `abs_error_m=1.645e-14` 与容差 `0.005` 并列显示；同 run 第二档真实档案照常装配、一个部件都不驱动。
+
+合成路径（同一 dist，夹具把 `/api/v1/mobilecar/**` 一律拒成 503 `native_offline`，新页面冷缓存）：树缺失、`included=false` 拒绝、语义自称活物体、树内容身份与记录不符、相同 mesh 换关节顺序、内容身份换帧后重取一次、回访已核验命名空间不再取树、声明摘要被改的资产在字节读取处被 reader 拒发并点名——逐项断言；历史模型、姿态与媒体在在线路由被拒的前提下照常工作。**独立性由"在线路由被拒仍然装配成功"证明，不靠预热缓存。**
+
+## 三、边界
+
+- `world_links` 只是编译参考布局，`target_cube` 等对象在本 Episode 的历史位置仍未记录（`mapping.dynamic_scene_objects=missing`）；夹爪换算、相机外参、TCP 朝向、跨流同步与统一历史游标本轮未推进。
+- 首轮真实路径曾在 `geometry` 的"Actual 刷新保持 TCP 拖拽/目标/相机"一项失败一次，同一 dist 重跑即通过（该检查历史上就有抖动，另见 `## M1.x` 记录），本轮按两次结果分列、只采信同一冻结版本的最终通过记录。
+- 迭代中被取代的报告目录按原因改名保留（`-real-suitefail-*`、`-synthetic-suitefail-*`），不删除；失败原因依次是：断言里用了不存在的属性名、真实窗口内应用自身的在线读取被误算进历史面、夹具树缺少记录声明的夹爪/轮关节、共享内容键被另一 Episode 的异树污染、摘要不符的资产按旧语义等待 blocked。
+
 # M2.0 已验证部件的真实历史姿态联动、切帧归属修复与按内容身份绑定的固定模型树（2026-10-28）
 
 本轮把上游从 18969 切到 **18970（M1.5e）**，并按该候选的**实测分部契约**开放有依据的历史姿态：底盘（`base_pose_placement`）、机械臂（`arm_local_pose`）与 TCP 位置点（`tcp_position_marker`）在真实记录上确实被驱动；夹爪保持 `conditional` 不默认开启，TCP 朝向/相机/动态物体保持 `blocked`。同时修掉切帧显示归属（请求帧与显示帧分开），把静态放置树与记录**按内容身份绑定**（不再只看网格摘要），并修正 `sim` 时间量与版本更正的措辞。只修改 `frontend/`；不发运动/RESET/录制/导航，不改后端、公共契约或 native。

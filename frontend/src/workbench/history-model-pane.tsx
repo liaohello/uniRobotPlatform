@@ -1,14 +1,16 @@
 /**
- * The fixed model tree for one historical Episode: the frozen geometry bundle's placement tree with
- * the mesh bytes read from the Episode's own history asset route, the per-capability
- * `part_readiness`/`mapping` gate that decides what a recorded value may move, and the attribution
- * that says which frame the pixels belong to.
+ * The fixed model tree for one historical Episode: the placement tree that arrives inside this Episode's
+ * own `robot-state` answer (frozen compiled bundle, opt-in via `include_model_tree`), the mesh bytes read
+ * from the Episode's own history asset route, the per-capability `part_readiness`/`mapping` gate that
+ * decides what a recorded value may move, and the attribution that says which frame the pixels belong to.
  *
  * Attribution is the point of this component: `sampleId` is what was asked for, `displayedSample` is
  * what is on screen. A frame step clears the posed state before the new read starts, so an in-flight
  * or refused read shows the compiled reference layout rather than the previous frame's pose under the
  * new frame's title. The tree, the camera and the layout survive a frame step — only robot-state is
- * re-read and only the parts the reader allowed are re-posed.
+ * re-read and only the parts the reader allowed are re-posed. The static tree is cached in memory by
+ * content identity, so stepping frames asks for the pose alone; a missing, refused or mismatching tree
+ * blocks, and the live scene route is never a fallback.
  *
  * Nothing here reads the live snapshot or Actual for historical content, applies a Target or Ghost,
  * synthesises a TCP orientation, or sends a command.
@@ -17,49 +19,31 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { describeHistoryError } from '../adapters/platform-episodes';
 import { HistoryReferenceScene, type PoseAttribution, type ReferenceSelection } from '../viewport/history-reference-scene';
-import type { MeshAsset, SceneManifest } from '../adapters/types';
 import {
-  assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, drivenValuesOf, fkCrossCheckOf, mappingRowsOf,
+  assertHistoryFrameIdentity, capabilitySummaryText, cachedTree, comparisonRowsOf, drivenValuesOf, fkCrossCheckOf,
+  forgetTreeNamespace, historySceneManifestOf, historyTreeBindingRowsOf, historyTreeOf, historyTreeRefusal, linkBindingRowsOf, mappingRowsOf,
   mergeVisitedValues, modelResourceText, modelVsUserText, motionCoverageOf, notProvenText, partReadinessOf,
-  poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText, readHistoryModelAsset, readRobotState, renderingText,
-  treeBindingRowsOf, linkBindingRowsOf, versionBindingText, type HistoryPoseDto, type TreeBindingRow, type VisitedDrivenValues,
+  poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText, readHistoryModelAsset, readRobotState, rememberTree, renderingText,
+  shouldRequestTree, versionBindingText, type HistoryModelTreeDto, type HistoryPoseDto, type TreeBindingRow, type VisitedDrivenValues,
 } from '../adapters/platform-history-pose';
 
-/** The placement tree comes from the platform's own frozen geometry envelope. */
-const GEOMETRY_PATH = '/api/v1/mobilecar/scene';
-const GEOMETRY_SCHEMA = 'unirobot-mobilecar-geometry-2';
-/** The bundle's own words for "compiled initial layout", which is what a reference pose may be. */
-const GEOMETRY_SEMANTICS = 'compiled_initial_layout_not_live_object_state';
-
-interface GeometryEnvelope {
-  schema_version: string; read_only: boolean; world_pose_semantics: string;
-  /** The route's own words for where this tree came from — geometry-2 says it is served over the live
-   *  native HTTP path with verified compiled geometry, which is exactly the dependency the still-missing
-   *  Episode-scoped manifest would remove. Passed through as stated, never relabelled as frozen-only. */
-  data_source?: string;
-  geometry_binding?: { bundle_sha256?: string; content_identity_sha256?: string; exported_runtime_identity?: Record<string, unknown> | null } | null;
-  geometry_provenance?: { model_inputs_sha256?: string; compiled_scene_sha256?: string; resource_identity?: Record<string, unknown> | null } | null;
-  data: SceneManifest;
-}
-interface AssetRow { assetId: string; bundleSha: string; historySha: string; equal: boolean; bytes: string; coordinateSpace: string;
+/**
+ * The static tree arrives inside this Episode's own `robot-state` answer (`include_model_tree=true`), so
+ * the history assembly has exactly one source. There is no fallback: a refused, absent or mismatching
+ * tree blocks, and the live `/mobilecar/scene` route is never read for historical content.
+ */
+interface CachedTree { contentIdentity: string; tree: HistoryModelTreeDto }
+/** One declared asset. The guard is not two copies of the same list: the tree's own mesh references say
+ *  what must resolve, and the byte read carries the declared digest so the server re-computes it. */
+interface AssetRow { assetId: string; sha: string; bytes: string; coordinateSpace: string; referenced: boolean;
   readState: 'idle' | 'reading' | 'ok' | 'failed'; readDetail: string }
-/** What the tree the pane is about to draw says it is, so it can be bound to the record, not trusted.
- *  The arm hinges are picked out of the full link list by name pattern, in document order. */
-const treeIdentityOf = (geometry: GeometryEnvelope | null) => (geometry ? {
-  bundle_sha256: geometry.geometry_binding?.bundle_sha256 ?? null,
-  content_identity_sha256: geometry.geometry_binding?.content_identity_sha256 ?? null,
-  model_inputs_sha256: geometry.geometry_provenance?.model_inputs_sha256 ?? null,
-  compiled_scene_sha256: geometry.geometry_provenance?.compiled_scene_sha256 ?? null,
-  link_count: geometry.data.links?.length ?? null,
-  world_link_count: geometry.data.world_links?.length ?? null,
-  arm_hinge_joints: (geometry.data.links ?? []).filter((link) => link.joint_type === 'hinge' && /^joint\d$/.test(link.joint_name ?? '')).map((link) => link.joint_name ?? ''),
-} : null);
-/** Identity fields first, then the link-by-link binding the record's own named nodes allow. */
-const bindingRowsOf = (pose: HistoryPoseDto | null, geometry: GeometryEnvelope | null): TreeBindingRow[] => {
-  const summary = treeBindingRowsOf(pose, treeIdentityOf(geometry));
-  if (!geometry) return summary;
-  const nodes = [...(geometry.data.links ?? []), ...(geometry.data.world_links ?? [])];
-  return [...summary, ...linkBindingRowsOf(pose, nodes).map((row) => ({
+
+/** Binding rows: the seven identity comparisons, the tree's own self-consistency, then the nodes. */
+const bindingRowsOf = (pose: HistoryPoseDto | null, tree: HistoryModelTreeDto | null): TreeBindingRow[] => {
+  const identity = historyTreeBindingRowsOf(pose, tree);
+  if (!tree) return identity;
+  const nodes = [...(tree.links ?? []), ...(tree.world_links ?? [])];
+  return [...identity, ...linkBindingRowsOf(pose, nodes).map((row) => ({
     field: `link ${row.name} · ${row.field}`, history: row.history, tree: row.tree, equal: row.equal,
     note: '记录点名的 link/关节逐节点绑定：相同 mesh 摘要但接错父节点也在这里被拦下',
   }))];
@@ -73,7 +57,9 @@ const VIEWS = [
 export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: string; runId: string | null; sampleId: string | null }) {
   const [stage, setStage] = useState<{ status: string; reason: string }>({ status: 'idle', reason: '未选择帧：不读取 robot-state，也不装配模型。' });
   const [pose, setPose] = useState<HistoryPoseDto | null>(null);
-  const [geometry, setGeometry] = useState<GeometryEnvelope | null>(null);
+  /** The static tree the pane draws: this Episode's own robot-state answer, keyed by source namespace
+   *  and content identity so a late or foreign tree can never be used for the wrong Episode. */
+  const [treeState, setTreeState] = useState<{ namespace: string; contentIdentity: string; tree: HistoryModelTreeDto } | null>(null);
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [selection, setSelection] = useState<ReferenceSelection | null>(null);
   const [notices, setNotices] = useState<string[]>([]);
@@ -81,9 +67,12 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
   const [inspected, setInspected] = useState('');
   /** Which frame the pixels on screen actually belong to — never inferred from `sampleId`. */
   const [displayed, setDisplayed] = useState<PoseAttribution | null>(null);
-  /** Placement-tree downloads issued for the Episode this pane instance shows. The route is shared with
-   *  the live workbench's own native read, so this counter is what attributes a re-read to the history. */
+  /** Tree fetches this page session issued for the Episode now displayed: first frame or content change
+   *  only. A cached Episode reports 0, because returning to it must not re-download static content. */
   const [treeReads, setTreeReads] = useState<{ count: number; episode: string }>({ count: 0, episode: '' });
+  /** Bumped when a frame's content identity no longer matches the cached tree, so the next read asks for
+   *  that tree again instead of drawing static content that belongs to other bytes. */
+  const [treeReread, setTreeReread] = useState(0);
   /** The driven values of every frame this Episode has actually shown, kept only to judge cross-frame
    *  motion coverage. It says nothing about frames that were never read, and never fills an absent value. */
   const [visited, setVisited] = useState<{ key: string; rows: VisitedDrivenValues[] }>({ key: '', rows: [] });
@@ -91,39 +80,10 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
   const host = useRef<HTMLDivElement | null>(null);
   const view = useRef<HistoryReferenceScene | null>(null);
   const assemblyKey = useRef('');
-  const geometrySerial = useRef(0);
   const poseSerial = useRef(0);
-  const geometryControllers = useRef<AbortController[]>([]);
   const poseControllers = useRef<AbortController[]>([]);
-  const trackGeometry = (controller: AbortController) => { geometryControllers.current.push(controller); return controller; };
   const trackPose = (controller: AbortController) => { poseControllers.current.push(controller); return controller; };
   const releaseView = useCallback(() => { view.current?.dispose(); view.current = null; assemblyKey.current = ''; setSelection(null); setInspected(''); setDisplayed(null); }, []);
-
-  // The placement tree is read when the Episode identity changes and counted per read: stepping frames
-  // must not re-download it, and an older answer never replaces the bundle the current Episode was
-  // assembled from. Its controllers are separate from the pose read's: a frame step must not cancel the
-  // bundle it still needs.
-  useEffect(() => {
-    const token = ++geometrySerial.current;
-    geometryControllers.current.forEach((controller) => controller.abort()); geometryControllers.current = [];
-    if (!episodeId) { setGeometry(null); return; }
-    setTreeReads((previous) => ({ count: previous.count + 1, episode: episodeId }));
-    void fetch(GEOMETRY_PATH, { method: 'GET', signal: trackGeometry(new AbortController()).signal, cache: 'no-store', headers: { Accept: 'application/json' } })
-      .then(async (response) => {
-        const body = await response.json();
-        if (!response.ok) throw new Error(`${String(body?.detail?.code ?? `HTTP_${response.status}`)} · ${String(body?.detail?.message ?? response.statusText)}`);
-        if (body?.schema_version !== GEOMETRY_SCHEMA || body?.read_only !== true) throw new Error(`清单版本不是 ${GEOMETRY_SCHEMA} 或未声明 read_only（实际 schema=${String(body?.schema_version)} read_only=${String(body?.read_only)}）`);
-        if (body?.world_pose_semantics !== GEOMETRY_SEMANTICS) throw new Error(`bundle 语义不是编译初始布局（实际 ${String(body?.world_pose_semantics)}）：不用它装配历史参考。`);
-        return body as GeometryEnvelope;
-      })
-      .then((envelope) => { if (token === geometrySerial.current) setGeometry(envelope); })
-      .catch((cause) => {
-        if (token !== geometrySerial.current) return;
-        setGeometry(null); releaseView();
-        setStage({ status: 'failed', reason: `geometry bundle 清单读取失败：${describeHistoryError(cause) || String(cause)}` });
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [episodeId, runId]);
 
   // A frame step, an Episode switch or an unmount drops the older pose read and its model surface.
   useEffect(() => {
@@ -136,11 +96,36 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
     setPose(null);
     view.current?.applyFramePose(null);
     setDisplayed(view.current?.attribution() ?? null);
-    setStage({ status: 'reading', reason: `正在读取所选帧的 robot-state（sample_id=${sampleId}）；画面暂时回到编译初始布局，不使用上一帧的姿态。` });
-    void readRobotState({ episodeId, runId, sampleId }, trackPose(new AbortController()).signal)
+    const namespace = `${episodeId}|${runId ?? ''}`;
+    const needTree = shouldRequestTree(namespace);
+    setStage({ status: 'reading', reason: `正在读取所选帧的 robot-state（sample_id=${sampleId}${needTree ? ' · 并取一次完整静态树' : ' · 静态树沿用按内容身份缓存的那份'}）；画面暂时回到编译初始布局，不使用上一帧的姿态。` });
+    if (needTree) setTreeReads((previous) => ({ count: (previous.episode === episodeId ? previous.count : 0) + 1, episode: episodeId }));
+    else setTreeReads((previous) => (previous.episode === episodeId ? previous : { count: 0, episode: episodeId }));
+    void readRobotState({ episodeId, runId, sampleId, includeModelTree: needTree }, trackPose(new AbortController()).signal)
       .then((dto) => {
         if (token !== poseSerial.current) return;                      // a late pose never writes a newer frame
         assertHistoryFrameIdentity(dto, { episodeId, runId, sampleId });
+        const identity = String(dto.model_resource?.content_identity_sha256 ?? '');
+        if (needTree) {
+          // The tree arrives with this answer only. Absent or refused leaves it null, and the assembly
+          // blocks: nothing here ever reaches for the live scene route to keep drawing.
+          const tree = historyTreeOf(dto);
+          if (tree && identity) {
+            rememberTree(namespace, identity, tree);
+            setTreeState({ namespace, contentIdentity: identity, tree });
+          } else {
+            forgetTreeNamespace(namespace);
+            setTreeState(null);
+          }
+        } else if (cachedTree(namespace)?.contentIdentity !== identity) {
+          // Content moved under this source: drop what it pointed at and ask again on the next read.
+          forgetTreeNamespace(namespace);
+          setTreeState(null);
+          setTreeReread((previous) => previous + 1);
+        } else {
+          const cached = cachedTree(namespace);
+          setTreeState(cached ? { namespace, contentIdentity: identity, tree: cached.tree } : null);
+        }
         setPose(dto);
       })
       .catch((cause) => {
@@ -151,64 +136,58 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
         setStage({ status: 'failed', reason: `robot-state 读取失败：${describeHistoryError(cause)}；画面回到编译初始布局，不沿用任何上一帧姿态。` });
       });
     return () => { poseControllers.current.forEach((controller) => controller.abort()); poseControllers.current = []; };
+    // `treeReread` re-enters this effect only when a frame's own content identity moved away from the
+    // cached tree: the cache entry was dropped, so this pass asks for that tree again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [episodeId, runId, sampleId]);
+  }, [episodeId, runId, sampleId, treeReread]);
 
-  // Both reads have to agree before anything is drawn: model identity, then every asset digest, then
-  // the content identity of the very tree that is about to be drawn.
+  // Everything is drawn from one source now: the record, plus the tree that arrived inside that same
+  // answer. Model identity first, then the tree's own content identity/counts/references, then the
+  // nodes the record names one by one — a missing or refused tree blocks instead of reaching elsewhere.
   useEffect(() => {
-    if (!geometry || !pose) return;
+    if (!pose) return;
     const key = `${episodeId}|${runId ?? ''}`;
+    const tree = treeState && treeState.namespace === key ? treeState.tree : null;
+    if (!tree) {
+      setStage({ status: 'blocked', reason: `没有可用的历史静态树：${historyTreeRefusal(pose)}。不装配参考视图，也不改读在线的 /api/v1/mobilecar/scene 或 snapshot 作替代。` });
+      releaseView(); return;
+    }
     const comparison = comparisonRowsOf(pose);
     const unequal = comparison.filter((row) => row.equal !== 'true');
     if (pose.model_resource?.status !== 'match' || unequal.length) {
       setStage({ status: 'blocked', reason: `模型身份不符：model_resource.status=${String(pose.model_resource?.status)}，比较不等的字段 ${unequal.map((row) => row.key).join('/') || '无'}。不装配参考视图，也不把在线几何当作历史资源。` });
       releaseView(); return;
     }
-    const history = new Map((pose.model_resource?.assets ?? []).map((asset) => [asset.asset_id, asset]));
-    const bundleAssets: MeshAsset[] = geometry.data.mesh_assets ?? [];
-    const rows: AssetRow[] = bundleAssets.map((asset) => {
-      const declared = history.get(asset.asset_id);
-      return { assetId: asset.asset_id, bundleSha: asset.sha256, historySha: declared?.sha256 ?? 'missing',
-        equal: declared?.sha256 === asset.sha256, bytes: String(declared?.bytes ?? 'null'),
-        coordinateSpace: declared?.coordinate_space ?? '未声明', readState: 'idle' as const, readDetail: '' };
-    });
+    const manifest = historySceneManifestOf(pose, tree, episodeId, runId);
+    const referenced = new Set(manifest.mesh_assets.map((asset) => asset.asset_id));
+    const rows: AssetRow[] = (pose.model_resource?.assets ?? []).map((asset) => ({
+      assetId: asset.asset_id, sha: asset.sha256, bytes: String(asset.bytes ?? 'null'),
+      coordinateSpace: asset.coordinate_space ?? '未声明', referenced: referenced.has(asset.asset_id),
+      readState: 'idle' as const, readDetail: '',
+    }));
     setAssets(rows);
-    const mismatched = rows.filter((row) => !row.equal);
-    if (mismatched.length) {
-      setStage({ status: 'blocked', reason: `资产摘要不一致：${mismatched.length}/${rows.length} 个资产在冻结 bundle 与历史清单之间摘要不同（${mismatched.slice(0, 4).map((row) => row.assetId).join(', ')}${mismatched.length > 4 ? '…' : ''}）：不按字节装配模型，也不降级为占位几何。` });
-      releaseView(); return;
-    }
-    // Mesh digests alone cannot tell two different trees built from the same meshes apart.
-    const binding = bindingRowsOf(pose, geometry);
+    const binding = bindingRowsOf(pose, tree);
     const unbound = binding.filter((row) => row.equal !== 'true');
     if (unbound.length) {
-      setStage({ status: 'blocked', reason: `静态树与记录的内容身份不一致：${unbound.map((row) => `${row.field}（历史=${row.history} / 树=${row.tree}）`).join('、')}。相同 mesh 摘要但不同树内容也在这里被拦下：不装配，也不退回在线 Actual。` });
+      setStage({ status: 'blocked', reason: `静态树与记录的内容身份不一致：${unbound.map((row) => `${row.field}（记录=${row.history} / 树=${row.tree}）`).join('、')}。相同 mesh 摘要但不同树内容也在这里被拦下：不装配，也不退回在线 Actual。` });
       releaseView(); return;
     }
     if (!host.current) { setStage({ status: 'blocked', reason: '装配容器尚未可用：不渲染任何模型。' }); return; }
     // The manifest only rebuilds when the Episode (that is, the history asset namespace) changed.
     if (assemblyKey.current !== key || !view.current) {
-      const manifest: SceneManifest = {
-        ...geometry.data,
-        mesh_assets: bundleAssets.map((asset) => ({
-          ...asset,
-          // Bytes come only from this Episode's history asset endpoint, with the bundle digest
-          // attached so the server re-computes and refuses before any byte leaves the process.
-          uri: `/api/v1/episodes/${encodeURIComponent(episodeId)}/model/assets/${encodeURIComponent(asset.asset_id)}?${runId ? `run_id=${encodeURIComponent(runId)}&` : ''}sha256=${asset.sha256}`,
-        })),
-      };
       const scene = view.current ?? new HistoryReferenceScene(host.current, {
         onNotice: (notice) => setNotices((previous) => [...previous.slice(-4), notice]),
         onAssetError: (message) => setAssetError(message),
       });
       view.current = scene;
       scene.mount(host.current, setSelection);
+      // Bytes come only from this Episode's history asset endpoint, with the declared digest attached so
+      // the server re-computes and refuses before any byte leaves the process.
       scene.setManifest(manifest);
       assemblyKey.current = key;
     }
-    // One pass per (geometry, pose): the tree and camera stay, and only the parts the reader allowed
-    // for THIS frame move.
+    // One pass per (tree, pose): the tree and camera stay, and only the parts the reader allowed for
+    // THIS frame move.
     const scene = view.current;
     if (!scene) { setStage({ status: 'blocked', reason: '装配视图未能创建：不驱动任何部件，也不宣称已装配。' }); return; }
     const drive = poseDriveOf(pose);
@@ -221,12 +200,11 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
       values: Object.fromEntries(drivenValuesOf(pose, { joints: drive.joints, baseApplied: Boolean(drive.base), tcpApplied: Boolean(drive.tcp) }).map((row) => [row.name, row.model])),
     };
     setVisited((previous) => ({ key, rows: mergeVisitedValues(previous.key === key ? previous.rows : [], applied) }));
-    setStage({ status: 'ready', reason: `固定模型树已装配：放置树来自 ${GEOMETRY_SCHEMA} 清单（${geometry.data.links.length} 条 link、${geometry.data.world_links.length} 条 world link，内容身份与记录一致；该路由自述 data_source=${geometry.data_source ?? '未声明'}，Episode 作用域的静态 manifest 尚未发布，前端不假造路由），${rows.length} 个网格字节按声明摘要从历史端点读取。屏幕姿态归属见“显示帧”。` });
+    setStage({ status: 'ready', reason: `固定模型树已装配：放置树来自本 Episode 的 robot-state（include_model_tree），authority=${tree.authority ?? '未声明'} · live_native_scene_proxied=${String(tree.live_native_scene_proxied)}，${(tree.links ?? []).length} 条 link、${(tree.world_links ?? []).length} 条 world link（内容身份与记录一致；world_links 是编译参考布局，不是记录位姿），${manifest.mesh_assets.length}/${rows.length} 个资产被树引用并按声明摘要从历史端点读字节。屏幕姿态归属见“显示帧”。` });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geometry, pose]);
+  }, [pose, treeState]);
 
   useEffect(() => () => {
-    geometryControllers.current.forEach((controller) => controller.abort());
     poseControllers.current.forEach((controller) => controller.abort());
     releaseView();
   }, [releaseView]);
@@ -235,7 +213,10 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
   const rows = mappingRowsOf(pose);
   const partRows = partReadinessOf(pose);
   const fk = fkCrossCheckOf(pose);
-  const binding = bindingRowsOf(pose, geometry);
+  const namespace = `${episodeId}|${runId ?? ''}`;
+  const cachedForThisSource = treeState && treeState.namespace === namespace ? treeState : null;
+  const treeForBinding = cachedForThisSource?.tree ?? null;
+  const binding = bindingRowsOf(pose, treeForBinding);
   const canRead = Boolean(episodeId) && Boolean(pose?.model_resource);
   const displayedSample = displayed?.displayedSample ?? '';
   const attributed = Boolean(displayedSample) && displayedSample === sampleId;
@@ -252,11 +233,11 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
     if (!row) return;
     const token = poseSerial.current;
     setAssets((previous) => previous.map((item) => item.assetId === assetId ? { ...item, readState: 'reading', readDetail: '正在按声明摘要读取字节…' } : item));
-    void readHistoryModelAsset({ episodeId, runId, assetId, sha256: row.bundleSha }, trackPose(new AbortController()).signal)
+    void readHistoryModelAsset({ episodeId, runId, assetId, sha256: row.sha }, trackPose(new AbortController()).signal)
       .then((value) => {
         if (token !== poseSerial.current) return;                    // a late byte read never rewrites a new episode's table
-        const matches = value.digest === row.bundleSha;
-        const detail = `${value.bytes.byteLength} 字节 · content-type=${value.mediaType || '未知'} · ETag ${value.etag || '无'} · cache-control=${value.cacheControl || '未声明'} · ${matches ? `服务端重算摘要与 bundle 声明一致（${value.digest.slice(0, 12)}）` : `摘要不符：服务端 ${value.digest.slice(0, 12) || '未在 ETag 里给出'} ≠ bundle ${row.bundleSha.slice(0, 12)}`}`;
+        const matches = value.digest === row.sha;
+        const detail = `${value.bytes.byteLength} 字节 · content-type=${value.mediaType || '未知'} · ETag ${value.etag || '无'} · cache-control=${value.cacheControl || '未声明'} · ${matches ? `服务端重算摘要与 bundle 声明一致（${value.digest.slice(0, 12)}）` : `摘要不符：服务端 ${value.digest.slice(0, 12) || '未在 ETag 里给出'} ≠ bundle ${row.sha.slice(0, 12)}`}`;
         setAssets((previous) => previous.map((item) => item.assetId === assetId ? { ...item, readState: matches ? 'ok' : 'failed', readDetail: detail } : item));
       })
       .catch((cause) => {
@@ -276,7 +257,11 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
     data-model-compiled-root-height={String(displayed?.compiledRootHeightWorldSimM ?? 'null')}
     data-model-tree-reads={String(treeReads.count)} data-model-tree-read-episode={treeReads.episode || 'none'}
     data-motion-visited-frames={String(visited.rows.length)} data-motion-visited-key={visited.key || 'none'}
-    data-model-tree-source={geometry?.data_source ?? 'none'}>
+    data-model-tree-source={treeForBinding ? String(treeForBinding.authority ?? '未声明') : 'none'}
+    data-model-tree-proxied={treeForBinding ? String(treeForBinding.live_native_scene_proxied) : 'unknown'}
+    data-model-tree-content-identity={treeState?.contentIdentity || 'none'}
+    data-model-tree-world-semantics={treeForBinding ? String(treeForBinding.semantics?.world_links ?? '未声明') : 'none'}
+    data-model-tree-live-scene-fallback="none">
     <h3>固定模型树 · 按部件历史姿态 <small data-model-current-sample={displayedSample || '—'}>{displayedSample ? `显示帧 ${displayedSample}` : '编译初始布局'}</small></h3>
     <p className="session-note" data-model-attribution-line={`请求帧 ${sampleId ?? '无'} · 显示帧 ${displayedSample || '无（当前是编译初始布局）'}`}>
       请求帧 {sampleId ?? '无'} · 显示帧 {displayedSample || '无（画面上是编译初始布局）'}
@@ -380,24 +365,24 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
       <p className="session-note" data-pose-boundary={poseBoundaryText(pose)}>{poseBoundaryText(pose)}</p>
       <h4>静态树与记录的内容身份绑定</h4>
       <table className="frame-record-table" data-tree-binding="true"><thead><tr><th>身份字段</th><th>历史记录</th><th>装配用的树</th><th>相等</th><th>说明</th></tr></thead>
-        <tbody>{binding.map((row) => <tr key={row.field} data-tree-binding-row={row.field} data-tree-binding-equal={row.equal}>
+        <tbody>{binding.map((row, index) => <tr key={`${row.field}#${index}`} data-tree-binding-row={row.field} data-tree-binding-equal={row.equal}>
           <td>{row.field}</td><td>{row.history}</td><td>{row.tree}</td><td>{row.equal}</td><td>{row.note}</td></tr>)}</tbody></table>
-      <p className="session-note" data-tree-source-limit="true">仍需后端补齐：Episode 作用域的静态模型 manifest 尚未发布（历史面目前只有 8 条 GET，模型侧只有字节端点），因此放置树暂时取自 {GEOMETRY_PATH} 的冻结清单并按上表内容与记录绑定；该读取的 runtime 身份属于当前在线会话（{JSON.stringify(geometry?.geometry_binding?.exported_runtime_identity ?? '无')}），不是本 Episode。历史装配最终应只依赖那份 manifest。</p>
+      <p className="session-note" data-tree-source-limit="true">静态树的唯一来源就是本 Episode 的 robot-state（`include_model_tree=true`，authority 与 live_native_scene_proxied 见上一行与本节说明）：历史装配不再读 {`/api/v1/mobilecar/scene`}，也不读 snapshot/Actual；树缺失、被拒或身份不符时界面阻塞而不是改读在线来源。world_links 只表示编译参考布局，不表示 target_cube 等对象在本 Episode 的历史位置。</p>
       <h4>历史模型资源身份</h4>
       <p className="session-note" data-model-resource={modelResourceText(pose)}>{modelResourceText(pose)}</p>
       <table className="frame-record-table" data-comparison-table="true"><thead><tr><th>身份字段</th><th>记录（run 清单）</th><th>冻结 bundle</th><th>相等</th></tr></thead>
         <tbody>{comparisonRowsOf(pose).map((row) => <tr key={row.key} data-comparison-row={row.key} data-comparison-equal={row.equal}>
           <td>{row.key}</td><td>{row.recorded}</td><td>{row.bundle}</td><td>{row.equal}</td></tr>)}</tbody></table>
-      <table className="frame-record-table" data-asset-table="true"><thead><tr><th>asset_id</th><th>bundle 摘要</th><th>历史声明摘要</th><th>相等</th><th>字节</th><th>单资产读取</th></tr></thead>
-        <tbody>{assets.map((row) => <tr key={row.assetId} data-asset-row={row.assetId} data-asset-equal={String(row.equal)}
-          data-asset-read={row.readState} data-asset-detail={row.readDetail}>
-          <td>{row.assetId}</td><td>{shortOr(row.bundleSha)}</td><td>{shortOr(row.historySha)}</td><td>{String(row.equal)}</td><td>{row.bytes}</td>
+      <table className="frame-record-table" data-asset-table="true"><thead><tr><th>asset_id</th><th>记录声明摘要</th><th>树是否引用</th><th>字节</th><th>单资产读取（服务端重算摘要）</th></tr></thead>
+        <tbody>{assets.map((row) => <tr key={row.assetId} data-asset-row={row.assetId} data-asset-referenced={String(row.referenced)}
+          data-asset-sha={row.sha} data-asset-read={row.readState} data-asset-detail={row.readDetail}>
+          <td>{row.assetId}</td><td>{shortOr(row.sha)}</td><td>{String(row.referenced)}</td><td>{row.bytes}</td>
           <td><button data-asset-pick={row.assetId} disabled={!canRead || row.readState === 'reading'}
             title="只从历史资产端点按声明摘要读取；服务端先重算，摘要不符则 409 且不给字节"
             onClick={() => readOne(row.assetId)}>{row.readState === 'idle' ? '按摘要读取' : row.readState}</button>
             {row.readDetail && <small>{row.readDetail}</small>}</td></tr>)}</tbody></table>
-      <p className="session-note" data-asset-equal-count={String(assets.filter((row) => row.equal).length)} data-asset-total={String(assets.length)}>
-        {assets.filter((row) => row.equal).length}/{assets.length} 个资产的历史声明摘要与冻结 bundle 相等；字节只在点击或渲染时按该摘要校验读取，摘要不符不返回内容。单资产一致不推出整条 Episode 完整，也不推出历史姿态可用。</p>
+      <p className="session-note" data-asset-referenced-count={String(assets.filter((row) => row.referenced).length)} data-asset-total={String(assets.length)}>
+        {assets.filter((row) => row.referenced).length}/{assets.length} 个声明资产被静态树引用（未被引用的是模型里存在但没有网格几何的资产，如实列出、不要求全部被引用）；被引用的每一个都以声明摘要寻址，字节读取由服务端重算比对，摘要不符则不给内容。单资产一致不推出整条 Episode 完整，也不推出历史姿态可用。</p>
     </>}
     {!sampleId && <p className="session-note" data-model-none="true">未绑定帧：不请求 robot-state（省略 sample_id 时 reader 会返回它自己的第一条记录），因此不装配任何模型。</p>}
   </section>;

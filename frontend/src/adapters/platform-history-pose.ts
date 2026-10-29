@@ -14,6 +14,7 @@
  * defaulted to 0. Model bytes come only from the history asset route.
  */
 import { json, query, EpisodeContractError, type EpisodeSource } from './platform-episodes';
+import type { MeshAsset, SceneManifest } from './types';
 import { parseError } from './platform-config';
 
 export const HISTORY_POSE_SCHEMA = 'unirobot-mobilecar-history-pose-1';
@@ -62,6 +63,22 @@ export interface HistoryLinkJointDto {
   name?: string; parent_name?: string | null; joint_name?: string | null; joint_type?: string | null;
   joint_axis?: number[] | null; local_position_m?: number[] | null; local_orientation_xyzw?: number[] | null; geom_types?: string[];
 }
+export interface HistoryTreeTransform { position_m?: number[]; orientation_xyzw?: number[] }
+export interface HistoryTreeGeom { name?: string; geom_type?: string; size_m?: number[]; local_transform?: HistoryTreeTransform; rgba?: number[];
+  mesh_asset_id?: string | null; collision?: boolean; group?: number; contype?: number; conaffinity?: number }
+export interface HistoryTreeLink { name: string; parent_name?: string | null; joint_name?: string | null; joint_type?: string;
+  joint_axis?: number[]; local_transform?: HistoryTreeTransform; geoms?: HistoryTreeGeom[] }
+/** `model_resource.model_tree`, present only when the caller asked for it. The tree reuses geometry-2's
+ *  own link/geom serialization and reuses the four outer digests — it is not a second summary system. */
+export interface HistoryModelTreeDto {
+  requested?: boolean; included?: boolean; reason?: string; links_are_substituted?: boolean;
+  authority?: string; live_native_scene_proxied?: boolean;
+  links?: HistoryTreeLink[]; world_links?: HistoryTreeLink[];
+  counts?: { links?: number; world_links?: number; geoms?: number; mesh_geoms?: number };
+  content_identity?: { bundle_sha256?: string; content_identity_sha256?: string; compiled_scene_sha256?: string; model_inputs_sha256?: string };
+  caching?: Record<string, unknown>; semantics?: Record<string, unknown>; mesh_bytes?: string;
+  summary_views_still_on_model_resource?: boolean;
+}
 export interface HistoryModelResourceDto {
   status?: string; comparison?: Record<string, { recorded?: string | null; bundle?: string | null; equal?: boolean }>;
   bundle_sha256?: string; content_identity_sha256?: string; compiler?: { name?: string; version?: string };
@@ -74,6 +91,9 @@ export interface HistoryModelResourceDto {
   end_effector_link?: HistoryLinkJointDto | null; tcp_parent_body_view?: HistoryLinkJointDto | null;
   world_links?: { name: string; geom_types?: string[] }[]; link_frames?: string;
   assets?: HistoryAssetDto[]; asset_integrity?: string; live_native_scene_proxied?: boolean; served_via?: string;
+  /** Present only when the request asked for it and the identity matched. Absent on a default answer,
+   *  which is normal — it is not a missing tree and must not trigger a per-frame re-download. */
+  model_tree?: HistoryModelTreeDto | null;
 }
 export interface HistoryStateDto {
   linkage_status: string; source?: { stream_id?: string; relative_path?: string; line_index?: number; event_seq?: number | null; event_type?: string | null } | null;
@@ -107,10 +127,12 @@ export interface HistoryPoseDto {
 }
 
 /** `sample_id` is always sent: the reader answers the first anchor frame when it is omitted, and the
- *  view must never present a frame it did not select. */
-export async function readRobotState(input: { episodeId: string; runId: string | null; sampleId: string }, signal: AbortSignal): Promise<HistoryPoseDto> {
+ *  view must never present a frame it did not select. `include_model_tree` is sent only when this
+ *  source namespace still needs the static tree: the default answer simply has no `model_tree` key,
+ *  which is the normal per-frame case and never counts as a missing tree. */
+export async function readRobotState(input: { episodeId: string; runId: string | null; sampleId: string; includeModelTree?: boolean }, signal: AbortSignal): Promise<HistoryPoseDto> {
   if (!input.sampleId) throw new Error('没有所选帧的 sample_id：不请求 robot-state，避免把 reader 的默认第一条当成所选帧。');
-  const params: Record<string, string | undefined> = { run_id: input.runId ?? undefined, sample_id: input.sampleId };
+  const params: Record<string, string | undefined> = { run_id: input.runId ?? undefined, sample_id: input.sampleId, ...(input.includeModelTree ? { include_model_tree: 'true' } : {}) };
   return json<HistoryPoseDto>(`/api/v1/episodes/${encodeURIComponent(input.episodeId)}/robot-state${query(params)}`, signal, HISTORY_POSE_SCHEMA);
 }
 
@@ -447,34 +469,159 @@ export function poseBoundaryText(dto: HistoryPoseDto | null): string {
 }
 
 /**
- * The static placement tree the pane assembled from must be the tree this Episode's record was compiled
- * against. The Episode-scoped static manifest the backend still owes is not available yet, so the tree
- * comes from the frozen geometry bundle read and is bound to the record by comparing every identity
- * field the two sides publish — mesh digests alone are not enough, since identical meshes can sit in a
- * different tree. Only comparable identity fields belong here (where the tree came from is reported
- * beside the table, not as a row that could never be equal).
+ * The static tree now comes from the Episode-scoped history route itself: `model_resource.model_tree`,
+ * returned when the request asked for it and the record's model identity matched the frozen bundle. This
+ * gate accepts the tree only on those words — `requested`/`included` both true, the authority the bundle
+ * declares, and the semantics that say `world_links` is the compiled reference layout rather than
+ * recorded object positions. A refused or absent tree yields `null`: the caller must block, and nothing
+ * here ever substitutes the live `/mobilecar/scene` answer.
  */
+export const TREE_AUTHORITY = 'frozen_compiled_geometry_bundle';
+export const TREE_WORLD_SEMANTICS = 'compiled_initial_layout_not_live_object_state';
+export function historyTreeOf(dto: HistoryPoseDto | null): HistoryModelTreeDto | null {
+  const tree = dto?.model_resource?.model_tree ?? null;
+  if (!tree || tree.requested !== true || tree.included !== true) return null;
+  if (tree.authority !== TREE_AUTHORITY || tree.live_native_scene_proxied !== false) return null;
+  const s = tree.semantics ?? {};
+  if (s.world_links !== TREE_WORLD_SEMANTICS || s.world_links_are_not_recorded_object_positions !== true || s.is_recorded_state !== false) return null;
+  if (!(tree.links ?? []).length || !(tree.world_links ?? []).length) return null;
+  return tree;
+}
+
+/** Why the tree was refused, in the reader's own words when it gave any, plus the clause the gate rejected. */
+export function historyTreeRefusal(dto: HistoryPoseDto | null): string {
+  const tree = dto?.model_resource?.model_tree ?? null;
+  if (!tree) return '本帧答复里没有 model_tree（默认响应不含树属正常，只有取树请求缺键才算缺失）';
+  const base = `requested=${text(tree.requested)} · included=${text(tree.included)} · reason=${text(tree.reason)} · links_are_substituted=${text(tree.links_are_substituted)}`;
+  if (tree.requested !== true || tree.included !== true) return base;
+  const s = tree.semantics ?? {};
+  const gates: string[] = [];
+  if (tree.authority !== TREE_AUTHORITY) gates.push(`authority=${text(tree.authority)}，不是 ${TREE_AUTHORITY}`);
+  if (tree.live_native_scene_proxied !== false) gates.push(`live_native_scene_proxied=${text(tree.live_native_scene_proxied)}，树自称来自在线来源`);
+  if (s.world_links !== TREE_WORLD_SEMANTICS) gates.push(`semantics.world_links=${text(s.world_links)}，不是编译初始布局声明`);
+  if (s.world_links_are_not_recorded_object_positions !== true) gates.push('semantics.world_links_are_not_recorded_object_positions 未声明为 true');
+  if (s.is_recorded_state !== false) gates.push('semantics.is_recorded_state 未声明为 false');
+  if (!(tree.links ?? []).length) gates.push('links 为空');
+  if (!(tree.world_links ?? []).length) gates.push('world_links 为空');
+  return gates.length ? `${base} · 门控拒绝：${gates.join('；')}` : base;
+}
+
+/**
+ * In-memory cache of static trees only, managed by source namespace and content identity. The tree is the
+ * same for every frame of one bundle, so a frame step asks for the pose alone; a source whose content
+ * identity is unknown or has moved asks once again. The dynamic `robot-state` answer itself is never
+ * cached — pose, mapping and part readiness always come from the frame that was just read.
+ */
+/**
+ * Static content only, and keyed by source namespace *plus* content identity: an Episode acquires the tree
+ * once and re-acquires only when its own content identity moves. Entries are never shared across
+ * namespaces, because a tree that claims one identity but carries other bytes would otherwise be drawn for
+ * every Episode declaring that identity — the per-Episode binding would catch it, but each Episode must
+ * draw the tree it was itself given.
+ */
+const treeBySource = new Map<string, HistoryModelTreeDto>();
+const identityByNamespace = new Map<string, string>();
+const cacheKey = (namespace: string, contentIdentity: string) => `${namespace}|${contentIdentity}`;
+export function shouldRequestTree(namespace: string): boolean {
+  const known = identityByNamespace.get(namespace);
+  return !known || !treeBySource.has(cacheKey(namespace, known));
+}
+export function rememberTree(namespace: string, contentIdentity: string, tree: HistoryModelTreeDto): void {
+  treeBySource.set(cacheKey(namespace, contentIdentity), tree);
+  identityByNamespace.set(namespace, contentIdentity);
+}
+export function cachedTree(namespace: string): { contentIdentity: string; tree: HistoryModelTreeDto } | null {
+  const known = identityByNamespace.get(namespace);
+  const tree = known ? treeBySource.get(cacheKey(namespace, known)) ?? null : null;
+  return known && tree ? { contentIdentity: known, tree } : null;
+}
+/** Content moved under this source: forget what it pointed at so the next read asks for that tree. */
+export function forgetTreeNamespace(namespace: string): void {
+  const known = identityByNamespace.get(namespace);
+  if (known) treeBySource.delete(cacheKey(namespace, known));
+  identityByNamespace.delete(namespace);
+}
+export function cachedTreeCount(): number { return treeBySource.size; }
+
 export interface TreeBindingRow { field: string; history: string; tree: string; equal: string; note: string }
-export function treeBindingRowsOf(dto: HistoryPoseDto | null, tree: {
-  bundle_sha256?: string | null; content_identity_sha256?: string | null; model_inputs_sha256?: string | null;
-  compiled_scene_sha256?: string | null; link_count?: number | null; world_link_count?: number | null;
-  arm_hinge_joints?: string[] | null;
-} | null): TreeBindingRow[] {
+const meshReferencesOf = (tree: HistoryModelTreeDto) => {
+  const ids = new Set<string>();
+  let geoms = 0; let meshGeoms = 0;
+  [...tree.links ?? [], ...tree.world_links ?? []].forEach((link) => (link.geoms ?? []).forEach((geom) => {
+    geoms += 1;
+    if (geom.mesh_asset_id) { meshGeoms += 1; ids.add(geom.mesh_asset_id); }
+  }));
+  return { ids, geoms, meshGeoms };
+};
+
+/**
+ * Binding the tree to the record: the four digests the tree declares in its own `content_identity`
+ * against the four the record declares on the outer object (two separately published values, never one
+ * object copied to both sides), then the counts derived from the arrays that are about to be drawn, then
+ * whether every mesh reference the tree carries resolves against the record's asset list. Identical mesh
+ * digests in a different tree still fail here, because the link/world counts, the arm hinge order and the
+ * named-node rows below all come out of the real tree.
+ */
+export function historyTreeBindingRowsOf(dto: HistoryPoseDto | null, tree: HistoryModelTreeDto | null): TreeBindingRow[] {
   const m = dto?.model_resource ?? null;
   if (!m || !tree) return [];
   const row = (field: string, history: unknown, current: unknown, note: string): TreeBindingRow => ({
-    field, history: text(history), tree: text(current), equal: String(String(text(history)) === String(text(current))), note,
+    field, history: text(history), tree: text(current), equal: String(text(history) === text(current)), note,
   });
+  const identity = tree.content_identity ?? {};
+  const links = tree.links ?? [];
+  const worlds = tree.world_links ?? [];
+  const { ids, geoms, meshGeoms } = meshReferencesOf(tree);
+  const declared = new Map((m.assets ?? []).map((asset) => [asset.asset_id, asset]));
+  const unresolved = [...ids].filter((id) => !declared.has(id));
+  const unreferenced = (m.assets ?? []).map((asset) => asset.asset_id).filter((id) => !ids.has(id));
   return [
-    row('bundle_sha256', m.bundle_sha256, tree.bundle_sha256, '冻结 bundle 包摘要'),
-    row('content_identity_sha256', m.content_identity_sha256, tree.content_identity_sha256, '编译内容身份：相同 mesh 但不同树内容也会在这里显形'),
-    row('model_inputs_sha256', m.model_inputs_sha256, tree.model_inputs_sha256, '模型输入摘要'),
-    row('compiled_scene_sha256', m.compiled_scene_sha256, tree.compiled_scene_sha256, '编译场景摘要'),
-    row('link_count', m.link_count, tree.link_count, '机器人 link 条数'),
-    row('world_link_count', (m.world_links ?? []).length, tree.world_link_count, '世界物体 link 条数'),
-    row('arm_hinge_joints', (m.arm_hinge_joints ?? []).join(','), (tree.arm_hinge_joints ?? []).join(','), '臂铰链名与文档顺序'),
+    row('bundle_sha256', m.bundle_sha256, identity.bundle_sha256, '冻结 bundle 包摘要（树自述 vs 记录外层）'),
+    row('content_identity_sha256', m.content_identity_sha256, identity.content_identity_sha256, '编译内容身份：也是取树的缓存键'),
+    row('model_inputs_sha256', m.model_inputs_sha256, identity.model_inputs_sha256, '模型输入摘要'),
+    row('compiled_scene_sha256', m.compiled_scene_sha256, identity.compiled_scene_sha256, '编译场景摘要'),
+    row('link_count', m.link_count, links.length, '记录声明的 link 条数 vs 树里实际条数'),
+    row('world_link_count', (m.world_links ?? []).length, worlds.length, '世界物体 link 条数（编译参考布局，不是记录位姿）'),
+    row('arm_hinge_joints', (m.arm_hinge_joints ?? []).join(','), (() => {
+      // Tree document order, restricted to the joints the record itself names as arm hinges: a joint the
+      // tree lacks makes the subset shorter, a re-ordered chain makes it differ, and no naming convention
+      // is invented to decide which links count as the arm.
+      const declared = m.arm_hinge_joints ?? [];
+      return links.map((link) => link.joint_name ?? '').filter((name) => declared.includes(name)).join(',');
+    })(), '记录声明的臂铰链 vs 树文档顺序里的同名子集'),
+    row('counts.links', tree.counts?.links, links.length, '树自述 counts 与其 links 数组是否自洽'),
+    row('counts.world_links', tree.counts?.world_links, worlds.length, '树自述 counts 与其 world_links 数组是否自洽'),
+    row('counts.geoms', tree.counts?.geoms, geoms, '树自述 geom 总数与逐 link 实际累加是否自洽'),
+    row('counts.mesh_geoms', tree.counts?.mesh_geoms, meshGeoms, '树自述 mesh geom 数与逐 link 实际累加是否自洽'),
+    { field: 'mesh_asset_id 可解析', history: `树引用 ${ids.size} 个`, tree: unresolved.length ? `清单里缺 ${unresolved.join(',')}` : `清单声明 ${declared.size} 个资产，全部引用都能解析（${unreferenced.length} 个未被树引用：${unreferenced.join(',') || '无'}）`,
+      equal: String(unresolved.length === 0), note: '字节只按清单摘要从 Episode 资产端点取；未被引用的资产（如 imu_link）是合法事实，不要求全部被引用' },
   ];
 }
+
+/**
+ * The internal manifest, built only out of the history answer: the tree's links/world links and geoms,
+ * the record's own asset digests, and the four identity values the record compared against the bundle.
+ * Mesh bytes are addressed to this Episode's history asset route, with the declared digest attached so
+ * the server verifies before a single byte leaves the process.
+ */
+export function historySceneManifestOf(dto: HistoryPoseDto, tree: HistoryModelTreeDto, episodeId: string, runId: string | null): SceneManifest {
+  const m = dto.model_resource ?? {};
+  const comparison = m.comparison ?? {};
+  const value = (key: string) => String(comparison[key]?.recorded ?? '');
+  const { ids } = meshReferencesOf(tree);
+  const meshAssets: MeshAsset[] = (m.assets ?? []).filter((asset) => ids.has(asset.asset_id)).map((asset) => ({
+    asset_id: asset.asset_id, sha256: asset.sha256,
+    coordinate_space: asset.coordinate_space === 'legacy_raw_stl' ? 'legacy_raw_stl' : 'mujoco_compiled_mesh',
+    units: asset.units === 'm' ? 'm' : undefined,
+    uri: `/api/v1/episodes/${encodeURIComponent(episodeId)}/model/assets/${encodeURIComponent(asset.asset_id)}?${runId ? `run_id=${encodeURIComponent(runId)}&` : ''}sha256=${asset.sha256}`,
+  }));
+  return {
+    contract_version: value('contract_version'), model_id: value('model_id'), model_sha256: value('model_sha256'), scene_id: value('scene_id'),
+    links: (tree.links ?? []) as SceneManifest['links'], world_links: (tree.world_links ?? []) as SceneManifest['world_links'],
+    mesh_assets: meshAssets, camera_ids: m.camera_ids ?? [], tcp_site: m.tcp_site ?? '', source: String(tree.authority ?? TREE_AUTHORITY),
+  };
+}
+
 
 const text = (value: unknown) => value === undefined || value === null || value === '' ? 'null' : String(value);
 

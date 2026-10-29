@@ -4,7 +4,8 @@ import {
   HISTORY_POSE_SCHEMA, assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, drivenValuesOf, etagDigest,
   fkCrossCheckOf, mappingRowsOf, mergeVisitedValues, modelAssetRowsOf, modelResourceText, modelVsUserText,
   motionCoverageOf, notProvenText, partReadinessOf, poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText,
-  readHistoryModelAsset, readRobotState, renderingText, treeBindingRowsOf, linkBindingRowsOf, versionBindingText, type HistoryPoseDto,
+  readHistoryModelAsset, readRobotState, renderingText, historyTreeBindingRowsOf, historyTreeOf, historyTreeRefusal, historySceneManifestOf,
+  shouldRequestTree, rememberTree, cachedTree, forgetTreeNamespace, linkBindingRowsOf, versionBindingText, type HistoryModelTreeDto, type HistoryPoseDto,
 } from '../src/adapters/platform-history-pose';
 
 // The base fixture copies the shape of the `unirobot-mobilecar-history-pose-1` payload the 18969
@@ -119,7 +120,7 @@ const m15eFixture = (patch: Partial<HistoryPoseDto> = {}): HistoryPoseDto => {
       user_angle_formula: { q_user: 'q_user = (q_model - zero_model_rad) / user_direction', zero_model_rad: [0, 0, 0, -1.5707963267948966, 0], user_direction: [1, 1, 1, 1, 1], used_for: 'user-facing display and limit comparison only' },
       zero_pose_authority: { zero_status: 'user_defined_photo_pose_not_hardware_500', calibration_session: 'uncalibrated', authority: 'platform_reference_not_native_attested' } },
     pose_readiness: { ...base.pose_readiness!, mapped_targets_partially_or_fully_verified: '4/10', parts_ready: ['fixed_model_reference_assembly'], parts_conditional: ['gripper_visual_appearance'], parts_blocked: ['tcp_orientation_frame'], kinematic_agreement: 'consistent' },
-    model_resource: { ...base.model_resource!, model_inputs_sha256: MODEL_INPUTS_SHA, compiled_scene_sha256: COMPILED_SCENE_SHA,
+    model_resource: { ...base.model_resource!, model_inputs_sha256: MODEL_INPUTS_SHA, compiled_scene_sha256: COMPILED_SCENE_SHA, camera_ids: ['rgbd'],
       world_links: [{ name: 'world_static', geom_types: ['box', 'plane'] }, { name: 'target_cube', geom_types: ['box'] }],
       tcp_parent_body_view: { name: 'guide_rod_link', joint_type: 'fixed' }, link_frames: "each link's local_transform is the model body offset relative to its parent body" },
     ...patch,
@@ -460,24 +461,33 @@ describe('readiness, kinematic and identity projections', () => {
     expect(modelVsUserText(m15eFixture())).toContain('uncalibrated');
     expect(versionBindingText(poseFixture())).toContain('reader 未返回 version_binding');
   });
-  it('binds the assembled tree to the record by content identity, not only by mesh digests', () => {
-    // The identity the frozen geometry清单 reports for the same compiled content the record names.
-    const tree = { bundle_sha256: BUNDLE_SHA, content_identity_sha256: CONTENT_SHA, model_inputs_sha256: MODEL_INPUTS_SHA,
-      compiled_scene_sha256: COMPILED_SCENE_SHA, link_count: 71, world_link_count: 2, arm_hinge_joints: ['joint1', 'joint2', 'joint3', 'joint4', 'joint5'] };
-    const rows = treeBindingRowsOf(m15eFixture(), tree);
-    expect(rows).toHaveLength(7);
+  it('binds the history tree to the record by content identity, counts and mesh references', () => {
+    const rows = historyTreeBindingRowsOf(m15eFixture(), treeFixture());
+    expect(rows).toHaveLength(12);
     expect(rows.every((row) => row.equal === 'true')).toBe(true);
     // Same meshes, different tree content: the content identity is what catches it.
-    const swapped = treeBindingRowsOf(m15eFixture(), { ...tree, content_identity_sha256: 'd'.repeat(64) });
+    const swapped = historyTreeBindingRowsOf(m15eFixture(), { ...treeFixture(), content_identity: { ...treeFixture().content_identity!, content_identity_sha256: 'd'.repeat(64) } });
     expect(swapped.filter((row) => row.equal === 'false').map((row) => row.field)).toEqual(['content_identity_sha256']);
-    const reordered = treeBindingRowsOf(m15eFixture(), { ...tree, arm_hinge_joints: ['joint2', 'joint1', 'joint3', 'joint4', 'joint5'] });
+    const moved = [...treeFixture().links!];
+    [moved[3], moved[4]] = [moved[4], moved[3]];                            // joint3 and joint4 trade document places
+    const reordered = historyTreeBindingRowsOf(m15eFixture(), { ...treeFixture(), links: moved });
     expect(reordered.find((row) => row.field === 'arm_hinge_joints')?.equal).toBe('false');
-    expect(treeBindingRowsOf(m15eFixture(), { ...tree, world_link_count: 1 }).find((row) => row.field === 'world_link_count')?.equal).toBe('false');
+    expect(reordered.find((row) => row.field === 'arm_hinge_joints')?.tree).toBe('joint1,joint2,joint4,joint3,joint5');
+    // A tree that lacks one declared arm hinge gives a shorter subset; the per-node rows name the joint.
+    const missing = historyTreeBindingRowsOf(m15eFixture(), { ...treeFixture(), links: treeFixture().links!.filter((_, index) => index !== 5) });
+    expect(missing.find((row) => row.field === 'arm_hinge_joints')?.tree).toBe('joint1,joint2,joint3,joint4');
+    expect(missing.find((row) => row.field === 'arm_hinge_joints')?.equal).toBe('false');
+    expect(historyTreeBindingRowsOf(m15eFixture(), { ...treeFixture(), world_links: [treeFixture().world_links![0]] })
+      .filter((row) => row.equal === 'false').map((row) => row.field)).toEqual(['world_link_count', 'counts.world_links']);
+    const ghost = historyTreeBindingRowsOf(m15eFixture(), { ...treeFixture(), links: treeFixture().links!.map((link) => ({ ...link, geoms: (link.geoms ?? []).map((geom) => ({ ...geom, mesh_asset_id: 'not_in_the_list' })) })) });
+    const unresolved = ghost.find((row) => row.field === 'mesh_asset_id 可解析');
+    expect(unresolved?.equal).toBe('false');
+    expect(unresolved?.tree).toContain('not_in_the_list');
     // The 18969 record published neither of the two further digests, so those rows read null both sides.
-    const legacyRows = treeBindingRowsOf(poseFixture(), tree);
+    const legacyRows = historyTreeBindingRowsOf(poseFixture(), treeFixture());
     expect(legacyRows.find((row) => row.field === 'model_inputs_sha256')?.equal).toBe('false');
     expect(legacyRows.find((row) => row.field === 'bundle_sha256')?.equal).toBe('true');
-    expect(treeBindingRowsOf(m15eFixture(), null)).toEqual([]);
+    expect(historyTreeBindingRowsOf(m15eFixture(), null)).toEqual([]);
   });
   it('keeps the mapping rows with their own status meanings, basis and gaps', () => {
     const rows = mappingRowsOf(poseFixture());
@@ -584,5 +594,75 @@ describe('link-by-link binding of the nodes the record itself names', () => {
     expect(rows.every((row) => row.equal === 'false')).toBe(true);
     expect(rows.filter((row) => row.field === 'link_exists').every((row) => row.tree.includes('没有同名 link'))).toBe(true);
     expect(rows.filter((row) => row.field.startsWith('joint_in:')).every((row) => row.tree.includes('没有同名关节'))).toBe(true);
+  });
+});
+
+/** A tree that says what the M1.5e record says about the same compiled content: 71 links whose document
+ *  order carries joint1…joint5, two world links, one mesh geom resolving against the record's list. */
+const treeFixture = (): HistoryModelTreeDto => {
+  const geom = (mesh: string) => ({ name: 'visual', geom_type: 'mesh', size_m: [0, 0, 0], local_transform: { position_m: [0, 0, 0], orientation_xyzw: [0, 0, 0, 1] }, rgba: [0, 0, 0, 1], mesh_asset_id: mesh, collision: false, group: 0, contype: 1, conaffinity: 1 });
+  const links = Array.from({ length: 71 }, (_, index) => ({
+    name: `l${index}`, parent_name: index === 0 ? null : 'l0',
+    joint_name: index >= 1 && index <= 5 ? `joint${index}` : index === 0 ? 'base_free' : `j${index}`,
+    joint_type: index === 0 ? 'free' : index >= 1 && index <= 5 ? 'hinge' : 'fixed',
+    joint_axis: [0, 0, 1], local_transform: { position_m: [0, 0, 0], orientation_xyzw: [0, 0, 0, 1] },
+    geoms: index === 1 ? [geom('link1')] : [],
+  }));
+  return {
+    requested: true, included: true, authority: 'frozen_compiled_geometry_bundle', live_native_scene_proxied: false,
+    links, world_links: [
+      { name: 'world_static', geoms: [{ name: 'floor', geom_type: 'plane', size_m: [0, 0, 0], local_transform: { position_m: [0, 0, 0], orientation_xyzw: [0, 0, 0, 1] }, rgba: [0, 0, 0, 1], mesh_asset_id: null, collision: false, group: 0, contype: 1, conaffinity: 1 }] },
+      { name: 'target_cube', geoms: [] },
+    ],
+    counts: { links: 71, world_links: 2, geoms: 2, mesh_geoms: 1 },
+    content_identity: { bundle_sha256: BUNDLE_SHA, content_identity_sha256: CONTENT_SHA, model_inputs_sha256: MODEL_INPUTS_SHA, compiled_scene_sha256: COMPILED_SCENE_SHA },
+    caching: { identical_for_every_frame_of_this_bundle: true, response_is_dynamic: true },
+    semantics: { world_links: 'compiled_initial_layout_not_live_object_state', world_links_are_not_recorded_object_positions: true, is_recorded_state: false },
+    mesh_bytes: 'bytes only from the Episode asset route',
+  };
+};
+
+describe('history static tree: gate, manifest and content-keyed cache', () => {
+  const withTree = (tree: Partial<HistoryModelTreeDto> | null): HistoryPoseDto => ({
+    ...m15eFixture(), model_resource: { ...m15eFixture().model_resource!, model_tree: tree as HistoryModelTreeDto | null },
+  });
+
+  it('refuses to accept a tree the reader did not include, and never falls back', () => {
+    expect(historyTreeOf(m15eFixture())).toBeNull();                      // default answer: no model_tree key at all
+    expect(historyTreeOf(withTree({ ...treeFixture(), included: false }))).toBeNull();
+    expect(historyTreeOf(withTree({ ...treeFixture(), requested: false }))).toBeNull();
+    expect(historyTreeOf(withTree({ ...treeFixture(), live_native_scene_proxied: true }))).toBeNull();
+    expect(historyTreeOf(withTree({ ...treeFixture(), semantics: { ...treeFixture().semantics!, world_links_are_not_recorded_object_positions: false } }))).toBeNull();
+    expect(historyTreeOf(withTree({ ...treeFixture(), links: [] }))).toBeNull();
+    expect(historyTreeOf(withTree(treeFixture()))).not.toBeNull();
+    expect(historyTreeRefusal(m15eFixture())).toContain('默认响应不含树属正常');
+    expect(historyTreeRefusal(withTree({ requested: true, included: false, reason: 'history_model_identity_mismatch', links_are_substituted: false }))).toContain('history_model_identity_mismatch');
+  });
+
+  it('builds the internal manifest out of the history answer alone, with bytes pinned to this episode', () => {
+    const dto = { ...m15eFixture(), model_resource: { ...m15eFixture().model_resource!, assets: [
+      { asset_id: 'link1', sha256: 'b'.repeat(64), media_type: 'model/stl', coordinate_space: 'mujoco_compiled_mesh', units: 'm', bytes: 10 },
+      { asset_id: 'imu_link', sha256: 'c'.repeat(64), media_type: 'model/stl', coordinate_space: 'mujoco_compiled_mesh', units: 'm', bytes: 20 },
+    ] } } as never;
+    const manifest = historySceneManifestOf(dto, treeFixture(), 'episode_1', 'run_1');
+    expect(manifest.mesh_assets.map((asset) => asset.asset_id)).toEqual(['link1']);   // only what the tree references
+    expect(manifest.mesh_assets[0].uri).toBe('/api/v1/episodes/episode_1/model/assets/link1?run_id=run_1&sha256=' + 'b'.repeat(64));
+    expect(manifest.links).toHaveLength(71);
+    expect(manifest.world_links.map((link) => link.name)).toEqual(['world_static', 'target_cube']);
+    expect(manifest).toMatchObject({ contract_version: 'mobilecar-1.0', model_id: 'landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a', scene_id: 'mobile_pick', tcp_site: 'grasp_tcp', camera_ids: ['rgbd'], source: 'frozen_compiled_geometry_bundle' });
+    expect(manifest.mesh_assets[0].coordinate_space).toBe('mujoco_compiled_mesh');
+  });
+
+  it('asks for the tree once per content identity, and again when the content moved', () => {
+    const namespace = 'episode_first|run_a';
+    const other = 'episode_second|run_a';
+    expect(shouldRequestTree(namespace)).toBe(true);                      // nothing known for this source yet
+    rememberTree(namespace, CONTENT_SHA, treeFixture());
+    expect(shouldRequestTree(namespace)).toBe(false);                     // frame steps: pose only
+    expect(shouldRequestTree(other)).toBe(true);                          // a new Episode re-acquires its own
+    expect(cachedTree(namespace)?.contentIdentity).toBe(CONTENT_SHA);
+    forgetTreeNamespace(namespace);
+    expect(shouldRequestTree(namespace)).toBe(true);                      // content changed → ask again
+    expect(cachedTree('episode_never|run_z')).toBeNull();
   });
 });

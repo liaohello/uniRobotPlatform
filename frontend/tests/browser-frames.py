@@ -1,10 +1,11 @@
 """frame-link-2 browsing and the fixed model reference acceptance.
 
-  --mode real       against a frontend preview whose upstream is the frame-link-2 candidate (18969).
+  --mode real       against a frontend preview whose upstream is the M1.5f history candidate (18977).
                     Reads the actual COMPLETE and FAILED records, compares every displayed value with a
                     direct GET of the same page, walks pages by next_offset/has_more/next_qualifying,
                     opens a frame by sample_id, applies a contract-allowed time window, then reads the
-                    selected frame's robot-state, its nine per-part mapping rows and the frozen
+                    selected frame's robot-state — once with include_model_tree=true, which is where the
+                    frozen placement tree now arrives — its ten per-part mapping rows and the frozen
                     bundle's 23 assets, and assembles the fixed model reference from history bytes only.
                     Only GET requests are issued; the archive itself is never written.
   --mode synthetic  the same product code against isolated page.route fixtures (synthetic data, never
@@ -13,12 +14,16 @@
                     candidate, a state whose recorded_state is null, a late frame page and a late
                     robot-state after a switch, contract-mismatch payloads for both contracts, stream
                     unavailable, invalid sample ids, model identity mismatch, asset digest mismatch,
-                    the `verified` joint-driving gate and a 409 history_asset_revision_changed.
+                    the `verified` joint-driving gate, a 409 history_asset_revision_changed, and every
+                    way the in-answer tree can fail (absent, refused, live-semantics, foreign content
+                    identity, re-ordered joints, content identity that moves between frames). In this
+                    mode the live scene and snapshot routes are refused by the fixture, so a passing
+                    assembly is proof of independence rather than a pre-warmed cache.
 
-Both modes assert that the browser issues no non-GET request, that the gateway carries the three
-history GETs as its own exact routes (no wildcard under /episodes/{id}/), that mesh bytes never come
-from the live scene asset route, that the pane never claims 3D replay, cross-stream sync or a total
-frame count, and that live polling never rewrites the frame DOM.
+Both modes assert that the browser issues no non-GET request, that the gateway carries the history GETs
+as its own exact routes and forwards the new query parameter (no wildcard under /episodes/{id}/), that
+mesh bytes never come from the live scene asset route, that the pane never claims 3D replay, cross-stream
+sync or a total frame count, and that live polling never rewrites the frame DOM.
 """
 import argparse, asyncio, hashlib, json, re, struct, traceback, zlib
 from pathlib import Path
@@ -44,7 +49,9 @@ report = {'scope': f'{a.mode} frame-link-2 + history-pose-1 acceptance against {
 SOURCE_ID = 'mobilecar-server-history-20261017'
 FRAME_SCHEMA = 'unirobot-mobilecar-frame-link-2'
 POSE_SCHEMA = 'unirobot-mobilecar-history-pose-1'
-GEOMETRY_SCHEMA = 'unirobot-mobilecar-geometry-2'
+# The two words the tree gate insists on, exactly as the M1.5f reader publishes them.
+TREE_AUTHORITY = 'frozen_compiled_geometry_bundle'
+TREE_WORLD_SEMANTICS = 'compiled_initial_layout_not_live_object_state'
 # The identity fields the assembled tree is bound to: the record and the bundle agree on all four, and
 # a synthetic case can break exactly one of them to prove the binding is what stops the assembly.
 BUNDLE_ID = '2' * 64
@@ -151,15 +158,34 @@ async def pick_model_link(page):
             'new_requests': report['requests'][before:]}
 
 
-def static_tree_reads(mark):
-    """Placement-tree reads in the window since `mark`. The tree is a property of the Episode's content
-    identity, so frame steps, view switches and picker clicks must not add a single one."""
-    return [urlsplit(r['url']).path for r in report['requests'][mark:] if urlsplit(r['url']).path == '/api/v1/mobilecar/scene']
+def tree_fetch_reads(mark):
+    """Static-tree fetches in the window since `mark`. The tree rides inside robot-state now, so a fetch is
+    a robot-state GET that carried include_model_tree=true; frame steps, view switches and picker clicks
+    must not add a single one."""
+    return [{'url': r['url'], 'sample': (parse_qs(urlsplit(r['url']).query).get('sample_id') or [''])[0]}
+            for r in report['requests'][mark:]
+            if urlsplit(r['url']).path.endswith('/robot-state') and parse_qs(urlsplit(r['url']).query).get('include_model_tree') == ['true']]
+
+
+def live_route_reads(mark):
+    """Every read of a live native route (scene, snapshot, their assets) in the window, before the split."""
+    return [urlsplit(r['url']).path for r in report['requests'][mark:] if urlsplit(r['url']).path.startswith('/api/v1/mobilecar/')]
+
+
+def live_scene_reads(mark):
+    """Reads of the live placement route and its asset route in the window — the dependency this round had
+    to remove, so these must stay zero. The app's own live monitor (snapshot polling) is counted apart:
+    it belongs to another component and is never used as evidence about the history face."""
+    return [path for path in live_route_reads(mark) if '/mobilecar/scene' in path]
+
+
+def live_monitor_reads(mark):
+    return [path for path in live_route_reads(mark) if '/mobilecar/scene' not in path]
 
 
 def frame_reads_of(mark):
     """robot-state reads in the same window and the distinct frames they were asked for: the other side
-    of the census, so "one tree read" can not be trivially true because no frame was ever read."""
+    of the census, so "one tree fetch" can not be trivially true because no frame was ever read."""
     urls = [r['url'] for r in report['requests'][mark:] if urlsplit(r['url']).path.endswith('/robot-state')]
     samples = {value for u in urls for value in parse_qs(urlsplit(u).query).get('sample_id', [])}
     return {'poses': len(urls), 'samples': sorted(samples)}
@@ -170,11 +196,11 @@ def history_asset_reads(mark):
 
 
 async def open_episode_tree_reads(page, run_id, episode_id, expect='frames'):
-    """Open an Episode and report the placement-tree reads the switch caused: only an Episode identity
-    change is allowed to re-read the static tree, and then exactly once."""
+    """Open an Episode and report the tree fetches the switch caused: only an Episode identity change is
+    allowed to re-fetch the static tree, and then exactly once."""
     mark = len(report['requests'])
     await open_episode(page, run_id, episode_id, expect)
-    return static_tree_reads(mark)
+    return tree_fetch_reads(mark)
 
 
 async def read_direct(page, path, params=None):
@@ -267,6 +293,10 @@ def page_attrs(page):
         modelTreeReads:g('[data-model-pane]','data-model-tree-reads'),
         modelTreeReadEpisode:g('[data-model-pane]','data-model-tree-read-episode'),
         modelTreeSource:g('[data-model-pane]','data-model-tree-source'),
+        modelTreeProxied:g('[data-model-pane]','data-model-tree-proxied'),
+        modelTreeContentIdentity:g('[data-model-pane]','data-model-tree-content-identity'),
+        modelTreeWorldSemantics:g('[data-model-pane]','data-model-tree-world-semantics'),
+        modelTreeFallback:g('[data-model-pane]','data-model-tree-live-scene-fallback'),
         modelDrive:g('[data-model-drive-summary]','data-model-drive-summary'),modelStage:g('[data-model-stage]','data-model-stage'),
         modelWithheld:g('[data-model-withheld-count]','data-model-withheld-count'),mappingStatuses:q('[data-mapping-row]','data-mapping-status'),
         valueNames:q('[data-model-value]','data-model-value'),valueKinds:q('[data-model-value]','data-value-kind'),
@@ -287,8 +317,10 @@ def page_attrs(page):
         corrections:[...document.querySelectorAll('[data-frame-correction]')].map(e=>e.innerText),
         displayedSamples:q('[data-frame-displayed-sample]','data-frame-displayed-sample'),
         mappingTargets:q('[data-mapping-row]','data-mapping-row'),
-        comparisonEqual:q('[data-comparison-row]','data-comparison-equal'),assetEqual:q('[data-asset-row]','data-asset-equal'),
+        comparisonEqual:q('[data-comparison-row]','data-comparison-equal'),
         assetReads:q('[data-asset-row]','data-asset-read'),assetIds:q('[data-asset-row]','data-asset-row'),
+        assetReferenced:q('[data-asset-row]','data-asset-referenced'),assetShas:q('[data-asset-row]','data-asset-sha'),
+        assetReferencedCount:g('[data-asset-referenced-count]','data-asset-referenced-count'),assetTotal:g('[data-asset-referenced-count]','data-asset-total'),
         canvas:document.querySelectorAll('canvas').length,modelCanvas:document.querySelectorAll('[data-model-canvas-host] canvas').length,
         controlSurface:document.querySelectorAll('[data-target-readout],[data-ghost-toggle],[data-workbench-tool]').length,
         text:document.querySelector('[data-frame-view]')?.innerText??'',
@@ -431,8 +463,9 @@ async def real_flow(page):
 
     # ---- the fixed model reference on the real selected frame ----
     await wait_model(page, 'ready')
-    # One placement-tree read for this Episode's content identity; everything after must be pose-only traffic.
-    assembly_reads = len(static_tree_reads(episode_mark))
+    # One tree fetch for this Episode's content identity; everything after must be pose-only traffic.
+    assembly_reads = len(tree_fetch_reads(episode_mark))
+    live_reads_in_episode = {'scene': live_scene_reads(episode_mark), 'monitor': live_monitor_reads(episode_mark)}
     frame_mark = len(report['requests'])
     pose = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/robot-state', {'run_id': a.complete_run, 'sample_id': first['sample_id']})
     model = await page_attrs(page)
@@ -502,22 +535,46 @@ async def real_flow(page):
           # The reader separates "kinematics agree" from "hardware is calibrated": the second is a limit, not a result.
           and 'no calibration claim' in model['modelText']
           and fk['verdict'] == 'consistent' and 'consistent' in model['modelText'], model['modelText'][-400:])
-    check('the assembled tree is bound to the record by content identity, not only by mesh digests',
-          set(model['treeEqual']) == {'true'} and {'bundle_sha256', 'content_identity_sha256', 'model_inputs_sha256', 'compiled_scene_sha256',
-                                                  'link_count', 'arm_hinge_joints'} <= set(model['treeFields'])
+    check('the assembled tree is bound to the record by content identity, counts, joint order and mesh references',
+          set(model['treeEqual']) == {'true'}
+          and {'bundle_sha256', 'content_identity_sha256', 'model_inputs_sha256', 'compiled_scene_sha256', 'link_count',
+               'world_link_count', 'arm_hinge_joints', 'counts.links', 'counts.world_links', 'counts.geoms',
+               'counts.mesh_geoms', 'mesh_asset_id 可解析'} <= set(model['treeFields'])
+          # The nodes the record itself names are bound one by one, beside the twelve identity rows.
+          and len([row for row in model['treeFields'] if row.startswith('link ')]) >= 4
           and model['comparisonEqual'] == ['true'] * 4
-          and model['assetEqual'] == ['true'] * len(pose['model_resource']['assets']), model['treeFields'])
-    # What the placement route says about itself is shown as stated: the bundle content is identity-bound to
-    # the record, but the route is still the live-native one, because no Episode-scoped manifest exists yet.
-    scene_envelope = await read_direct(page, '/api/v1/mobilecar/scene')
-    report['real']['tree_source'] = {'data_source': scene_envelope.get('data_source'), 'world_pose_semantics': scene_envelope.get('world_pose_semantics'),
-                                     'runtime_identity': scene_envelope.get('runtime_identity'), 'shown_on_pane': model['modelTreeSource']}
-    check('the pane states the placement route in that route’s own words instead of claiming an Episode-scoped manifest',
-          model['modelTreeSource'] == scene_envelope['data_source']
-          and f"data_source={scene_envelope['data_source']}" in model['modelStage']
-          and 'Episode 作用域的静态 manifest 尚未发布' in model['modelStage']
-          and scene_envelope['world_pose_semantics'] == 'compiled_initial_layout_not_live_object_state'
-          and (scene_envelope.get('runtime_identity') or {}).get('episode_id') != a.complete_episode, report['real']['tree_source'])
+          and model['assetShas'] == [asset['sha256'] for asset in pose['model_resource']['assets']],
+          {'fields': model['treeFields'], 'shas': model['assetShas'][:2]})
+    # The tree now arrives inside this Episode's own robot-state answer. A direct GET with the same flag is
+    # the reference for what the pane printed, and the live scene route is not read at all.
+    tree_pose = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/robot-state',
+                                  {'run_id': a.complete_run, 'sample_id': first['sample_id'], 'include_model_tree': 'true'})
+    real_tree = tree_pose['model_resource']['model_tree']
+    report['real']['tree_source'] = {
+        'authority': real_tree['authority'], 'live_native_scene_proxied': real_tree['live_native_scene_proxied'],
+        'requested': real_tree['requested'], 'included': real_tree['included'], 'counts': real_tree['counts'],
+        'link_names': [link['name'] for link in real_tree['links'][:3]], 'world_link_names': [link['name'] for link in real_tree['world_links']],
+        'world_semantics': real_tree['semantics']['world_links'], 'caching': real_tree['caching'],
+        'shown_on_pane': [model['modelTreeSource'], model['modelTreeProxied'], model['modelTreeContentIdentity'], model['modelTreeWorldSemantics']],
+        'live_route_reads_in_this_episode': live_reads_in_episode}
+    check('the placement tree comes from this Episode robot-state alone, in the reader’s own words, with no live-scene fallback',
+          model['modelTreeSource'] == real_tree['authority'] == TREE_AUTHORITY
+          and real_tree['requested'] is True and real_tree['included'] is True
+          and real_tree['live_native_scene_proxied'] is False and model['modelTreeProxied'] == 'false'
+          and model['modelTreeContentIdentity'] == tree_pose['model_resource']['content_identity_sha256'] == real_tree['content_identity']['content_identity_sha256']
+          and model['modelTreeWorldSemantics'] == real_tree['semantics']['world_links'] == TREE_WORLD_SEMANTICS
+          and model['modelTreeFallback'] == 'none' and 'include_model_tree' in model['modelStage']
+          and real_tree['counts']['links'] == len(real_tree['links']) == tree_pose['model_resource']['link_count']
+          and live_reads_in_episode['scene'] == [], report['real']['tree_source'])
+    # The opt-in is the reader's own shape: without the flag there is no tree key at all, and the rest of
+    # the answer is the same frame. That is why the pane may cache the tree and must not cache the answer.
+    default_bytes, tree_bytes = len(json.dumps(pose, sort_keys=True)), len(json.dumps(tree_pose, sort_keys=True))
+    report['real']['tree_payload_sizes'] = {'without_flag': default_bytes, 'with_flag': tree_bytes}
+    check('the default answer carries no model_tree while the flagged answer does, and the frame content agrees',
+          'model_tree' not in pose['model_resource'] and 'model_tree' in tree_pose['model_resource']
+          and pose['model_resource']['content_identity_sha256'] == tree_pose['model_resource']['content_identity_sha256']
+          and pose['state']['recorded_payload'] == tree_pose['state']['recorded_payload']
+          and tree_bytes > default_bytes + 50000, report['real']['tree_payload_sizes'])
 
     # ---- real multi-frame pose linkage: the picture must follow the record, frame by frame ----
     distinct, seen_values = [], set()
@@ -677,10 +734,13 @@ async def real_flow(page):
     await wait_model(page, 'ready')
     check('the run manifest and the frozen bundle agree on all four identity fields',
           model['comparisonEqual'] == ['true'] * 4 and all(row['equal'] for row in pose['model_resource']['comparison'].values()), model['comparisonEqual'])
-    check('every mesh asset of the bundle is present in the history manifest with an equal digest',
-          model['assetEqual'] == ['true'] * len(pose['model_resource']['assets'])
-          and len(model['assetIds']) == len(pose['model_resource']['assets']) == 23
-          and await attr(page, '[data-asset-equal-count]', 'data-asset-equal-count') == '23', (len(model['assetIds']), len(pose['model_resource']['assets'])))
+    check('every declared asset is listed with the record’s own digest, and the tree’s references resolve against it',
+          len(model['assetIds']) == len(pose['model_resource']['assets']) == 23
+          and model['assetShas'] == [asset['sha256'] for asset in pose['model_resource']['assets']]
+          and model['assetReferencedCount'] == '22' and model['assetTotal'] == '23'
+          and model['assetReferenced'].count('true') == 22
+          and model['assetReferenced'][model['assetIds'].index('imu_link')] == 'false'
+          and 'imu_link' in model['modelText'], (model['assetReferencedCount'], model['assetTotal']))
     check('the reference canvas belongs to the model pane and carries no live control surface',
           model['canvas'] >= 1 and model['modelCanvas'] == model['canvas'] and model['controlSurface'] == 0
           and await attr(page, '[data-model-pane]', 'data-model-live-poll') == 'off'
@@ -785,21 +845,21 @@ async def real_flow(page):
           cleared['windowBase'] == 'null' and cleared['contextSample'] == 'none' and cleared['pageKind'] == 'frames'
           and len(cleared['rowSamples']) == 5 and cleared['windowFrom'] == 'null' and cleared['windowTo'] == 'null', cleared['windowBase'])
 
-    # The census of the whole stepping session: the tree belongs to the Episode's content identity, so
-    # all these frame changes must arrive as pose traffic only — no second placement read.
+    # The census of the whole stepping session: the tree belongs to the Episode's content identity, so all
+    # these frame changes must arrive as pose traffic only — no second tree fetch, no live-route read.
     stepping = await page_attrs(page)
-    census = {'tree_reads_since_stepping': static_tree_reads(frame_mark),
-              'tree_reads_for_this_episode': assembly_reads,
+    census = {'tree_fetches_since_stepping': tree_fetch_reads(frame_mark),
+              'tree_fetches_for_this_episode': assembly_reads,
               'pane_tree_reads': stepping['modelTreeReads'], 'pane_tree_read_episode': stepping['modelTreeReadEpisode'],
               'frames': frame_reads_of(frame_mark),
               'history_asset_bytes': len(history_asset_reads(frame_mark)),
-              'live_scene_asset_bytes': len([r for r in report['requests'][frame_mark:] if '/mobilecar/scene/assets/' in urlsplit(r['url']).path])}
+              'live_scene_reads': live_scene_reads(episode_mark), 'live_monitor_reads': live_monitor_reads(episode_mark)}
     report['real']['static_tree_census'] = census
-    check('the fixed tree is read once for the Episode identity and never again per frame',
-          census['tree_reads_since_stepping'] == [] and assembly_reads == 1
+    check('the fixed tree is fetched once for the Episode identity and never again per frame',
+          census['tree_fetches_since_stepping'] == [] and assembly_reads == 1
           and stepping['modelTreeReads'] == '1' and stepping['modelTreeReadEpisode'] == a.complete_episode
           and len(census['frames']['samples']) >= 5 and census['frames']['poses'] >= 5
-          and census['history_asset_bytes'] >= 1 and census['live_scene_asset_bytes'] == 0, census)
+          and census['history_asset_bytes'] >= 1 and census['live_scene_reads'] == [], census)
 
     # The FAILED / INCOMPLETE record.
     failed = await read_direct(page, f'/api/v1/episodes/{a.failed_episode}/frames', {'run_id': a.failed_run, 'limit': 5, 'offset': 0})
@@ -808,11 +868,11 @@ async def real_flow(page):
     await wait_asset_settled(page)
     await wait_model(page, 'ready')
     switched = await page_attrs(page)
-    check('a different Episode re-reads the placement tree exactly once, not once per frame of it',
-          static_tree_reads(switch_mark) == ['/api/v1/mobilecar/scene']
+    check('a different Episode re-fetches the tree exactly once, inside its own robot-state read, not per frame',
+          len(tree_fetch_reads(switch_mark)) == 1 and live_scene_reads(switch_mark) == []
           and switched['modelEpisode'] == a.failed_episode
           and switched['modelTreeReads'] == '1' and switched['modelTreeReadEpisode'] == a.failed_episode,
-          {'reads': static_tree_reads(switch_mark), 'pane': [switched['modelTreeReads'], switched['modelTreeReadEpisode']],
+          {'fetches': tree_fetch_reads(switch_mark), 'pane': [switched['modelTreeReads'], switched['modelTreeReadEpisode']],
            'poses': frame_reads_of(switch_mark)['poses']})
     view = await page_attrs(page)
     check('the incomplete record’s frames are read as the reader returns them',
@@ -853,7 +913,8 @@ async def real_flow(page):
         'fk_verdict': (partial_pose.get('tcp_kinematic_cross_check') or {}).get('verdict'),
         'bundle_sha256': (partial_pose.get('model_resource') or {}).get('bundle_sha256'),
         'content_identity_sha256': (partial_pose.get('model_resource') or {}).get('content_identity_sha256'),
-        'tree_reads_on_switch': static_tree_reads(partial_mark), 'pane_tree_reads': pmodel['modelTreeReads'],
+        'tree_fetches_on_switch': tree_fetch_reads(partial_mark), 'pane_tree_reads': pmodel['modelTreeReads'],
+        'live_scene_reads_on_switch': live_scene_reads(partial_mark), 'live_monitor_reads_on_switch': live_monitor_reads(partial_mark),
         'driven_joints': pmodel['modelJoints'], 'base_applied': pmodel['modelBase'], 'tcp_applied': pmodel['modelTcp'],
         'withheld': int(pmodel['modelWithheld']), 'value_rows': pmodel['valueNames'], 'motion_rows': pmodel['motionNames'],
         'tree_binding_equal': pmodel['treeEqual'],
@@ -874,12 +935,13 @@ async def real_flow(page):
           and partial_pose['state']['recorded_payload'] is None
           and all(status != 'verified' for _, status in report['real']['partial_archive']['mapping'][:5]),
           (pmodel['modelDrive'], pmodel['modelStage']))
-    check('真实第二档：这份档案的静态树同样按内容身份绑定，并按自己的 Episode 身份恰好重读一次',
-          static_tree_reads(partial_mark) == ['/api/v1/mobilecar/scene']
+    check('真实第二档：这份档案的静态树同样按内容身份绑定，并按自己的 Episode 身份恰好重取一次',
+          len(tree_fetch_reads(partial_mark)) == 1 and live_scene_reads(partial_mark) == []
           and pmodel['modelTreeReads'] == '1' and pmodel['modelTreeReadEpisode'] == a.partial_episode
           and set(pmodel['treeEqual']) == {'true'} and pmodel['modelCanvas'] == 1
-          and pmodel['modelTreeSource'] == 'live_native_http_with_verified_compiled_geometry',
-          {'reads': static_tree_reads(partial_mark), 'equal': pmodel['treeEqual'], 'canvas': pmodel['modelCanvas']})
+          and pmodel['modelTreeSource'] == TREE_AUTHORITY and pmodel['modelTreeProxied'] == 'false'
+          and pmodel['modelTreeContentIdentity'] == (partial_pose['model_resource']['content_identity_sha256'] or 'null'),
+          {'fetches': tree_fetch_reads(partial_mark), 'equal': pmodel['treeEqual'], 'canvas': pmodel['modelCanvas']})
     await page.screenshot(path=str(a.output / 'pose-second-archive-no-drive.png'), full_page=False)
 
 
@@ -1055,43 +1117,69 @@ def frames_payload(episode, frames, **patch):
     return base
 
 
-def geometry_payload(content_identity=CONTENT_ID, bundle_sha=BUNDLE_ID, arm_order=None, world_link_count=1):
-    """The frozen placement tree the pane assembles from, with the identity fields the record is bound by.
+def tree_payload(content_identity=CONTENT_ID, arm_order=None, mode='ok'):
+    """The `model_resource.model_tree` the M1.5f reader puts inside this Episode's own robot-state answer:
+    the frozen compiled placement tree, carrying the reader's own authority, semantics and counts.
 
     `arm_order` and `content_identity` let a synthetic case keep every mesh digest identical while the
-    tree itself differs — the case mesh digests alone cannot catch."""
+    tree itself differs — which is exactly what mesh digests alone cannot catch. `mode` answers the way
+    the reader does when it refuses to give a tree (`refused`: no links, `links_are_substituted=false`,
+    reason named) or when the tree claims live object state instead of the compiled layout (`live`).
+
+    The record and this tree are two views of one compiled content: 7 links (base, five arm links, the
+    fixed TCP parent body), two world links, one mesh asset referenced by the five arm geoms."""
     order = arm_order or ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-    links = [{'name': 'base_link', 'parent_name': None, 'joint_name': 'base_free', 'joint_type': 'free', 'joint_axis': [0.0, 0.0, 1.0],
-              'local_transform': {'position_m': [0.0, 0.0, 0.055], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-              'geoms': [{'name': 'base_vis', 'geom_type': 'box', 'size_m': [0.3, 0.2, 0.08],
-                         'local_transform': {'position_m': [0.0, 0.0, 0.0], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                         'rgba': [0.3, 0.4, 0.5, 1.0], 'mesh_asset_id': None, 'collision': False, 'group': 0}]}]
+    at = lambda x, y, z: {'position_m': [x, y, z], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]}
+
+    def geom(kind, name, mesh=None, size=None, rgba=None):
+        return {'name': name, 'geom_type': kind, 'size_m': size or [0.0, 0.0, 0.0], 'local_transform': at(0.0, 0.0, 0.0),
+                'rgba': rgba or [0.5, 0.5, 0.5, 1.0], 'mesh_asset_id': mesh, 'collision': False, 'group': 0,
+                'contype': 1, 'conaffinity': 1}
+
+    links = [{'name': 'base_link', 'parent_name': None, 'joint_name': 'base_free', 'joint_type': 'free',
+              'joint_axis': [0.0, 0.0, 1.0], 'local_transform': at(0.0, 0.0, 0.055),
+              'geoms': [geom('box', 'base_vis', size=[0.3, 0.2, 0.08], rgba=[0.3, 0.4, 0.5, 1.0])]}]
     parent = 'base_link'
-    for index, joint in enumerate(order):
-        links.append({'name': f'{joint}_link', 'parent_name': parent, 'joint_name': joint, 'joint_type': 'hinge', 'joint_axis': [0.0, 0.0, 1.0],
-                      'local_transform': {'position_m': [0.0, 0.0, 0.1], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                      'geoms': [{'name': f'{joint}_mesh', 'geom_type': 'mesh', 'size_m': [1.0, 1.0, 1.0],
-                                 'local_transform': {'position_m': [0.0, 0.0, 0.0], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                                 'rgba': [0.6, 0.2, 0.2, 1.0], 'mesh_asset_id': 'link1', 'collision': False, 'group': 0}]})
+    for joint in order:
+        links.append({'name': f'{joint}_link', 'parent_name': parent, 'joint_name': joint, 'joint_type': 'hinge',
+                      'joint_axis': [0.0, 0.0, 1.0], 'local_transform': at(0.0, 0.0, 0.1),
+                      'geoms': [geom('mesh', f'{joint}_mesh', mesh='link1', size=[1.0, 1.0, 1.0], rgba=[0.6, 0.2, 0.2, 1.0])]})
         parent = f'{joint}_link'
-    world_links = [{'name': name, 'parent_name': None, 'joint_name': None, 'joint_type': 'fixed', 'joint_axis': [0.0, 0.0, 1.0],
-                    'local_transform': {'position_m': [0.4, 0.0, 0.03], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                    'geoms': [{'name': f'{name}_vis', 'geom_type': 'box', 'size_m': [0.03, 0.03, 0.03],
-                               'local_transform': {'position_m': [0.0, 0.0, 0.0], 'orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                               'rgba': [0.9, 0.8, 0.1, 1.0], 'mesh_asset_id': None, 'collision': False, 'group': 0}]}
-                   for name in WORLD_LINK_NAMES[:world_link_count]]
-    return {'schema_version': GEOMETRY_SCHEMA, 'read_only': True, 'data_source': 'live_native_http_with_verified_compiled_geometry',
-            'world_pose_semantics': 'compiled_initial_layout_not_live_object_state', 'retrieved_at': '2026-01-01T00:00:00Z',
-            'resource_identity': {'contract_version': 'mobilecar-1.0', 'model_id': 'fixture_model', 'model_sha256': 'm' * 64, 'scene_id': 'fixture_scene'},
-            'runtime_identity': {'run_id': 'run_fixture', 'backend_generation': 1, 'episode_id': 'episode_fixture'},
-            'geometry_binding': {'bundle_sha256': bundle_sha, 'content_identity_sha256': content_identity,
-                                 'exported_runtime_identity': {'run_id': 'run_fixture', 'backend_generation': 1, 'episode_id': 'episode_fixture'}},
-            'geometry_provenance': {'model_inputs_sha256': MODEL_INPUTS_ID, 'compiled_scene_sha256': COMPILED_ID, 'compiler': 'MuJoCo', 'compiler_version': '3.1.6'},
-            'data': {'contract_version': 'mobilecar-1.0', 'model_id': 'fixture_model', 'model_sha256': 'm' * 64, 'scene_id': 'fixture_scene',
-                     'camera_ids': ['rgbd'], 'tcp_site': 'grasp_tcp', 'source': 'fixture', 'links': links, 'world_links': world_links,
-                     'mesh_assets': [{'asset_id': 'link1', 'uri': f'/api/v1/mobilecar/scene/assets/link1?sha256={STL_SHA}', 'sha256': STL_SHA,
-                                      'media_type': 'model/stl', 'coordinate_space': 'mujoco_compiled_mesh', 'units': 'm',
-                                      'mesh_preprocessing_applied': True, 'source_sha256': 's' * 64, 'source_mesh_name': 'link1.stl'}]}}
+    links.append({'name': 'guide_rod_link', 'parent_name': parent, 'joint_name': 'guide_rod_joint', 'joint_type': 'fixed',
+                  'joint_axis': [0.0, 0.0, 1.0], 'local_transform': at(0.0, 0.0, 0.05),
+                  'geoms': [geom('box', 'guide_vis', size=[0.02, 0.02, 0.05], rgba=[0.7, 0.7, 0.2, 1.0])]})
+    # The joints the record names outside the arm too: the gripper slides and one wheel hinge. The tree has
+    # to carry them, or the node-by-node binding is right to refuse the fixture the same way it refuses a
+    # foreign tree.
+    for jaw in ['left_jaw_joint', 'right_jaw_joint']:
+        links.append({'name': jaw, 'parent_name': 'guide_rod_link', 'joint_name': jaw, 'joint_type': 'slide',
+                      'joint_axis': [0.0, 1.0, 0.0], 'local_transform': at(0.0, 0.0, 0.02),
+                      'geoms': [geom('box', f'{jaw}_vis', size=[0.01, 0.01, 0.03], rgba=[0.2, 0.6, 0.2, 1.0])]})
+    links.append({'name': 'front_left_wheel', 'parent_name': 'base_link', 'joint_name': 'front_left_joint', 'joint_type': 'hinge',
+                  'joint_axis': [0.0, 1.0, 0.0], 'local_transform': at(0.2, 0.12, -0.02),
+                  'geoms': [geom('cylinder', 'front_left_wheel_vis', size=[0.03, 0.02, 0.0], rgba=[0.1, 0.1, 0.1, 1.0])]})
+    worlds = [{'name': name, 'parent_name': None, 'joint_name': None, 'joint_type': 'fixed', 'joint_axis': [0.0, 0.0, 1.0],
+               'local_transform': at(0.4, 0.0, 0.03),
+               'geoms': [geom('box', f'{name}_vis', size=[0.03, 0.03, 0.03], rgba=[0.9, 0.8, 0.1, 1.0])]} for name in WORLD_LINK_NAMES]
+    semantics = {'world_links': 'live_native_object_state_not_compiled_layout' if mode == 'live' else TREE_WORLD_SEMANTICS,
+                 'world_links_are_not_recorded_object_positions': True, 'is_recorded_state': False}
+    if mode == 'refused':
+        return {'requested': True, 'included': False, 'reason': 'history_model_identity_mismatch', 'links_are_substituted': False,
+                'authority': TREE_AUTHORITY, 'live_native_scene_proxied': False, 'semantics': semantics,
+                'note': '该 Episode 的模型身份与冻结 bundle 不符：不给树，也不给任何替代内容'}
+    geoms = sum(len(link['geoms']) for link in links + worlds)
+    mesh_geoms = sum(1 for link in links + worlds for item in link['geoms'] if item['mesh_asset_id'])
+    return {'requested': True, 'included': True, 'authority': TREE_AUTHORITY, 'live_native_scene_proxied': False,
+            'links': links, 'world_links': worlds,
+            'counts': {'links': len(links), 'world_links': len(worlds), 'geoms': geoms, 'mesh_geoms': mesh_geoms},
+            'content_identity': {'bundle_sha256': BUNDLE_ID, 'content_identity_sha256': content_identity,
+                                 'model_inputs_sha256': MODEL_INPUTS_ID, 'compiled_scene_sha256': COMPILED_ID},
+            'caching': {'identical_for_every_frame_of_this_bundle': True, 'response_is_dynamic': True,
+                        'fetch_rule': '按 content_identity_sha256 首次或内容变化时取一次，之后的逐帧请求省略 include_model_tree',
+                        'model_content_etag_applies_to': 'GET /api/v1/episodes/{episode_id}/model/assets/{asset_id} only'},
+            'semantics': semantics,
+            'mesh_bytes': 'geoms[].mesh_asset_id 只对 model_resource.assets[] 解析；字节只走 Episode 资产路由',
+            'summary_views_still_on_model_resource': True}
 
 
 def mapping_fixture(arm_status='partially_verified', mode='legacy'):
@@ -1174,7 +1262,7 @@ def part_readiness_fixture(tcp_position, arm_count=5):
                                                 'pose_input_required': True, 'frontend_rule': f'rule for {capability}', 'gaps': [], **extra}
     return {'part_readiness': [
         part('fixed_model_reference_assembly', 'ready', pose_input_required=False,
-             inputs_available={'identity': 'match', 'asset_count': 1, 'link_count': 6,
+             inputs_available={'identity': 'match', 'asset_count': 1, 'link_count': 10,
                                'asset_routes': 'GET /api/v1/episodes/{episode_id}/model/assets/{asset_id}'},
              frontend_rule='the frozen model may be assembled and shown for any frame of this Episode once the identity matches; a whole-robot pose gap never blocks this assembly'),
         part('arm_local_pose', 'ready_with_caveats',
@@ -1227,7 +1315,9 @@ def fk_fixture(tcp_position, supported=('recorded_pose_is_base_body_world_pose',
                             'computed_tcp_position_m': [tcp_position[0], tcp_position[1], tcp_position[2] + 0.055], 'abs_error_m': 0.0556, 'verdict': 'inconsistent'}]}
 
 
-def pose_payload(episode, sample, mode='m15e', **patch):
+def pose_payload(episode, sample, mode='m15e', include_tree=None, scene=None, **patch):
+    """The reader's answer for one frame. The static tree only appears when the request asked for it
+    (`include_model_tree=true`), which is what makes the pane's fetch rule observable in this suite."""
     value = {'schema_version': POSE_SCHEMA, 'read_only': True, 'source': SOURCE_FIXTURE, 'retrieved_at': '2026-01-01T00:00:00Z',
              'identity': {'run_id': 'run_a', 'episode_id': episode, 'recorded_run_manifest': {'contract_version': 'mobilecar-1.0', 'model_sha256': 'm' * 64},
                           'identity_source': 'the run manifest the recorder itself wrote, copied verbatim'},
@@ -1258,10 +1348,10 @@ def pose_payload(episode, sample, mode='m15e', **patch):
                                                                   'scene_id': {'recorded': 'fixture_scene', 'bundle': 'fixture_scene', 'equal': True}},
                                 'bundle_sha256': BUNDLE_ID, 'content_identity_sha256': CONTENT_ID, 'compiler': {'name': 'MuJoCo', 'version': '3.1.6'},
                                 'model_inputs_sha256': MODEL_INPUTS_ID, 'compiled_scene_sha256': COMPILED_ID,
-                                'link_count': 6, 'tcp_site': 'grasp_tcp', 'camera_ids': ['rgbd'],
+                                'link_count': 10, 'tcp_site': 'grasp_tcp', 'camera_ids': ['rgbd'],
                                 'root_joint': {'name': 'base_link', 'parent_name': None, 'joint_name': 'base_free', 'joint_type': 'free',
                                                'joint_axis': [0.0, 0.0, 1.0], 'local_position_m': [0.0, 0.0, 0.055], 'local_orientation_xyzw': [0.0, 0.0, 0.0, 1.0]},
-                                'tcp_parent_body_view': {'name': 'joint5_link', 'joint_type': 'fixed'},
+                                'tcp_parent_body_view': {'name': 'guide_rod_link', 'joint_type': 'fixed'},
                                 'world_links': [{'name': name, 'geom_types': ['box']} for name in WORLD_LINK_NAMES],
                                 'link_frames': "each link's local_transform is the model body offset relative to its parent body",
                                 'arm_hinge_joints': ['joint1', 'joint2', 'joint3', 'joint4', 'joint5'], 'gripper_slide_joints': ['left_jaw_joint', 'right_jaw_joint'],
@@ -1306,6 +1396,12 @@ def pose_payload(episode, sample, mode='m15e', **patch):
                                          'parts_ready': ['fixed_model_reference_assembly'], 'parts_conditional': ['gripper_visual_appearance'],
                                          'parts_blocked': ['tcp_orientation_frame', 'camera_view_from_record', 'dynamic_scene_objects_from_record'],
                                          'kinematic_agreement': 'consistent'}})
+    variant = dict(SCENE) if scene is None else dict(scene)
+    asked = ASK['tree'] if include_tree is None else include_tree
+    value['model_resource']['content_identity_sha256'] = variant['outer_content_identity']
+    if asked:
+        value['model_resource']['model_tree'] = tree_payload(content_identity=variant['content_identity'],
+                                                            arm_order=variant['arm_order'], mode=variant['mode'])
     value.update(patch)
     return value
 
@@ -1353,25 +1449,30 @@ def records_payload(episode, stream, records, **patch):
 
 
 SLOW = {'frame': 'idle', 'pose': 'idle'}
+# Whether the robot-state request asked for the static tree; the handler sets it from the query string, so
+# the fixture answers exactly what was asked and a per-frame pose read cannot smuggle a tree in.
+ASK = {'tree': False}
 SYNTH_EPISODES = ['episode_ok', 'episode_no_frames', 'episode_bad_frame_schema', 'episode_bad_sample', 'episode_no_time_bases',
                   'episode_media_gaps', 'episode_state_missing', 'episode_ambiguous', 'episode_state_ambiguous',
                   'episode_pose_verified', 'episode_pose_identity_mismatch', 'episode_pose_asset_mismatch',
                   'episode_pose_missing', 'episode_pose_bad_schema', 'episode_pose_late', 'episode_asset_conflict',
                   'episode_no_part_readiness', 'episode_zero_angles', 'episode_no_world_pose_convention',
-                  'episode_tree_identity', 'episode_link_order_swap', 'episode_pose_order_swap', 'episode_no_sim_keys']
-# The placement tree is one read per Episode and carries no episode in its URL, so a case that needs a
-# different tree sets this explicitly before it switches Episodes — no ordering race inside the fixture.
-SCENE = {'content_identity': CONTENT_ID, 'arm_order': None, 'mode': 'ok'}
+                  'episode_tree_identity', 'episode_link_order_swap', 'episode_pose_order_swap', 'episode_no_sim_keys',
+                  'episode_tree_refused', 'episode_content_move', 'episode_live_tree']
+# The tree the reader answers with, kept separate from the identity the record's outer fields declare: that
+# is what lets one case prove the binding catches a foreign tree rather than a missing key.
+SCENE = {'content_identity': CONTENT_ID, 'outer_content_identity': CONTENT_ID, 'arm_order': None, 'mode': 'ok'}
 # The nine capabilities, in the order the reader lists them on 18970.
 PART_CAPS = ['fixed_model_reference_assembly', 'arm_local_pose', 'base_pose_placement', 'gripper_visual_appearance', 'tcp_position_marker',
              'tcp_orientation_frame', 'camera_view_from_record', 'dynamic_scene_objects_from_record', 'wheel_pose_from_record']
 
 
-def set_scene_variant(content_identity=CONTENT_ID, arm_order=None, mode='ok'):
-    """`mode` drives how the placement-tree route answers: 'ok' serves the frozen bundle, 'unavailable'
-    refuses it the way a candidate without a loaded bundle does, 'live' answers with a live-object tree
-    that must never be drawn as history."""
+def set_scene_variant(content_identity=CONTENT_ID, outer_content_identity=CONTENT_ID, arm_order=None, mode='ok'):
+    """`mode` decides how the in-answer tree reads: 'ok' gives the frozen tree, 'refused' answers the way a
+    candidate whose model identity does not match does (`included=false`, no links, `links_are_substituted
+    =false`), and 'live' gives a tree declaring live object state instead of the compiled layout."""
     SCENE['content_identity'] = content_identity
+    SCENE['outer_content_identity'] = outer_content_identity
     SCENE['arm_order'] = arm_order
     SCENE['mode'] = mode
 
@@ -1428,6 +1529,19 @@ async def synthetic_handler(route):
             await asyncio.sleep(2.4)
             SLOW['pose'] = 'done'
         sample = (query.get('sample_id') or [''])[0]
+        ASK['tree'] = (query.get('include_model_tree') or ['false'])[0] == 'true'
+        if episode == 'episode_tree_refused':
+            # The reader's own refusal: it answers 200 with requested/included=false and no links at all.
+            await route.fulfill(json=pose_payload(episode, sample, scene={**SCENE, 'mode': 'refused'})); return
+        if episode == 'episode_content_move':
+            # The content identity of this Episode's compiled content moves after the first frame: the
+            # pane must drop the cached tree and re-fetch it once, not draw the old tree under new bytes.
+            payload = pose_payload(episode, sample)
+            if sample == 'rgbd_1':
+                payload['model_resource']['content_identity_sha256'] = 'e' * 64
+                moved = payload['model_resource'].get('model_tree')
+                if moved: moved['content_identity']['content_identity_sha256'] = 'e' * 64
+            await route.fulfill(json=payload); return
         if episode == 'episode_ok' and sample == 'rgbd_2':
             # A deliberately slow answer for the frame the attribution check switches to, so "the old
             # pose is hidden while this frame is in flight" is an observable window, not a race.
@@ -1581,20 +1695,12 @@ async def synthetic_handler(route):
     await route.fulfill(status=404, content_type='text/html', body=REFUSAL)
 
 
-async def scene_handler(route):
-    """The placement tree is a platform-side read; in synthetic mode it is a fixture too, so this suite
-    never needs a live robot to exercise the assembly, the identity binding and the pose drive. The mode
-    also lets a case refuse the route or answer it with a live-object tree."""
-    if SCENE['mode'] == 'unavailable':
-        await route.fulfill(status=503, content_type='application/json',
-                            json={'detail': {'code': 'geometry_bundle_unavailable',
-                                             'message': '该候选没有加载冻结 geometry bundle：没有历史模型资产可读'}})
-        return
-    envelope = geometry_payload(content_identity=SCENE['content_identity'], arm_order=SCENE['arm_order'],
-                                world_link_count=len(WORLD_LINK_NAMES))
-    if SCENE['mode'] == 'live':
-        envelope['world_pose_semantics'] = 'live_native_object_state_not_compiled_layout'
-    await route.fulfill(json=envelope)
+async def live_refusal_handler(route):
+    """The live native routes are refused outright in synthetic mode. The assembly still has to work: with
+    a fresh page and no warm cache, that is the proof the history face does not depend on them."""
+    report['synthetic'].setdefault('refused_live_route_reads', []).append(urlsplit(route.request.url).path)
+    await route.fulfill(status=503, content_type='application/json',
+                        json={'detail': {'code': 'native_offline', 'message': '合成夹具拒绝在线路由：历史面不得依赖它', 'read_only': True}})
 
 
 async def synthetic_flow(page):
@@ -1617,18 +1723,27 @@ async def synthetic_flow(page):
           and len(view['corrections']) == len(CORRECTIONS)
           and all(line in ' '.join(view['corrections']) for line in CORRECTIONS), (view['simKeys'], view['corrections'][:1]))
     await wait_model(page, 'ready')
-    assembly_reads = len(static_tree_reads(episode_mark))
+    assembly_reads = len(tree_fetch_reads(episode_mark))
     frame_mark = len(report['requests'])
     model = await page_attrs(page)
-    check('the tree assembles from the frozen bundle with history bytes and a pose attributable to the frame',
+    check('the tree assembles from the in-answer frozen bundle with history bytes and a pose attributable to the frame',
           model['modelStatus'] == 'ready' and model['modelCanvas'] == 1 and model['modelAttribution'] == 'matched'
           and model['modelDisplayed'] == model['modelRequested'] and model['modelFramePose'] == 'true'
           and model['comparisonEqual'] == ['true'] * 4 and set(model['treeEqual']) == {'true'}
-          and '本帧历史姿态（按部件门控）' in model['modelText'], (model['modelAttribution'], model['treeFields']))
-    check('the pane names the placement route’s own data_source rather than an Episode-scoped manifest',
-          model['modelTreeSource'] == 'live_native_http_with_verified_compiled_geometry'
-          and 'data_source=live_native_http_with_verified_compiled_geometry' in model['modelStage']
-          and 'Episode 作用域的静态 manifest 尚未发布' in model['modelStage'], (model['modelTreeSource'], model['modelStage'][:200]))
+          and assembly_reads == 1 and bool(report['synthetic'].get('refused_live_route_reads'))
+          and '本帧历史姿态（按部件门控）' in model['modelText'],
+          {'fetches': assembly_reads, 'scene': live_scene_reads(episode_mark), 'monitor': live_monitor_reads(episode_mark), 'fields': model['treeFields']})
+    check('the pane names the tree’s own authority and semantics and declares no live-scene fallback',
+          model['modelTreeSource'] == TREE_AUTHORITY and model['modelTreeProxied'] == 'false'
+          and model['modelTreeContentIdentity'] == CONTENT_ID and model['modelTreeWorldSemantics'] == TREE_WORLD_SEMANTICS
+          and model['modelTreeFallback'] == 'none' and 'include_model_tree' in model['modelStage']
+          and '没有可用的历史静态树' not in model['modelStage'], (model['modelTreeSource'], model['modelStage'][:200]))
+    check('在线路由被夹具拒绝时历史装配仍成立：12 条身份行与逐节点行全等，网格字节只走历史端点',
+          len([row for row in model['treeFields'] if not row.startswith('link ')]) == 12
+          and len([row for row in model['treeFields'] if row.startswith('link ')]) >= 4
+          and model['assetReferencedCount'] == '1' and model['assetTotal'] == '1'
+          and model['assetReferenced'] == ['true'] and model['modelCanvas'] == 1,
+          {'fields': model['treeFields'], 'referenced': model['assetReferencedCount']})
     check('the readiness gate drives the arm, the chassis and the TCP point and withholds the rest by name',
           model['partCaps'] == PART_CAPS and model['partDrivable'] == ['true', 'true', 'true', 'false', 'true', 'false', 'false', 'false', 'false']
           and model['partStatuses'] == ['ready', 'ready_with_caveats', 'ready_with_caveats', 'conditional', 'ready_with_caveats', 'blocked', 'blocked', 'blocked', 'not_required']
@@ -1705,29 +1820,31 @@ async def synthetic_flow(page):
           and '没有跨帧运动覆盖证据' in landed['modelText'] and '不推断整条记录' in landed['modelText'],
           (landed['motionVisited'], landed['motionDistinct']))
 
-    # Census across frame steps, view switches, picks and a late-response switch. The fixture refuses the
-    # live workbench's own native read, so that path retries on this same route: the pane's own counter is
-    # the attributed measurement and the route window is only recorded.
+    # Census across frame steps, view switches, picks and a late-response switch. The live routes are
+    # refused by the fixture in this mode, so any read of one would show up here as a refusal.
     stepping = await page_attrs(page)
     census = {'pane_tree_reads': stepping['modelTreeReads'], 'pane_tree_read_episode': stepping['modelTreeReadEpisode'],
-              'route_tree_reads_before_stepping': assembly_reads,
-              'route_tree_reads_since_stepping': len(static_tree_reads(frame_mark)),
+              'tree_fetches_before_stepping': assembly_reads,
+              'tree_fetches_since_stepping': tree_fetch_reads(frame_mark),
               'frames': frame_reads_of(frame_mark),
-              'live_scene_asset_bytes': len([r for r in report['requests'][frame_mark:] if '/mobilecar/scene/assets/' in urlsplit(r['url']).path])}
+              'live_scene_reads': live_scene_reads(episode_mark), 'live_monitor_reads': live_monitor_reads(episode_mark),
+              'refused_live_route_reads': report['synthetic'].get('refused_live_route_reads', [])}
     report['synthetic']['static_tree_census'] = census
     check('the pane downloads the fixed tree once for its Episode identity and never again per frame',
           stepping['modelTreeReads'] == '1' and stepping['modelTreeReadEpisode'] == 'episode_ok'
+          and census['tree_fetches_since_stepping'] == [] and assembly_reads == 1
           and census['frames']['poses'] >= 2 and len(census['frames']['samples']) >= 2
-          and census['live_scene_asset_bytes'] == 0, census)
+          and len(census['tree_fetches_since_stepping']) == 0
+          and bool(census['refused_live_route_reads']), census)
 
     switch_reads = await open_episode_tree_reads(page, 'run_a', 'episode_pose_verified')
     report['synthetic']['episode_switch_tree_reads'] = switch_reads
     await wait_model(page, 'ready')
     switched = await page_attrs(page)
-    check('switching Episodes re-reads the placement tree once, under the new Episode identity',
-          switched['modelTreeReads'] == '1' and switched['modelTreeReadEpisode'] == 'episode_pose_verified'
+    check('switching Episodes re-fetches the tree once, inside the new Episode’s own robot-state read',
+          len(switch_reads) == 1 and switched['modelTreeReads'] == '1' and switched['modelTreeReadEpisode'] == 'episode_pose_verified'
           and switched['modelEpisode'] == 'episode_pose_verified',
-          {'pane': [switched['modelTreeReads'], switched['modelTreeReadEpisode']], 'route': switch_reads})
+          {'pane': [switched['modelTreeReads'], switched['modelTreeReadEpisode']], 'fetches': switch_reads})
     check('换 Episode 会把运动覆盖观测重新起算，不混入上一个 Episode 的帧',
           switched['motionKey'].startswith('episode_pose_verified|') and switched['motionVisited'] == '1'
           and switched['motionNames'] == [] and switched['motionNoneRow'] == 1,
@@ -1770,42 +1887,70 @@ async def synthetic_flow(page):
     check('a tree whose content identity differs from the record is refused even though every mesh matches',
           identity['modelStatus'] == 'blocked' and '静态树与记录的内容身份不一致' in identity['modelStage']
           and 'content_identity_sha256' in identity['modelStage'] and identity['canvas'] == 0
-          and identity['assetEqual'] == ['true'] and 'false' in identity['treeEqual'], identity['modelStage'][:200])
+          and identity['assetReferencedCount'] == '1' and 'false' in identity['treeEqual']
+          and identity['modelTreeSource'] == TREE_AUTHORITY and identity['modelTreeFallback'] == 'none'
+          and bool(report['synthetic'].get('refused_live_route_reads')), identity['modelStage'][:200])
     set_scene_variant(arm_order=['joint2', 'joint1', 'joint3', 'joint4', 'joint5'])
     await open_episode(page, 'run_a', 'episode_link_order_swap')
     await wait_model(page, 'blocked')
     swapped = await page_attrs(page)
     check('the same meshes hung on a re-ordered joint chain are refused by the joint-name binding',
-          swapped['modelStatus'] == 'blocked' and 'arm_hinge_joints' in swapped['modelStage'] and swapped['canvas'] == 0, swapped['modelStage'][:200])
-    # The placement tree itself failing: a candidate without a loaded bundle, and a candidate whose tree
-    # is live object state rather than the compiled layout. Neither may leave a model on screen.
-    set_scene_variant(mode='unavailable')
-    await open_episode(page, 'run_a', 'episode_pose_verified')
-    await wait_model(page, 'failed')
-    no_tree = await page_attrs(page)
-    check('a refused placement tree fails the pane by code, with no canvas and nothing driven',
-          no_tree['modelStatus'] == 'failed' and 'geometry bundle 清单读取失败' in no_tree['modelStage']
-          and 'geometry_bundle_unavailable' in no_tree['modelStage'] and no_tree['canvas'] == 0 and no_tree['modelCanvas'] == 0
-          and no_tree['modelJoints'] == '0' and no_tree['modelBase'] == 'false' and no_tree['modelTcp'] == 'false'
-          and no_tree['modelFramePose'] == 'false' and no_tree['modelDisplayed'] == 'none'
-          and no_tree['valueNames'] == [] and no_tree['valueNoneRow'] == 1
-          and no_tree['motionVisited'] == '0' and no_tree['motionNoneRow'] == 1
-          and no_tree['modelTreeReads'] == '1' and no_tree['modelTreeReadEpisode'] == 'episode_pose_verified', no_tree['modelStage'][:200])
+          swapped['modelStatus'] == 'blocked' and 'arm_hinge_joints' in swapped['modelStage'] and swapped['canvas'] == 0,
+          swapped['modelStage'][:200])
+    # The tree itself refused, and the tree claiming live object state: neither may leave a model on screen,
+    # and neither is answered by reaching for the live scene route — which this mode refuses outright.
+    set_scene_variant()
+    await open_episode(page, 'run_a', 'episode_tree_refused')
+    await wait_model(page, 'blocked')
+    refused = await page_attrs(page)
+    check('a refused tree blocks the pane by the reader’s own words, with no canvas, no pose and no fallback',
+          refused['modelStatus'] == 'blocked' and '没有可用的历史静态树' in refused['modelStage']
+          and 'included=false' in refused['modelStage'] and 'history_model_identity_mismatch' in refused['modelStage']
+          and refused['canvas'] == 0 and refused['modelCanvas'] == 0 and refused['modelJoints'] == '0'
+          and refused['modelBase'] == 'false' and refused['modelTcp'] == 'false' and refused['modelTreeSource'] == 'none'
+          and refused['modelTreeContentIdentity'] == 'none' and refused['modelDisplayed'] == 'none'
+          and refused['valueNoneRow'] == 1 and refused['motionNoneRow'] == 1
+          and refused['modelTreeReads'] == '1' and refused['modelTreeReadEpisode'] == 'episode_tree_refused',
+          refused['modelStage'][:260])
     set_scene_variant(mode='live')
-    await open_episode(page, 'run_a', 'episode_zero_angles')
-    await wait_model(page, 'failed')
+    # A fresh source namespace: the cache is kept per namespace plus content identity, so
+    # this Episode acquires its own tree and the live-object claim is what the gate sees.
+    await open_episode(page, 'run_a', 'episode_live_tree')
+    await wait_model(page, 'blocked')
     live_tree = await page_attrs(page)
     check('a tree that says it carries live object state is refused as a history reference, not rendered',
-          live_tree['modelStatus'] == 'failed' and 'bundle 语义不是编译初始布局' in live_tree['modelStage']
-          and '不用它装配历史参考' in live_tree['modelStage'] and live_tree['canvas'] == 0
-          and live_tree['modelJoints'] == '0' and live_tree['modelTreeSource'] == 'none', live_tree['modelStage'][:200])
+          live_tree['modelStatus'] == 'blocked' and '没有可用的历史静态树' in live_tree['modelStage']
+          and 'semantics.world_links=live_native_object_state_not_compiled_layout' in live_tree['modelStage']
+          and live_tree['canvas'] == 0 and live_tree['modelJoints'] == '0' and live_tree['modelTreeSource'] == 'none'
+          and '不改读在线的 /api/v1/mobilecar/scene' in live_tree['modelStage'], live_tree['modelStage'][:260])
     set_scene_variant()
+    revisit_mark = len(report['requests'])
     await open_episode(page, 'run_a', 'episode_ok')
     await wait_model(page, 'ready')
     recovered = await page_attrs(page)
-    check('the same Episode assembles again once the route answers, so the failure was not sticky',
+    check('回访同一来源命名空间与内容身份的 Episode 直接沿用已核验的那棵树：装配恢复，且一条取树请求都不发',
           recovered['modelStatus'] == 'ready' and recovered['modelCanvas'] == 1 and recovered['modelJoints'] == '5'
-          and recovered['modelAttribution'] == 'matched' and recovered['modelTreeReads'] == '1', (recovered['modelStatus'], recovered['modelStage'][:160]))
+          and recovered['modelAttribution'] == 'matched' and recovered['modelTreeReads'] == '0'
+          and recovered['modelTreeReadEpisode'] == 'episode_ok' and tree_fetch_reads(revisit_mark) == []
+          and recovered['modelTreeContentIdentity'] == CONTENT_ID,
+          {'reads': [recovered['modelTreeReads'], recovered['modelTreeReadEpisode']], 'fetches': tree_fetch_reads(revisit_mark)})
+
+    # Content identity moving under one Episode: the cached tree is dropped and re-fetched exactly once,
+    # and the frames in between are never drawn with a tree that belongs to other bytes.
+    move_mark = len(report['requests'])
+    await open_episode(page, 'run_a', 'episode_content_move')
+    await wait_model(page, 'ready')
+    first_move = await page_attrs(page)
+    await page.locator('[data-frame-next]').click()
+    await wait_model(page, 'ready')
+    await page.wait_for_function("()=>(document.querySelector('[data-model-pane]')?.getAttribute('data-model-tree-content-identity') ?? '').startsWith('eeee')", timeout=40000)
+    moved = await page_attrs(page)
+    check('内容身份换了就重取一次树，而不是继续画旧身份的树',
+          first_move['modelTreeContentIdentity'] == CONTENT_ID and moved['modelTreeReads'] == '2'
+          and len(tree_fetch_reads(move_mark)) == 2 and moved['modelTreeContentIdentity'].startswith('eeee')
+          and set(moved['treeEqual']) == {'true'} and moved['modelStatus'] == 'ready'
+          and bool(report['synthetic'].get('refused_live_route_reads')),
+          {'reads': moved['modelTreeReads'], 'fetches': len(tree_fetch_reads(move_mark)), 'identity': moved['modelTreeContentIdentity']})
 
     await open_episode(page, 'run_a', 'episode_pose_identity_mismatch')
     await wait_model(page, 'blocked')
@@ -1814,15 +1959,26 @@ async def synthetic_flow(page):
           mismatch['modelStatus'] == 'blocked' and '模型身份不符' in mismatch['modelStage']
           and mismatch['canvas'] == 0 and 'false' in mismatch['comparisonEqual'], mismatch['modelStage'][:160])
     await open_episode(page, 'run_a', 'episode_pose_asset_mismatch')
-    await wait_model(page, 'blocked')
+    await wait_model(page, 'ready')
     asset_mismatch = await page_attrs(page)
-    check('an asset digest that differs from the frozen bundle blocks the assembly and names the asset',
-          asset_mismatch['modelStatus'] == 'blocked' and '资产摘要不一致' in asset_mismatch['modelStage']
-          and 'link1' in asset_mismatch['modelStage'] and asset_mismatch['assetEqual'] == ['false'] and asset_mismatch['canvas'] == 0,
-          asset_mismatch['modelStage'][:160])
+    # The declared digest no longer matches the content, so the reader refuses to emit bytes at all: the
+    # assembly (tree + identity) still stands, the mesh is named as failed, and nothing substitutes it.
+    await page.wait_for_selector('[data-model-asset-error]', timeout=40000)
+    error_text = await page.locator('[data-model-asset-error]').inner_text()
+    await page.locator('[data-model-inspect]').click()
+    failed_state = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+    report['synthetic']['asset_digest_refusal'] = {'declared': asset_mismatch['assetShas'], 'error': error_text[:300],
+                                                   'failures': failed_state['assetFailures']}
+    check('声明摘要对不上的资产由 reader 拒发字节：面板点名失败的网格，不从别处补一份几何',
+          asset_mismatch['assetShas'] == ['f' * 64] and asset_mismatch['assetReferenced'] == ['true']
+          and 'link1' in error_text and 'link1' in ' '.join(failed_state['assetFailures'])
+          and failed_state['pendingLoads'] == 0 and asset_mismatch['modelStatus'] == 'ready',
+          report['synthetic']['asset_digest_refusal'])
 
+    # 摘要被改的资产不再拦下装配（树与记录的内容身份仍全等）：拦截点在字节读取那一步，
+    # reader 先重算再决定给不给，所以装配照常 ready，点读取才拿到 409。
     await open_episode(page, 'run_a', 'episode_asset_conflict')
-    await wait_model(page, 'blocked')
+    await wait_model(page, 'ready')
     await page.locator('[data-asset-pick="link1"]').click()
     await page.wait_for_function("()=>(document.querySelector('[data-asset-row=\"link1\"]')?.getAttribute('data-asset-read') ?? '')==='failed'", timeout=30000)
     conflict = await attr(page, '[data-asset-row="link1"]', 'data-asset-detail')
@@ -2047,6 +2203,25 @@ async def boundary_checks(page):
         refused = await unknown.json()
         check('an unknown sample_id reaches the reader’s own 404 frame_not_found through the exact route',
               unknown.status == 404 and refused['detail']['code'] == 'frame_not_found', (unknown.status, refused))
+        # The new opt-in query parameter must ride the existing exact route: no new path, no widened
+        # allowlist. Comparing the two forwards proves the gateway passed the flag through, not stripped it.
+        plain = await page.request.get(a.url + f'/api/v1/episodes/{episode}/robot-state?run_id={a.complete_run}&sample_id={sample}')
+        flagged = await page.request.get(a.url + f'/api/v1/episodes/{episode}/robot-state?run_id={a.complete_run}&sample_id={sample}&include_model_tree=true')
+        plain_json, flagged_json = await plain.json(), await flagged.json()
+        report['real']['proxy_passthrough'] = {'plain_status': plain.status, 'flagged_status': flagged.status,
+                                               'plain_has_tree': 'model_tree' in plain_json['model_resource'],
+                                               'flagged_links': len(flagged_json['model_resource']['model_tree']['links']),
+                                               'flagged_world_links': len(flagged_json['model_resource']['model_tree']['world_links'])}
+        check('the existing robot-state route forwards include_model_tree without any allowlist change',
+              plain.status == flagged.status == 200 and 'model_tree' not in plain_json['model_resource']
+              and flagged_json['model_resource']['model_tree']['included'] is True
+              and len(flagged_json['model_resource']['model_tree']['links']) == flagged_json['model_resource']['link_count']
+              and len(flagged_json['model_resource']['model_tree']['world_links']) == len(flagged_json['model_resource']['world_links']),
+              report['real']['proxy_passthrough'])
+        bad_flag = await page.request.get(a.url + f'/api/v1/episodes/{episode}/robot-state?run_id={a.complete_run}&sample_id={sample}&include_model_tree=maybe')
+        check('a non-boolean tree flag is the reader’s own 422, so the pane’s literal "true" is the only shape it sends',
+              bad_flag.status == 422 and 'bool_parsing' in json.dumps(await bad_flag.json()),
+              (bad_flag.status, (await bad_flag.text())[:200]))
 
 
 async def main():
@@ -2058,7 +2233,9 @@ async def main():
         try:
             if a.mode == 'synthetic':
                 await page.route('**/api/v1/episodes**', synthetic_handler)
-                await page.route('**/api/v1/mobilecar/scene', scene_handler)
+                # The live native routes are refused here: a passing assembly on a fresh page with a cold
+                # cache is then proof of independence, not evidence of a pre-warmed tree.
+                await page.route('**/api/v1/mobilecar/**', live_refusal_handler)
             await open_history(page)
             # The app's own live viewport may load scene meshes while the shell boots; the isolation
             # claim below is about the history pane, so it is measured from the moment it opens.
