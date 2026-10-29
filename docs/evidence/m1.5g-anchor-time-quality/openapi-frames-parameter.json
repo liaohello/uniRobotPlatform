@@ -1,0 +1,147 @@
+{
+  "parameters": [
+    {
+      "name": "episode_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "title": "Episode Id"
+      }
+    },
+    {
+      "name": "run_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Run Id"
+      }
+    },
+    {
+      "name": "stream",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_-]{1,64}$",
+        "default": "rgbd",
+        "title": "Stream"
+      }
+    },
+    {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "type": "integer",
+        "maximum": 200,
+        "minimum": 1,
+        "default": 50,
+        "title": "Limit"
+      }
+    },
+    {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "type": "integer",
+        "minimum": 0,
+        "default": 0,
+        "title": "Offset"
+      }
+    },
+    {
+      "name": "time_base",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Time Base"
+      }
+    },
+    {
+      "name": "time_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Time From"
+      }
+    },
+    {
+      "name": "time_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Time To"
+      }
+    },
+    {
+      "name": "sample_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Sample Id"
+      }
+    },
+    {
+      "name": "include_time_quality",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "type": "boolean",
+        "default": false,
+        "title": "Include Time Quality"
+      }
+    }
+  ],
+  "episode_paths": [
+    "/api/v1/episodes",
+    "/api/v1/episodes/{episode_id}",
+    "/api/v1/episodes/{episode_id}/assets/{asset_path}",
+    "/api/v1/episodes/{episode_id}/frames",
+    "/api/v1/episodes/{episode_id}/model/assets/{asset_id}",
+    "/api/v1/episodes/{episode_id}/robot-state",
+    "/api/v1/episodes/{episode_id}/streams",
+    "/api/v1/episodes/{episode_id}/streams/{stream_id}/records"
+  ]
+}

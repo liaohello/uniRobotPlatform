@@ -1,0 +1,18 @@
+{
+  "status": 409,
+  "body": {
+    "detail": {
+      "code": "frame_sample_id_ambiguous",
+      "message": "more than one persisted anchor records this sample_id, so no single frame can be selected by it",
+      "read_only": true,
+      "episode_id": "episode_one",
+      "run_id": "run_aaa",
+      "sample_id": "rgbd_f1",
+      "first_matching_anchor_line_index": 0,
+      "next_matching_anchor_line_index": 2,
+      "no_first_match_was_assumed": true,
+      "state_is_not_taken_from_either_candidate": true,
+      "how_to_inspect": "GET /api/v1/episodes/{episode_id}/frames?include_time_quality=true lists every duplicate anchor position for this Episode"
+    }
+  }
+}

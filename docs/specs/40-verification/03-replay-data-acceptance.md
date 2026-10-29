@@ -29,6 +29,8 @@
 
 逐帧、循环、标注区间边界和对齐误差的具体阈值应在回放详细设计后补充；此目录尚未执行实际采集/回放验收。
 
+后端只读面已就"可执行到哪一步"给出可复现依据（不是本目录的验收通过）：TEST-REPLAY-001 中"按追加顺序逐帧展示"具备真实遍历证据（候选 18979：两页覆盖 303 锚点、无跳漏与重复消费），"按约定时间同步"（跨流）仍未证明、不得宣称通过；TEST-REPLAY-003 所需的"明确缺失"由 `time_quality` 的逐基计数与 `blocking_reasons`、`identity.duplicates[]`、以及重复 `sample_id` 时 `robot-state` 的 `frame_sample_id_ambiguous` 拒绝提供，插值与时差阈值仍属未定。见 [M1.5g 交付记录](../../backend-m1.5g-anchor-time-quality.md) 与 [S27](../90-governance/sources/S27-anchor-time-quality-playback.md)。
+
 ## 关联文档
 
 - [Replay & Annotation｜同步回放与标注](../10-frontend/04-replay-annotation/01-synchronized-playback.md)

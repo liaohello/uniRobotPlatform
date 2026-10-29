@@ -10,6 +10,14 @@
 
 ## V0.8｜2026-10-29
 
+### 2026-10-29 M1.5g 采集锚点时间质量与播放资格（记录时间播放的真实依据）
+
+- 新增来源 S27（单 Episode 采集锚点时间质量与播放资格实测）与决策 DEC-064（播放资格逐时间基、逐覆盖范围判定；A/B/C 三件事不可互推；缺时/非数值/相等/回退/截断各自的允许与拒绝；禁止默认帧率、浏览器补时与跨 RESET 连时钟；census 为 opt-in 且 `frame-link-2` 不升版；重复锚点 id 改为明确拒绝而非静默取第一条）。
+- [Episode/事件/标注契约](../30-contracts/03-episode-events-annotations.md)：帧关联小节新增 `include_time_quality` 与 `time_quality` 块字段定义（`coverage`/逐基 `time_bases`（含"首个-末个"与"最小-最大"分列、间隔统计、相等与回退计数、文件顺序是否等于值顺序）/`identity.duplicates[]` 的 `record_positions`/`recorder_counters`/`profile`/`playback_eligibility`/`not_proven`）与页级 `summary.anchors_with_repeated_sample_id_on_this_page`，写明"时间窗与 `sample_id` 只是筛选、页内 `line_index` 恒升序、census 不因窗口缩小范围"；新增 A/B/C 播放语义与异常规则、`implied_rate_hz_from_median_recorded_gap` 非声明速率声明，以及 `robot-state` 的 409 `frame_sample_id_ambiguous` **行为收紧**与迁移方式。[时间与坐标契约](../30-contracts/04-time-frames-units.md)追加同义约束段（禁止名义帧率/浏览器补时/跨 RESET 拼接，profile 名含 `5hz` 不算声明速率）；[回放与数据验收](../40-verification/03-replay-data-acceptance.md)标注 TEST-REPLAY-001 的"逐帧/追加顺序"部分已有真实遍历证据、"按约定时间同步"仍未证明，TEST-REPLAY-003 的"明确缺失"由 census 与拒绝语义支撑。
+- 实现：`backend/src/unirobot/frames.py`（`TIME_QUALITY_*` 常量、`_base_statistics()` 逐基统计、`_time_quality()` 有界普查与三模式资格、页级重复 id 计数、`include_time_quality` 参数）、`backend/src/unirobot/api.py`（帧路由参数透传）、`backend/src/unirobot/history_pose.py`（重复锚点 id 的 `frame_sample_id_ambiguous` 拒绝）；`tools/episode_history_check.py` 断言由 118 增至 130（本轮 12 项，含真实两页遍历 303 锚点无跳漏与"census 不改分页语义"）；`tests/test_frames.py` 新增 8 项隔离用例（opt-in/逐基测量/回退/相等/缺失/非数值/重复 id/截断）。
+- 服务器验证：候选 `m1w-20261029T155818Z-platform`（`127.0.0.1:18979`，PID 2738345，启动前端口实测空闲，独立 SQLite `frames-20261029T155818Z.sqlite3`，源码聚合 `707843426524d406…` 49 文件且与本地工作树全等，启动清单 sha256 `064a5bf0192798fa…`，重算↔清单 MATCH）读取检查 **130/130**、统一回归 **28/28**、冻结内聚焦 **63 passed**、全量 **191 passed / 3 项历史布局失败**（名称与基线同前）；71 条请求全为 GET、946 文件 `drift=[]`、`live_scene_reads_in_this_run=0`。真实 COMPLETE 记录 303 锚点/303 唯一 id/三基零缺失零非数值零相等零回退、A 与三基 B 合格、隐含 4.998/5.000/4.967 Hz 且锚点无声明速率字段；FAILED 记录 4 锚点同法测量（记录完整性属另一层）；census 8,733 B 对 200 帧页体 5,181,012 B。交付前先在运行同一棵 dev 树的 scratch 实例（18978）跑通 130/130，未产生半途 release；scratch 按命令行身份核对后停止。**18977 与其他既有服务保留未替换。**
+- 机器目录：补充来源 21 → 22 个，文档节点与 REQ 计数不变。"追加顺序播放可用""记录时间播放是否有资格（逐基、逐覆盖范围）""跨流同步仍未证明"是三句分开的话；本轮不做前端倍速/区间实现，不代表生产部署、正式 M1.5 或 M1 验收通过。
+
 ### 2026-10-29 M1.5f 历史完整静态模型树（解除前端逐 link 装配数据的外部依赖）
 
 - 新增来源 S26（历史完整静态模型树实测）与决策 DEC-063（逐 link 装配数据由既有 `robot-state` 的可选 `include_model_tree` 给出、默认兼容不升版、树复用 bundle 的 `Link`/`Geom` 序列化而非 `_link_view` 摘要、身份不符只拒给不替代、内容键取一次、动态响应不带内容 ETag、world 链是编译初态不是记录位姿）。

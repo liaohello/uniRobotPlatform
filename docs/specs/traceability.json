@@ -1553,6 +1553,11 @@
       "path": "90-governance/sources/S26-history-model-tree.md",
       "sha256": "55179e65d08bd7b8ae959d68a69183533fe31a165454883fe6bb4c4060b0713a",
       "kind": "current_user_history_model_tree_goal"
+    },
+    "S27": {
+      "path": "90-governance/sources/S27-anchor-time-quality-playback.md",
+      "sha256": "cf046fe94a4f4a899b81812ce015a8931a825c5dc5cd0d99206cb66506b463b1",
+      "kind": "current_user_anchor_time_quality_playback_goal"
     }
   },
   "visual_registry": "references/visual-assets.json"

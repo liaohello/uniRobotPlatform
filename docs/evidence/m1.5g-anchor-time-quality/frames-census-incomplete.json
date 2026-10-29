@@ -1,0 +1,270 @@
+{
+  "requested": true,
+  "coverage": {
+    "run_id": "run_1f6fb34853f94130aadedb8fa486705b",
+    "episode_id": "episode_879cf70489064a3b83bb15b5395a8341",
+    "stream_id": "rgbd",
+    "anchor_relative_path": "observations/persist.jsonl",
+    "anchors_in_this_scan": 4,
+    "unique_sample_ids": 4,
+    "rejected_anchors": {
+      "excluded_identity_mismatch": 0,
+      "excluded_stream_mismatch": 0,
+      "excluded_without_sample_id": 0
+    },
+    "anchor_lines": {
+      "lines_read": 4,
+      "blank_lines_skipped": 0,
+      "oversize_lines_skipped": 0,
+      "unparseable_lines_skipped": 0,
+      "non_object_lines_skipped": 0,
+      "prefiltered_lines_skipped": 0
+    },
+    "first_anchor_line_index": 0,
+    "last_anchor_line_index": 3,
+    "whole_anchor_file_scanned": true,
+    "anchor_limit": 4000,
+    "stopped_at_line_index": null,
+    "covers_whole_episode": true,
+    "not_a_whole_archive_sweep": true,
+    "scope_note": "this census re-reads one Episode's anchor file; a truncated scan or a windowed page supports no whole-episode or whole-archive claim",
+    "page_filter_context": {
+      "time_base": null,
+      "time_from": null,
+      "time_to": null,
+      "sample_id": null,
+      "offset": 0,
+      "limit": 50,
+      "returned": 4,
+      "note": "the census covers the anchors this Episode exposes in file order, not only the rows of this page"
+    }
+  },
+  "time_bases": {
+    "capture_backend_monotonic_s": {
+      "field": "capture_backend_monotonic_s",
+      "unit": "s",
+      "clock": "backend_monotonic",
+      "source_record": "persisted frame anchor in observations/persist.jsonl",
+      "anchors_scanned": 4,
+      "numeric_count": 4,
+      "missing_count": 0,
+      "missing_line_indexes": [],
+      "missing_line_indexes_truncated": false,
+      "non_numeric_count": 0,
+      "non_numeric_samples": [],
+      "non_numeric_samples_truncated": false,
+      "first_in_file_order": 427684.181757991,
+      "last_in_file_order": 427684.781410023,
+      "first_line_index": 0,
+      "last_line_index": 3,
+      "min_recorded_value": 427684.181757991,
+      "max_recorded_value": 427684.781410023,
+      "first_minus_last_s": -0.5996520319604315,
+      "recorded_gaps": {
+        "count": 3,
+        "min_s": 0.1817202650127001,
+        "max_s": 0.220060953986831,
+        "median_s": 0.19787081296090037,
+        "mean_s": 0.19988401065347716,
+        "total_s": 0.5996520319604315
+      },
+      "equal_adjacent_gaps": {
+        "count": 0,
+        "line_index_pairs": [],
+        "line_index_pairs_truncated": false
+      },
+      "backwards_gaps": {
+        "count": 0,
+        "steps": [],
+        "steps_truncated": false
+      },
+      "monotonic_non_decreasing_in_file_order": true,
+      "file_order_matches_value_order": true,
+      "description": "seconds, native backend monotonic clock at capture"
+    },
+    "capture_sim_time_s": {
+      "field": "capture_sim_time_s",
+      "unit": "s",
+      "clock": "sim",
+      "source_record": "persisted frame anchor in observations/persist.jsonl",
+      "anchors_scanned": 4,
+      "numeric_count": 4,
+      "missing_count": 0,
+      "missing_line_indexes": [],
+      "missing_line_indexes_truncated": false,
+      "non_numeric_count": 0,
+      "non_numeric_samples": [],
+      "non_numeric_samples_truncated": false,
+      "first_in_file_order": 0.21000000000000016,
+      "last_in_file_order": 0.8100000000000006,
+      "first_line_index": 0,
+      "last_line_index": 3,
+      "min_recorded_value": 0.21000000000000016,
+      "max_recorded_value": 0.8100000000000006,
+      "first_minus_last_s": -0.6000000000000004,
+      "recorded_gaps": {
+        "count": 3,
+        "min_s": 0.1700000000000001,
+        "max_s": 0.22000000000000017,
+        "median_s": 0.2100000000000002,
+        "mean_s": 0.20000000000000015,
+        "total_s": 0.6000000000000004
+      },
+      "equal_adjacent_gaps": {
+        "count": 0,
+        "line_index_pairs": [],
+        "line_index_pairs_truncated": false
+      },
+      "backwards_gaps": {
+        "count": 0,
+        "steps": [],
+        "steps_truncated": false
+      },
+      "monotonic_non_decreasing_in_file_order": true,
+      "file_order_matches_value_order": true,
+      "description": "seconds, simulator time at capture"
+    },
+    "persist_backend_monotonic_s": {
+      "field": "persist_backend_monotonic_s",
+      "unit": "s",
+      "clock": "backend_monotonic",
+      "source_record": "persisted frame anchor in observations/persist.jsonl",
+      "anchors_scanned": 4,
+      "numeric_count": 4,
+      "missing_count": 0,
+      "missing_line_indexes": [],
+      "missing_line_indexes_truncated": false,
+      "non_numeric_count": 0,
+      "non_numeric_samples": [],
+      "non_numeric_samples_truncated": false,
+      "first_in_file_order": 427684.311645495,
+      "last_in_file_order": 427684.871890834,
+      "first_line_index": 0,
+      "last_line_index": 3,
+      "min_recorded_value": 427684.311645495,
+      "max_recorded_value": 427684.871890834,
+      "first_minus_last_s": -0.5602453390019946,
+      "recorded_gaps": {
+        "count": 3,
+        "min_s": 0.18116575002204627,
+        "max_s": 0.19223004498053342,
+        "median_s": 0.1868495439994149,
+        "mean_s": 0.1867484463339982,
+        "total_s": 0.5602453390019946
+      },
+      "equal_adjacent_gaps": {
+        "count": 0,
+        "line_index_pairs": [],
+        "line_index_pairs_truncated": false
+      },
+      "backwards_gaps": {
+        "count": 0,
+        "steps": [],
+        "steps_truncated": false
+      },
+      "monotonic_non_decreasing_in_file_order": true,
+      "file_order_matches_value_order": true,
+      "description": "seconds, native backend monotonic clock at persist"
+    }
+  },
+  "identity": {
+    "duplicate_sample_id_groups": 0,
+    "duplicates": [],
+    "duplicates_truncated": false,
+    "every_anchor_position_is_reported": true,
+    "effect_on_this_route": "a duplicated id makes `sample_id=` address more than one anchor, so the page cannot name one position for it",
+    "effect_on_robot_state": "GET /api/v1/episodes/{episode_id}/robot-state?sample_id= refuses with frame_sample_id_ambiguous instead of taking the first match"
+  },
+  "recorder_counters": {
+    "persist_sequence_backwards_steps_in_file_order": 0,
+    "persist_sequence_is_the_recorders_own_counter": true,
+    "line_index_is_not_a_clock": true
+  },
+  "profile": {
+    "profile_ids_seen": [
+      "g2a-rgbd-5hz-original"
+    ],
+    "anchor_fields_declaring_a_numeric_rate": [],
+    "note": "the anchors carry a profile identifier, not a declared numeric rate; no rate is inferred from the profile name"
+  },
+  "playback_eligibility": {
+    "modes": {
+      "append_order_display": "A: show anchors in the recorder's own append order of the anchor file",
+      "recorded_interval_schedule": "B: schedule a step by the recorded gap on one named capture base",
+      "cross_stream_synchronized": "C: play several streams against one verified shared instant"
+    },
+    "append_order_display": {
+      "mode": "A",
+      "eligible": true,
+      "basis": "the anchor file is read in the recorder's own append order and a full page stops at the first further qualifying anchor",
+      "does_not_require": [
+        "a numeric capture time base",
+        "clock sameness",
+        "unique sample ids"
+      ],
+      "anchor_position_never_reordered_by_time": true
+    },
+    "recorded_interval_schedule": {
+      "mode": "B",
+      "eligible_by_base": {
+        "capture_backend_monotonic_s": {
+          "eligible_for_whole_episode": true,
+          "eligible_within_this_scan": true,
+          "blocking_reasons": [],
+          "zero_interval_ties_present": false,
+          "implied_rate_hz_from_median_recorded_gap": 5.053802453409851,
+          "implied_rate_note": "derived from the recorded values of this scan; it is not a rate the recorder declared and it is not a playback guarantee"
+        },
+        "capture_sim_time_s": {
+          "eligible_for_whole_episode": true,
+          "eligible_within_this_scan": true,
+          "blocking_reasons": [],
+          "zero_interval_ties_present": false,
+          "implied_rate_hz_from_median_recorded_gap": 4.761904761904757,
+          "implied_rate_note": "derived from the recorded values of this scan; it is not a rate the recorder declared and it is not a playback guarantee"
+        },
+        "persist_backend_monotonic_s": {
+          "eligible_for_whole_episode": true,
+          "eligible_within_this_scan": true,
+          "blocking_reasons": [],
+          "zero_interval_ties_present": false,
+          "implied_rate_hz_from_median_recorded_gap": 5.351899601120415,
+          "implied_rate_note": "derived from the recorded values of this scan; it is not a rate the recorder declared and it is not a playback guarantee"
+        }
+      },
+      "any_base_eligible_for_whole_episode": true,
+      "rules_when_unqualified": {
+        "missing_or_non_numeric_time": "the base is refused for scheduling; the frame stays visible in append order and no value is filled from another record",
+        "equal_adjacent_values": "ties are shown as ties; they are not interpolated and a rate is not computed by dividing by zero",
+        "backwards_step": "the base is refused for scheduling over that range, because one continuous clock across the step is not established by the record",
+        "clock_unknown": "a base that only names a clock is not evidence of a shared clock source"
+      },
+      "never_assumed": {
+        "default_rate_hz_applied": false,
+        "browser_arrival_time_used": false,
+        "clock_stitched_across_reset": false,
+        "why": "no record establishes a nominal rate, a host clock relationship across segments, or a RESET boundary on these anchors"
+      }
+    },
+    "cross_stream_synchronized": {
+      "mode": "C",
+      "eligible": false,
+      "reason": "the records name shared clock bases but nothing lets this reader verify one shared clock source or one sampled instant across streams",
+      "not_derivable_from": [
+        "A",
+        "B"
+      ],
+      "same_page_evidence": {
+        "same_clock_verified": false,
+        "synchronized_across_streams": false
+      }
+    }
+  },
+  "not_proven": [
+    "a declared sampling rate",
+    "clock sameness across streams",
+    "a sampled-instant match",
+    "coverage beyond the anchors scanned here",
+    "RESET or segment boundaries on anchors"
+  ]
+}
