@@ -8,6 +8,16 @@
 
 [上级目录](README.md) · [总索引](../README.md)
 
+## V0.8｜2026-10-29
+
+### 2026-10-29 M1.5f 历史完整静态模型树（解除前端逐 link 装配数据的外部依赖）
+
+- 新增来源 S26（历史完整静态模型树实测）与决策 DEC-063（逐 link 装配数据由既有 `robot-state` 的可选 `include_model_tree` 给出、默认兼容不升版、树复用 bundle 的 `Link`/`Geom` 序列化而非 `_link_view` 摘要、身份不符只拒给不替代、内容键取一次、动态响应不带内容 ETag、world 链是编译初态不是记录位姿）。
+- [Episode/事件/标注契约](../30-contracts/03-episode-events-annotations.md)：历史姿态小节新增 `include_model_tree` 参数与 `model_resource.model_tree` 字段规则（逐 link `parent_name/joint/local_transform/geoms` 与逐 geom 类型/尺寸/变换/颜色/`mesh_asset_id`/碰撞过滤、`counts`、沿用四摘要的 `content_identity`、`caching` 取一次与 ETag 分工、`semantics` 的 `compiled_initial_layout_not_live_object_state` 与 `world_links_are_not_recorded_object_positions`、`mesh_bytes` 只走 Episode 资产路由），并写明八条 GET 不变、`history-pose-1` 不升版、身份不符时 `included=false` 且不返回替代树。
+- 实现：`backend/src/unirobot/api.py`（`include_model_tree: bool = Query(False)` 透传）、`backend/src/unirobot/history_pose.py`（`_model_tree()`：状态不符与未配置 bundle 时只给拒绝说明；命中时整棵 `links/world_links` + 元数据；摘要视图原位保留）；`tools/episode_history_check.py` 断言由 110 增至 118（本轮 8 项，含"树与直接加载的 bundle 逐元素相等"与"取树不发 live scene 读"）；`tests/test_frames.py` 新增 4 条隔离用例（默认兼容、整树相等、身份不符拒给、native 指向不可达地址时场景读 503 而历史树完整）。
+- 服务器验证：候选 `m1z-20261029T075630Z-platform`（`127.0.0.1:18977`，PID 272431，独立 SQLite `frames-20261029T075630Z.sqlite3`，源码聚合 `5cb9a562a1190c11…` 49 文件，启动清单 sha256 `5503bb07f703fe6a…`，重算↔清单 MATCH，且与本地工作树聚合全等）读取检查 **118/118**、统一回归 **28/28**、冻结 release 内聚焦 **55 passed**、dev 树全量 **183 passed / 3 项历史布局失败**（名称与基线同前）；本轮 66 条请求全为 GET、946 文件覆盖 `drift=[]`；真实树 `71 links / 2 world_links / 100 geoms / 22 mesh_geoms`，带树响应 `content-length 107835` 且无 `ETag`，换帧树逐字节相同，`live_scene_reads_in_this_run=0`。同轮 `m1y-20261029T075301Z-platform`（18976）交付前因补 `world_links` 非记录位姿声明而重冻结，其 release 与报告目录保留为历史未回填，进程为本轮注册且身份核对后停止；18970 与其他既有服务未替换未清理。
+- 机器目录：补充来源 20 → 21 个，文档节点与 REQ 计数不变。前端 #34 的"缺逐 link 位姿表"外部依赖已由本切片解除；这不等于前端装配已验证、历史整车渲染可用、坐标与标定语义已获凭证，也不等于 M1.5/M1 验收通过。
+
 ## V0.8｜2026-10-25
 
 ### 2026-10-26 M1.5e `sim` 时间量来源拆分、机械臂映射证据与分部姿态就绪

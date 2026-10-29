@@ -1,0 +1,390 @@
+{
+  "tree_block_head": {
+    "requested": true,
+    "included": true,
+    "authority": "frozen_compiled_geometry_bundle",
+    "live_native_scene_proxied": false,
+    "counts": {
+      "links": 71,
+      "world_links": 2,
+      "geoms": 100,
+      "mesh_geoms": 22
+    }
+  },
+  "robot_link_with_geometry": [
+    {
+      "name": "link3",
+      "parent_name": "link2",
+      "joint_name": "joint3",
+      "joint_type": "hinge",
+      "joint_axis": [
+        0.008593917497923844,
+        -0.9999233363864473,
+        0.008914366597513988
+      ],
+      "local_transform": {
+        "position_m": [
+          -0.000861228256677,
+          0.000635863697295,
+          0.074117298162
+        ],
+        "orientation_xyzw": [
+          5.0868925695300864e-05,
+          0.0001363123969190023,
+          5.0865005279000864e-05,
+          0.999999988122017
+        ]
+      },
+      "geoms": [
+        {
+          "name": "link3_collision",
+          "geom_type": "capsule",
+          "size_m": [
+            0.008,
+            0.03300000121818,
+            0.0
+          ],
+          "local_transform": {
+            "position_m": [
+              -0.000243548303843,
+              0.018496312201,
+              0.03800000110642
+            ],
+            "orientation_xyzw": [
+              1.0,
+              0.0,
+              0.0,
+              6.123233995736766e-17
+            ]
+          },
+          "rgba": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "mesh_asset_id": null,
+          "collision": true,
+          "group": 3,
+          "contype": 4,
+          "conaffinity": 31
+        },
+        {
+          "name": "link3_visual",
+          "geom_type": "mesh",
+          "size_m": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "local_transform": {
+            "position_m": [
+              -0.0005572444970731899,
+              0.01842733258731597,
+              0.04605615193227326
+            ],
+            "orientation_xyzw": [
+              0.0038079154010136756,
+              -0.00629843919901766,
+              0.0003302654847125834,
+              0.9999728598160376
+            ]
+          },
+          "rgba": [
+            0.11999999731779099,
+            0.12999999523162842,
+            0.15000000596046448,
+            1.0
+          ],
+          "mesh_asset_id": "link3",
+          "collision": false,
+          "group": 1,
+          "contype": 0,
+          "conaffinity": 0
+        }
+      ]
+    },
+    {
+      "name": "base_link",
+      "parent_name": null,
+      "joint_name": "base_free",
+      "joint_type": "free",
+      "joint_axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "local_transform": {
+        "position_m": [
+          0.0,
+          0.0,
+          0.0556
+        ],
+        "orientation_xyzw": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "geoms": [
+        {
+          "name": "chassis_collision",
+          "geom_type": "box",
+          "size_m": [
+            0.096,
+            0.048,
+            0.017
+          ],
+          "local_transform": {
+            "position_m": [
+              0.0,
+              0.0,
+              -0.016
+            ],
+            "orientation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          },
+          "rgba": [
+            0.20000000298023224,
+            0.20000000298023224,
+            0.20000000298023224,
+            0.0
+          ],
+          "mesh_asset_id": null,
+          "collision": true,
+          "group": 3,
+          "contype": 2,
+          "conaffinity": 1
+        },
+        {
+          "name": "base_link_visual",
+          "geom_type": "mesh",
+          "size_m": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "local_transform": {
+            "position_m": [
+              0.004288180681599976,
+              -4.9673953622065774e-08,
+              -0.013050795590155128
+            ],
+            "orientation_xyzw": [
+              0.7099950479118624,
+              -2.7143007506613667e-06,
+              0.704206668480287,
+              1.0769170801228068e-06
+            ]
+          },
+          "rgba": [
+            0.6499999761581421,
+            0.6800000071525574,
+            0.7200000286102295,
+            1.0
+          ],
+          "mesh_asset_id": "base_link",
+          "collision": false,
+          "group": 1,
+          "contype": 0,
+          "conaffinity": 0
+        }
+      ]
+    }
+  ],
+  "world_links": [
+    {
+      "name": "world_static",
+      "parent_name": null,
+      "joint_name": null,
+      "joint_type": "fixed",
+      "joint_axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "local_transform": {
+        "position_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "orientation_xyzw": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "geoms": [
+        {
+          "name": "floor",
+          "geom_type": "plane",
+          "size_m": [
+            3.0,
+            3.0,
+            0.1
+          ],
+          "local_transform": {
+            "position_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "orientation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          },
+          "rgba": [
+            0.5,
+            0.5,
+            0.5,
+            1.0
+          ],
+          "mesh_asset_id": null,
+          "collision": true,
+          "group": 0,
+          "contype": 1,
+          "conaffinity": 30
+        },
+        {
+          "name": "pick_platform",
+          "geom_type": "box",
+          "size_m": [
+            0.1,
+            0.1,
+            0.05
+          ],
+          "local_transform": {
+            "position_m": [
+              0.4,
+              0.0,
+              0.05
+            ],
+            "orientation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          },
+          "rgba": [
+            0.44999998807907104,
+            0.550000011920929,
+            0.6499999761581421,
+            1.0
+          ],
+          "mesh_asset_id": null,
+          "collision": true,
+          "group": 0,
+          "contype": 1,
+          "conaffinity": 30
+        }
+      ]
+    },
+    {
+      "name": "target_cube",
+      "parent_name": null,
+      "joint_name": "target_cube_free",
+      "joint_type": "free",
+      "joint_axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "local_transform": {
+        "position_m": [
+          0.4,
+          0.0,
+          0.112
+        ],
+        "orientation_xyzw": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "geoms": [
+        {
+          "name": "target_cube_contact",
+          "geom_type": "box",
+          "size_m": [
+            0.01,
+            0.01,
+            0.01
+          ],
+          "local_transform": {
+            "position_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "orientation_xyzw": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          },
+          "rgba": [
+            0.949999988079071,
+            0.3499999940395355,
+            0.05000000074505806,
+            1.0
+          ],
+          "mesh_asset_id": null,
+          "collision": true,
+          "group": 0,
+          "contype": 16,
+          "conaffinity": 31
+        }
+      ]
+    }
+  ],
+  "summary_without_links": {
+    "requested": true,
+    "included": true,
+    "authority": "frozen_compiled_geometry_bundle",
+    "live_native_scene_proxied": false,
+    "counts": {
+      "links": 71,
+      "world_links": 2,
+      "geoms": 100,
+      "mesh_geoms": 22
+    },
+    "content_identity": {
+      "bundle_sha256": "275389464eee2f3de0c2ddf96ae85acbedfd382c496a589ec41a3662ee31d171",
+      "content_identity_sha256": "cb7899642604038101c909cb9077c09bd2d4006f3d090c205696317f3a18a7cc",
+      "compiled_scene_sha256": "a7b8b2c2d12d871306ec443989ec962ca1c4fe93641c3104a1dbcdb81a6ea109",
+      "model_inputs_sha256": "9e1b60c04b8d8e2e8b2b60b80464178cc7729d10342dc1133aa95c08e64e360a",
+      "same_values_as": "the four digests already on model_resource; no second digest scheme is introduced here",
+      "use_as": "the cache key for this tree: it changes only when the frozen bundle content changes"
+    },
+    "caching": {
+      "fetch_rule": "request this once per content_identity_sha256 — on first load or when that value changes — and omit include_model_tree on later per-frame robot-state requests",
+      "identical_for_every_frame_of_this_bundle": true,
+      "response_is_dynamic": true,
+      "model_content_etag_applies_to": "GET /api/v1/episodes/{episode_id}/model/assets/{asset_id} only",
+      "etag_note": "this response also carries retrieved_at and the selected frame's pose, so a mesh-content ETag must not be attached to or compared against the whole robot-state response"
+    },
+    "semantics": {
+      "links": "the frozen compiled reference layout: parent_name, joint name/type/axis, local_transform as the body offset in the parent body frame, and every geom with type, size, transform, rgba and mesh_asset_id",
+      "world_links": "compiled_initial_layout_not_live_object_state",
+      "world_links_are_not_recorded_object_positions": true,
+      "world_links_note": "a world link carrying a task object is shown where the model was compiled, not where the record says it was during this Episode; dynamic_scene_objects stays missing until it is attested",
+      "is_recorded_state": false,
+      "recorded_pose_lives_in": "state.recorded_payload, mapping and part_readiness"
+    },
+    "mesh_bytes": "geoms[].mesh_asset_id resolves against model_resource.assets[]; bytes only from GET /api/v1/episodes/{episode_id}/model/assets/{asset_id}, never from the live scene asset route",
+    "summary_views_still_on_model_resource": true
+  }
+}

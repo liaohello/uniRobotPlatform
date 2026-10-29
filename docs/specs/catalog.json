@@ -1347,6 +1347,11 @@
       "path": "90-governance/sources/S25-time-sources-and-pose-readiness.md",
       "sha256": "1f7334705d3bd5f11716e5b5133c8e12f9321ef9725a3463aba1c07482b9f3d7",
       "kind": "current_user_time_sources_and_pose_readiness_goal"
+    },
+    "S26": {
+      "path": "90-governance/sources/S26-history-model-tree.md",
+      "sha256": "55179e65d08bd7b8ae959d68a69183533fe31a165454883fe6bb4c4060b0713a",
+      "kind": "current_user_history_model_tree_goal"
     }
   },
   "page_design_index": "10-frontend/page-designs/README.md",

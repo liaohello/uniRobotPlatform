@@ -1,0 +1,16 @@
+{
+  "status": 422,
+  "body": {
+    "detail": [
+      {
+        "type": "bool_parsing",
+        "loc": [
+          "query",
+          "include_model_tree"
+        ],
+        "msg": "Input should be a valid boolean, unable to interpret input",
+        "input": "notabool"
+      }
+    ]
+  }
+}

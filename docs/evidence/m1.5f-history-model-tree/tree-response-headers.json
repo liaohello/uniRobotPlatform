@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "date": "Thu, 29 Oct 2026 07:57:18 GMT",
+    "server": "uvicorn",
+    "content-length": "107835",
+    "content-type": "application/json",
+    "vary": "Origin",
+    "cache-control": "no-store",
+    "Connection": "close"
+  },
+  "tree_response_bytes": 114988,
+  "default_response_bytes": 50340,
+  "default_has_etag": false,
+  "tree_has_etag": false
+}

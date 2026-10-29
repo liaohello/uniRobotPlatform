@@ -1,0 +1,65 @@
+{
+  "parameters": [
+    {
+      "name": "episode_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "title": "Episode Id"
+      }
+    },
+    {
+      "name": "run_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Run Id"
+      }
+    },
+    {
+      "name": "sample_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Sample Id"
+      }
+    },
+    {
+      "name": "include_model_tree",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "type": "boolean",
+        "default": false,
+        "title": "Include Model Tree"
+      }
+    }
+  ],
+  "episode_get_paths": [
+    "/api/v1/episodes",
+    "/api/v1/episodes/{episode_id}",
+    "/api/v1/episodes/{episode_id}/assets/{asset_path}",
+    "/api/v1/episodes/{episode_id}/frames",
+    "/api/v1/episodes/{episode_id}/model/assets/{asset_id}",
+    "/api/v1/episodes/{episode_id}/robot-state",
+    "/api/v1/episodes/{episode_id}/streams",
+    "/api/v1/episodes/{episode_id}/streams/{stream_id}/records"
+  ]
+}

@@ -120,3 +120,7 @@ S08/S09 原文件按字节归档；其中远程图片/仓库声明不构成本�
 ## V0.8 时间量来源修正与分部姿态就绪来源
 
 [S25](sources/S25-time-sources-and-pose-readiness.md)：本次用户 Goal 要求修正 `sim` 时间量的来源标注（此前状态负载缺少数值 `sim_time_s` 时改取事件信封的同名字段，却仍把该量标为负载来源；现拆为两个各自具名、各自标明来源记录的量，缺负载值就不生成该负载量，不用回退值掩盖缺失，并在 `version_migration.corrections` 中显式说明），补全机械臂模型映射证据（`ARM_JOINTS` = joint1…joint5 → `ArmController` 按名称取 `jnt_qposadr` → 反馈序列化 `self.arm.qpos[:5]` 的源码链、该链在录制时段已冻结 release 快照中的存在、与记录 `model_sha256` 相符的摘要，以及当前源码语义不能证明旧 writer 运行该版本的上限），把模型角与用户角分离（`arm_model_qpos_rad` 的绘制映射不要求先转用户角；`zero_model_rad` 实为精确 `-π/2`，此前"舍入为 -1.5708"的说法更正，用户照片零位不称为硬件标定），给出按部件划分的就绪条件（固定模型装配、机械臂局部姿态、底盘位姿、夹爪、TCP/相机等九项各自的前提、所需姿态输入、前端规则、证据与缺口；整车 `pose_readiness=false` 不等于固定资源不可装配，局部可用也不升级），并用纯运动学独立对照复核可证明的映射（同一条反馈负载内重建 TCP 位置与记录的 `tcp_position_world_m` 相比，报告误差与样本覆盖，只支持运动学一致性、不代表硬件标定）。同时更正 M1.5d 记录中"任何地方都不存在夹爪宽度规则"的说法：平台运动学配置已声明宽度与 mimic 常数，缺的是这些常数与历史写者版本绑定的凭证。历史 S14～S24 原文与事实保持不变。来源字节哈希登记于 catalog.json 与 traceability.json。
+
+## V0.8 历史完整静态模型树来源
+
+[S26](sources/S26-history-model-tree.md)：本次用户 Goal 要求优先解除前端 #34 的外部依赖，只做"完整历史静态树读取"的小切片：逐 link 装配数据必须由既有历史只读面直接给出（含 `local_transform` 与 `geoms[].mesh_asset_id`），默认响应保持兼容，不新增路由、不代理当前 `/mobilecar/scene`/snapshot/Actual，不另造摘要体系，前端只在首次或内容变化时取树，且不得把网格内容 ETag 用到整个动态响应上；验证需覆盖完整树与 bundle 一致、身份不符拒绝、默认兼容，以及在 native 不可访问的隔离夹具中历史树仍可读取（不实际断开 8792），不扩展夹爪、相机或统一时间轴。历史 S14～S25 原文与事实保持不变。来源字节哈希登记于 catalog.json 与 traceability.json。

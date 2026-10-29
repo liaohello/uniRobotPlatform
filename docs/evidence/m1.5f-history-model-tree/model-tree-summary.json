@@ -1,0 +1,37 @@
+{
+  "requested": true,
+  "included": true,
+  "authority": "frozen_compiled_geometry_bundle",
+  "live_native_scene_proxied": false,
+  "counts": {
+    "links": 71,
+    "world_links": 2,
+    "geoms": 100,
+    "mesh_geoms": 22
+  },
+  "content_identity": {
+    "bundle_sha256": "275389464eee2f3de0c2ddf96ae85acbedfd382c496a589ec41a3662ee31d171",
+    "content_identity_sha256": "cb7899642604038101c909cb9077c09bd2d4006f3d090c205696317f3a18a7cc",
+    "compiled_scene_sha256": "a7b8b2c2d12d871306ec443989ec962ca1c4fe93641c3104a1dbcdb81a6ea109",
+    "model_inputs_sha256": "9e1b60c04b8d8e2e8b2b60b80464178cc7729d10342dc1133aa95c08e64e360a",
+    "same_values_as": "the four digests already on model_resource; no second digest scheme is introduced here",
+    "use_as": "the cache key for this tree: it changes only when the frozen bundle content changes"
+  },
+  "caching": {
+    "fetch_rule": "request this once per content_identity_sha256 — on first load or when that value changes — and omit include_model_tree on later per-frame robot-state requests",
+    "identical_for_every_frame_of_this_bundle": true,
+    "response_is_dynamic": true,
+    "model_content_etag_applies_to": "GET /api/v1/episodes/{episode_id}/model/assets/{asset_id} only",
+    "etag_note": "this response also carries retrieved_at and the selected frame's pose, so a mesh-content ETag must not be attached to or compared against the whole robot-state response"
+  },
+  "semantics": {
+    "links": "the frozen compiled reference layout: parent_name, joint name/type/axis, local_transform as the body offset in the parent body frame, and every geom with type, size, transform, rgba and mesh_asset_id",
+    "world_links": "compiled_initial_layout_not_live_object_state",
+    "world_links_are_not_recorded_object_positions": true,
+    "world_links_note": "a world link carrying a task object is shown where the model was compiled, not where the record says it was during this Episode; dynamic_scene_objects stays missing until it is attested",
+    "is_recorded_state": false,
+    "recorded_pose_lives_in": "state.recorded_payload, mapping and part_readiness"
+  },
+  "mesh_bytes": "geoms[].mesh_asset_id resolves against model_resource.assets[]; bytes only from GET /api/v1/episodes/{episode_id}/model/assets/{asset_id}, never from the live scene asset route",
+  "summary_views_still_on_model_resource": true
+}
