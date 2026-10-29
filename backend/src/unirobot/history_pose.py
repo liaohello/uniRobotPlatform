@@ -13,6 +13,11 @@ Per-part readiness is not whole-robot readiness. The fixed model can be assemble
 or gripper pose stays unevidenced, and an available arm pose never upgrades into a rebuildable
 whole robot. Resource readiness is not rendering either: agreement here is kinematic consistency,
 not calibration, and never proof of which native build wrote the archive.
+
+`include_model_tree=true` adds `model_resource.model_tree`: the complete frozen link and geom tree
+for assembly, with parent, joint, transform and mesh identity for every link. It is static per
+bundle, so it is asked for once per content identity rather than per frame, and its bytes still come
+only from this bundle — the live scene, snapshot and Actual are never read to build it.
 """
 
 from __future__ import annotations
@@ -127,7 +132,7 @@ class HistoryPoseReader:
     # ---- public entry points --------------------------------------------------------
 
     def robot_state(self, episode_id: str, *, run_id: str | None = None,
-                    sample_id: str | None = None) -> dict[str, Any]:
+                    sample_id: str | None = None, include_model_tree: bool = False) -> dict[str, Any]:
         linkage = FrameLinkReader(self.archive).frames(episode_id, run_id=run_id, stream="rgbd",
                                                        limit=1, sample_id=sample_id)
         if not linkage["frames"]:
@@ -141,6 +146,8 @@ class HistoryPoseReader:
         cross_check = self._cross_check(payload, bundle_view)
         mapping = self._mapping(payload, bundle_view, cross_check)
         parts = self._part_readiness(payload, bundle_view, mapping, cross_check)
+        if include_model_tree:
+            bundle_view["model_tree"] = self._model_tree(bundle_view)
         return {
             "schema_version": POSE_SCHEMA,
             "read_only": True,
@@ -289,6 +296,63 @@ class HistoryPoseReader:
                           "joint_type": current["joint_type"]})
             current = self._link_view(current["parent_name"]) if current["parent_name"] else None
         return chain
+
+    def _model_tree(self, view: dict[str, Any]) -> dict[str, Any]:
+        """The whole frozen assembly, only when asked for: it is static per bundle, never per frame.
+
+        This is the compiled structure itself (the same link/geom serialization the geometry surface
+        uses), not the named `_link_view` summaries, so a frontend can place every link without ever
+        reading the live scene route. A model that does not match this Episode's record gets no tree
+        and no substitute.
+        """
+        if self.bundle is None or view["status"] != "match":
+            return {"requested": True, "included": False,
+                    "reason": ("no compiled geometry bundle is configured for this process" if self.bundle is None
+                               else "this Episode's recorded model identity does not match the frozen bundle, "
+                                    "so no tree is served"),
+                    "links_are_substituted": False,
+                    "summary_views_still_on_model_resource": True}
+        links = [link.model_dump(mode="json") for link in self.bundle.scene.links]
+        world_links = [link.model_dump(mode="json") for link in self.bundle.scene.world_links]
+        geoms = [geom for link in self.bundle.scene.links + self.bundle.scene.world_links for geom in link.geoms]
+        return {"requested": True, "included": True,
+                "authority": "frozen_compiled_geometry_bundle",
+                "live_native_scene_proxied": False,
+                "links": links, "world_links": world_links,
+                "counts": {"links": len(links), "world_links": len(world_links), "geoms": len(geoms),
+                           "mesh_geoms": sum(1 for geom in geoms if geom.geom_type == "mesh")},
+                "content_identity": {"bundle_sha256": view["bundle_sha256"],
+                                     "content_identity_sha256": view["content_identity_sha256"],
+                                     "compiled_scene_sha256": view["compiled_scene_sha256"],
+                                     "model_inputs_sha256": view["model_inputs_sha256"],
+                                     "same_values_as": "the four digests already on model_resource; no second "
+                                                      "digest scheme is introduced here",
+                                     "use_as": "the cache key for this tree: it changes only when the frozen "
+                                               "bundle content changes"},
+                "caching": {"fetch_rule": "request this once per content_identity_sha256 — on first load or when "
+                                          "that value changes — and omit include_model_tree on later per-frame "
+                                          "robot-state requests",
+                            "identical_for_every_frame_of_this_bundle": True,
+                            "response_is_dynamic": True,
+                            "model_content_etag_applies_to": "GET /api/v1/episodes/{episode_id}/model/assets/"
+                                                             "{asset_id} only",
+                            "etag_note": "this response also carries retrieved_at and the selected frame's pose, so "
+                                         "a mesh-content ETag must not be attached to or compared against the whole "
+                                         "robot-state response"},
+                "semantics": {"links": "the frozen compiled reference layout: parent_name, joint name/type/axis, "
+                                       "local_transform as the body offset in the parent body frame, and every geom "
+                                       "with type, size, transform, rgba and mesh_asset_id",
+                              "world_links": "compiled_initial_layout_not_live_object_state",
+                              "world_links_are_not_recorded_object_positions": True,
+                              "world_links_note": "a world link carrying a task object is shown where the model was "
+                                                  "compiled, not where the record says it was during this Episode; "
+                                                  "dynamic_scene_objects stays missing until it is attested",
+                              "is_recorded_state": False,
+                              "recorded_pose_lives_in": "state.recorded_payload, mapping and part_readiness"},
+                "mesh_bytes": "geoms[].mesh_asset_id resolves against model_resource.assets[]; bytes only from "
+                              "GET /api/v1/episodes/{episode_id}/model/assets/{asset_id}, never from the live "
+                              "scene asset route",
+                "summary_views_still_on_model_resource": True}
 
     # ---- mapping --------------------------------------------------------------------
 

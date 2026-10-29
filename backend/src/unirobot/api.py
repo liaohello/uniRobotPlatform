@@ -276,8 +276,10 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
 
     @application.get("/api/v1/episodes/{episode_id}/robot-state")
     def episode_robot_state(request: Request, episode_id: str, run_id: str | None = None,
-                            sample_id: str | None = None) -> dict[str, Any]:
-        return _pose(request).robot_state(episode_id, run_id=run_id, sample_id=sample_id)
+                            sample_id: str | None = None,
+                            include_model_tree: bool = Query(False)) -> dict[str, Any]:
+        return _pose(request).robot_state(episode_id, run_id=run_id, sample_id=sample_id,
+                                          include_model_tree=include_model_tree)
 
     @application.get("/api/v1/episodes/{episode_id}/model/assets/{asset_id}")
     def episode_model_asset(request: Request, episode_id: str, asset_id: str, run_id: str | None = None,

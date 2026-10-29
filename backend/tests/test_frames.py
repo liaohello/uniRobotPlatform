@@ -16,7 +16,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from test_episodes import PNG, _episode
+from unirobot.contracts import AdapterConfig
 from unirobot.episodes import EpisodeArchive, HistoryError, load_history_source
+from unirobot.mobilecar import MobileCarIntegration
 from unirobot.mobilecar_geometry import GeometryBundle
 
 RUN = "run_aaa"
@@ -832,3 +834,122 @@ def test_a_disagreeing_tcp_keeps_the_base_and_marker_conditional(tmp_path):
     assert parts["tcp_position_marker"]["status"] == "conditional"
     assert body["capability_summary"]["usable_now"] == ["fixed_model_reference_assembly", "arm_local_pose"]
     assert "gripper_visual_appearance" in body["capability_summary"]["usable_only_with_the_named_caveat"]
+
+
+# ---- the opt-in static model tree -------------------------------------------------------------
+
+TREE_QUERY = "/api/v1/episodes/%s/robot-state?include_model_tree=true" % EPISODE
+
+
+def test_the_model_tree_is_absent_unless_requested_and_everything_else_is_unchanged(tmp_path):
+    client = _pose_client(tmp_path)
+    plain = client.get(f"/api/v1/episodes/{EPISODE}/robot-state").json()
+    off = client.get(f"/api/v1/episodes/{EPISODE}/robot-state?include_model_tree=false").json()
+    assert "model_tree" not in plain["model_resource"] and "model_tree" not in off["model_resource"]
+    assert plain["model_resource"].keys() == off["model_resource"].keys()
+
+    with_tree = client.get(TREE_QUERY).json()
+    assert set(with_tree["model_resource"]) - set(plain["model_resource"]) == {"model_tree"}
+    assert set(with_tree) == set(plain)
+    assert with_tree["model_resource"]["status"] == plain["model_resource"]["status"]
+    stripped = {key: value for key, value in with_tree["model_resource"].items() if key != "model_tree"}
+    assert stripped == plain["model_resource"]
+    for section in set(with_tree) - {"retrieved_at", "model_resource"}:
+        assert with_tree[section] == plain[section], section
+
+
+def test_include_model_tree_returns_the_whole_frozen_tree_not_the_summary_views(tmp_path):
+    client = _pose_client(tmp_path)
+    response = client.get(TREE_QUERY)
+    assert response.status_code == 200
+    # This response mixes retrieved_at and a per-frame pose, so the mesh-content ETag must not ride on it.
+    assert "etag" not in {key.lower() for key in response.headers}
+    body = response.json()
+    tree = body["model_resource"]["model_tree"]
+    bundle = GeometryBundle(tmp_path / "prepared" / "geometry")
+
+    assert tree["requested"] is True and tree["included"] is True
+    assert tree["authority"] == "frozen_compiled_geometry_bundle"
+    assert tree["live_native_scene_proxied"] is False
+    assert tree["links"] == [link.model_dump(mode="json") for link in bundle.scene.links]
+    assert tree["world_links"] == [link.model_dump(mode="json") for link in bundle.scene.world_links]
+    assert tree["counts"] == {"links": len(bundle.scene.links), "world_links": 1,
+                              "geoms": sum(len(link.geoms) for link in bundle.scene.links
+                                           + bundle.scene.world_links),
+                              "mesh_geoms": sum(1 for link in bundle.scene.links + bundle.scene.world_links
+                                                for geom in link.geoms if geom.geom_type == "mesh")}
+
+    for link in tree["links"] + tree["world_links"]:
+        assert set(link) == {"name", "parent_name", "joint_name", "joint_type", "joint_axis",
+                             "local_transform", "geoms"}
+        assert "local_position_m" not in link and "local_orientation_xyzw" not in link
+        assert len(link["joint_axis"]) == 3
+        assert set(link["local_transform"]) == {"position_m", "orientation_xyzw"}
+        assert link["geoms"], link["name"]
+        for geom in link["geoms"]:
+            assert set(geom) == {"name", "geom_type", "size_m", "local_transform", "rgba", "mesh_asset_id",
+                                 "collision", "group", "contype", "conaffinity"}
+    link3 = next(item for item in tree["links"] if item["name"] == "link3")
+    assert link3["joint_name"] == "joint3" and link3["joint_type"] == "hinge"
+    assert link3["local_transform"]["position_m"] == [0.1, 0.0, 0.0]
+    assert next(item for item in tree["links"] if item["name"] == "base_link")["geoms"][0]["mesh_asset_id"] \
+        == "base_link"
+    # The named summary views stay where they were: the tree adds data, it does not replace them.
+    assert body["model_resource"]["root_joint"]["local_position_m"] == [0.0, 0.0, 0.0556]
+
+    referenced = {geom["mesh_asset_id"] for link in tree["links"] + tree["world_links"]
+                  for geom in link["geoms"] if geom["mesh_asset_id"]}
+    assert referenced <= {item["asset_id"] for item in body["model_resource"]["assets"]}
+    for key in ("bundle_sha256", "content_identity_sha256", "compiled_scene_sha256", "model_inputs_sha256"):
+        assert tree["content_identity"][key] == body["model_resource"][key], key
+    assert tree["semantics"]["world_links"] == "compiled_initial_layout_not_live_object_state"
+    assert tree["semantics"]["is_recorded_state"] is False
+    assert tree["semantics"]["world_links_are_not_recorded_object_positions"] is True
+
+    # Static per bundle: a different frame of the same Episode answers with the same tree.
+    other = client.get(f"{TREE_QUERY}&sample_id={F2}").json()["model_resource"]["model_tree"]
+    assert other == tree
+
+
+def test_a_mismatched_model_identity_gets_no_tree_and_no_substitute(tmp_path):
+    client = _pose_client(tmp_path, model_sha256="9" * 64)
+    body = client.get(TREE_QUERY).json()
+    tree = body["model_resource"]["model_tree"]
+    assert body["model_resource"]["status"] == "mismatch"
+    assert tree["requested"] is True and tree["included"] is False
+    assert tree["links_are_substituted"] is False
+    assert "links" not in tree and "world_links" not in tree
+    assert "does not match the frozen bundle" in tree["reason"]
+    assert client.get(f"/api/v1/episodes/{EPISODE}/robot-state").json()["model_resource"]["status"] == "mismatch"
+
+
+def test_the_history_tree_is_complete_while_the_live_scene_route_is_unreachable(tmp_path):
+    """A process whose only native connection cannot answer still serves the frozen assembly tree."""
+    root = tmp_path / "runs"
+    directory = _episode(root, RUN, EPISODE)
+    manifest_path = root / RUN / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest.update({"model_id": MODEL_ID, "model_sha256": MODEL_SHA256, "scene_id": "mobile_pick",
+                     "contract_version": "mobilecar-1.0", "map_mode": "unavailable",
+                     "truth_access": "GT_DEBUG_SEPARATE_FROM_DEFAULT_OBSERVATION",
+                     "clocks": ["sim", "backend_monotonic", "device", "wall_utc"],
+                     "software": {"name": "mobilecar", "version": "0.1.0"}})
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    _write_frames(directory)
+    from unirobot.api import create_app
+    client = TestClient(create_app(
+        draft_db_path=tmp_path / "drafts.sqlite3", history_source_path=_source_file(tmp_path, root),
+        compiled_geometry_path=_bundle(tmp_path / "prepared"),
+        mobilecar_integration=MobileCarIntegration(AdapterConfig(
+            id="mobilecar", title="unused", project_root="unused", base_url="http://127.0.0.1:1"))))
+
+    blocked = client.get("/api/v1/mobilecar/scene")
+    assert blocked.status_code == 503 and blocked.json()["detail"]["code"] == "native_offline"
+
+    body = client.get(TREE_QUERY).json()
+    tree = body["model_resource"]["model_tree"]
+    bundle = GeometryBundle(tmp_path / "prepared" / "geometry")
+    assert tree["included"] is True and tree["links"] == [link.model_dump(mode="json")
+                                                          for link in bundle.scene.links]
+    assert body["model_resource"]["live_native_scene_proxied"] is False
+    assert tree["live_native_scene_proxied"] is False

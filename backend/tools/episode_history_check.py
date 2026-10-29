@@ -17,6 +17,9 @@ from typing import Any
 import source_digest
 from native_get_probe import GetProbe
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from unirobot.mobilecar_geometry import GeometryBundle  # noqa: E402
+
 NATIVE_VOCABULARY = {"recording_start", "recording_stop", "episode_terminal", "feedback_initial",
                     "feedback", "actuator_reference", "requested", "approved", "rejected",
                     "dispatch", "dispatched", "expired", "command_response"}
@@ -666,6 +669,80 @@ def main() -> int:
                 and "does not calibrate hardware" in cross["does_not_prove"],
                 {"kinematic_agreement": summary["kinematic_agreement"],
                  "abs_tcp_error_m": summary["abs_tcp_error_m"]})
+
+    # ---- M1.5f: the opt-in static model tree (assembly data straight from the frozen bundle) --
+    entries_before_tree = len(PROBE.entries)
+    tree_url = f"{P}/api/v1/episodes/{complete_id}/robot-state?run_id={complete_run}&include_model_tree=true"
+    status, tree_body, tree_headers = raw(tree_url)
+    tree_page = json.loads(tree_body)
+    tree = tree_page["model_resource"]["model_tree"]
+    loaded = GeometryBundle(Path(manifest["geometry_bundle"]["path"]))
+    results.add("the default response carries no tree and the requested one adds it without changing anything else",
+                "model_tree" not in pose["model_resource"] and status == 200 and tree["included"] is True
+                and {key: value for key, value in tree_page["model_resource"].items() if key != "model_tree"}
+                == pose["model_resource"]
+                and tree_page["frame"] == pose["frame"] and tree_page["mapping"] == pose["mapping"]
+                and tree_page["part_readiness"] == pose["part_readiness"],
+                {"default_model_resource_keys": len(pose["model_resource"]),
+                 "added_keys": sorted(set(tree_page["model_resource"]) - set(pose["model_resource"]))})
+    results.add("the opt-in answer is the whole frozen tree, equal link for link to the loaded bundle",
+                tree["authority"] == "frozen_compiled_geometry_bundle"
+                and tree["live_native_scene_proxied"] is False
+                and tree["links"] == [link.model_dump(mode="json") for link in loaded.scene.links]
+                and tree["world_links"] == [link.model_dump(mode="json") for link in loaded.scene.world_links]
+                and tree["counts"]["links"] == tree_page["model_resource"]["link_count"]
+                and len(tree["links"]) > 3,
+                {"counts": tree["counts"], "response_bytes": len(tree_body),
+                 "link_count_on_model_resource": tree_page["model_resource"]["link_count"]})
+    results.add("every link carries the assembly fields the three named summary views do not",
+                all(set(link) == {"name", "parent_name", "joint_name", "joint_type", "joint_axis",
+                                  "local_transform", "geoms"} for link in tree["links"] + tree["world_links"])
+                and all("local_position_m" not in link for link in tree["links"])
+                and all({"name", "geom_type", "size_m", "local_transform", "rgba", "mesh_asset_id",
+                         "collision", "group", "contype", "conaffinity"} == set(geom)
+                        for link in tree["links"] + tree["world_links"] for geom in link["geoms"]),
+                {"links_without_geoms": [link["name"] for link in tree["links"] + tree["world_links"]
+                                          if not link["geoms"]]})
+    referenced = {geom["mesh_asset_id"] for link in tree["links"] + tree["world_links"]
+                  for geom in link["geoms"] if geom["mesh_asset_id"]}
+    published = {item["asset_id"] for item in tree_page["model_resource"]["assets"]}
+    results.add("the tree's mesh references resolve inside the same frozen asset list the viewer already uses",
+                bool(referenced) and referenced <= published,
+                {"referenced_by_the_tree": len(referenced), "published_in_model_resource": len(published),
+                 "unreferenced_assets": sorted(published - referenced)})
+    results.add("the tree reuses the four published digests instead of a second identity scheme",
+                all(tree["content_identity"][key] == tree_page["model_resource"][key] for key in
+                    ("bundle_sha256", "content_identity_sha256", "compiled_scene_sha256", "model_inputs_sha256"))
+                and tree["content_identity"]["bundle_sha256"] == loaded.provenance.bundle_sha256
+                and tree["content_identity"]["compiled_scene_sha256"] == loaded.provenance.compiled_scene_sha256
+                and tree["content_identity"]["content_identity_sha256"] == loaded.content_identity_sha256,
+                {key: tree["content_identity"][key] for key in
+                 ("bundle_sha256", "content_identity_sha256", "compiled_scene_sha256")})
+    status_second, other_frame = get_json(f"{tree_url}&sample_id={page[1]['sample_id']}")
+    results.add("the static tree is the same answer for another frame, so it needs no per-frame re-read",
+                status_second == 200 and other_frame["model_resource"]["model_tree"] == tree
+                and other_frame["frame"]["sample_id"] != tree_page["frame"]["sample_id"]
+                and other_frame["state"]["recorded_payload"] != tree_page["state"]["recorded_payload"],
+                {"sample_ids": [tree_page["frame"]["sample_id"], other_frame["frame"]["sample_id"]],
+                 "tree_identical": True})
+    results.add("the tree is labelled reference layout, and the dynamic response carries no content ETag",
+                tree["semantics"]["world_links"] == "compiled_initial_layout_not_live_object_state"
+                and tree["semantics"]["is_recorded_state"] is False
+                and tree["semantics"]["world_links_are_not_recorded_object_positions"] is True
+                and tree["caching"]["identical_for_every_frame_of_this_bundle"] is True
+                and "per-frame" in tree["caching"]["fetch_rule"]
+                and "etag" not in tree_headers
+                and tree["mesh_bytes"].startswith("geoms[].mesh_asset_id"),
+                {"headers": sorted(tree_headers), "fetch_rule": tree["caching"]["fetch_rule"],
+                 "world_links_named": [item["name"] for item in tree["world_links"]]})
+    results.add("asking for the tree issues no live native scene read, only the platform GET",
+                [item["url"] for item in PROBE.entries[entries_before_tree:]] == [tree_url,
+                                                                                  f"{tree_url}&sample_id={page[1]['sample_id']}"]
+                and all(item["url"].startswith(P) for item in PROBE.entries[entries_before_tree:])
+                and all(item["method"] == "GET" for item in PROBE.entries[entries_before_tree:]),
+                {"issued": [item["url"] for item in PROBE.entries[entries_before_tree:]],
+                 "live_scene_reads_in_this_run": sum(1 for item in PROBE.entries
+                                                     if "/api/v1/scene" in item["url"])})
 
     # ---- how the whole archive behaves, over a bounded sample -------------------
     status, sample = get_json(f"{P}/api/v1/episodes?limit=200")
