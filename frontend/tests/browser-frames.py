@@ -301,6 +301,8 @@ def page_attrs(page):
         modelTreeFallback:g('[data-model-pane]','data-model-tree-live-scene-fallback'),
         cursorSample:g('[data-frame-view] .history-cursor','data-cursor-selected-sample'),cursorSelection:g('[data-frame-view] .history-cursor','data-frame-cursor-selection'),
         cursorPending:g('[data-frame-view] .history-cursor','data-frame-cursor-pending'),
+        cursorOrder:g('[data-frame-cursor-order]','data-frame-cursor-order'),lineIndexClock:g('[data-frame-line-index-clock]','data-frame-line-index-clock'),
+        curveRowLines:q('[data-curve-row]','data-curve-row-line'),curveRowPersist:q('[data-curve-row]','data-curve-row-persist'),
         stateDisplayed:g('[data-frame-state-pane]','data-frame-displayed-sample'),timeDisplayed:g('[data-frame-time-pane]','data-frame-displayed-sample'),
         playMode:g('[data-frame-play]','data-frame-play'),rateLabel:document.querySelector('[aria-label="播放节奏（每秒展示帧数，界面节奏）"]')?.selectedOptions[0]?.text??'',
         rateMs:g('[data-frame-playback-rate-ms]','data-frame-playback-rate-ms'),seekScope:g('[data-frame-seek-scope]','data-frame-seek-scope'),
@@ -852,6 +854,29 @@ async def real_flow(page):
           and set(windowed['rowSamples']) <= {f['sample_id'] for f in direct['frames']}
           and windowed['returned'] == str(len(direct_window['frames']))
           and any('time_base=capture_backend_monotonic_s' in r['url'] and 'time_from=' in r['url'] and 'time_to=' in r['url'] for r in report['requests']), windowed['returned'])
+    # A window is a filter on the anchor file, not a sort key: several rows in, the interface shows them in
+    # the reader's own append order with the raw anchor positions the record carries, and echoes the reader's
+    # order declaration instead of implying one. The narrow ±0.05 s window above answers a single row, which
+    # proves nothing about ordering, so this one spans the first five frames of the page.
+    span_from = direct['frames'][0]['anchor']['clocks']['capture_backend_monotonic_s'] - 0.05
+    span_to = direct['frames'][4]['anchor']['clocks']['capture_backend_monotonic_s'] + 0.05
+    direct_span = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/frames',
+                                    {'run_id': a.complete_run, 'limit': 5, 'offset': 0, 'time_base': 'capture_backend_monotonic_s',
+                                     'time_from': span_from, 'time_to': span_to})
+    await page.locator('input[aria-label="时间窗口起点"]').fill(str(span_from))
+    await page.locator('input[aria-label="时间窗口终点"]').fill(str(span_to))
+    await page.locator('[data-frame-window-apply]').click()
+    await wait_frames(page, f"()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='{len(direct_span['frames'])}'")
+    spanned = await page_attrs(page)
+    check('时间筛选后的多行结果仍按锚点文件的追加顺序呈现：逐行等于 reader 的返回顺序、line_index 严格递增，界面不重排',
+          len(direct_span['frames']) >= 3 and spanned['cursorOrder'] == direct_span['cursor']['order']
+          and spanned['lineIndexClock'] == 'true' and spanned['returned'] == str(len(direct_span['frames']))
+          and spanned['rowSamples'] == [f['sample_id'] for f in direct_span['frames']]
+          and spanned['curveRowLines'] == [str(f['anchor']['line_index']) for f in direct_span['frames']]
+          and all(int(newer) - int(older) > 0 for older, newer in zip(spanned['curveRowLines'], spanned['curveRowLines'][1:]))
+          and spanned['curveRowPersist'] == [('null' if f['anchor'].get('persist_sequence') is None
+                                              else str(f['anchor']['persist_sequence'])) for f in direct_span['frames']],
+          [spanned['cursorOrder'], spanned['rowSamples'], spanned['curveRowLines'], spanned['curveRowPersist']])
     await page.locator('input[aria-label="时间窗口起点"]').fill('1')
     await page.locator('input[aria-label="时间窗口终点"]').fill('2')
     await page.locator('[data-frame-window-apply]').click()
@@ -1121,6 +1146,9 @@ async def real_flow(page):
                                   'orbit_pivot_before': cold_view['camera']['target'], 'orbit_pivot_after': cold_after['camera']['target'],
                                   'links': cold_after['links'], 'seek_scope': int(seeked['seekScope']), 'curve_frames': timed['curveFrames'],
                                   'x_base': timed['curveXBase'], 'frame_order_axis_note': at_first['curveXNote'][:220], 'clock_axis_note': timed['curveXNote'][:220],
+                                  'window_append_order': {'cursor_order': spanned['cursorOrder'], 'line_index_clock': spanned['lineIndexClock'],
+                                                           'rows': spanned['curveRowLines'], 'persist': spanned['curveRowPersist'],
+                                                           'samples': spanned['rowSamples']},
                                   'tree_fetch_reads_during_playback': len(tree_fetch_reads(play_mark)),
                                   'pose_reads_during_playback': len(pose_reads)}
 
@@ -1900,17 +1928,22 @@ async def synthetic_handler(route):
                                                                                              'note': 'no further qualifying anchor exists after this offset'}))); return
         await route.fulfill(json=frames_payload(episode, frames)); return
     if '/assets/' in path:
-        if episode == 'episode_play':
-            SLOW['asset'] = 'pending'
-            await asyncio.sleep(1.4)
-            SLOW['asset'] = 'done'
-        if 'bad_digest_rgb.png' in path:
-            await route.fulfill(status=409, content_type='application/json', body=json.dumps({'detail': {'code': 'episode_asset_digest_mismatch',
-                                                                                                          'message': 'asset digest does not match the requested sha256',
-                                                                                                          'expected': 'a' * 64, 'actual': 'b' * 64}})); return
-        if 'npy' in path:
-            await route.fulfill(status=200, body=b'\x93NUMPY\x01\x00', content_type='application/octet-stream', headers={'X-Episode-Asset-Sha256': 'd' * 64}); return
-        await route.fulfill(status=200, body=PNG, content_type='image/png', headers={'X-Episode-Asset-Sha256': hashlib.sha256(PNG).hexdigest(), 'X-Episode-Run-Id': 'run_a'}); return
+        try:
+            if episode == 'episode_play':
+                SLOW['asset'] = 'pending'
+                await asyncio.sleep(1.4)
+                SLOW['asset'] = 'done'
+            if 'bad_digest_rgb.png' in path:
+                await route.fulfill(status=409, content_type='application/json', body=json.dumps({'detail': {'code': 'episode_asset_digest_mismatch',
+                                                                                                              'message': 'asset digest does not match the requested sha256',
+                                                                                                              'expected': 'a' * 64, 'actual': 'b' * 64}})); return
+            if 'npy' in path:
+                await route.fulfill(status=200, body=b'\x93NUMPY\x01\x00', content_type='application/octet-stream', headers={'X-Episode-Asset-Sha256': 'd' * 64}); return
+            await route.fulfill(status=200, body=PNG, content_type='image/png', headers={'X-Episode-Asset-Sha256': hashlib.sha256(PNG).hexdigest(), 'X-Episode-Run-Id': 'run_a'}); return
+        except Exception as cause:
+            # A superseded frame drops its own asset read, so a delayed fulfil can legitimately find the
+            # route already resolved. Record the cancellation; the DOM checks still prove the ownership.
+            report['synthetic'].setdefault('aborted_asset_routes', []).append(str(cause).splitlines()[0][:160])
     if path.endswith('/streams'):
         await route.fulfill(json=detail_payload(episode)); return
     if path.endswith('/records'):
@@ -2492,10 +2525,44 @@ async def synthetic_flow(page):
           and len(tree_fetch_reads(mark_play)) == 0, [empty_now['modelStatus'], empty_now['modelStage'][:100]])
     await page.locator('[data-frame-window-clear]').click()
     await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='5'")
+
+    # Switching Episode while the previous one still has a delayed asset read in flight: the old
+    # generation must neither resume playback nor write into the new selection. The fixture delays every
+    # asset of episode_play, so the in-flight read is real rather than simulated after the fact.
+    await page.locator('[aria-label="播放节奏（每秒展示帧数，界面节奏）"]').select_option('2')
+    await wait_asset_settled(page)
+    await page.locator('[data-frame-play]').click()
+    await page.wait_for_function("()=>(document.querySelector('[data-frame-play]')?.getAttribute('data-frame-play') ?? '')==='pause' && (document.querySelector('[data-frame-asset-status]')?.getAttribute('data-frame-asset-status') ?? '')==='loading'", timeout=40000)
+    in_flight = await page_attrs(page)
+    switch_mark = len(report['requests'])
+    await open_episode(page, 'run_a', 'episode_ok')
+    await wait_model(page, 'ready')
+    after_switch = await page_attrs(page)
+    await page.wait_for_timeout(2200)
+    quiescent = await page_attrs(page)
+    tree_after_switch = len(tree_fetch_reads(switch_mark))
+    live_after_switch = live_scene_reads(switch_mark)
+    check('播放中切 Episode：旧 Episode 的在途资产读取被丢弃，播放不恢复、游标不回写，页面只属于新身份（树至多按命名空间取一次，本例已缓存则 0 次）',
+          in_flight['playMode'] == 'pause' and in_flight['assetStatus'] == 'loading' and in_flight['cursorSample'].startswith('rgbd_p')
+          and after_switch['episode'] == 'episode_ok' and after_switch['run'] == 'run_a' and after_switch['playMode'] == 'play'
+          and after_switch['cursorSample'] == after_switch['currentSample'] and not after_switch['cursorSample'].startswith('rgbd_p')
+          and after_switch['assetSample'] == after_switch['cursorSample'] and after_switch['curveSelected'] == after_switch['cursorSample']
+          and after_switch['modelRequested'] == after_switch['cursorSample'] and after_switch['stateDisplayed'] == after_switch['cursorSample']
+          and quiescent['cursorSample'] == after_switch['cursorSample'] and quiescent['playMode'] == 'play'
+          and quiescent['assetStatus'] in ('bytes', 'failed', 'not-loaded') and tree_after_switch <= 1
+          and after_switch['modelTreeReadEpisode'] == 'episode_ok' and live_after_switch == [],
+          {'in_flight': [in_flight['playMode'], in_flight['assetStatus'], in_flight['cursorSample']],
+           'after': [after_switch['episode'], after_switch['run'], after_switch['playMode'], after_switch['cursorSample'], after_switch['currentSample'],
+                     after_switch['assetSample'], after_switch['curveSelected'], after_switch['modelRequested'], after_switch['stateDisplayed']],
+           'quiescent': [quiescent['cursorSample'], quiescent['playMode'], quiescent['assetStatus']],
+           'tree_fetches_after_switch': tree_after_switch, 'live_reads_after_switch': live_after_switch})
     report['synthetic']['playback'] = {'curve_frames': play_page['curveFrames'], 'curve_segments': play_page['curveSegments'],
                                        'missing_per_axis': play_page['curveMissingAxis'], 'tree_fetches_total': len(tree_fetch_reads(synth_mark)),
                                        'cross_page_last_offset': crossed['offset'], 'cross_page_frame_reads': walk_reads,
                                        'cursor_after_walk': crossed['cursorSample'], 'pane_tree_reads_after_walk': crossed['modelTreeReads'],
+                                       'episode_switch_while_playing': {'while_playing': in_flight['cursorSample'], 'asset_in_flight': in_flight['assetStatus'],
+                                                                         'after_switch': after_switch['cursorSample'], 'play_mode_after': quiescent['playMode'],
+                                                                         'cancelled_asset_routes': len(report['synthetic'].get('aborted_asset_routes', []))},
                                        'live_scene_reads': live_scene_reads(synth_mark), 'empty_window_status': empty_now['modelStatus'],
                                        'rate_ms': paused_synth['rateMs'], 'rate_label': paused_synth['rateLabel']}
     await page.screenshot(path=str(a.output / 'synthetic-playback-curve.png'), full_page=False)
