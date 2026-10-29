@@ -477,3 +477,39 @@ export function treeBindingRowsOf(dto: HistoryPoseDto | null, tree: {
 }
 
 const text = (value: unknown) => value === undefined || value === null || value === '' ? 'null' : String(value);
+
+/** The record additionally *names* individual links — the root free joint's body, the TCP parent body,
+ * the end effector, the camera chain, each world object — and lists the arm/gripper/wheel joint names it
+ * expects. Binding those node by node is what stops a tree that reuses identical mesh digests but rewires
+ * a parent from passing. Fields the record leaves undeclared are not compared, and never guessed. */
+export interface LinkBindingRow { name: string; field: string; history: string; tree: string; equal: string }
+export function linkBindingRowsOf(dto: HistoryPoseDto | null, nodes: {
+  name?: string | null; parent_name?: string | null; joint_name?: string | null; joint_type?: string | null;
+}[] | null): LinkBindingRow[] {
+  const m = dto?.model_resource ?? null;
+  if (!m || !nodes) return [];
+  const byName = new Map(nodes.filter((node) => node?.name).map((node) => [node.name as string, node]));
+  const joints = new Set(nodes.map((node) => node?.joint_name).filter((value): value is string => Boolean(value)));
+  const declared: HistoryLinkJointDto[] = [
+    ...(m.root_joint ? [m.root_joint] : []), ...(m.tcp_parent_body_view ? [m.tcp_parent_body_view] : []),
+    ...(m.end_effector_link ? [m.end_effector_link] : []), ...(m.camera_link_chain ?? []),
+    ...(m.world_links ?? []).map((link) => ({ name: link.name })),
+  ];
+  const rows: LinkBindingRow[] = [];
+  declared.forEach((fact) => {
+    const name = fact?.name;
+    if (!name) return;
+    const node = byName.get(name) ?? null;
+    if (!node) { rows.push({ name, field: 'link_exists', history: '记录点名该 link', tree: '装配用的树里没有同名 link', equal: 'false' }); return; }
+    ([[`parent_name`, fact.parent_name, node.parent_name], [`joint_name`, fact.joint_name, node.joint_name], [`joint_type`, fact.joint_type, node.joint_type]] as const)
+      .forEach(([field, want, got]) => {
+        if (want === undefined || want === null) return;
+        rows.push({ name, field, history: text(want), tree: text(got), equal: String(text(want) === text(got)) });
+      });
+  });
+  ([`arm_hinge_joints`, `gripper_slide_joints`, `gripper_other_joints_in_bundle`, `wheel_hinge_joints`] as const)
+    .forEach((list) => (m[list] ?? []).forEach((joint) => rows.push({
+      name: joint, field: `joint_in:${list}`, history: '记录声明该关节', tree: joints.has(joint) ? '树里有同名关节' : '树里没有同名关节', equal: String(joints.has(joint)),
+    })));
+  return rows;
+}

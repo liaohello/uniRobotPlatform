@@ -22,7 +22,7 @@ import {
   assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, drivenValuesOf, fkCrossCheckOf, mappingRowsOf,
   mergeVisitedValues, modelResourceText, modelVsUserText, motionCoverageOf, notProvenText, partReadinessOf,
   poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText, readHistoryModelAsset, readRobotState, renderingText,
-  treeBindingRowsOf, versionBindingText, type HistoryPoseDto, type VisitedDrivenValues,
+  treeBindingRowsOf, linkBindingRowsOf, versionBindingText, type HistoryPoseDto, type TreeBindingRow, type VisitedDrivenValues,
 } from '../adapters/platform-history-pose';
 
 /** The placement tree comes from the platform's own frozen geometry envelope. */
@@ -54,6 +54,16 @@ const treeIdentityOf = (geometry: GeometryEnvelope | null) => (geometry ? {
   world_link_count: geometry.data.world_links?.length ?? null,
   arm_hinge_joints: (geometry.data.links ?? []).filter((link) => link.joint_type === 'hinge' && /^joint\d$/.test(link.joint_name ?? '')).map((link) => link.joint_name ?? ''),
 } : null);
+/** Identity fields first, then the link-by-link binding the record's own named nodes allow. */
+const bindingRowsOf = (pose: HistoryPoseDto | null, geometry: GeometryEnvelope | null): TreeBindingRow[] => {
+  const summary = treeBindingRowsOf(pose, treeIdentityOf(geometry));
+  if (!geometry) return summary;
+  const nodes = [...(geometry.data.links ?? []), ...(geometry.data.world_links ?? [])];
+  return [...summary, ...linkBindingRowsOf(pose, nodes).map((row) => ({
+    field: `link ${row.name} · ${row.field}`, history: row.history, tree: row.tree, equal: row.equal,
+    note: '记录点名的 link/关节逐节点绑定：相同 mesh 摘要但接错父节点也在这里被拦下',
+  }))];
+};
 const VIEWS = [
   { id: 'front' as const, label: '车头', title: '车头视图：world_sim +X，从车前方看' },
   { id: 'side' as const, label: '车侧', title: '车侧视图：world_sim −Y，从车右方看' },
@@ -170,7 +180,7 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
       releaseView(); return;
     }
     // Mesh digests alone cannot tell two different trees built from the same meshes apart.
-    const binding = treeBindingRowsOf(pose, treeIdentityOf(geometry));
+    const binding = bindingRowsOf(pose, geometry);
     const unbound = binding.filter((row) => row.equal !== 'true');
     if (unbound.length) {
       setStage({ status: 'blocked', reason: `静态树与记录的内容身份不一致：${unbound.map((row) => `${row.field}（历史=${row.history} / 树=${row.tree}）`).join('、')}。相同 mesh 摘要但不同树内容也在这里被拦下：不装配，也不退回在线 Actual。` });
@@ -225,7 +235,7 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
   const rows = mappingRowsOf(pose);
   const partRows = partReadinessOf(pose);
   const fk = fkCrossCheckOf(pose);
-  const binding = treeBindingRowsOf(pose, treeIdentityOf(geometry));
+  const binding = bindingRowsOf(pose, geometry);
   const canRead = Boolean(episodeId) && Boolean(pose?.model_resource);
   const displayedSample = displayed?.displayedSample ?? '';
   const attributed = Boolean(displayedSample) && displayedSample === sampleId;
