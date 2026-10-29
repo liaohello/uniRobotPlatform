@@ -1,12 +1,38 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EpisodeContractError } from '../src/adapters/platform-episodes';
 import {
-  FRAME_LINK_SCHEMA, ambiguousRoleCount, clockSamenessText, frameAutoLoadRef, frameBoundaryNotice, frameMediaRefs,
-  framePageExplanation, framePageKind, frameSelectableBases, frameStopNote, frameWindowGate, linkageScopeText,
-  mediaDeclarationText, provenanceRowsOf, quantityRowsOf, readFramesPage, recorderDeclaredOf, roleCoverageText,
-  roleRowsOf, selectionRulesText, simQuantityKeysOf, stateQuantityKeysOf, stateRowsOf, stateSelectionOf, statusPrecedenceText,
-  timeSemanticsText, versionMigrationText,
-  type FrameDto, type FramePageDto,
+  CURVE_FRAME_ORDER,
+  FRAME_LINK_SCHEMA,
+  ambiguousRoleCount,
+  clockSamenessText,
+  curveXAxesOf,
+  frameActualCurveOf,
+  frameAutoLoadRef,
+  frameBoundaryNotice,
+  frameMediaRefs,
+  framePageExplanation,
+  framePageKind,
+  frameSelectableBases,
+  frameStopNote,
+  frameWindowGate,
+  linkageScopeText,
+  mediaDeclarationText,
+  provenanceRowsOf,
+  quantityRowsOf,
+  readFramesPage,
+  recorderDeclaredOf,
+  roleCoverageText,
+  roleRowsOf,
+  selectionRulesText,
+  simQuantityKeysOf,
+  stateQuantityKeysOf,
+  stateRowsOf,
+  stateSelectionOf,
+  statusPrecedenceText,
+  timeSemanticsText,
+  type FrameDto,
+  type FramePageDto,
+  versionMigrationText
 } from '../src/adapters/platform-frames';
 
 // The fixtures are shape copies of the `unirobot-mobilecar-frame-link-2` payloads the candidate on
@@ -420,5 +446,73 @@ describe('M1.5e time-source split and recorded corrections', () => {
     expect(migration.corrections).toEqual(corrections);
     expect(migration.head).toContain('unirobot-mobilecar-frame-link-1');
     expect(versionMigrationText(pageFixture()).corrections).toEqual([]);
+  });
+});
+
+/** The bounded recorded-Actual curve: page values only, breaks instead of zeros, and an x axis that says
+ *  what it is. These fixtures are unit-shaped; what the real archive carries is proven in the browser run. */
+describe('recorded-Actual curve over the frames already loaded', () => {
+  type FrameLike = { sample_id: string; anchor: { line_index: number; relative_path: string; persist_sequence: number | null; clocks: Record<string, unknown> };
+    state: { status: string; single_state_selected: boolean | null; recorded_state: Record<string, unknown> | null } };
+  const armFrame = (position: number, clocks: Record<string, unknown>, state: { status?: string; single?: boolean | null; values?: number[] } = {}): FrameLike => ({
+    sample_id: `rgbd_${position}`,
+    anchor: { line_index: position, relative_path: 'observations/persist.jsonl', persist_sequence: position + 1, clocks },
+    state: { status: state.status ?? 'matched', single_state_selected: state.single === undefined ? true : state.single,
+      recorded_state: state.single === false ? null : { arm_model_qpos_rad: state.values ?? [position / 10, 0, 0, -1.57, 0] } },
+  });
+  const pageOf = (frames: FrameLike[]) => ({ frames, cursor: { order: 'native_append_order', line_index_is_not_a_clock: true }, time: { units: { '*_s': 'seconds' } } } as never);
+
+  it('offers frame order always and a raw clock base only when the page carries it for every frame', () => {
+    const complete = curveXAxesOf(pageOf([armFrame(0, { capture_backend_monotonic_s: 10.0 }), armFrame(1, { capture_backend_monotonic_s: 10.5 })]) as never);
+    expect(complete.map((axis) => axis.key)).toContain('anchor.clocks.capture_backend_monotonic_s');
+    expect(complete.find((axis) => axis.key === CURVE_FRAME_ORDER)?.unit).toContain('不是时钟');
+    const holes = curveXAxesOf(pageOf([armFrame(0, { capture_backend_monotonic_s: 10.0 }), armFrame(1, {})]) as never);
+    expect(holes.find((axis) => axis.key === 'anchor.clocks.capture_backend_monotonic_s')?.label).toContain('不可选');
+    expect(holes.find((axis) => axis.key === 'anchor.clocks.capture_backend_monotonic_s')?.note).toContain('不补值');
+  });
+
+  it('draws the five arm values on frame order and breaks where a frame has no single selected state', () => {
+    const page = pageOf([armFrame(0, {}), armFrame(1, {}, { single: false, status: 'ambiguous_candidates' }), armFrame(2, {})]);
+    const curve = frameActualCurveOf(page as never, CURVE_FRAME_ORDER);
+    expect(curve.frames).toBe(3);
+    expect(curve.withSelectedState).toBe(2);
+    expect(curve.series.map((axis) => axis.field)).toEqual(['arm_model_qpos_rad[0]', 'arm_model_qpos_rad[1]', 'arm_model_qpos_rad[2]', 'arm_model_qpos_rad[3]', 'arm_model_qpos_rad[4]']);
+    const first = curve.series[0];
+    expect(first.points.map((point) => point.x)).toEqual([1, 2, 3]);
+    expect(first.missing).toBe(1);
+    expect(first.segments.map((segment) => segment.map((point) => point.sampleId))).toEqual([['rgbd_0'], ['rgbd_2']]);
+    expect(first.points[1].missing).toContain('single_state_selected=false');
+    expect([first.min, first.max]).toEqual([0, 0.2]);                      // min/max only over present points
+  });
+
+  it('treats a short recorded array as missing for the axes it does not carry, without guessing order', () => {
+    const curve = frameActualCurveOf(pageOf([armFrame(0, {}, { values: [0.1, 0.2] }), armFrame(1, {}, { values: [0.3, 0.4, 0.5, 0.6, 0.7] })]) as never, CURVE_FRAME_ORDER);
+    expect(curve.series[0].points.map((point) => point.value)).toEqual([0.1, 0.3]);
+    expect(curve.series[4].points[0].value).toBeNull();
+    expect(curve.series[4].points[0].missing).toContain('长度 2 < 5');
+    expect(curve.series[4].segments).toHaveLength(1);
+  });
+
+  it('reports a clock that steps backwards and keeps the record order untouched', () => {
+    const page = pageOf([armFrame(0, { capture_backend_monotonic_s: 11.0 }), armFrame(1, { capture_backend_monotonic_s: 9.0 }), armFrame(2, { capture_backend_monotonic_s: 12.0 })]);
+    const curve = frameActualCurveOf(page as never, 'anchor.clocks.capture_backend_monotonic_s');
+    expect(curve.series[0].points.map((point) => point.x)).toEqual([11, 9, 12]);
+    expect(curve.outOfOrder).toEqual([{ position: 1, sampleId: 'rgbd_1', from: 11, to: 9 }]);
+    expect(curve.unit).toBe('seconds');                                    // 原样取本页 time.units 的 *_s
+  });
+
+  it('names the recorded fields it will not pass off as a position target', () => {
+    const plain = frameActualCurveOf(pageOf([armFrame(0, {})]) as never, CURVE_FRAME_ORDER);
+    expect(plain.target).toContain('不画记录 Target');
+    expect(plain.target).toContain('wheel_velocity_rad_s');
+    const withNamed = frameActualCurveOf(pageOf([(() => { const frame = armFrame(0, {}); frame.state.recorded_state!.arm_position_target_rad = [0, 0, 0, 0, 0]; return frame; })()]) as never, CURVE_FRAME_ORDER);
+    expect(withNamed.target).toContain('arm_position_target_rad');
+    expect(withNamed.series).toHaveLength(5);
+  });
+
+  it('stays empty and claims nothing when no page has been read', () => {
+    expect(frameActualCurveOf(null, CURVE_FRAME_ORDER).frames).toBe(0);
+    expect(frameActualCurveOf(null, CURVE_FRAME_ORDER).series[0].segments).toEqual([]);
+    expect(curveXAxesOf(null)).toHaveLength(1);
   });
 });

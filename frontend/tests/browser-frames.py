@@ -196,10 +196,12 @@ def history_asset_reads(mark):
 
 
 async def open_episode_tree_reads(page, run_id, episode_id, expect='frames'):
-    """Open an Episode and report the tree fetches the switch caused: only an Episode identity change is
-    allowed to re-fetch the static tree, and then exactly once."""
+    """Open an Episode and report the tree fetches its own robot-state read caused. The read is issued by
+    the model pane after the frame pane binds, so the window is closed once the pane has settled — an
+    early snapshot would report a switch that did happen as zero fetches."""
     mark = len(report['requests'])
     await open_episode(page, run_id, episode_id, expect)
+    await wait_model(page, 'ready')
     return tree_fetch_reads(mark)
 
 
@@ -297,6 +299,22 @@ def page_attrs(page):
         modelTreeContentIdentity:g('[data-model-pane]','data-model-tree-content-identity'),
         modelTreeWorldSemantics:g('[data-model-pane]','data-model-tree-world-semantics'),
         modelTreeFallback:g('[data-model-pane]','data-model-tree-live-scene-fallback'),
+        cursorSample:g('[data-frame-view] .history-cursor','data-cursor-selected-sample'),cursorSelection:g('[data-frame-view] .history-cursor','data-frame-cursor-selection'),
+        cursorPending:g('[data-frame-view] .history-cursor','data-frame-cursor-pending'),
+        stateDisplayed:g('[data-frame-state-pane]','data-frame-displayed-sample'),timeDisplayed:g('[data-frame-time-pane]','data-frame-displayed-sample'),
+        playMode:g('[data-frame-play]','data-frame-play'),rateLabel:document.querySelector('[aria-label="播放节奏（每秒展示帧数，界面节奏）"]')?.selectedOptions[0]?.text??'',
+        rateMs:g('[data-frame-playback-rate-ms]','data-frame-playback-rate-ms'),seekScope:g('[data-frame-seek-scope]','data-frame-seek-scope'),
+        curveFrames:g('[data-frame-curve]','data-curve-frames'),curveWithState:g('[data-frame-curve]','data-curve-with-state'),
+        curveMissing:g('[data-frame-curve]','data-curve-missing-points'),curveXBase:g('[data-frame-curve]','data-curve-x-base'),
+        curveXLabel:g('[data-frame-curve]','data-curve-x-label'),curveInterp:g('[data-frame-curve]','data-curve-interpolation'),
+        curveSelected:g('[data-frame-curve]','data-curve-selected-sample'),curveOut:q('[data-frame-curve]','data-curve-out-of-order')[0],
+        curveAxisFields:q('[data-curve-axis]','data-curve-axis'),curveSegments:q('[data-curve-axis]','data-curve-segments'),
+        curveMissingAxis:q('[data-curve-axis]','data-curve-missing'),curveTarget:g('[data-curve-target-note]','data-curve-target-note'),
+        curvePicks:q('[data-curve-pick]','data-curve-pick'),curveScope:g('[data-frame-curve]','data-curve-scope'),
+        xAxes:[...document.querySelectorAll('[aria-label="曲线横轴"] option')].map(e=>e.value+':'+e.disabled),
+        curveXOrigin:g('[data-frame-curve]','data-curve-x-origin'),curveXNote:g('[data-curve-x-note]','data-curve-x-note'),
+        seekChip:(document.querySelector('[data-frame-seek-scope]')?.innerText??''),
+        seekOptions:[...document.querySelectorAll('[aria-label="本页帧定位"] option')].map(e=>e.value+'|'+e.textContent.trim()),
         modelDrive:g('[data-model-drive-summary]','data-model-drive-summary'),modelStage:g('[data-model-stage]','data-model-stage'),
         modelWithheld:g('[data-model-withheld-count]','data-model-withheld-count'),mappingStatuses:q('[data-mapping-row]','data-mapping-status'),
         valueNames:q('[data-model-value]','data-model-value'),valueKinds:q('[data-model-value]','data-value-kind'),
@@ -365,7 +383,13 @@ async def real_flow(page):
           and view['nextQualifying'] == str(paging['next_qualifying_anchor_line_index'])
           and view['wholeFile'] == str(paging['scan']['whole_file_scanned']).lower()
           and await attr(page, '[data-frame-no-total]', 'data-frame-no-total') == 'true'
-          and not re.search(r'共\s*\d+\s*帧', view['text']), (view['linesRead'], view['wholeFile']))
+          and not re.search(r'共\s*\d+\s*帧', view['text']),
+          {'view': [view['returned'], view['offset'], view['nextOffset'], view['hasMore'], view['linesRead'], view['examined'],
+                    view['postExamined'], view['nextQualifying'], view['wholeFile']],
+           'direct': [len(direct['frames']), str(paging['offset']), str(paging['next_offset']), str(paging['has_more']),
+                      str(paging['anchor_lines']['lines_read']), str(paging['anchor_records_examined']),
+                      str(paging['post_page_records_examined']), str(paging['next_qualifying_anchor_line_index']),
+                      str(paging['scan']['whole_file_scanned']).lower()]})
     check('the anchor is one persisted frame per record and the line index is declared not to be a clock',
           view['rowLines'] == [str(f['anchor']['line_index']) for f in direct['frames']]
           and await attr(page, '[data-frame-line-index-clock]', 'data-frame-line-index-clock') == 'true'
@@ -945,6 +969,162 @@ async def real_flow(page):
     await page.screenshot(path=str(a.output / 'pose-second-archive-no-drive.png'), full_page=False)
 
 
+
+    # ---- M3.0：一个共用游标、连续只读播放、有界的五轴历史 Actual 曲线（真实归档） ----
+    # A cold page with a cold module cache: the tree for this Episode has to be acquired exactly once
+    # again, and every frame step below stays pose-only with no live scene route involved at all.
+    await page.reload(wait_until='domcontentloaded')
+    await open_history(page)
+    # Measured from the moment the history face is open: whatever the shell fetched while booting belongs
+    # to the shell, and the face's own window must be clean.
+    cold_mark = len(report['requests'])
+    await open_episode(page, a.complete_run, a.complete_episode)
+    await wait_model(page, 'ready')
+    await wait_asset_settled(page)
+    cold = await page_attrs(page)
+    camera_before = cold['modelCanvas']
+    await page.locator('[data-model-inspect]').click()
+    cold_view = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+    check('冷启动重载 + 冷缓存：仍只取一次树，游标一进来就带着图像/状态/时间/3D/曲线同一帧',
+          len(tree_fetch_reads(cold_mark)) == 1 and cold['modelTreeReads'] == '1' and cold['modelStatus'] == 'ready'
+          and cold['modelCanvas'] == 1 and cold['assetStatus'] == 'bytes' and live_scene_reads(cold_mark) == []
+          and cold['cursorSample'] == cold['currentSample'] == cold['stateDisplayed'] == cold['timeDisplayed']
+          and cold['assetSample'] == cold['cursorSample'] and cold['modelRequested'] == cold['cursorSample']
+          and cold['curveSelected'] == cold['cursorSample'],
+          {'fetches': len(tree_fetch_reads(cold_mark)), 'cursor': [cold['cursorSample'], cold['curveSelected']]})
+    report['real']['cold_reload'] = {'tree_fetches': len(tree_fetch_reads(cold_mark)), 'pane_reads': cold['modelTreeReads'],
+                                     'live_scene_reads': live_scene_reads(cold_mark), 'asset_status': cold['assetStatus']}
+
+    # Playback has to survive the page boundary the same way the reader allows: via next_offset.
+    await page.locator('select[aria-label="帧分页大小"]').select_option('1')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-limit]')?.getAttribute('data-frame-limit') ?? '')==='1'")
+    play_mark = len(report['requests'])
+    await page.locator('[data-frame-play]').click()
+    await page.wait_for_function("()=>(document.querySelector('[data-frame-offset]')?.getAttribute('data-frame-offset') ?? '')==='2'", timeout=90000)
+    crossing = await page_attrs(page)
+    pose_reads = [r['url'] for r in report['requests'][play_mark:] if urlsplit(r['url']).path.endswith('/robot-state')]
+    page_reads = [r['url'] for r in report['requests'][play_mark:] if urlsplit(r['url']).path.endswith('/frames')]
+    check('播放跨过页末：按 reader 自己的 next_offset 连续前进，节奏措辞是“每秒展示帧数”，且一帧都不重取静态树',
+          crossing['playMode'] == 'pause' and crossing['offset'] == '2' and crossing['index'] == '0'
+          and '每秒' in crossing['rateLabel'] and '界面节奏' in crossing['rateLabel'] and '倍速' not in crossing['rateLabel']
+          and crossing['rateMs'] == '500' and len(tree_fetch_reads(play_mark)) == 0 and crossing['modelTreeReads'] == '1'
+          and len(page_reads) == 2 and len(pose_reads) >= 2 and not any('include_model_tree' in u for u in pose_reads),
+          {'pages': len(page_reads), 'poses': len(pose_reads), 'tree': len(tree_fetch_reads(play_mark)), 'rate': [crossing['rateLabel'], crossing['rateMs']]})
+    await page.locator('[data-frame-play]').click()
+    paused = await page_attrs(page)
+    poses_now = len([r for r in report['requests'] if urlsplit(r['url']).path.endswith('/robot-state')])
+    await page.wait_for_timeout(1500)
+    check('暂停就是停止推进：观察窗内没有新的 robot-state 读取，也没有迟到的 tick 改写游标',
+          paused['playMode'] == 'play' and len([r for r in report['requests'] if urlsplit(r['url']).path.endswith('/robot-state')]) == poses_now
+          and paused['cursorSample'] == (await page_attrs(page))['cursorSample'], paused['playMode'])
+
+    # In-page positioning moves the one cursor every panel follows, without a fresh frame read.
+    await page.locator('select[aria-label="帧分页大小"]').select_option('20')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-limit]')?.getAttribute('data-frame-limit') ?? '')==='20'")
+    before_seek = len([r for r in report['requests'] if urlsplit(r['url']).path.endswith('/frames')])
+    await page.locator('[aria-label="本页帧定位"]').select_option('15')
+    await page.wait_for_function("()=>(document.querySelector('[data-frame-index]')?.getAttribute('data-frame-index') ?? 'x')==='15'", timeout=40000)
+    seeked = await page_attrs(page)
+    check('页内定位：下拉选第 16 帧即移动同一游标，五个面板一起跟随，且不为定位多发一次帧页读取',
+          seeked['index'] == '15' and seeked['seekScope'] == '20' and seeked['cursorSample'] == seeked['currentSample']
+          and seeked['stateDisplayed'] == seeked['timeDisplayed'] == seeked['assetSample'] == seeked['cursorSample']
+          and seeked['modelRequested'] == seeked['curveSelected'] == seeked['cursorSample']
+          and len([r for r in report['requests'] if urlsplit(r['url']).path.endswith('/frames')]) == before_seek
+          and len(seeked['seekOptions']) == 20, [seeked['index'], seeked['cursorSample']])
+    await page.locator('[data-frame-seek-last]').click()
+    await page.wait_for_function("()=>(document.querySelector('[data-frame-index]')?.getAttribute('data-frame-index') ?? 'x')==='19'", timeout=40000)
+    await page.locator('[data-frame-seek-first]').click()
+    await page.wait_for_function("()=>(document.querySelector('[data-frame-index]')?.getAttribute('data-frame-index') ?? 'x')==='0'", timeout=40000)
+    at_first = await page_attrs(page)
+    check('本页首/末帧定位按钮可用且只在本页范围内移动（不显示总时长或全局进度）',
+          at_first['index'] == '0' and at_first['seekScope'] == '20' and at_first['nextOffset'] != 'null'
+          and '定位范围＝本页已读取的 20 帧' in at_first['seekChip'] and '不显示总时长或全局进度百分比' in at_first['seekChip'],
+          at_first['seekChip'][:120])
+
+    # The bounded curve: page values only, five axes, no interpolation, and the target clause stated.
+    check('五轴历史 Actual 只画本页读取的记录值：轴按下标标注、不插值、并写明不拿速度/命令当 Target',
+          at_first['curveFrames'] == '20' and at_first['curveScope'] == 'current-page' and at_first['curveInterp'] == 'none'
+          and at_first['curveAxisFields'] == ['arm_model_qpos_rad[%d]' % i for i in range(5)]
+          and int(at_first['curveWithState']) == 20 and at_first['curveMissing'] == '0'
+          and '不画记录 Target' in at_first['curveTarget'] and 'wheel_velocity_rad_s' in at_first['curveTarget']
+          and '帧顺序' in at_first['curveXLabel'] and '不是时钟' in at_first['curveXNote']
+          and 'line_index 不是时钟' in at_first['curveXNote'], [at_first['curveXNote'][:180], at_first['curveMissing']])
+    pick_before = at_first['curvePicks'][3]
+    mark_pick = len([r for r in report['requests'] if urlsplit(r['url']).path.endswith('/frames')])
+    await page.locator('[data-curve-pick]').nth(3).click(force=True)
+    await page.wait_for_function("(want)=>(document.querySelector('[data-frame-view] .history-cursor')?.getAttribute('data-cursor-selected-sample') ?? '')===want", arg=pick_before, timeout=40000)
+    picked = await page_attrs(page)
+    check('点曲线任意一处即定位当前帧：游标、3D 与媒体一起换到被点的那一帧，不产生新的帧页读取',
+          picked['cursorSample'] == pick_before and picked['index'] == '3' and picked['curveSelected'] == pick_before
+          and len([r for r in report['requests'] if urlsplit(r['url']).path.endswith('/frames')]) == mark_pick,
+          {'want': pick_before, 'index': picked['index'], 'cursor': picked['cursorSample'], 'curve': picked['curveSelected'],
+           'frame_reads_before': mark_pick, 'frame_reads_now': len([r for r in report['requests'] if urlsplit(r['url']).path.endswith('/frames')])})
+    await page.locator('[aria-label="曲线横轴"]').select_option('anchor.clocks.capture_backend_monotonic_s')
+    timed = await page_attrs(page)
+    check('横轴能切到记录自己的原始时间基并写明是哪个钟；本页没有回退，界面无需重排',
+          timed['curveXBase'] == 'anchor.clocks.capture_backend_monotonic_s'
+          and 'capture_backend_monotonic_s' in timed['curveXLabel'] and 'anchor.clocks' in timed['curveXOrigin']
+          and timed['curveOut'] == '[]' and any(':false' in item for item in timed['xAxes'])
+          and timed['cursorSample'] == picked['cursorSample'], [timed['curveXLabel'], timed['xAxes']])
+    await page.locator('[data-model-inspect]').click()
+    cold_after = json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+    check('播放、定位与切轴都不重建视口：视角三值与 link 数保持，只有本帧允许的部件随游标改变（环绕轴心跟着记录底盘走，所以不比 target）',
+          all(abs(cold_after['camera'][key] - cold_view['camera'][key]) < 1e-6 for key in ('distance', 'azimuthDeg', 'polarDeg'))
+          and cold_after['links'] == cold_view['links'] == 71
+          and cold_after['assetFailures'] == [] and cold_after['pendingLoads'] == 0, [cold_after['camera'], cold_view['camera']])
+
+    # The end of a page with has_more=false stops the cursor instead of looping or inventing frames.
+    end_sample = (await page_attrs(page))['rowSamples'][1]
+    await page.locator('input[aria-label="sample_id 精确打开"]').fill(end_sample)
+    await page.locator('[data-frame-open-sample]').click()
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='1'")
+    end_mark = len(report['requests'])
+    await page.locator('[data-frame-play]').click()
+    await page.wait_for_function("()=>/界面停止推进/.test(document.querySelector('[data-frame-notice]')?.innerText ?? '')", timeout=40000)
+    ended = await page_attrs(page)
+    check('到末尾就停：has_more=false 时播放自己关闭，不循环、不伪造后续帧，也不声称遍历完整归档',
+          ended['playMode'] == 'play' and ended['hasMore'] == 'false' and '不推断录制结束' in ended['notice']
+          and ended['cursorSample'] == end_sample and len(tree_fetch_reads(end_mark)) == 0, [ended['playMode'], ended['notice'][:120]])
+    await page.locator('[data-frame-sample-clear]').click()
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='20'")
+
+    # Slow media: bytes delayed in the browser only (the archive itself is untouched) must read as
+    # buffering, never as the previous frame's picture under the new pose.
+    async def delay_assets(route):
+        # The pane aborts a superseded asset read by design, so a delayed fulfil can legitimately find the
+        # route already resolved. That is recorded rather than raised; the DOM checks below still have to see
+        # the buffering and the settle of the frame that was actually asked for.
+        await asyncio.sleep(1.8)
+        try:
+            await route.fulfill(response=await route.fetch())
+        except Exception as cause:
+            report['real'].setdefault('slow_media_aborted_routes', []).append(str(cause).splitlines()[0][:160])
+    await page.route(re.compile(r'/api/v1/episodes/[^/]+/assets/'), delay_assets)
+    slow_target = (await page_attrs(page))['rowSamples'][4]
+    slow_mark = len(report['requests'])
+    await page.locator('[data-frame-pick="' + slow_target + '"]').click()
+    await page.wait_for_function("(want)=>(document.querySelector('[data-frame-asset-uri]')?.getAttribute('data-frame-asset-sample') ?? '')===want", arg=slow_target, timeout=40000)
+    buffering = await page_attrs(page)
+    report['real']['slow_media_injection'] = {'note': '只在浏览器侧为资产读取加 1.8 s 延迟（本地注入），归档与后端未做任何改动', 'asset_status': buffering['assetStatus']}
+    check('媒体慢时明确缓冲：迟到的字节不会顶替新帧，界面显示未就绪而不是上一帧的图像',
+          buffering['cursorSample'] == slow_target and buffering['cursorPending'] == 'true' and buffering['assetStatus'] == 'loading'
+          and buffering['assetSample'] == slow_target and buffering['canvas'] == 1
+          and live_scene_reads(slow_mark) == [], [buffering['assetStatus'], buffering['cursorPending']])
+    await page.unroute(re.compile(r'/api/v1/episodes/[^/]+/assets/'))
+    await wait_asset_settled(page)
+    settled = await page_attrs(page)
+    check('延迟结束后媒体与游标对齐：读到的就是被选那一帧的资产，树仍然一次都没重取',
+          settled['assetStatus'] == 'bytes' and settled['assetSample'] == slow_target and settled['cursorSample'] == slow_target
+          and len(tree_fetch_reads(slow_mark)) == 0, [settled['assetStatus'], settled['assetSample']])
+    await page.screenshot(path=str(a.output / 'playback-curve-cold-reload.png'), full_page=False)
+    report['real']['playback'] = {'cold_tree_fetches': report['real']['cold_reload'], 'camera_view_kept': all(abs(cold_after['camera'][key] - cold_view['camera'][key]) < 1e-6 for key in ('distance', 'azimuthDeg', 'polarDeg')),
+                                  'orbit_pivot_before': cold_view['camera']['target'], 'orbit_pivot_after': cold_after['camera']['target'],
+                                  'links': cold_after['links'], 'seek_scope': int(seeked['seekScope']), 'curve_frames': timed['curveFrames'],
+                                  'x_base': timed['curveXBase'], 'frame_order_axis_note': at_first['curveXNote'][:220], 'clock_axis_note': timed['curveXNote'][:220],
+                                  'tree_fetch_reads_during_playback': len(tree_fetch_reads(play_mark)),
+                                  'pose_reads_during_playback': len(pose_reads)}
+
+
 # ---- synthetic ---------------------------------------------------------------------------------------
 
 SOURCE_FIXTURE = {'source_id': SOURCE_ID, 'adapter_id': 'mobilecar', 'recording_root': '/fixture', 'access': 'read_only_files',
@@ -1448,7 +1628,7 @@ def records_payload(episode, stream, records, **patch):
     return value
 
 
-SLOW = {'frame': 'idle', 'pose': 'idle'}
+SLOW = {'frame': 'idle', 'pose': 'idle', 'asset': 'idle'}
 # Whether the robot-state request asked for the static tree; the handler sets it from the query string, so
 # the fixture answers exactly what was asked and a per-frame pose read cannot smuggle a tree in.
 ASK = {'tree': False}
@@ -1458,7 +1638,7 @@ SYNTH_EPISODES = ['episode_ok', 'episode_no_frames', 'episode_bad_frame_schema',
                   'episode_pose_missing', 'episode_pose_bad_schema', 'episode_pose_late', 'episode_asset_conflict',
                   'episode_no_part_readiness', 'episode_zero_angles', 'episode_no_world_pose_convention',
                   'episode_tree_identity', 'episode_link_order_swap', 'episode_pose_order_swap', 'episode_no_sim_keys',
-                  'episode_tree_refused', 'episode_content_move', 'episode_live_tree']
+                  'episode_tree_refused', 'episode_content_move', 'episode_live_tree', 'episode_play']
 # The tree the reader answers with, kept separate from the identity the record's outer fields declare: that
 # is what lets one case prove the binding catches a foreign tree rather than a missing key.
 SCENE = {'content_identity': CONTENT_ID, 'outer_content_identity': CONTENT_ID, 'arm_order': None, 'mode': 'ok'}
@@ -1475,6 +1655,26 @@ def set_scene_variant(content_identity=CONTENT_ID, outer_content_identity=CONTEN
     SCENE['outer_content_identity'] = outer_content_identity
     SCENE['arm_order'] = arm_order
     SCENE['mode'] = mode
+
+
+def play_frame(position):
+    """One frame of the playback fixture: distinct arm values per frame, a frame with no single state
+    selected (a break in the curve), and a frame whose recorded array is too short to name every axis."""
+    values = [position / 10.0, 0.0, 0.0, -1.5707963 + position / 100.0, 0.0]
+    arm = {'0': values, '1': values, '2': values[:2], '3': values}['2' if position == 2 else str(position % 4)]
+    single = position != 3
+    frame = frame_payload('rgbd_p%d' % position)
+    return {**frame,
+            'anchor': {**frame['anchor'], 'line_index': position, 'persist_sequence': position + 1,
+                       'clocks': {**frame['anchor']['clocks'], 'capture_backend_monotonic_s': 100.0 + position,
+                                  'persist_backend_monotonic_s': 100.5 + position, 'capture_sim_time_s': 1.0 + position}},
+            'state': {**frame['state'], 'single_state_selected': single,
+                      'recorded_state': {'arm_model_qpos_rad': arm, 'base_position_world_sim_m': [0.1 * position, 0.2, 0.05],
+                                         'gripper_width_m': 0.02, 'tcp_position_world_m': [0.17, 0.0, 0.3]} if single else None,
+                      'status': 'matched' if single else 'ambiguous_candidates',
+                      'candidate_records': 1 if single else 2,
+                      'multiple_candidates_note': None if single else 'two records claim this frame key',
+                      'note': frame['state']['note']}}
 
 
 def ambiguous_frame(sample='rgbd_ambiguous'):
@@ -1658,6 +1858,36 @@ async def synthetic_handler(route):
                                      paging=paging_fixture([1, 2], returned=2, next_offset=None, next_qualifying_anchor_line_index=None, has_more=False))
             payload['summary'] = {**payload['summary'], 'frames_returned': 2, 'frames_with_all_primary_roles_matched': 1, 'frames_with_ambiguous_primary_role': 1}
             await route.fulfill(json=payload); return
+        if episode == 'episode_play':
+            # Six frames, paged by the reader's own offset/limit, and a named-clock window really filters the
+            # rows out; a playing cursor must cross a page boundary the same way it steps: via next_offset.
+            play = [play_frame(i) for i in range(6)]
+            offset = int((query.get('offset') or ['0'])[0])
+            size = int((query.get('limit') or ['5'])[0])
+            base = (query.get('time_base') or [''])[0]
+            lower = (query.get('time_from') or [''])[0]
+            upper = (query.get('time_to') or [''])[0]
+
+            def inside_window(frame):
+                value = frame['anchor']['clocks'].get(base)
+                if value is None:
+                    return False
+                if lower and value < float(lower):
+                    return False
+                if upper and value > float(upper):
+                    return False
+                return True
+
+            kept = [row for row in play if inside_window(row)] if base else play
+            window_rows = kept[offset:offset + size]
+            await route.fulfill(json=frames_payload(episode, window_rows,
+                                                   paging=paging_fixture(window_rows, limit=size, offset=offset, returned=len(window_rows),
+                                                                         has_more=offset + size < len(kept),
+                                                                         next_offset=offset + size if offset + size < len(kept) else None,
+                                                                         next_qualifying_anchor_line_index=offset + size if offset + size < len(kept) else None,
+                                                                         skipped_before_offset=offset,
+                                                                         excluded_outside_time_window=len(play) - len(kept))))
+            return
         frames = [frame_payload(f'rgbd_{i}') for i in range(3)]
         offset = int((query.get('offset') or ['0'])[0])
         if offset:
@@ -1670,6 +1900,10 @@ async def synthetic_handler(route):
                                                                                              'note': 'no further qualifying anchor exists after this offset'}))); return
         await route.fulfill(json=frames_payload(episode, frames)); return
     if '/assets/' in path:
+        if episode == 'episode_play':
+            SLOW['asset'] = 'pending'
+            await asyncio.sleep(1.4)
+            SLOW['asset'] = 'done'
         if 'bad_digest_rgb.png' in path:
             await route.fulfill(status=409, content_type='application/json', body=json.dumps({'detail': {'code': 'episode_asset_digest_mismatch',
                                                                                                           'message': 'asset digest does not match the requested sha256',
@@ -2172,8 +2406,99 @@ async def synthetic_flow(page):
     played = await page_attrs(page)
     check('play advances on a UI cadence only, re-reading the state of each frame it lands on',
           playing == 'pause' and int(played['index']) >= 1 and played['modelDisplayed'] == played['currentSample']
-          and '节奏只控制界面推进，不是录制帧率' in played['text'] and '帧率' not in played['explanation'], (playing, played['index'], played['modelDisplayed']))
+          and '每秒展示帧数只是界面推进节奏' in played['text'] and '不等于录制帧率' in played['text']
+          and '倍速' not in played['rateLabel'] and '帧率' not in played['explanation'], (playing, played['index'], played['modelDisplayed']))
 
+
+
+    # ---- M3.0 合成夹具：共用游标、跨页连续播放、有界曲线与缓冲归属（夹具数据，不碰归档） ----
+    # The live routes stay refused by the fixture, so everything below is the history face working on its
+    # own reads: the tree is acquired once for this new namespace and never re-fetched per frame.
+    synth_mark = len(report['requests'])
+    await open_episode(page, 'run_a', 'episode_play')
+    await wait_model(page, 'ready')
+    play_page = await page_attrs(page)
+    check('曲线只画本页记录值：缺单一状态的那一帧五轴全断口，数组过短的那一帧只画它带的下标、缺的不猜',
+          play_page['curveFrames'] == '5' and play_page['curveWithState'] == '4' and play_page['curveMissing'] == '1'
+          and play_page['curveAxisFields'] == ['arm_model_qpos_rad[%d]' % i for i in range(5)]
+          and play_page['curveSegments'] == ['2'] * 5 and play_page['curveMissingAxis'] == ['1', '1', '2', '2', '2']
+          and play_page['curveInterp'] == 'none' and play_page['curveScope'] == 'current-page'
+          and len(tree_fetch_reads(synth_mark)) == 1, [play_page['curveSegments'], play_page['curveMissingAxis']])
+    await page.locator('[aria-label="播放节奏（每秒展示帧数，界面节奏）"]').select_option('0.5')
+    await page.locator('select[aria-label="帧分页大小"]').select_option('1')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-limit]')?.getAttribute('data-frame-limit') ?? '')==='1'")
+    mark_play = len(report['requests'])
+    await page.locator('[data-frame-play]').click()
+    # One frame per page at the slowest UI cadence: the walk only ends on the reader's own has_more=false,
+    # so the stop is a state the pane reports rather than a timeout the test guesses at.
+    await page.wait_for_function("()=>/界面停止推进/.test(document.querySelector('[data-frame-notice]')?.innerText ?? '')", timeout=90000)
+    crossed = await page_attrs(page)
+    walk_reads = len([r for r in report['requests'][mark_play:] if urlsplit(r['url']).path.endswith('/frames')])
+    check('合成路径同样跨页连续播放：每页 1 帧按 next_offset 连续推进，直到本页之后 has_more=false 才自己停，游标、3D 与曲线一起跟随，且不重取静态树',
+          crossed['playMode'] == 'play' and crossed['offset'] == '5' and crossed['hasMore'] == 'false' and walk_reads == 5
+          and crossed['cursorSample'] == crossed['currentSample'] == 'rgbd_p5' and crossed['assetSample'] == 'rgbd_p5'
+          and crossed['modelRequested'] == crossed['cursorSample'] and crossed['curveSelected'] == crossed['cursorSample']
+          and len(tree_fetch_reads(mark_play)) == 0 and crossed['modelTreeReads'] == '1'
+          and crossed['modelTreeReadEpisode'] == 'episode_play' and live_scene_reads(synth_mark) == [],
+          [crossed['offset'], walk_reads, crossed['cursorSample'], crossed['modelTreeReads']])
+    check('节奏措辞是“每秒展示帧数”并明确不是原速：慢节奏每秒 0.5 帧即 2000 ms/帧生效',
+          '每秒' in crossed['rateLabel'] and '倍速' not in crossed['rateLabel'] and crossed['rateMs'] == '2000', crossed['rateMs'])
+    await page.locator('select[aria-label="帧分页大小"]').select_option('5')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='5'")
+    paused_synth = await page_attrs(page)
+
+    # Slow bytes: the fixture delays every asset, so the buffering window is observable, and the loading
+    # row is bound to the frame that was asked for while the previous picture is already gone.
+    slow_rows = paused_synth['rowSamples']
+    await page.locator('[data-frame-pick="' + slow_rows[1] + '"]').click()
+    await page.wait_for_function("(want)=>(document.querySelector('[data-frame-asset-uri]')?.getAttribute('data-frame-asset-sample') ?? '')===want", arg=slow_rows[1], timeout=40000)
+    buffering = await page_attrs(page)
+    check('读取未就绪就写缓冲：面板不拿上一帧图像冒充，游标、曲线与 3D 已经指向新帧',
+          buffering['cursorPending'] == 'true' and buffering['assetStatus'] == 'loading' and buffering['assetSample'] == slow_rows[1]
+          and buffering['cursorSample'] == slow_rows[1] and buffering['curveSelected'] == slow_rows[1]
+          and await count(page, '[data-frame-asset-image]') == 0, [buffering['assetStatus'], buffering['cursorPending']])
+    await wait_asset_settled(page)
+    settled_synth = await page_attrs(page)
+    check('迟到的字节落地时仍归自己的帧：状态=bytes 且 sample 与被选帧一致，树依旧一次都没重取',
+          settled_synth['assetStatus'] == 'bytes' and settled_synth['assetSample'] == slow_rows[1]
+          and settled_synth['cursorSample'] == slow_rows[1] and len(tree_fetch_reads(synth_mark)) == 1, settled_synth['assetStatus'])
+
+    # A frame whose own state selection is ambiguous keeps its gap: the panel says so, it does not zero it.
+    await page.locator('[data-frame-pick="rgbd_p3"]').click()
+    await page.wait_for_function("(want)=>(document.querySelector('[data-frame-view] .history-cursor')?.getAttribute('data-cursor-selected-sample') ?? '')===want", arg='rgbd_p3', timeout=40000)
+    gap_frame = await page_attrs(page)
+    check('歧义/无单一状态的帧显示自己的说明与断点：不选第一条、不补 0、不沿用上一帧状态',
+          gap_frame['cursorSample'] == 'rgbd_p3' and 'rgbd_p3' in gap_frame['curvePicks']
+          and ('本帧没有单一选中的状态记录' in gap_frame['text'] or 'single_state_selected=false' in gap_frame['text'])
+          and gap_frame['singleState'] == 'false' and gap_frame['stateCandidates'] == '2', gap_frame['singleState'])
+
+    # Positioning by clicking the curve, then the empty-window case that used to race.
+    reads_before_curve = len([r for r in report['requests'] if urlsplit(r['url']).path.endswith('/frames')])
+    await page.locator('[data-curve-pick]').nth(0).click(force=True)
+    await page.wait_for_function("()=>(document.querySelector('[data-frame-view] .history-cursor')?.getAttribute('data-cursor-selected-sample') ?? '')==='rgbd_p0'", timeout=40000)
+    clicked = await page_attrs(page)
+    check('点曲线定位在合成路径同样成立：游标回到 rgbd_p0，页内定位一条帧页读取都不多发',
+          clicked['cursorSample'] == 'rgbd_p0' and clicked['index'] == '0' and clicked['curveSelected'] == 'rgbd_p0'
+          and len([r for r in report['requests'] if urlsplit(r['url']).path.endswith('/frames')]) == reads_before_curve, clicked['index'])
+    await page.locator('select[aria-label="帧时间基"]').select_option('capture_backend_monotonic_s')
+    await page.locator('input[aria-label="时间窗口起点"]').fill('1')
+    await page.locator('input[aria-label="时间窗口终点"]').fill('2')
+    await page.locator('[data-frame-window-apply]').click()
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-page-kind]')?.getAttribute('data-frame-page-kind') ?? '')==='window-empty'")
+    empty_now = await page_attrs(page)
+    check('空结果页的同一帧代次里模型面板即为 idle：切换帧选择时状态在同一渲染里回到未选择，不留旧状态',
+          empty_now['modelStatus'] == 'idle' and empty_now['playMode'] == 'play' and empty_now['cursorSample'] == 'none'
+          and empty_now['modelRequested'] == 'none' and '不请求 robot-state' in empty_now['modelStage']
+          and len(tree_fetch_reads(mark_play)) == 0, [empty_now['modelStatus'], empty_now['modelStage'][:100]])
+    await page.locator('[data-frame-window-clear]').click()
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='5'")
+    report['synthetic']['playback'] = {'curve_frames': play_page['curveFrames'], 'curve_segments': play_page['curveSegments'],
+                                       'missing_per_axis': play_page['curveMissingAxis'], 'tree_fetches_total': len(tree_fetch_reads(synth_mark)),
+                                       'cross_page_last_offset': crossed['offset'], 'cross_page_frame_reads': walk_reads,
+                                       'cursor_after_walk': crossed['cursorSample'], 'pane_tree_reads_after_walk': crossed['modelTreeReads'],
+                                       'live_scene_reads': live_scene_reads(synth_mark), 'empty_window_status': empty_now['modelStatus'],
+                                       'rate_ms': paused_synth['rateMs'], 'rate_label': paused_synth['rateLabel']}
+    await page.screenshot(path=str(a.output / 'synthetic-playback-curve.png'), full_page=False)
 
 async def boundary_checks(page):
     episode = a.complete_episode if a.mode == 'real' else 'episode_ok'

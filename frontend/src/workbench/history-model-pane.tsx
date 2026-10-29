@@ -54,8 +54,10 @@ const VIEWS = [
   { id: 'top' as const, label: '顶视', title: '顶视图：world_sim +Z，从上方看' },
 ];
 
+const IDLE_STAGE = { status: 'idle', reason: '未选择帧：不请求 robot-state（省略 sample_id 时 reader 会返回它自己的第一条记录），因此不装配任何模型。' };
+
 export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: string; runId: string | null; sampleId: string | null }) {
-  const [stage, setStage] = useState<{ status: string; reason: string }>({ status: 'idle', reason: '未选择帧：不读取 robot-state，也不装配模型。' });
+  const [stage, setStage] = useState<{ status: string; reason: string }>(IDLE_STAGE);
   const [pose, setPose] = useState<HistoryPoseDto | null>(null);
   /** The static tree the pane draws: this Episode's own robot-state answer, keyed by source namespace
    *  and content identity so a late or foreign tree can never be used for the wrong Episode. */
@@ -190,7 +192,10 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
     // THIS frame move.
     const scene = view.current;
     if (!scene) { setStage({ status: 'blocked', reason: '装配视图未能创建：不驱动任何部件，也不宣称已装配。' }); return; }
-    const drive = poseDriveOf(pose);
+    // With no frame bound, the surface is idle in the same render that drops the frame: the stage is never
+  // left showing the previous frame's status for a tick before an effect corrects it.
+  const shownStage = sampleId ? stage : IDLE_STAGE;
+  const drive = poseDriveOf(pose);
     scene.applyFramePose({ sample: pose.frame.sample_id, joints: drive.joints, base: drive.base, tcp: drive.tcp });
     setDisplayed(scene.attribution());
     // Record what this visit actually moved, keyed by the Episode identity: coverage may only ever be
@@ -209,6 +214,9 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
     releaseView();
   }, [releaseView]);
 
+  // With no frame bound, the surface is idle in the same render that drops the frame: the stage is never
+  // left showing the previous frame's status for a tick before an effect corrects it.
+  const shownStage = sampleId ? stage : IDLE_STAGE;
   const drive = poseDriveOf(pose);
   const rows = mappingRowsOf(pose);
   const partRows = partReadinessOf(pose);
@@ -246,8 +254,8 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
       });
   }
 
-  return <section className="history-model-pane" data-model-pane="true" data-model-status={stage.status}
-    data-model-episode={episodeId || 'none'} data-model-requested-sample={sampleId ?? 'none'}
+  return <section className="history-model-pane" data-model-pane="true"
+    data-model-episode={episodeId || 'none'} data-model-status={shownStage.status} data-model-requested-sample={sampleId ?? 'none'}
     data-model-displayed-sample={displayedSample || 'none'} data-model-attribution={attributed ? 'matched' : sampleId ? 'pending' : 'no-frame'}
     data-reference-pose="compiled-initial-layout" data-model-live-poll="off"
     data-frame-pose-verified={String(attributed && Boolean(displayed?.dynamicApplied))}
@@ -271,7 +279,7 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
       <div><b>{attributed && displayed?.dynamicApplied ? '本帧历史姿态（按部件门控）；未驱动部分仍是固定参考' : '固定模型参考；本帧没有可归属的历史姿态'}</b>
         <p>三类内容分得很清楚：<b>静态参考</b>＝冻结 bundle 的编译初始布局；<b>本帧历史姿态</b>＝只有该能力的 <code>part_readiness</code> 被判为可用、对应 <code>mapping</code> 为 <code>verified</code>、且本帧真带值时才驱动（机械臂用 <code>arm_model_qpos_rad</code> 的模型弧度，不做用户零位换算；底盘按记录的世界位姿替换根 free joint，不再叠加初始根偏移；TCP 只画位置点，不合成朝向）；<b>未驱动部分</b>保持编译布局并逐条写明原因。0 是合法数值；没有跨帧运动覆盖证据就不宣称所有轴已验证，<code>writer_identified=false</code> 与非同步声明继续保留。</p></div>
     </div>
-    <p className="session-note" data-model-stage={stage.reason}>{stage.reason}</p>
+    <p className="session-note" data-model-stage={shownStage.reason}>{shownStage.reason}</p>
     <p className="session-note" data-model-axis-convention="world_sim：+X=车头，+Y=车左，+Z=上（mujocoRoot 绕 X 轴 −90° 映射到 Three 的 Z-up）；关节轴取 bundle 的 joint_axis（模型弧度），底盘读 base_link 的世界位姿，TCP 只画位置点，不画朝向帧">
       坐标与轴向：<b>world_sim</b> +X=车头、+Y=车左、+Z=上，长度 m、角度 rad；渲染根把 world_sim 映射为 Three 的 Z-up（绕 X 轴 −90°），模型根不为任何视图旋转。
       关节轴取 bundle 的 <code>joint_axis</code>（子体坐标系），底盘用 <code>base_link</code> 的世界位姿，<b>TCP 只画位置点，不画朝向帧</b>。</p>

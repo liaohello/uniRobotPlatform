@@ -509,3 +509,102 @@ export function clockSamenessText(page: FramePageDto | null): string {
 }
 
 const text = (value: unknown) => value === undefined || value === null || value === '' ? 'null' : String(value);
+
+
+/**
+ * The bounded recorded-Actual curve. It reads only what this page already carries: each frame's own
+ * `state.recorded_state` with its single selected state record. Nothing here fetches the archive, and a
+ * frame without a selected state is a break in the line, never a zero and never a carried-over value.
+ *
+ * The x axis is either the frame's order within this loaded page (the reader's append order, which is a
+ * file order and explicitly not a clock) or one raw recorded time base taken from the anchor's own
+ * `clocks`, offered only when every frame of the page carries a finite value for it. A decrease in that
+ * base is reported and left where it is: the curve never silently re-sorts the record.
+ */
+export const ARM_ACTUAL_FIELD = 'arm_model_qpos_rad';
+export const CURVE_FRAME_ORDER = 'frame_order';
+export interface CurveAxisLabel { key: string; label: string; origin: string; unit: string; note: string }
+export interface CurvePoint { position: number; sampleId: string; lineIndex: number; persistSequence: number | null; x: number | null; value: number | null; missing: string }
+export interface CurveAxisSeries { field: string; label: string; points: CurvePoint[]; segments: CurvePoint[][]; missing: number; min: number | null; max: number | null }
+export interface FrameCurve {
+  xBase: string; xLabel: string; origin: string; unit: string;
+  series: CurveAxisSeries[]; joints: string[]; outOfOrder: { position: number; sampleId: string; from: number; to: number }[];
+  frames: number; withSelectedState: number; withoutValue: number; target: string; note: string;
+}
+
+/** Which x axes this page can honestly offer: frame order always, a raw clock base only when complete. */
+export function curveXAxesOf(page: FramePageDto | null): CurveAxisLabel[] {
+  const frames = page?.frames ?? [];
+  const axes: CurveAxisLabel[] = [{ key: CURVE_FRAME_ORDER, label: '帧顺序（本页第 N 帧，reader 的追加顺序）', origin: `cursor.order=${page?.cursor.order ?? '未声明'}`, unit: '帧序号（不是时钟）',
+    note: `line_index 不是时钟（${String(page?.cursor.line_index_is_not_a_clock ?? '未声明')}）：这条轴只表示本页内的先后，不换算成秒。` }];
+  const keys = ['capture_backend_monotonic_s', 'persist_backend_monotonic_s', 'capture_sim_time_s'];
+  // With no frames on the page there is nothing to judge a base by: only frame order is offered.
+  if (!frames.length) return axes;
+  keys.forEach((key) => {
+    const values = frames.map((frame) => numeric(frame.anchor.clocks?.[key]));
+    if (frames.length && values.every((value) => value !== null)) {
+      axes.push({ key: `anchor.clocks.${key}`, label: `原始记录时间基 ${key}`, origin: `锚点 ${frames[0].anchor.relative_path} 的 anchor.clocks`,
+        unit: page?.time.units?.['*_s'] ?? 'seconds（按 time.units 原样）',
+        note: `本页 ${frames.length} 帧全部带 ${key} 的有限数值，所以可以用作横轴；它是记录自己的一个钟，不声称与别的流同源。` });
+    } else {
+      axes.push({ key: `anchor.clocks.${key}`, label: `原始记录时间基 ${key}（本页不完整，不可选）`, origin: 'anchor.clocks', unit: '—',
+        note: `本页有帧缺 ${key} 或非数值：不提供该轴，也不补值、不裁剪到部分帧。` });
+    }
+  });
+  return axes;
+}
+
+/** The five arm values of the frames on this page. `joints` are array indexes, because the page carries
+ *  no per-frame joint names: the name↔index correspondence is attested only for the frame whose
+ *  robot-state was read, so the curve keeps the record's own array labelling. */
+export function frameActualCurveOf(page: FramePageDto | null, xBase: string): FrameCurve {
+  const frames = page?.frames ?? [];
+  const clockKey = xBase.startsWith('anchor.clocks.') ? xBase.slice('anchor.clocks.'.length) : null;
+  const joints = [`[${0}]`, `[${1}]`, `[2]`, `[3]`, `[4]`].map((suffix) => `${ARM_ACTUAL_FIELD}${suffix}`);
+  let outOfOrder: FrameCurve['outOfOrder'] = [];
+  let previous: number | null = null;
+  const points: { x: number | null; values: (number | null)[]; missing: string }[] = frames.map((frame, position) => {
+    const x = clockKey ? numeric(frame.anchor.clocks?.[clockKey]) : position + 1;
+    if (x !== null && previous !== null && x < previous) outOfOrder.push({ position, sampleId: frame.sample_id, from: previous, to: x });
+    if (x !== null) previous = x;
+    const state = frame.state.recorded_state;
+    const arm = Array.isArray(state?.[ARM_ACTUAL_FIELD]) ? (state![ARM_ACTUAL_FIELD] as unknown[]) : null;
+    const missing = !frame.state.single_state_selected || !state
+      ? `single_state_selected=${String(frame.state.single_state_selected)} · status=${frame.state.status}：本帧没有单一选中的状态记录，断口不补值`
+      : !arm ? `recorded_state 里没有 ${ARM_ACTUAL_FIELD}`
+        : arm.length < 5 ? `${ARM_ACTUAL_FIELD} 长度 ${arm.length} < 5：不按顺序猜缺的轴` : '';
+    return { x, values: joints.map((_, index) => numeric(arm?.[index])), missing };
+  });
+  const series: CurveAxisSeries[] = joints.map((field, axis) => {
+    const list: CurvePoint[] = frames.map((frame, position) => ({
+      position, sampleId: frame.sample_id, lineIndex: frame.anchor.line_index, persistSequence: frame.anchor.persist_sequence ?? null,
+      x: points[position].x, value: points[position].values[axis], missing: points[position].missing,
+    }));
+    const segments: CurvePoint[][] = [];
+    let open: CurvePoint[] = [];
+    list.forEach((point) => {
+      if (point.value === null || point.x === null) { if (open.length) segments.push(open); open = []; return; }
+      open.push(point);
+    });
+    if (open.length) segments.push(open);
+    const finite = list.filter((point) => point.value !== null).map((point) => point.value as number);
+    return { field, label: field, points: list, segments, missing: list.filter((point) => point.value === null).length,
+      min: finite.length ? Math.min(...finite) : null, max: finite.length ? Math.max(...finite) : null };
+  });
+  const withSelectedState = frames.filter((frame) => frame.state.single_state_selected && frame.state.recorded_state).length;
+  const axis = curveXAxesOf(page).find((item) => item.key === xBase) ?? curveXAxesOf(page)[0];
+  const keyFields = new Set(frames.flatMap((frame) => Object.keys(frame.state.recorded_state ?? {})));
+  const targetFields = [...keyFields].filter((key) => /target|command|desired|setpoint/i.test(key));
+  return {
+    xBase: axis.key, xLabel: axis.label, origin: axis.origin, unit: axis.unit, series,
+    joints: [`0`, `1`, `2`, `3`, `4`], outOfOrder,
+    frames: frames.length, withSelectedState, withoutValue: series[0]?.missing ?? 0,
+    target: targetFields.length
+      ? `本帧记录里出现的可能目标字段：${targetFields.join(', ')}（逐个仍需来源与语义明确才画；本页不猜）`
+      : `recorded_state 的键集合（${[...keyFields].sort().join(', ') || '空'}）里没有语义明确的位置目标：不画记录 Target。` +
+        ` wheel_velocity_rad_s 与 base_twist_body_m_s 是速度/旋量，不是关节目标；命令意图更不等于 Actual。`,
+    note: axis.note,
+  };
+}
+
+const numeric = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null;
