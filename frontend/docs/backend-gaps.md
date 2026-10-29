@@ -44,7 +44,15 @@
 - 取树规则按内容身份：以 `episode|run` 为来源命名空间、`content_identity_sha256` 为键，首次或内容变化时取一次完整树，其后逐帧请求省略该参数；默认响应没有 `model_tree` 是正常行为，不触发每帧重下；每个 Episode 仍重新核验自身身份，资产 URI 绑定当前 run/episode；不缓存整条 `robot-state`，不沿用旧帧的 pose、mapping 或 part_readiness；动态响应无 `ETag` 属预期，不要求 304，也不把 mesh 的内容 ETag 用到整条响应上。
 - 绑定由"七个字段"扩为 **12 行身份/计数/引用行 ＋ 记录点名节点的逐节点行**：四个摘要（树的 `content_identity` 自述 vs 记录外层同名值——两个各自发布的值，不是把同一对象复制到两侧）、`link_count`、`world_link_count`、`arm_hinge_joints`（记录声明的名单在树文档顺序里的同名子集，不引入命名猜测）、`counts.{links,world_links,geoms,mesh_geoms}`（树自述与其实体数组条数自洽）与 `mesh_asset_id 可解析`；任一行不等即拒绝装配。真实两侧全等：`275389464eee…`／`cb7899642604…`／`9e1b60c04b8d…`／`a7b8b2c2d12d…`、71／2、`joint1..joint5`、100／22，引用 22 个、未解析 0 个。
 - 界面同时如实报告 **22/23 个声明资产被树引用**（未被引用的 `imu_link` 列出，不要求全部被引用）并继续声明 `world_links` 只是编译参考布局、不是 `target_cube` 等对象在本 Episode 的历史位置。两类请求分别归属统计：面板自身取树次数写在 `data-model-tree-reads`（真实首帧 1 次、换帧 0 次、切 Episode 再 1 次），应用自身的在线读取（`/api/v1/mobilecar/snapshot` 等，属另一组件）单列记录，不混作历史面的证据。
-- 本节取代上面 2026-10-28 的"**仍未解除的阻塞：Episode 作用域的静态模型 manifest 尚未发布**"：该依赖已交付并被解除。仍然成立的缺口是"世界物体没有历史位姿记录"（`mapping.dynamic_scene_objects=missing`，`world_links` 只是编译初态），以及夹爪换算、相机外参、跨流同步与统一历史游标——本 Goal 不推进这些，也不主张整车位姿重建、渲染级 3D 回放或正式 M1/M1.5 验收通过。
+- 本节取代上面 2026-10-28 的"**仍未解除的阻塞：Episode 作用域的静态模型 manifest 尚未发布**"：该依赖已交付并被解除。仍然成立的缺口是"世界物体没有历史位姿记录"（`mapping.dynamic_scene_objects=missing`，`world_links` 只是编译初态），以及夹爪换算、相机外参与跨流同步——本 Goal 不推进这些，也不主张整车位姿重建、渲染级 3D 回放或正式 M1/M1.5 验收通过。（下面 M3.0 一节只解除"单 Episode 内共用帧游标"，不解除跨流同步。）
+
+## 已接入（M3.0 · 共用帧游标与连续只读播放工作台完全基于 18977 现有字段，无需新后端能力）
+
+- 本切片**不请求也不消费任何新字段**：共用游标、跨页连续播放、页内定位、缓冲归属与五轴历史 Actual 曲线只读 `frames` 已发布的 `paging.{has_more,next_offset,anchor_lines,scan,排除计数}`、`cursor.{order,line_index_is_not_a_clock,persist_sequence…}`、`anchor.clocks.*`、`time.units` 与 `robot-state` 的 `state.recorded_state`。历史面仍是那八条 GET，没有新增路由或查询参数。
+- 记录里没有语义明确的位置目标，所以曲线只画 Actual：18977 上抽样本 Episode 前 200 帧，每一帧都带 `recorded_state.arm_model_qpos_rad`，且 200 个向量互不相同；`recorded_state` 的键集合只有 `arm_model_qpos_rad / base_position_world_sim_m / base_quaternion_xyzw / base_twist_body_m_s / gripper_width_m / tcp_position_world_m / sim_time_s / feedback_time_monotonic / wheel_velocity_rad_s`。其中 `wheel_velocity_rad_s`、`base_twist_body_m_s` 是速度/旋量，不是关节目标。界面因此写明"不画记录 Target、命令意图更不等于 Actual"，并在键集合里真的出现目标字段时改为逐个提示、不自动画线。
+- 未取得全 Episode 范围是 reader 的既有行为，不是本切片的缺口：`frames` 的 `paging` 不给总帧数（也不回显请求的 `sample_id`，`excluded_by_sample_id_filter` 只证明条件生效），所以界面只用"本页读取到 N 帧"与"定位范围＝本页已读取的 N 帧"，不显示总时长或全局进度百分比；播放节奏只标"每秒展示 N 帧（界面节奏）"。后端尚未给出任何"可按记录时间播放"的资格字段，因此不称原速/真实倍速——这一条留给后续切片，不在本 Goal 里靠猜字段补齐。
+- 横轴资格同样由本页数据自己判定：`anchor.clocks` 的三个钟只有当本页每一帧都带有限数值时才可选，否则该选项禁用并说明"本页有帧缺该钟：不补值、也不裁剪到部分帧"；数值相对前一帧回退时按记录原顺序绘制并报告首处位置，界面不重排。`cursor.line_index_is_not_a_clock=true` 原样显示在横轴说明里。
+- 因此本轮只主张"单 Episode 共用帧游标 ＋ 按 UI 节奏的连续只读播放 ＋ 有界历史 Actual 曲线"；**不主张**跨流采样同刻同步、按记录时间的原速回放、整车重建或正式 M1/M1.5 验收通过。
 
 ## 已接入（M2.0 · 分部历史姿态在 18970 上开放，Episode 作用域模型 manifest 仍未发布）
 

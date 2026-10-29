@@ -1,3 +1,53 @@
+# M3.0 单 Episode 共用帧游标与连续只读播放工作台（2026-10-29）
+
+在 M2.4 的“历史装配只剩一个来源”之上，把**当前查看位置**收敛成 FrameBrowser 内的一个游标：帧列表与定位控件、RGB、关联状态、时间面板、历史 3D 与新增的五轴历史 Actual 曲线全部跟随同一个选择；播放跨过页末时按 reader 自己的 `next_offset` 连续前进、到 `has_more=false` 自己停止；节奏措辞改为“每秒展示帧数”，并明确它**不是原速/真实倍速**（后端未证明记录时间播放资格）。只修改 `frontend/`；不发运动/RESET/录制/STOP/导航，不改后端、公共契约或 native，不新增路由、不放宽代理白名单。本切片不主张跨流采样同刻同步、整车位姿重建、已验证 3D 历史回放或正式 M1/M1.5 验收通过。
+
+## 一、共用当前查看位置
+
+- 游标身份写在面板头部：`data-frame-cursor-selection = offset|index|sample_id`、`data-cursor-selected-sample`；跟随它的五个消费者各自回显同一 `sample_id`——帧列表选中行、RGB（`data-frame-asset-sample`）、关联状态面板（`data-frame-displayed-sample`）、时间面板（`data-frame-displayed-sample`）、历史 3D（`data-model-requested-sample` / `data-model-displayed-sample`）与曲线竖线（`data-curve-selected-sample`）。
+- 保留既有语义：`run_id`/`episode_id` 仍是身份；`sample_id` 精确条件与时间窗口条件仍显示在 `data-frame-context-sample` / `data-frame-context-window`，换 Episode 全部作废；锚点原始位置继续以 `line_index` + `persist_sequence` 呈现，`data-frame-line-index-clock="true"` 与 `data-frame-cursor-order` 一起说明**文件追加顺序不是时钟**——曲线横轴与定位控件都不把行号命名为时间。
+- 没有引入跨应用全局 store：游标是组件内状态，历史面仍渲染在 `WorkbenchContext` 之外（该 context 只服务工作台面板）。
+
+## 二、连续播放与定位
+
+- 节奏选项是**每秒展示帧数**（每秒 2 / 1 / 0.5 帧 → 500 / 1000 / 2000 ms/帧），界面同时打印 `data-frame-playback-rate-ms` 与“每秒展示帧数只是界面推进节奏……不称原速/真实倍速，也不等于录制帧率”。
+- 跨页连续：`readPage` 增加 `keepPlaying`，播放导致的翻页不再停播；页末 `has_more=false` 时播放自行关闭并写明“不推断录制结束，也不声称已遍历全部帧”；起点 `offset=0` 向后不循环、不伪造。
+- 定位范围只到本页读取到的帧：本页下拉（逐行列出 `line_index` 与 `sample_id`）、本页首帧/末帧按钮、点表格行、点曲线；`data-frame-seek-scope` 与说明文字明确“不显示总时长或全局进度百分比”，`data-frame-total-forbidden` 的旧约束保留。
+- 现有 `sample_id` 精确打开与时间窗口入口不变；窗口条件仍遵守锚点文件的追加顺序，改窗口/改条件/切 Episode/拖动定位都会停播并丢弃在旧代次上的响应。
+
+## 三、播放中的一致显示（复用既有归属，不建第二套调度）
+
+- 复用 `pageSerial`/`assetSerial`/`frameKeyRef` 与模型面板的 `poseSerial`：新帧的姿态、状态与媒体仍归属被请求的那一帧，迟到的读取或解码都不写进新选择。
+- 缓冲：游标行新增 `data-frame-cursor-pending`（媒体仍在读取/解码时为 true 并写明“不拿上一帧的图像顶替”）；`clearMedia` 保证换帧即清旧图；缺失、歧义（多条候选不选第一条）、被拒（`refused`）、不支持格式（NumPy 只按字节读、不做数值解码）各自显示自己的说明，不补 0、不沿用上一帧。
+- **修掉的真实时序缺陷**：模型面板过去只在 `useEffect` 里把状态改回 idle，帧面板 DOM 已经更新而面板仍带着上一代的 status 一拍。现在渲染期即 `shownStage = sampleId ? stage : IDLE_STAGE`，空结果页/未绑定帧的同一渲染里状态就是 idle。这正是上一轮“空时间窗 `modelStatus=idle`”抖动的根因：等待条件写在帧面板上、断言却读模型面板的 effect 结果。合成路径现在断言“同一代次里即为 idle”，不靠加 sleep、不放宽阈值。
+
+## 四、最小历史 Actual 曲线（有界、不插值、不猜 Target）
+
+- 数据只用**本页已经取得**的 `frames[].state.recorded_state.arm_model_qpos_rad`（真实首页 5 帧、切到每页 20 帧时 20 帧全部带单一选中状态），不额外请求 robot-state、不下载整份归档、不新增依赖（手写 SVG）。
+- 五条子图各自独立纵向缩放（避免把 joint4 与近零轴塞进同一比例后看不出差异），轴标签用记录数组下标 `arm_model_qpos_rad[0..4]`——本页不带每帧关节名，名称与下标的对应只在被读取那一帧的 `robot-state.arm_hinge_joints` 成立，界面不按顺序猜名字。
+- 缺失即断点：`single_state_selected=false`（或该帧没有 `recorded_state`、没有 `arm_model_qpos_rad`）→ **五条轴在该帧一起断开**；`arm_model_qpos_rad` 长度不足 5 时，只画该数组确实带有的下标，缺的下标断开并写明“长度 2 < 5：不按顺序猜缺的轴”。`data-curve-interpolation="none"`，`data-curve-segments`/`data-curve-missing` 逐轴可断言；min/max 只在存在的点上计算，不补 0。
+- 横轴二选一并写明来源：默认“帧顺序（本页第 N 帧，reader 的追加顺序）”，单位原样标“帧序号（不是时钟）”，并附 `line_index 不是时钟（响应原值）` 的说明；或记录自己的原始时间基（`anchor.clocks.capture_backend_monotonic_s` / `persist_backend_monotonic_s` / `capture_sim_time_s`），**只有本页每帧都带该钟的有限数值才可选**，否则下拉里标“本页不完整，不可选”。检测到相对前一帧回退时报告首处并在原位绘制，不重排、不丢弃。
+- Target：`recorded_state` 的键集合里没有语义明确的位置目标，界面因此**不画记录 Target**，并点名 `wheel_velocity_rad_s`、`base_twist_body_m_s` 是速度/旋量、命令意图不等于 Actual（`data-curve-target-note`）。若某档档案真的带命名明确的 target 字段，界面只点出字段名，仍不当作 Actual。
+- 点曲线任意一处或点表里的 `sample_id` 即移动同一个游标，五个面板一起跟随，且不为此多发一次帧页读取。
+
+## 五、同一冻结 dist 的实际验证与复现入口
+
+- 最终冻结 dist `m1-front-geometry-20261029T170417Z-b074b6c757e6`（聚合摘要 `b074b6c757e6`），上游 127.0.0.1:18977（M1.5f）。构建、单元测试与浏览器检查全部在授权服务器执行；真实与合成两条路径在同一 dist、同一上游上各自独立跑完，结果不拼接。
+- 真实归档（预览 19068）：unit 186/186（11 个文件）；`frames` **104** 项通过；同轮 `history` 78、`geometry` 23、`config` 51、`session` 38、`lifecycle` 48 全部通过。
+- 合成夹具（预览 19069，`/api/v1/mobilecar/**` 与在线路由被夹具拒绝）：同一 dist、同一 unit 186/186；`frames` **78** 项通过；`history` 42 项通过。
+- 真实路径逐值：冷页面＋冷缓存重载后取树 1 次、面板自报读取 1 次、`live_scene_reads=[]`、资产 `bytes`。每页 20 帧时 `data-curve-frames=20`、`with-state=20`、缺 0；播放跨页继续推进，播放窗口内**取树 0 次**、被落帧的姿态读取 2 次；页内定位范围为 20 且不为定位多发一次帧页读取；横轴切到 `anchor.clocks.capture_backend_monotonic_s` 后界面写明“本页 20 帧全部带该钟的有限数值……不声称与别的流同源”，帧顺序轴写明“单位＝帧序号（不是时钟）· line_index 不是时钟（true）”；末页 `has_more=false` 时播放自己关闭。媒体慢响应只在浏览器侧注入 1.8 s 延迟（归档与后端未做任何改动）：`assetStatus=loading`、`cursorPending=true`、没有上一帧的图像冒充；台账记下 1 条被页面主动取消的资产路由（`Route is already handled`），这正是切帧丢弃旧读取的表现。
+- 合成路径逐值：6 帧、每页 1 帧、每秒 0.5 帧的节奏从 offset 0 连续走到 5，共 5 次帧页读取，`has_more=false` 后自己停；游标、3D、曲线都落在 `rgbd_p5`，面板取树仍 1 次、播放窗口内 0 次重取、在线 scene 读取为空。曲线逐轴 `segments=[2,2,2,2,2]`、断点 `[1,1,2,2,2]`：`single_state_selected=false` 那一帧五轴一起断口，长度 2 的那一帧只画它确实带的两个下标、缺的不猜。空时间窗的同一渲染里 `modelStatus=idle`、`cursorSample=none`、`data-model-requested-sample=none`。
+- 相机布局保持：播放、页内定位与切轴之后 `distance / azimuthDeg / polarDeg` 在 1e-6 内不变，`links` 仍是 71，`pendingLoads=0`、`assetFailures=[]`；环绕轴心会按当前帧的模型重新取景（记录里底盘与臂本来就在动，实测两次 target 分别为 `[0.0326, 0.0, 0.2540]` 与 `[0.0673, 0.1703, 0.0300]`），因此沿用 M2 已有约定比较视角三值与 link 数，不比较 target。
+- 复现入口（服务器）：`bash /tmp/m24run.sh m1-front-geometry-20261029T170417Z-b074b6c757e6 real 19068 "<本轮说明>"`、`bash /tmp/m24run.sh m1-front-geometry-20261029T170417Z-b074b6c757e6 synthetic 19069 "<本轮说明>"`；报告在 `~/Desktop/uniRobotPlatform/var/reports/<REL>-{real,synthetic}/`，其中 `frames/browser.json` 的 `real.playback` / `synthetic.playback` 就是上面这些数值的原始记录。核活只用 `GET /api/v1/episodes?limit=1`（`/health` 未注册，404 不是故障）。
+
+## 六、同一 dist 的首次失败、诊断与修正（不加固定 sleep、不降阈值）
+
+- 需求点名的“空时间窗 `modelStatus=idle`”抖动有真实产品成因：模型面板过去只在 `useEffect` 里把状态改回 idle，帧面板 DOM 已经换帧而面板仍带着上一代 status 一拍。改为渲染期 `shownStage = sampleId ? stage : IDLE_STAGE` 后，最终 dist 的合成路径首次即通过该断言，没有新增任何固定等待，也没有放宽判定。
+- 首个 dist `…T161135Z-21ddfe950f31`：真实 `frames` 停在第 70 项，`data-cursor-selected-sample` 读到 `None`——`.history-cursor` 同样存在于旧的 `history-view` 流游标上，选择器命中了第一个；把三处选择器限定为 `[data-frame-view] .history-cursor` 后通过。同轮合成停在第 53 项：断言用整页文本判断“不出现‘倍速’”，而新增说明合法地写着“不称原速/真实倍速”；改为只判断节奏选项文本。
+- 第二个 dist `…T162036Z-42abe00d6a5a`（与本 dist 同一份前端产物，只改测试）：真实第 75 项把“不是时钟”断言在 `data-curve-x-label` 上，而界面把它写在单位与 `data-curve-x-note` 里（单元测试钉的就是 `unit` 字段），改为读面板自己的横轴说明；合成第 54 项期望“数组过短的五轴全断”，与单元测试有意保留的“只画该帧确实带的下标、缺的不猜”规则冲突，按产品实际规则改为逐轴 `[1,1,2,2,2]`。
+- 同一产物的第三～五轮（逐步收紧测试作用域，非产品问题）：`wait_frames` 不支持 `arg`，改用 `page.wait_for_function`；分页选项没有“2”这一档，改用现有 1/5/20，并把跨页播放的等待条件换成面板自己报告的“界面停止推进”而不是猜偏移；曲线点选后“不多发帧页读取”原先从更早的标记数起，会被前一次改页大小的在途响应污染，改为紧贴点击取标记；注入延迟的路由处理器在页面主动取消旧读取时抛 `Route is already handled` 使整轮中断，改为记录这次取消，同时保留“缓冲／落定”两个 DOM 断言。修正后 `…T170417Z-b074b6c757e6` 真实 104 项、合成 78 项一次通过。
+- 本轮除上面的渲染期 idle 修复外**没有发现其它产品缺陷**：其余失败都在测试断言的作用域与夹具能力上，逐条留档以免被误记为“抖动”。
+
 # M2.4 历史装配只剩一个来源：采用 18977 的 `include_model_tree`，在线场景读取被删除（2026-10-29）
 
 后端 M1.5f 把前端等待的那一项交付在**既有路由**上：`GET /api/v1/episodes/{id}/robot-state` 新增可选布尔查询参数 `include_model_tree`（默认 `false`；非布尔 422 `bool_parsing`；`schema_version` 未升版；历史面仍是八条 GET）。本节把历史固定模型树的来源从 `GET /api/v1/mobilecar/scene` 切换到该 Episode 自己的 `robot-state.model_resource.model_tree`，并删除历史装配对在线路由的读取与回退。**这关闭了 M2.0 第三节里"清单仍取自在线路由"那一条未达成项**；整车完整重建、跨流同步、已验证 3D 历史回放与正式 M1/M1.5 验收仍不宣称。
