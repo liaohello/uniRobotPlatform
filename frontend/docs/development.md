@@ -118,6 +118,14 @@
 
 ![同一条 run 的第二档档案：固定模型树照常装配（画布 1、身份绑定全等），但一个记录部件都不驱动，未驱动清单逐项写自己的 status 与规则](../reports/m1-front-geometry-20261028T133915Z-754c2f3325b8-real/frames/pose-second-archive-no-drive.png)
 
+## 九、树与记录的逐节点绑定（2026-10-29 收尾切片，聚焦验证）
+
+第四节此前的绑定只比较**七个摘要/计数字段**；本切片把记录**自己点名的节点**也逐条对上：`root_joint`、`tcp_parent_body_view`、`end_effector_link`、`camera_link_chain` 的每个 link 与 `world_links` 的每个物体，以及 `arm_hinge_joints`/`gripper_slide_joints`/`gripper_other_joints_in_bundle`/`wheel_hinge_joints` 的每个关节名。规则与既有门控一致——**只比较记录声明了的字段，未声明就不猜**；树里找不到同名 link 就单行写明“装配用的树里没有同名 link”，找不到同名关节就写“树里没有同名关节”。这些行与摘要行合进同一张绑定表（`data-tree-binding-row`），任一行为 `false` 即 `blocked`、不装配也不退回在线 Actual（[platform-history-pose.ts](../src/adapters/platform-history-pose.ts) 的 `linkBindingRowsOf`，[history-model-pane.tsx](../src/workbench/history-model-pane.tsx) 的 `bindingRowsOf`）。真实数据前置已实测成立：18970 主档案点名的 14 个 link 与 14 个关节名在装配用的树里全部同名存在且 `parent_name/joint_name/joint_type` 全等，因此新门控不会误拦真实记录。
+
+**这一片的边界（不夸大）**：它证明的是“被检查的那些节点确实对上”，**不**等于历史装配已与在线树来源无关——完整 71 条 link 的 `local_transform` 与 `geoms[].mesh_asset_id` 仍只能从 `GET /api/v1/mobilecar/scene` 取到，第 4 条的在线依赖未解除（见“未覆盖与下一步”）。本轮按交接要求只做**聚焦验证**：授权服务器上 `npm run build`（含 `tsc --noEmit`）通过、`vitest run` **177/177**（11 个文件，新增 7 条逐节点用例）；运行目录是聚焦用的 `var/focused/m1-front-geometry-20261029T073934Z-5adb59da7f5d/frontend`（同一 node 20 环境与同一 `node_modules`，不是交付 release）；**不**为这个仍用旧树来源的过渡版本重复跑真实＋合成两套浏览器 pass，也不再去扫描端口找不存在的接口。浏览器层的完整回归与最终交付预览（19049/19048，冻结 `…T133915Z-754c2f3325b8`）保持不动，逐节点绑定会在后端补出完整 `links[]` 后随 #34 的联合验收一并进入浏览器断言。
+
+过程中修掉的两条测试自身契约错误（不是产品缺陷）：① “rewired parent”用例原本只改 `joint_type`，名字却在说父节点——现按事实拆成两条：`joint_type` 变化一条，另一条让记录真的声明 `parent_name`（`guide_rod_link` 挂到 `link2`），再断树侧接成 `link3` 时只出现 `guide_rod_link/parent_name` 一行 `false` 且左右两侧原值如实显示；② 空节点表那条先前断言“应当没有行”，实测是 14 条——实现是对的（记录点名的每个节点都缺席就每个都拒绝），断言按事实改为**核对完整的行集合**（每个点名 link 一条 `link_exists=false`、每个声明关节一条 `joint_in:<清单>=false`），而不是把 0 改成 14。
+
 ## 未覆盖与下一步
 
 - **资产摘要守卫已在真实候选上单独实测（本轮，只读 GET）**：对 18970 的同一条资产路由，带正确 `sha256` 得 `200 model/stl`（1,020,984 字节），带错误 `sha256` 得 `409 history_asset_revision_changed`（`message="asset digest differs from the frozen bundle"`，`read_only=true`，不返回字节），**不带** `sha256` 则同样返回 `200` 与字节——即校验只在参数存在时生效。前端把摘要无条件写进每条资产 URI，所以屏幕上每一次字节读取都走“服务端先比对再放行”的那一支；夹具与界面显示的 409 码与实测逐字一致（不是测试自拟的码名）。

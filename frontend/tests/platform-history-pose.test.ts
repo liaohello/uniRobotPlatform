@@ -4,7 +4,7 @@ import {
   HISTORY_POSE_SCHEMA, assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, drivenValuesOf, etagDigest,
   fkCrossCheckOf, mappingRowsOf, mergeVisitedValues, modelAssetRowsOf, modelResourceText, modelVsUserText,
   motionCoverageOf, notProvenText, partReadinessOf, poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText,
-  readHistoryModelAsset, readRobotState, renderingText, treeBindingRowsOf, versionBindingText, type HistoryPoseDto,
+  readHistoryModelAsset, readRobotState, renderingText, treeBindingRowsOf, linkBindingRowsOf, versionBindingText, type HistoryPoseDto,
 } from '../src/adapters/platform-history-pose';
 
 // The base fixture copies the shape of the `unirobot-mobilecar-history-pose-1` payload the 18969
@@ -507,5 +507,82 @@ describe('readiness, kinematic and identity projections', () => {
     expect(modelResourceText(poseFixture())).toContain('live_native_scene_proxied=false');
     expect(modelResourceText(poseFixture())).toContain('base_link/base_free/free');
     expect(comparisonRowsOf(null)).toEqual([]);
+  });
+});
+
+describe('link-by-link binding of the nodes the record itself names', () => {
+  const mr = () => m15eFixture().model_resource!;
+  type TreeNode = { name: string; parent_name?: string | null; joint_name?: string | null; joint_type?: string | null };
+  /** A tree that agrees with every name/joint the record declares, built from the record's own lists. */
+  const agreeingTree = (): TreeNode[] => [
+    { name: 'base_link', parent_name: 'universe', joint_name: 'base_free', joint_type: 'free' },
+    ...(mr().arm_hinge_joints ?? []).map((joint) => ({ name: `link_${joint}`, joint_name: joint, joint_type: 'hinge' })),
+    ...(mr().gripper_slide_joints ?? []).map((joint) => ({ name: `link_${joint}`, joint_name: joint, joint_type: 'slide' })),
+    ...(mr().wheel_hinge_joints ?? []).map((joint) => ({ name: `link_${joint}`, joint_name: joint, joint_type: 'hinge' })),
+    { name: 'guide_rod_link', joint_type: 'fixed' },
+    ...(mr().world_links ?? []).map((link) => ({ name: link.name })),
+  ];
+
+  it('binds every declared node when the tree carries them', () => {
+    const rows = linkBindingRowsOf(m15eFixture(), agreeingTree());
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.filter((row) => row.equal !== 'true')).toEqual([]);
+    expect(rows.some((row) => row.name === 'guide_rod_link' && row.field === 'joint_type' && row.equal === 'true')).toBe(true);
+    expect(rows.filter((row) => row.field.startsWith('joint_in:')).length)
+      .toBe((mr().arm_hinge_joints ?? []).length + (mr().gripper_slide_joints ?? []).length + (mr().wheel_hinge_joints ?? []).length);
+  });
+
+  it('catches a changed joint type on a named node even when every mesh digest still matches', () => {
+    const rows = linkBindingRowsOf(m15eFixture(), agreeingTree().map((node) => node.name === 'guide_rod_link' ? { ...node, joint_type: 'hinge' } : node));
+    expect(rows.filter((row) => row.equal === 'false').map((row) => `${row.name}/${row.field}`)).toEqual(['guide_rod_link/joint_type']);
+  });
+
+  it('catches a rewired parent when the record itself declares one', () => {
+    const declaring = { ...m15eFixture(), model_resource: { ...mr(), tcp_parent_body_view: { name: 'guide_rod_link', parent_name: 'link2', joint_type: 'fixed' } } };
+    const agreeing = linkBindingRowsOf(declaring, agreeingTree().map((node) => node.name === 'guide_rod_link' ? { ...node, parent_name: 'link2' } : node));
+    expect(agreeing.filter((row) => row.name === 'guide_rod_link' && row.field === 'parent_name').map((row) => row.equal)).toEqual(['true']);
+    const rewired = linkBindingRowsOf(declaring, agreeingTree().map((node) => node.name === 'guide_rod_link' ? { ...node, parent_name: 'link3' } : node));
+    const row = rewired.find((item) => item.name === 'guide_rod_link' && item.field === 'parent_name');
+    expect({ equal: row?.equal, history: row?.history, tree: row?.tree }).toEqual({ equal: 'false', history: 'link2', tree: 'link3' });
+    expect(rewired.filter((item) => item.equal === 'false').map((item) => `${item.name}/${item.field}`)).toEqual(['guide_rod_link/parent_name']);
+  });
+
+  it('names a declared link the tree does not carry instead of drawing a partial match', () => {
+    const rows = linkBindingRowsOf(m15eFixture(), agreeingTree().filter((node) => node.name !== 'base_link'));
+    expect(rows.filter((row) => row.equal === 'false').map((row) => `${row.name}/${row.field}`)).toEqual(['base_link/link_exists']);
+    expect(rows.find((row) => row.field === 'link_exists')?.tree).toContain('没有同名 link');
+  });
+
+  it('reports a joint name the record declares but the tree lacks', () => {
+    const rows = linkBindingRowsOf(m15eFixture(), agreeingTree().filter((node) => node.joint_name !== 'joint5'));
+    expect(rows.some((row) => row.name === 'joint5' && row.field === 'joint_in:arm_hinge_joints' && row.equal === 'false')).toBe(true);
+  });
+
+  it('compares only what the record declares, and stays silent without either side', () => {
+    const rows = linkBindingRowsOf(m15eFixture(), agreeingTree());
+    expect(rows.filter((row) => row.name === 'base_link' && row.field === 'parent_name')).toEqual([]);
+    expect(rows.filter((row) => row.name === 'base_link' && row.field === 'joint_name').map((row) => row.equal)).toEqual(['true']);
+    expect(linkBindingRowsOf(null, agreeingTree())).toEqual([]);
+    expect(linkBindingRowsOf(m15eFixture(), null)).toEqual([]);
+  });
+
+  it('rejects every node the record declares when the tree carries none of them', () => {
+    const rows = linkBindingRowsOf(m15eFixture(), []);
+    const declaredLinks = [mr().root_joint?.name, mr().tcp_parent_body_view?.name, mr().end_effector_link?.name,
+      ...(mr().camera_link_chain ?? []).map((node) => node.name), ...(mr().world_links ?? []).map((node) => node.name),
+    ].filter((name): name is string => Boolean(name));
+    const jointLists: Record<string, string[] | undefined> = {
+      arm_hinge_joints: mr().arm_hinge_joints, gripper_slide_joints: mr().gripper_slide_joints,
+      gripper_other_joints_in_bundle: mr().gripper_other_joints_in_bundle, wheel_hinge_joints: mr().wheel_hinge_joints,
+    };
+    const expected = [
+      ...declaredLinks.map((name) => `${name}/link_exists`),
+      ...Object.entries(jointLists).flatMap(([list, names]) => (names ?? []).map((joint) => `${joint}/joint_in:${list}`)),
+    ].sort();
+    expect(rows.map((row) => `${row.name}/${row.field}`).sort()).toEqual(expected);
+    expect(declaredLinks.length).toBeGreaterThan(0);
+    expect(rows.every((row) => row.equal === 'false')).toBe(true);
+    expect(rows.filter((row) => row.field === 'link_exists').every((row) => row.tree.includes('没有同名 link'))).toBe(true);
+    expect(rows.filter((row) => row.field.startsWith('joint_in:')).every((row) => row.tree.includes('没有同名关节'))).toBe(true);
   });
 });
