@@ -211,6 +211,23 @@ async def read_direct(page, path, params=None):
     return await (await page.request.get(url)).json()
 
 
+async def wait_state(page, predicate, label, timeout=40000):
+    """Same wait, but a stuck condition names itself and reports the pane's own state, so a failing
+    new assertion never comes back as a bare 40 s timeout."""
+    try:
+        await page.wait_for_function(predicate, timeout=timeout)
+    except Exception as cause:
+        state = await page.evaluate("""()=>{const g=(s,n)=>document.querySelector(s)?.getAttribute(n)??'x';
+          return {play:g('[data-frame-play]','data-frame-play'), asset:g('[data-frame-asset-status]','data-frame-asset-status'),
+            episode:g('[data-frame-view]','data-frame-episode'), bound:g('[data-frame-view]','data-frame-bound'),
+            index:g('[data-frame-index]','data-frame-index'), offset:g('[data-frame-offset]','data-frame-offset'),
+            limit:g('[data-frame-limit]','data-frame-limit'), returned:g('[data-frame-returned]','data-frame-returned'),
+            model:g('[data-model-pane]','data-model-status'), modelSample:g('[data-model-pane]','data-model-requested-sample'),
+            frameViews:document.querySelectorAll('[data-frame-view]').length,
+            notice:(document.querySelector('[data-frame-notice]')?.innerText ?? '').slice(0,120)};}""")
+        raise AssertionError(f'wait[{label}] timed out :: {json.dumps(state, ensure_ascii=False)}') from cause
+
+
 async def wait_asset_settled(page, timeout=40000):
     """Bytes, a refusal or a decode failure are all settled states; 'loading' and 'idle' are not, so no
     assertion ever races the asset request or the image decode."""
@@ -2556,7 +2573,52 @@ async def synthetic_flow(page):
                      after_switch['assetSample'], after_switch['curveSelected'], after_switch['modelRequested'], after_switch['stateDisplayed']],
            'quiescent': [quiescent['cursorSample'], quiescent['playMode'], quiescent['assetStatus']],
            'tree_fetches_after_switch': tree_after_switch, 'live_reads_after_switch': live_after_switch})
-    report['synthetic']['playback'] = {'curve_frames': play_page['curveFrames'], 'curve_segments': play_page['curveSegments'],
+    # Unmounting the face while a read is in flight: leaving must cancel it, and returning must not
+    # resurrect the timer or let the late bytes write into a cursor the new mount never asked for.
+    await open_episode(page, 'run_a', 'episode_play')
+    await wait_state(page, "()=>(document.querySelector('[data-model-pane]')?.getAttribute('data-model-status') ?? '')==='ready'", 'reopen-model-ready')
+    await page.locator('[aria-label="播放节奏（每秒展示帧数，界面节奏）"]').select_option('1')
+    await wait_state(page, "()=>['bytes','failed','not-loaded'].includes(document.querySelector('[data-frame-asset-status]')?.getAttribute('data-frame-asset-status') ?? '')", 'pre-leave-asset-settled')
+    await page.locator('[data-frame-play]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-play]')?.getAttribute('data-frame-play') ?? '')==='pause'", 'left-play-mode')
+    await wait_state(page, "()=>(document.querySelector('[data-frame-asset-status]')?.getAttribute('data-frame-asset-status') ?? '')==='loading'", 'left-asset-in-flight')
+    playing_before_leave = await page_attrs(page)
+    await page.get_by_role('button', name='Simulation', exact=True).click()
+    await wait_state(page, "()=>!document.querySelector('[data-frame-view]')", 'face-unmounted')
+    await page.wait_for_timeout(2400)
+    await page.get_by_role('button', name='历史 Episode', exact=True).click()
+    # The selection is component state, not a cross-app store: coming back shows the unbound placeholder,
+    # and while it stays unselected nothing may be requested — an abandoned walk cannot resurrect itself.
+    await wait_state(page, "()=>{const v=document.querySelector('[data-frame-view]');return !!v && v.getAttribute('data-frame-episode')==='none' && v.getAttribute('data-frame-bound')==='false';}", 'reopened-unselected')
+    blank = await page_attrs(page)
+    blank_mark = len(report['requests'])
+    await page.wait_for_timeout(2400)
+    idle_reads = [urlsplit(r['url']).path for r in report['requests'][blank_mark:] if '/episodes/' in urlsplit(r['url']).path]
+    before_reopen = len(report['requests'])
+    await open_episode(page, 'run_a', 'episode_play')
+    await wait_state(page, "()=>(document.querySelector('[data-model-pane]')?.getAttribute('data-model-status') ?? '')==='ready'", 'replay-model-ready')
+    reopened = await page_attrs(page)
+    await page.wait_for_timeout(1400)
+    settled_after_reopen = await page_attrs(page)
+    check('播放中离开历史视图再回来：在途读取随卸载取消、回来后不自动续播也不自动重选，未选择的这段时间一条历史请求都不发（该命名空间的树已缓存，回来不再取）',
+          playing_before_leave['playMode'] == 'pause' and playing_before_leave['assetStatus'] == 'loading'
+          and playing_before_leave['cursorSample'].startswith('rgbd_p')
+          and blank['episode'] == 'none' and blank['bound'] == 'false' and blank['playMode'] is None
+          and idle_reads == [] and settled_after_reopen['playMode'] == 'play'
+          and reopened['episode'] == 'episode_play' and reopened['cursorSample'] == reopened['currentSample']
+          and reopened['assetSample'] == reopened['cursorSample'] and reopened['curveSelected'] == reopened['cursorSample']
+          and reopened['modelRequested'] == reopened['cursorSample'] and reopened['canvas'] == 1
+          and settled_after_reopen['cursorSample'] == reopened['cursorSample']
+          and len(tree_fetch_reads(before_reopen)) == 0 and live_scene_reads(synth_mark) == [],
+          {'left_while': [playing_before_leave['playMode'], playing_before_leave['assetStatus'], playing_before_leave['cursorSample']],
+           'blank': [blank['episode'], blank['bound'], blank['playMode'], idle_reads],
+           'reopened': [reopened['episode'], reopened['cursorSample'], reopened['playMode'], reopened['assetStatus'], reopened['canvas']],
+           'after_wait': [settled_after_reopen['playMode'], settled_after_reopen['cursorSample'], len(tree_fetch_reads(before_reopen))]})
+    report['synthetic']['playback'] = {'unmount_while_playing': {'left_at': playing_before_leave['cursorSample'], 'asset_in_flight': playing_before_leave['assetStatus'],
+                                                                'blank_state': [blank['episode'], blank['bound']], 'idle_history_reads': idle_reads,
+                                                                'reopened_cursor': reopened['cursorSample'], 'reopened_play_mode': reopened['playMode'],
+                                                                'cursor_after_wait': settled_after_reopen['cursorSample']},
+                                       'curve_frames': play_page['curveFrames'], 'curve_segments': play_page['curveSegments'],
                                        'missing_per_axis': play_page['curveMissingAxis'], 'tree_fetches_total': len(tree_fetch_reads(synth_mark)),
                                        'cross_page_last_offset': crossed['offset'], 'cross_page_frame_reads': walk_reads,
                                        'cursor_after_walk': crossed['cursorSample'], 'pane_tree_reads_after_walk': crossed['modelTreeReads'],
