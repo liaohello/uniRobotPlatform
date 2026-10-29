@@ -38,6 +38,86 @@ FRAME_TIME_BASES = {
     "persist_backend_monotonic_s": "seconds, native backend monotonic clock at persist",
 }
 
+# Each selectable base names its own clock; the label is copied from the record's vocabulary,
+# and a shared name across streams is never treated as proof of a shared clock source.
+FRAME_TIME_BASE_CLOCKS = {
+    "capture_backend_monotonic_s": "backend_monotonic",
+    "capture_sim_time_s": "sim",
+    "persist_backend_monotonic_s": "backend_monotonic",
+}
+
+# Playback is three separate claims. A is display order, B schedules on recorded intervals of one
+# base, C aligns streams. Neither A nor B earns C, and B is earned per base by measurement.
+PLAYBACK_MODES = {
+    "append_order_display": "A: show anchors in the recorder's own append order of the anchor file",
+    "recorded_interval_schedule": "B: schedule a step by the recorded gap on one named capture base",
+    "cross_stream_synchronized": "C: play several streams against one verified shared instant",
+}
+
+# The scan is bounded so that asking for the census stays cheap and stays honest about its scope.
+TIME_QUALITY_ANCHOR_LIMIT = 4000
+TIME_QUALITY_DUPLICATE_LIST_LIMIT = 20
+
+
+def _median(values: list[float]) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) / 2.0
+
+
+def _base_statistics(samples: list[tuple[int, dict[str, Any]]], field: str) -> dict[str, Any]:
+    """Measure one base over the scanned anchors in file order; first/last is never renamed min/max.
+
+    Nothing is sorted into the anchor sequence: the time-ordered comparison below is reported as a
+    fact about the recorded values while the frames themselves stay addressed by their raw line index.
+    """
+    numeric: list[tuple[int, float]] = []
+    missing: list[int] = []
+    non_numeric: list[dict[str, Any]] = []
+    for line_index, record in samples:
+        raw = record.get(field)
+        if _number(raw):
+            numeric.append((line_index, raw))
+        elif field not in record:
+            missing.append(line_index)
+        else:
+            non_numeric.append({"line_index": line_index, "value_type": type(raw).__name__})
+    gaps = [numeric[index][1] - numeric[index - 1][1] for index in range(1, len(numeric))]
+    backwards = [{"from_line_index": numeric[index - 1][0], "to_line_index": numeric[index][0], "step_s": gap}
+                 for index, gap in enumerate(gaps, start=1) if gap < 0.0]
+    equal = [[numeric[index - 1][0], numeric[index][0]] for index, gap in enumerate(gaps, start=1) if gap == 0.0]
+    ordered_values = sorted(value for _, value in numeric)
+    time_order = [line_index for line_index, _ in sorted(numeric, key=lambda item: (item[1], item[0]))]
+    limit = TIME_QUALITY_DUPLICATE_LIST_LIMIT
+    return {"field": field, "unit": "s", "clock": FRAME_TIME_BASE_CLOCKS[field],
+            "source_record": "persisted frame anchor in observations/persist.jsonl",
+            "anchors_scanned": len(samples), "numeric_count": len(numeric),
+            "missing_count": len(missing), "missing_line_indexes": missing[:limit],
+            "missing_line_indexes_truncated": len(missing) > limit,
+            "non_numeric_count": len(non_numeric), "non_numeric_samples": non_numeric[:limit],
+            "non_numeric_samples_truncated": len(non_numeric) > limit,
+            "first_in_file_order": numeric[0][1] if numeric else None,
+            "last_in_file_order": numeric[-1][1] if numeric else None,
+            "first_line_index": numeric[0][0] if numeric else None,
+            "last_line_index": numeric[-1][0] if numeric else None,
+            "min_recorded_value": ordered_values[0] if ordered_values else None,
+            "max_recorded_value": ordered_values[-1] if ordered_values else None,
+            "first_minus_last_s": (numeric[0][1] - numeric[-1][1]) if len(numeric) >= 2 else None,
+            "recorded_gaps": {"count": len(gaps), "min_s": min(gaps) if gaps else None,
+                              "max_s": max(gaps) if gaps else None, "median_s": _median(gaps),
+                              "mean_s": (sum(gaps) / len(gaps)) if gaps else None,
+                              "total_s": sum(gaps) if gaps else None},
+            "equal_adjacent_gaps": {"count": len(equal), "line_index_pairs": equal[:limit],
+                                    "line_index_pairs_truncated": len(equal) > limit},
+            "backwards_gaps": {"count": len(backwards), "steps": backwards[:limit],
+                               "steps_truncated": len(backwards) > limit},
+            "monotonic_non_decreasing_in_file_order": not backwards,
+            "file_order_matches_value_order": time_order == [line_index for line_index, _ in numeric]}
+
 # role -> (source stream, recorded join key, what satisfying the role means)
 ROLE_SEMANTICS = {
     "image_observation": ("observations-index", "sample_id",
@@ -292,7 +372,7 @@ class FrameLinkReader:
     def frames(self, episode_id: str, *, run_id: str | None = None, stream: str = "rgbd",
                limit: int = DEFAULT_PAGE, offset: int = 0, time_base: str | None = None,
                time_from: float | None = None, time_to: float | None = None,
-               sample_id: str | None = None) -> dict[str, Any]:
+               sample_id: str | None = None, include_time_quality: bool = False) -> dict[str, Any]:
         location = self.archive.location(episode_id, run_id)
         anchor_path = location.path_of("observations-persist")
         if not anchor_path.is_file():
@@ -317,6 +397,8 @@ class FrameLinkReader:
         ambiguous_primary = sum(1 for item in frames
                                 if any(entry["status"] in ("ambiguous_kind", "ambiguous_candidates")
                                        for entry in item["roles"] if entry["role"] in PRIMARY_ROLES))
+        page_ids = [record["sample_id"] for _, record in anchors]
+        repeated_on_page = sum(1 for key in set(page_ids) if page_ids.count(key) > 1)
         return {
             "schema_version": FRAME_LINK_SCHEMA,
             "read_only": True,
@@ -382,7 +464,16 @@ class FrameLinkReader:
                         "frames_without_a_linked_state": sum(1 for item in frames
                                                              if item["state"]["status"] != "matched"),
                         "frames_with_unresolved_feedback_reference": sum(1 for item in frames
-                                                                         if item["declared_reference_status"] == "unresolved_reference")},
+                                                                         if item["declared_reference_status"] == "unresolved_reference"),
+                        "anchors_with_repeated_sample_id_on_this_page": repeated_on_page},
+            # The census re-reads the anchor file, so it stays opt-in and the default page remains light.
+            **({"time_quality": self._time_quality(
+                    location, anchor_path, stream=stream,
+                    page_context={"time_base": time_base, "time_from": time_from, "time_to": time_to,
+                                  "sample_id": sample_id, "offset": offset, "limit": limit,
+                                  "returned": len(frames),
+                                  "note": "the census covers the anchors this Episode exposes in file order, not only "
+                                          "the rows of this page"})} if include_time_quality else {}),
             "frames": frames,
             "not_proven": NOT_PROVEN,
             "three_d_replay": {"this_slice_does_not_enable_3d_replay": True,
@@ -446,6 +537,141 @@ class FrameLinkReader:
                 break
             anchors.append((line_index, record))
         return anchors, counters, lines, next_anchor
+
+    # ---- bounded time-quality census ---------------------------------------------
+
+    def _time_quality(self, location: EpisodeLocation, path, *, stream: str,
+                      page_context: dict[str, Any]) -> dict[str, Any]:
+        """Re-read the anchor file once, on request, and say what a schedule could be built from.
+
+        The census is bounded and scoped: a truncated scan reports itself as truncated and supports
+        no whole-episode claim. Nothing here sorts, fills or substitutes a recorded value.
+        """
+        samples: list[tuple[int, dict[str, Any]]] = []
+        rejected = {"excluded_identity_mismatch": 0, "excluded_stream_mismatch": 0,
+                    "excluded_without_sample_id": 0}
+        lines = _new_line_stats()
+        truncated_at: int | None = None
+        for line_index, record in _stream_lines(path, (stream,), lines):
+            if record.get("run_id") != location.run_id or record.get("episode_id") != location.episode_id:
+                rejected["excluded_identity_mismatch"] += 1
+                continue
+            if record.get("stream_id") != stream:
+                rejected["excluded_stream_mismatch"] += 1
+                continue
+            if not isinstance(record.get("sample_id"), str):
+                rejected["excluded_without_sample_id"] += 1
+                continue
+            samples.append((line_index, record))
+            if len(samples) >= TIME_QUALITY_ANCHOR_LIMIT:
+                truncated_at = line_index
+                break
+
+        occurrences: dict[str, list[int]] = {}
+        for line_index, record in samples:
+            occurrences.setdefault(record["sample_id"], []).append(line_index)
+        duplicates = sorted(({"sample_id": key, "occurrences": len(indexes), "line_indexes": indexes,
+                              "record_positions": [f"observations/persist.jsonl#{item}" for item in indexes]}
+                             for key, indexes in occurrences.items() if len(indexes) > 1),
+                            key=lambda item: (-item["occurrences"], item["line_indexes"][0]))
+        sequences = {field: _base_statistics(samples, field) for field in sorted(FRAME_TIME_BASES)}
+        whole_file = truncated_at is None
+
+        sequences_out: dict[str, Any] = {}
+        eligible_bases: dict[str, Any] = {}
+        for field, stats in sequences.items():
+            blocking = []
+            if not samples:
+                blocking.append("no_readable_anchors_in_this_scan")
+            if stats["missing_count"]:
+                blocking.append(f"time_base_absent_on_{stats['missing_count']}_anchors")
+            if stats["non_numeric_count"]:
+                blocking.append(f"time_base_non_numeric_on_{stats['non_numeric_count']}_anchors")
+            if stats["backwards_gaps"]["count"]:
+                blocking.append(f"clock_steps_backwards_{stats['backwards_gaps']['count']}_times_in_file_order")
+            scoped_blocking = list(blocking)
+            if not whole_file:
+                blocking.append("scan_truncated_at_anchor_limit")
+            median_gap = stats["recorded_gaps"]["median_s"]
+            sequences_out[field] = {**stats, "description": FRAME_TIME_BASES[field]}
+            eligible_bases[field] = {
+                "eligible_for_whole_episode": whole_file and not blocking,
+                "eligible_within_this_scan": not scoped_blocking and bool(samples),
+                "blocking_reasons": blocking,
+                "zero_interval_ties_present": stats["equal_adjacent_gaps"]["count"] > 0,
+                "implied_rate_hz_from_median_recorded_gap": (1.0 / median_gap) if median_gap else None,
+                "implied_rate_note": "derived from the recorded values of this scan; it is not a rate the "
+                                     "recorder declared and it is not a playback guarantee"}
+        profile_ids = sorted({record.get("profile_id") for _, record in samples
+                              if isinstance(record.get("profile_id"), str)})
+        persist_values = [record.get("persist_sequence") for _, record in samples]
+        persist_backwards = sum(1 for index in range(1, len(persist_values))
+                                if _number(persist_values[index]) and _number(persist_values[index - 1])
+                                and persist_values[index] < persist_values[index - 1])
+
+        return {
+            "requested": True,
+            "coverage": {"run_id": location.run_id, "episode_id": location.episode_id, "stream_id": stream,
+                         "anchor_relative_path": _relative("observations-persist"),
+                         "anchors_in_this_scan": len(samples), "unique_sample_ids": len(occurrences),
+                         "rejected_anchors": rejected, "anchor_lines": lines,
+                         "first_anchor_line_index": samples[0][0] if samples else None,
+                         "last_anchor_line_index": samples[-1][0] if samples else None,
+                         "whole_anchor_file_scanned": whole_file, "anchor_limit": TIME_QUALITY_ANCHOR_LIMIT,
+                         "stopped_at_line_index": truncated_at,
+                         "covers_whole_episode": whole_file,
+                         "not_a_whole_archive_sweep": True,
+                         "scope_note": "this census re-reads one Episode's anchor file; a truncated scan or a "
+                                       "windowed page supports no whole-episode or whole-archive claim",
+                         "page_filter_context": page_context},
+            "time_bases": sequences_out,
+            "identity": {"duplicate_sample_id_groups": len(duplicates),
+                         "duplicates": duplicates[:TIME_QUALITY_DUPLICATE_LIST_LIMIT],
+                         "duplicates_truncated": len(duplicates) > TIME_QUALITY_DUPLICATE_LIST_LIMIT,
+                         "every_anchor_position_is_reported": True,
+                         "effect_on_this_route": "a duplicated id makes `sample_id=` address more than one anchor, "
+                                                 "so the page cannot name one position for it",
+                         "effect_on_robot_state": "GET /api/v1/episodes/{episode_id}/robot-state?sample_id= refuses "
+                                                  "with frame_sample_id_ambiguous instead of taking the first match"},
+            "recorder_counters": {"persist_sequence_backwards_steps_in_file_order": persist_backwards,
+                                  "persist_sequence_is_the_recorders_own_counter": True,
+                                  "line_index_is_not_a_clock": True},
+            "profile": {"profile_ids_seen": profile_ids, "anchor_fields_declaring_a_numeric_rate": [],
+                        "note": "the anchors carry a profile identifier, not a declared numeric rate; no rate is "
+                                "inferred from the profile name"},
+            "playback_eligibility": {
+                "modes": PLAYBACK_MODES,
+                "append_order_display": {
+                    "mode": "A", "eligible": bool(samples),
+                    "basis": "the anchor file is read in the recorder's own append order and a full page stops at "
+                             "the first further qualifying anchor",
+                    "does_not_require": ["a numeric capture time base", "clock sameness", "unique sample ids"],
+                    "anchor_position_never_reordered_by_time": True},
+                "recorded_interval_schedule": {
+                    "mode": "B", "eligible_by_base": eligible_bases,
+                    "any_base_eligible_for_whole_episode": any(item["eligible_for_whole_episode"]
+                                                               for item in eligible_bases.values()),
+                    "rules_when_unqualified": {
+                        "missing_or_non_numeric_time": "the base is refused for scheduling; the frame stays visible "
+                                                       "in append order and no value is filled from another record",
+                        "equal_adjacent_values": "ties are shown as ties; they are not interpolated and a rate is "
+                                                 "not computed by dividing by zero",
+                        "backwards_step": "the base is refused for scheduling over that range, because one continuous "
+                                          "clock across the step is not established by the record",
+                        "clock_unknown": "a base that only names a clock is not evidence of a shared clock source"},
+                    "never_assumed": {"default_rate_hz_applied": False, "browser_arrival_time_used": False,
+                                      "clock_stitched_across_reset": False,
+                                      "why": "no record establishes a nominal rate, a host clock relationship across "
+                                             "segments, or a RESET boundary on these anchors"}},
+                "cross_stream_synchronized": {
+                    "mode": "C", "eligible": False,
+                    "reason": "the records name shared clock bases but nothing lets this reader verify one shared "
+                              "clock source or one sampled instant across streams",
+                    "not_derivable_from": ["A", "B"],
+                    "same_page_evidence": {"same_clock_verified": False, "synchronized_across_streams": False}}},
+            "not_proven": ["a declared sampling rate", "clock sameness across streams", "a sampled-instant match",
+                           "coverage beyond the anchors scanned here", "RESET or segment boundaries on anchors"],
+        }
 
     # ---- join collection ----------------------------------------------------------
 

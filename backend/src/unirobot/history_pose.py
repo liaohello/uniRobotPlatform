@@ -135,6 +135,22 @@ class HistoryPoseReader:
                     sample_id: str | None = None, include_model_tree: bool = False) -> dict[str, Any]:
         linkage = FrameLinkReader(self.archive).frames(episode_id, run_id=run_id, stream="rgbd",
                                                        limit=1, sample_id=sample_id)
+        if sample_id and linkage["paging"]["has_more"]:
+            # Under a sample_id filter a further qualifying anchor can only be another anchor with the same id,
+            # so the frame the caller asked to name is not unique. Taking the first one would silently attach
+            # this pose to whichever anchor happened to be read first.
+            raise HistoryError("frame_sample_id_ambiguous",
+                               "more than one persisted anchor records this sample_id, so no single frame can be "
+                               "selected by it", 409,
+                               {"episode_id": episode_id, "run_id": linkage["identity"]["run_id"],
+                                "sample_id": sample_id,
+                                "first_matching_anchor_line_index": linkage["cursor"]["first_line_index"],
+                                "next_matching_anchor_line_index":
+                                    linkage["paging"]["next_qualifying_anchor_line_index"],
+                                "no_first_match_was_assumed": True,
+                                "state_is_not_taken_from_either_candidate": True,
+                                "how_to_inspect": "GET /api/v1/episodes/{episode_id}/frames?include_time_quality=true "
+                                                  "lists every duplicate anchor position for this Episode"})
         if not linkage["frames"]:
             raise HistoryError("frame_not_found", "this Episode has no persisted frame matching the request", 404,
                                {"episode_id": episode_id, "run_id": linkage["identity"]["run_id"],

@@ -89,7 +89,8 @@ def _write_frames(directory: Path, *, resolve_feedback=True, drop_depth_row=Fals
                   escape_asset=False, foreign_row=False, no_state_event=False, write_persist=True,
                   blank_lines=False, corrupt_lines=False, duplicate_rgb_row=False,
                   duplicate_state_event=False, payload_sim_time="absent", arm_qpos=None,
-                  tcp_position=None, base_position=None) -> None:
+                  tcp_position=None, base_position=None, anchor_time_mode="normal",
+                  duplicate_sample_id=False) -> None:
     index_path = directory / "observations" / "index.jsonl"
     persist_path = directory / "observations" / "persist.jsonl"
     index_path.parent.mkdir(parents=True, exist_ok=True)
@@ -126,6 +127,22 @@ def _write_frames(directory: Path, *, resolve_feedback=True, drop_depth_row=Fals
 
     anchors = [_frame_record(RUN, EPISODE, F1, TICK_1, FEEDBACK_1, CAPTURE_1, 0.14, CAPTURE_1 + 0.1),
                _frame_record(RUN, EPISODE, F2, TICK_2, FEEDBACK_2, CAPTURE_2, 2.21, CAPTURE_2 + 0.16)]
+    if anchor_time_mode == "equal":
+        # The recorder wrote the same capture instant twice: a tie, not a gap to divide by.
+        anchors[1]["capture_backend_monotonic_s"] = anchors[0]["capture_backend_monotonic_s"]
+        anchors[1]["capture_sim_time_s"] = anchors[0]["capture_sim_time_s"]
+    elif anchor_time_mode == "backwards":
+        # One anchor earlier than its predecessor in append order; nothing here re-sorts them.
+        anchors[1]["capture_backend_monotonic_s"] = anchors[0]["capture_backend_monotonic_s"] - 0.5
+    elif anchor_time_mode == "missing":
+        del anchors[1]["capture_sim_time_s"]
+    elif anchor_time_mode == "non_numeric":
+        anchors[1]["capture_sim_time_s"] = "not a number"
+    if duplicate_sample_id:
+        second = dict(anchors[1])
+        second["sample_id"] = F1
+        second["persist_sequence"] = 3
+        anchors.append(second)
     if write_persist:
         if blank_lines:
             # Leading and interior blank lines shift the raw line indexes the cursor reports.
@@ -953,3 +970,161 @@ def test_the_history_tree_is_complete_while_the_live_scene_route_is_unreachable(
                                                           for link in bundle.scene.links]
     assert body["model_resource"]["live_native_scene_proxied"] is False
     assert tree["live_native_scene_proxied"] is False
+
+
+# ---- the opt-in anchor time-quality census and playback eligibility ----------------------------
+
+QUALITY_QUERY = "/api/v1/episodes/%s/frames?include_time_quality=true" % EPISODE
+
+
+def _quality(tmp_path, **options):
+    body = _frames_client(tmp_path, **options).get(QUALITY_QUERY).json()
+    return body["time_quality"], body
+
+
+def test_the_default_frame_page_stays_light_and_the_census_is_opt_in(tmp_path):
+    client = _frames_client(tmp_path)
+    plain = client.get(f"/api/v1/episodes/{EPISODE}/frames").json()
+    off = client.get(f"/api/v1/episodes/{EPISODE}/frames?include_time_quality=false").json()
+    assert "time_quality" not in plain and "time_quality" not in off
+    assert plain["summary"]["anchors_with_repeated_sample_id_on_this_page"] == 0
+
+    census, with_quality = _quality(tmp_path)
+    assert with_quality["schema_version"] == "unirobot-mobilecar-frame-link-2"
+    assert set(with_quality) - set(plain) == {"time_quality"}
+    without_census = {key: value for key, value in with_quality.items() if key != "time_quality"}
+    plain_fields = {key: value for key, value in plain.items() if key != "retrieved_at"}
+    without_census.pop("retrieved_at", None)
+    assert without_census == plain_fields
+    assert census["requested"] is True and census["coverage"]["anchors_in_this_scan"] == 2
+    assert census["coverage"]["covers_whole_episode"] is True
+    assert census["coverage"]["not_a_whole_archive_sweep"] is True
+    assert census["coverage"]["page_filter_context"]["returned"] == 2
+
+
+def test_the_census_measures_each_base_in_file_order(tmp_path):
+    census, _ = _quality(tmp_path)
+    bases = census["time_bases"]
+    assert sorted(bases) == ["capture_backend_monotonic_s", "capture_sim_time_s", "persist_backend_monotonic_s"]
+    monotonic = bases["capture_backend_monotonic_s"]
+    assert monotonic["unit"] == "s" and monotonic["clock"] == "backend_monotonic"
+    assert monotonic["numeric_count"] == 2 and monotonic["missing_count"] == 0
+    assert monotonic["first_in_file_order"] == pytest.approx(CAPTURE_1)
+    assert monotonic["last_in_file_order"] == pytest.approx(CAPTURE_2)
+    # first/last is append order; min/max is value order. They are reported apart, never renamed.
+    assert monotonic["min_recorded_value"] == pytest.approx(CAPTURE_1)
+    assert monotonic["max_recorded_value"] == pytest.approx(CAPTURE_2)
+    assert monotonic["recorded_gaps"]["count"] == 1
+    assert monotonic["recorded_gaps"]["median_s"] == pytest.approx(CAPTURE_2 - CAPTURE_1)
+    assert monotonic["monotonic_non_decreasing_in_file_order"] is True
+    assert monotonic["file_order_matches_value_order"] is True
+    assert bases["capture_sim_time_s"]["clock"] == "sim"
+    assert bases["persist_backend_monotonic_s"]["clock"] == "backend_monotonic"
+    assert census["recorder_counters"]["persist_sequence_backwards_steps_in_file_order"] == 0
+
+
+def test_a_backwards_clock_step_refuses_that_base_but_never_reorders_the_anchors(tmp_path):
+    census, body = _quality(tmp_path, anchor_time_mode="backwards")
+    base = census["time_bases"]["capture_backend_monotonic_s"]
+    assert base["backwards_gaps"]["count"] == 1
+    assert base["monotonic_non_decreasing_in_file_order"] is False
+    assert base["file_order_matches_value_order"] is False
+    qualified = census["playback_eligibility"]["recorded_interval_schedule"]["eligible_by_base"]
+    assert qualified["capture_backend_monotonic_s"]["eligible_for_whole_episode"] is False
+    assert any("steps_backwards" in item for item in qualified["capture_backend_monotonic_s"]["blocking_reasons"])
+    # The other bases are measured on their own values and are not punished for this one.
+    assert qualified["persist_backend_monotonic_s"]["eligible_for_whole_episode"] is True
+    assert census["playback_eligibility"]["append_order_display"]["eligible"] is True
+    # Display order stays the anchor file's own order: no automatic sort was applied.
+    assert [item["anchor"]["line_index"] for item in body["frames"]] == sorted(
+        item["anchor"]["line_index"] for item in body["frames"])
+    assert [item["anchor"]["persist_sequence"] for item in body["frames"]] == [1, 2]
+
+
+def test_equal_capture_instants_are_reported_as_ties_not_divided_into_a_rate(tmp_path):
+    census, _ = _quality(tmp_path, anchor_time_mode="equal")
+    base = census["time_bases"]["capture_backend_monotonic_s"]
+    assert base["equal_adjacent_gaps"]["count"] == 1
+    assert base["backwards_gaps"]["count"] == 0
+    assert base["recorded_gaps"]["median_s"] == 0.0
+    qualified = census["playback_eligibility"]["recorded_interval_schedule"]["eligible_by_base"]
+    assert qualified["capture_backend_monotonic_s"]["eligible_for_whole_episode"] is True
+    assert qualified["capture_backend_monotonic_s"]["zero_interval_ties_present"] is True
+    # A zero median gap yields no implied rate: nothing divides by zero and no default is substituted.
+    assert qualified["capture_backend_monotonic_s"]["implied_rate_hz_from_median_recorded_gap"] is None
+    assert census["playback_eligibility"]["recorded_interval_schedule"]["rules_when_unqualified"][
+        "equal_adjacent_values"].startswith("ties are shown as ties")
+
+
+def test_a_missing_or_non_numeric_time_base_is_counted_not_filled(tmp_path):
+    missing, _ = _quality(tmp_path, anchor_time_mode="missing")
+    base = missing["time_bases"]["capture_sim_time_s"]
+    assert base["numeric_count"] == 1 and base["missing_count"] == 1
+    assert base["missing_line_indexes"] == [1]
+    qualified = missing["playback_eligibility"]["recorded_interval_schedule"]["eligible_by_base"]
+    assert qualified["capture_sim_time_s"]["eligible_for_whole_episode"] is False
+    assert any("time_base_absent_on_1_anchors" == item for item in qualified["capture_sim_time_s"]["blocking_reasons"])
+    # One value left means first and last coincide; the missing anchor is listed, not filled.
+    assert base["first_in_file_order"] == pytest.approx(0.14) and base["last_in_file_order"] == pytest.approx(0.14)
+    assert base["recorded_gaps"]["count"] == 0
+
+    text, _ = _quality(tmp_path, anchor_time_mode="non_numeric")
+    base = text["time_bases"]["capture_sim_time_s"]
+    assert base["non_numeric_count"] == 1
+    assert base["non_numeric_samples"] == [{"line_index": 1, "value_type": "str"}]
+    qualified = text["playback_eligibility"]["recorded_interval_schedule"]["eligible_by_base"]
+    assert qualified["capture_sim_time_s"]["eligible_for_whole_episode"] is False
+    assert any("non_numeric" in item for item in qualified["capture_sim_time_s"]["blocking_reasons"])
+    assert text["playback_eligibility"]["recorded_interval_schedule"]["never_assumed"][
+        "default_rate_hz_applied"] is False
+
+
+def test_a_repeated_anchor_id_lists_every_position_and_refuses_pose_selection(tmp_path):
+    census, body = _quality(tmp_path, duplicate_sample_id=True)
+    duplicates = census["identity"]["duplicates"]
+    assert census["identity"]["duplicate_sample_id_groups"] == 1
+    assert duplicates[0]["sample_id"] == F1 and duplicates[0]["occurrences"] == 2
+    assert duplicates[0]["line_indexes"] == [0, 2]
+    assert duplicates[0]["record_positions"] == ["observations/persist.jsonl#0",
+                                                 "observations/persist.jsonl#2"]
+    assert body["summary"]["anchors_with_repeated_sample_id_on_this_page"] == 1
+    # Both anchors stay addressable in file order; nothing is deduplicated or silently first-won.
+    assert [item["anchor"]["line_index"] for item in body["frames"]] == [0, 1, 2]
+    assert census["playback_eligibility"]["append_order_display"]["eligible"] is True
+
+    client = _pose_client(tmp_path, duplicate_sample_id=True)
+    refused = client.get(f"/api/v1/episodes/{EPISODE}/robot-state?sample_id={F1}")
+    assert refused.status_code == 409
+    detail = refused.json()["detail"]
+    assert detail["code"] == "frame_sample_id_ambiguous"
+    assert detail["no_first_match_was_assumed"] is True
+    assert detail["state_is_not_taken_from_either_candidate"] is True
+    assert detail["first_matching_anchor_line_index"] == 0
+    assert detail["next_matching_anchor_line_index"] == 2
+    # Selecting the other anchor by its unique id still answers normally.
+    assert client.get(f"/api/v1/episodes/{EPISODE}/robot-state?sample_id={F2}").status_code == 200
+
+
+def test_a_truncated_census_reports_itself_instead_of_a_whole_episode_claim(tmp_path, monkeypatch):
+    import unirobot.frames as frames_module
+    monkeypatch.setattr(frames_module, "TIME_QUALITY_ANCHOR_LIMIT", 1)
+    census, _ = _quality(tmp_path)
+    coverage = census["coverage"]
+    assert coverage["anchors_in_this_scan"] == 1 and coverage["whole_anchor_file_scanned"] is False
+    assert coverage["covers_whole_episode"] is False and coverage["stopped_at_line_index"] == 0
+    qualified = census["playback_eligibility"]["recorded_interval_schedule"]["eligible_by_base"]
+    assert all(item["eligible_for_whole_episode"] is False for item in qualified.values())
+    assert all("scan_truncated_at_anchor_limit" in item["blocking_reasons"] for item in qualified.values())
+    # With one anchor there is no recorded gap to measure, so no rate is implied either.
+    assert all(item["implied_rate_hz_from_median_recorded_gap"] is None for item in qualified.values())
+
+
+def test_the_census_never_earns_cross_stream_synchronisation(tmp_path):
+    census, _ = _quality(tmp_path)
+    modes = census["playback_eligibility"]
+    assert modes["cross_stream_synchronized"]["eligible"] is False
+    assert modes["cross_stream_synchronized"]["not_derivable_from"] == ["A", "B"]
+    assert modes["cross_stream_synchronized"]["same_page_evidence"]["same_clock_verified"] is False
+    assert modes["recorded_interval_schedule"]["any_base_eligible_for_whole_episode"] is True
+    assert "a declared sampling rate" in census["not_proven"]
+    assert census["profile"]["anchor_fields_declaring_a_numeric_rate"] == []

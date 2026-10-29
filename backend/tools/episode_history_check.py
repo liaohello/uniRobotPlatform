@@ -744,6 +744,161 @@ def main() -> int:
                  "live_scene_reads_in_this_run": sum(1 for item in PROBE.entries
                                                      if "/api/v1/scene" in item["url"])})
 
+    # ---- M1.5g: anchor time quality, eligibility and a full page walk --------------
+    entries_before_census = len(PROBE.entries)
+    status, census_page = get_json(f"{P}/api/v1/episodes/{complete_id}/frames?run_id={complete_run}"
+                                   f"&limit=200&include_time_quality=true")
+    census = census_page["time_quality"]
+    coverage = census["coverage"]
+    bases = census["time_bases"]
+    schedule = census["playback_eligibility"]["recorded_interval_schedule"]["eligible_by_base"]
+    results.add("the default page stays light and the census is opt-in only",
+                "time_quality" not in frames
+                and status == 200 and census["requested"] is True
+                and set(census) == {"requested", "coverage", "time_bases", "identity", "recorder_counters",
+                                    "profile", "playback_eligibility", "not_proven"}
+                and census_page["summary"]["anchors_with_repeated_sample_id_on_this_page"] == 0,
+                {"census_bytes": len(json.dumps(census)), "page_bytes": len(json.dumps(census_page))})
+    results.add("the census counts readable anchors and their valid identity, and says what it covered",
+                coverage["anchors_in_this_scan"] == coverage["unique_sample_ids"]
+                and coverage["anchors_in_this_scan"] > 200 and coverage["whole_anchor_file_scanned"] is True
+                and coverage["covers_whole_episode"] is True and coverage["not_a_whole_archive_sweep"] is True
+                and sum(coverage["rejected_anchors"].values()) == 0
+                and coverage["first_anchor_line_index"] <= coverage["last_anchor_line_index"],
+                {key: coverage[key] for key in ("anchors_in_this_scan", "unique_sample_ids",
+                                                "first_anchor_line_index", "last_anchor_line_index")}
+                | {"rejected": coverage["rejected_anchors"], "anchor_lines": coverage["anchor_lines"]})
+    results.add("each capture base is reported with its field, unit, clock and per-base counts",
+                all({item["field"], item["unit"], item["clock"], item["source_record"]} and item["unit"] == "s"
+                    for item in bases.values())
+                and {item["clock"] for item in bases.values()} == {"backend_monotonic", "sim"}
+                and all(item["numeric_count"] == coverage["anchors_in_this_scan"] and item["missing_count"] == 0
+                        and item["non_numeric_count"] == 0 for item in bases.values()),
+                {field: {key: item[key] for key in ("field", "unit", "clock", "numeric_count",
+                                                    "missing_count", "non_numeric_count")}
+                 for field, item in bases.items()})
+    results.add("first/last in file order is separated from min/max in value order for every base",
+                all(item["first_line_index"] <= item["last_line_index"]
+                    and item["min_recorded_value"] is not None and item["max_recorded_value"] is not None
+                    and item["min_recorded_value"] <= item["max_recorded_value"]
+                    and item["file_order_matches_value_order"] is True
+                    and item["monotonic_non_decreasing_in_file_order"] is True
+                    and item["backwards_gaps"]["count"] == 0 and item["equal_adjacent_gaps"]["count"] == 0
+                    for item in bases.values()),
+                {field: {"first": item["first_in_file_order"], "last": item["last_in_file_order"],
+                         "min": item["min_recorded_value"], "max": item["max_recorded_value"],
+                         "gaps": item["recorded_gaps"], "ties": item["equal_adjacent_gaps"]["count"],
+                         "backwards": item["backwards_gaps"]["count"]} for field, item in bases.items()})
+    results.add("recorded time advances in append order, so no anomaly had to be explained away",
+                all(item["recorded_gaps"]["count"] == coverage["anchors_in_this_scan"] - 1
+                    and item["recorded_gaps"]["min_s"] > 0.0 for item in bases.values())
+                and census["recorder_counters"]["persist_sequence_backwards_steps_in_file_order"] == 0
+                and census["recorder_counters"]["line_index_is_not_a_clock"] is True,
+                {field: {"gap_count": item["recorded_gaps"]["count"], "min_s": item["recorded_gaps"]["min_s"],
+                         "max_s": item["recorded_gaps"]["max_s"], "median_s": item["recorded_gaps"]["median_s"],
+                         "implied_rate_hz": schedule[field]["implied_rate_hz_from_median_recorded_gap"]}
+                 for field, item in bases.items()})
+    results.add("no rate is assumed: the numbers come from the recorded values, never from a default",
+                census["playback_eligibility"]["recorded_interval_schedule"]["never_assumed"] == {
+                    "default_rate_hz_applied": False, "browser_arrival_time_used": False,
+                    "clock_stitched_across_reset": False,
+                    "why": census["playback_eligibility"]["recorded_interval_schedule"]["never_assumed"]["why"]}
+                and census["profile"]["anchor_fields_declaring_a_numeric_rate"] == []
+                and all(schedule[field]["implied_rate_hz_from_median_recorded_gap"]
+                        == 1.0 / bases[field]["recorded_gaps"]["median_s"] for field in bases),
+                {"profile_ids": census["profile"]["profile_ids_seen"],
+                 "implied_rates_hz": {field: schedule[field]["implied_rate_hz_from_median_recorded_gap"]
+                                       for field in bases}})
+    results.add("append-order display, recorded-interval scheduling and cross-stream sync stay three claims",
+                census["playback_eligibility"]["append_order_display"]["eligible"] is True
+                and census["playback_eligibility"]["append_order_display"]
+                    ["anchor_position_never_reordered_by_time"] is True
+                and census["playback_eligibility"]["recorded_interval_schedule"]
+                    ["any_base_eligible_for_whole_episode"] is True
+                and census["playback_eligibility"]["cross_stream_synchronized"]["eligible"] is False
+                and census["playback_eligibility"]["cross_stream_synchronized"]["not_derivable_from"] == ["A", "B"]
+                and census["playback_eligibility"]["cross_stream_synchronized"]["same_page_evidence"]
+                    ["same_clock_verified"] is False,
+                {field: {"eligible_for_whole_episode": item["eligible_for_whole_episode"],
+                         "blocking": item["blocking_reasons"], "ties": item["zero_interval_ties_present"]}
+                 for field, item in schedule.items()})
+    results.add("anchor identity is unique here, and the census would name every position if it were not",
+                census["identity"]["duplicate_sample_id_groups"] == 0 and census["identity"]["duplicates"] == []
+                and census["identity"]["every_anchor_position_is_reported"] is True
+                and "robot-state" in census["identity"]["effect_on_robot_state"]
+                and "frame_sample_id_ambiguous" in census["identity"]["effect_on_robot_state"],
+                {"effect_on_frames": census["identity"]["effect_on_this_route"],
+                 "effect_on_robot_state": census["identity"]["effect_on_robot_state"]})
+
+    walked, walk_pages, offset, walk_ok = [], 0, 0, True
+    while True:
+        status, walked_page = get_json(f"{P}/api/v1/episodes/{complete_id}/frames?run_id={complete_run}"
+                                       f"&limit=200&offset={offset}")
+        walked.extend(item["anchor"]["line_index"] for item in walked_page["frames"])
+        walk_pages += 1
+        if not walked_page["paging"]["has_more"]:
+            last_walk_page = walked_page
+            break
+        if walked_page["paging"]["next_offset"] is None or walk_pages > 8:
+            walk_ok = False
+            last_walk_page = walked_page
+            break
+        offset = walked_page["paging"]["next_offset"]
+    results.add("walking the pages consumes every anchor once, in append order, with no gap or repeat",
+                walk_ok and walked == sorted(set(walked)) and len(walked) == coverage["anchors_in_this_scan"]
+                and walked[0] == coverage["first_anchor_line_index"]
+                and walked[-1] == coverage["last_anchor_line_index"]
+                and last_walk_page["paging"]["has_more"] is False
+                and last_walk_page["paging"]["next_offset"] is None
+                and last_walk_page["paging"]["scan"]["whole_file_scanned"] is True,
+                {"pages": walk_pages, "anchors_walked": len(walked),
+                 "first_lines": walked[:3], "last_lines": walked[-3:],
+                 "terminated_cleanly": walk_ok,
+                 "last_page": {key: last_walk_page["paging"][key] for key in
+                               ("returned", "has_more", "next_offset", "post_page_records_examined")}})
+    status, census_windowed = get_json(f"{P}/api/v1/episodes/{complete_id}/frames?run_id={complete_run}"
+                                       f"&time_base=capture_sim_time_s&time_from=0&time_to=1e9"
+                                       f"&limit=5&include_time_quality=true")
+    results.add("asking for the census leaves paging and both filters exactly as they were",
+                status == 200 and census_windowed["time_quality"]["coverage"]["anchors_in_this_scan"]
+                == coverage["anchors_in_this_scan"]
+                and census_windowed["paging"]["excluded_outside_time_window"] == 0
+                and census_windowed["paging"]["records_missing_selected_time_base"] == 0
+                and len(census_windowed["frames"]) == 5
+                and [item["anchor"]["line_index"] for item in census_windowed["frames"]]
+                == sorted(item["anchor"]["line_index"] for item in census_windowed["frames"])
+                and census_windowed["time_quality"]["coverage"]["page_filter_context"]["time_base"]
+                == "capture_sim_time_s",
+                {"filter_context": census_windowed["time_quality"]["coverage"]["page_filter_context"],
+                 "window_counters": {key: census_windowed["paging"][key] for key in
+                                     ("excluded_outside_time_window", "records_missing_selected_time_base")}})
+    status, failed_census_body = get_json(f"{P}/api/v1/episodes/{failed_id}/frames?run_id={failed_run}"
+                                          f"&include_time_quality=true")
+    failed_census = failed_census_body["time_quality"]
+    results.add("the incomplete real record is measured with the same vocabulary and the same honesty",
+                status == 200 and failed_census["coverage"]["anchors_in_this_scan"] == 4
+                and failed_census["coverage"]["covers_whole_episode"] is True
+                and failed_census["coverage"]["rejected_anchors"]["excluded_identity_mismatch"] == 0
+                and set(failed_census["time_bases"]) == set(bases)
+                and failed_census["playback_eligibility"]["append_order_display"]["eligible"] is True
+                and failed_census["playback_eligibility"]["cross_stream_synchronized"]["eligible"] is False
+                and failed_census["identity"]["duplicate_sample_id_groups"] == 0,
+                {"anchors": failed_census["coverage"]["anchors_in_this_scan"],
+                 "per_base": {field: {"numeric": item["numeric_count"], "missing": item["missing_count"],
+                                      "non_numeric": item["non_numeric_count"],
+                                      "backwards": item["backwards_gaps"]["count"],
+                                      "ties": item["equal_adjacent_gaps"]["count"],
+                                      "eligible": failed_census["playback_eligibility"]
+                                      ["recorded_interval_schedule"]["eligible_by_base"][field]
+                                      ["eligible_for_whole_episode"]}
+                              for field, item in failed_census["time_bases"].items()}})
+    results.add("the census and the page walk ask the platform only, never the live native scene",
+                all(item["url"].startswith(P) and item["method"] == "GET"
+                    for item in PROBE.entries[entries_before_census:])
+                and sum(1 for item in PROBE.entries[entries_before_census:]
+                        if "/api/v1/scene" in item["url"]) == 0,
+                {"requests_since_census_start": len(PROBE.entries) - entries_before_census})
+
     # ---- how the whole archive behaves, over a bounded sample -------------------
     status, sample = get_json(f"{P}/api/v1/episodes?limit=200")
     picked = sample["episodes"][::12][:16]
