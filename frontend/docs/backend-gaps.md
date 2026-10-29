@@ -52,7 +52,8 @@
 - 记录里没有语义明确的位置目标，所以曲线只画 Actual：18977 上抽样本 Episode 前 200 帧，每一帧都带 `recorded_state.arm_model_qpos_rad`，且 200 个向量互不相同；`recorded_state` 的键集合只有 `arm_model_qpos_rad / base_position_world_sim_m / base_quaternion_xyzw / base_twist_body_m_s / gripper_width_m / tcp_position_world_m / sim_time_s / feedback_time_monotonic / wheel_velocity_rad_s`。其中 `wheel_velocity_rad_s`、`base_twist_body_m_s` 是速度/旋量，不是关节目标。界面因此写明"不画记录 Target、命令意图更不等于 Actual"，并在键集合里真的出现目标字段时改为逐个提示、不自动画线。
 - 未取得全 Episode 范围是 reader 的既有行为，不是本切片的缺口：`frames` 的 `paging` 不给总帧数（也不回显请求的 `sample_id`，`excluded_by_sample_id_filter` 只证明条件生效），所以界面只用"本页读取到 N 帧"与"定位范围＝本页已读取的 N 帧"，不显示总时长或全局进度百分比；播放节奏只标"每秒展示 N 帧（界面节奏）"。后端尚未给出任何"可按记录时间播放"的资格字段，因此不称原速/真实倍速——这一条留给后续切片，不在本 Goal 里靠猜字段补齐。
 - 横轴资格同样由本页数据自己判定：`anchor.clocks` 的三个钟只有当本页每一帧都带有限数值时才可选，否则该选项禁用并说明"本页有帧缺该钟：不补值、也不裁剪到部分帧"；数值相对前一帧回退时按记录原顺序绘制并报告首处位置，界面不重排。`cursor.line_index_is_not_a_clock=true` 原样显示在横轴说明里。
-- 因此本轮只主张"单 Episode 共用帧游标 ＋ 按 UI 节奏的连续只读播放 ＋ 有界历史 Actual 曲线"；**不主张**跨流采样同刻同步、按记录时间的原速回放、整车重建或正式 M1/M1.5 验收通过。
+- 两条此前只能间接推断的主张已改为浏览器直接断言，因此不需要任何新后端字段：①“时间筛选后仍遵守追加顺序”用跨前 5 帧的真实窗口逐行比对 `paging` 返回顺序、`line_index` 严格递增并原样回显 `cursor.order` 与 `line_index_is_not_a_clock`；②“切 Episode 后旧请求不能恢复播放或覆盖新选择”用夹具延迟 1.4 s 的资产读制造真实在途请求，切换后七个消费者的 `sample_id` 全部指向新 Episode 自己的帧、播放保持关闭、在线 `mobilecar/scene` 读取为空，且该命名空间的树不重取（缓存命中时新增 0 次，属既有缓存契约，不是缺口）。
+- 因此本轮只主张“单 Episode 共用帧游标 ＋ 按 UI 节奏的连续只读播放 ＋ 有界历史 Actual 曲线”；**不主张**跨流采样同刻同步、按记录时间的原速回放、整车重建或正式 M1/M1.5 验收通过。
 
 ## 已接入（M2.0 · 分部历史姿态在 18970 上开放，Episode 作用域模型 manifest 仍未发布）
 
