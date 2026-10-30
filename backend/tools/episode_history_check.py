@@ -1036,6 +1036,35 @@ def main() -> int:
                 and "never attached to" in basis["independent_track_reason"],
                 {"independent": basis["independent_tracks"], "joined": ["recorded_target", "command_dispatched",
                                                                        "actual_state_feedback", "capture_timing"]})
+    status, command_page = records(complete_id, complete_run, "events", "&event_seq_from=332&event_seq_to=334&limit=5")
+    command_stamps = [item["record"]["backend_monotonic_s"] for item in command_page["records"]
+                      if item["record"].get("event_type") in ("requested", "approved")
+                      and isinstance(item["record"].get("backend_monotonic_s"), (int, float))]
+    status, persist_page = records(complete_id, complete_run, "observations-persist", "&limit=200")
+    anchor_stamps = [item["record"]["capture_backend_monotonic_s"] for item in persist_page["records"]
+                     if isinstance(item["record"].get("capture_backend_monotonic_s"), (int, float))]
+    closest = min((abs(stamp - anchor) for stamp in command_stamps for anchor in anchor_stamps), default=None)
+    results.add("a command stamp numerically close to a frame buys no link and no clock claim",
+                bool(command_stamps) and bool(anchor_stamps) and closest is not None and closest < 1.0
+                and "requested" not in basis["frame_association"]["by_event_type"]
+                and "approved" not in basis["frame_association"]["by_event_type"]
+                and basis_page["time"]["same_clock_verified"] is False
+                and basis_page["time"]["clock_sameness"]["verified_by_reader"] is False
+                and basis["frame_association"]["rules"]["clock_parity"].startswith("numerically close"),
+                {"closest_command_to_anchor_stamp_s": closest, "command_stamps": command_stamps,
+                 "association_types": sorted(basis["frame_association"]["by_event_type"]),
+                 "same_clock_verified": basis_page["time"]["same_clock_verified"]})
+    results.add("a rejection is a receipt category, and this archive records none to promote",
+                categories["command_receipt_rejected"]["status"] == "not_recorded_in_this_scan"
+                and "rejected" not in association["by_event_type"]
+                and categories["command_receipt_accepted"]["counts"] == {"approved": vocabulary["approved"]["count"]}
+                and basis["frame_association"]["rules"]["rejected_requests"].endswith(
+                    "never presented as an executed action")
+                and "that any command below was physically executed" in basis["not_proven"]
+                and vocabulary["requested"]["join_keys"]["control_tick_id"]["envelope"]["present"] == 0
+                and vocabulary["approved"]["join_keys"]["control_tick_id"]["envelope"]["present"] == 0,
+                {"rejected": categories["command_receipt_rejected"], "accepted": categories["command_receipt_accepted"],
+                 "requested_tick_present": vocabulary["requested"]["join_keys"]["control_tick_id"]["envelope"]})
     status, failed_basis = get_json(f"{P}/api/v1/episodes/{failed_id}/frames?run_id={failed_run}"
                                     f"&include_action_basis=true")
     status, failed_detail = get_json(f"{P}/api/v1/episodes/{failed_id}?run_id={failed_run}")

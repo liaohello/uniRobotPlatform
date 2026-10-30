@@ -220,8 +220,12 @@ ACTION_BASIS_RULES = {
     "when_several_match": "ambiguous_candidates with every candidate position listed; the first line in the file is not chosen",
     "when_nothing_matches": "missing, with the key that was looked for — no carry-over from the previous tick, no nearest-in-time",
     "rejected_requests": "a rejected or unapproved request is never presented as an executed action",
+    "recorded_target": "an actuator reference is a recorded Target and is never reported as measured Actual state",
     "operator_source": "the source is whatever the record's own operator fields name; it is never defaulted to Human",
     "zero_action": "no action vector is invented for a tick that records none",
+    "clock_parity": "numerically close or even equal stamps never upgrade a link: `synchronized_across_streams` and "
+                    "`same_clock_verified` stay false, and an event whose time equals a frame's capture time but "
+                    "which names no shared key stays an independent track",
     "units": "taken from the recorder's own field-name suffix; a field without a unit-bearing suffix is reported as unknown_from_field_name",
 }
 

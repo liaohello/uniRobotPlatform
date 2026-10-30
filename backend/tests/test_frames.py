@@ -32,6 +32,7 @@ FEEDBACK_2 = f"joint_feedback_{TICK_2.split('_')[1]}"
 CAPTURE_1 = 426494.351568496
 CAPTURE_2 = 426496.425533806
 COMMAND_1 = "g2a_command_28973641a08045e8859bce12b77fd986"
+COMMAND_2 = "g2a_command_rejected_5b0c3f7d2a9e41c8b6d4f0a1e7c29365"
 DEPTH = b"\x93NUMPY\x01\x00"
 ARM_MODEL_QPOS = [0.03, -0.0002, 0.0, -1.5705, 0.033]
 MODEL_ID = "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a"
@@ -92,7 +93,7 @@ def _write_frames(directory: Path, *, resolve_feedback=True, drop_depth_row=Fals
                   duplicate_state_event=False, payload_sim_time="absent", arm_qpos=None,
                   tcp_position=None, base_position=None, anchor_time_mode="normal",
                   duplicate_sample_id=False, record_action_chain=False, duplicate_target_on_first_tick=False,
-                  anchor_extra_lines="none") -> None:
+                  record_rejected_receipt=False, anchor_extra_lines="none") -> None:
     index_path = directory / "observations" / "index.jsonl"
     persist_path = directory / "observations" / "persist.jsonl"
     index_path.parent.mkdir(parents=True, exist_ok=True)
@@ -285,6 +286,23 @@ def _write_frames(directory: Path, *, resolve_feedback=True, drop_depth_row=Fals
                        "backend_monotonic_s": None, "sim_time_s": None, "command_id": None, "control_tick_id": None,
                        "payload": {"recording_segment_id": "seg_001_abc", "termination_reason": "G2A_MOTION_ARM_COMPLETE",
                                    "recording_status": "COMPLETE", "audit_status": "COMPLETE"}})
+        seq += 1
+    if record_rejected_receipt:
+        # A second command that was recorded as rejected, and whose rejection stamp is numerically
+        # EQUAL to the second frame's capture stamp while naming no tick: a rejection is a receipt,
+        # not an executed action, and an equal stamp is not a link.
+        events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
+                       "event_seq": seq, "event_type": "requested", "wall_utc": "2026-10-17T16:10:41.000000Z",
+                       "backend_monotonic_s": CAPTURE_2 - 0.5, "sim_time_s": 3.0, "command_id": COMMAND_2,
+                       "control_tick_id": None,
+                       "payload": {"request": {"operator_id": "g2a_motion_arm", "operator_kind": "agent_ui"}}})
+        seq += 1
+        events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
+                       "event_seq": seq, "event_type": "rejected", "wall_utc": "2026-10-17T16:10:41.001000Z",
+                       "backend_monotonic_s": CAPTURE_2, "sim_time_s": 3.01, "command_id": COMMAND_2,
+                       "control_tick_id": None,
+                       "payload": {"decision": {"approved": False, "reason": "outside_declared_workspace",
+                                                "safety_revision": "g1-safety-1"}}})
         seq += 1
     (directory / "events.jsonl").write_text("".join(json.dumps(item) + "\n" for item in events), encoding="utf-8")
 
@@ -1424,3 +1442,60 @@ def test_an_episode_without_events_stream_reports_absence_rather_than_empty_voca
     assert all(item["status"] == "not_recorded_in_this_scan" for item in basis["categories"].values())
     assert all(entry["status"] == "missing" for item in basis["frame_association"]["candidate_positions_per_frame"]
                for entry in item["by_event_type"].values())
+
+
+def test_a_recorded_rejection_is_a_receipt_and_never_an_executed_action(tmp_path):
+    basis, _ = _basis(tmp_path, record_action_chain=True, record_rejected_receipt=True)
+    categories = basis["categories"]
+    # Now the rejection is actually present, so it is observed rather than absent — and still a receipt.
+    assert categories["command_receipt_rejected"]["status"] == "observed"
+    assert categories["command_receipt_rejected"]["counts"] == {"rejected": 1}
+    assert categories["command_receipt_rejected"]["absent_event_types"] == []
+    assert categories["command_receipt_rejected"]["event_types_recorded"] == ["rejected"]
+    # The approved command was dispatched; the rejected one was not.
+    assert categories["command_dispatched"]["counts"] == {"dispatch": 1}
+    chain = {item["command_id"]: item for item in basis["command_chain"]["commands"]}
+    assert chain[COMMAND_2]["stages"] == {"requested": 1, "rejected": 1}
+    assert "dispatch" not in chain[COMMAND_2]["stages"] and "approved" not in chain[COMMAND_2]["stages"]
+    assert chain[COMMAND_2]["control_tick_id_present"] == 0
+    assert chain[COMMAND_1]["stages"] == {"requested": 1, "approved": 1, "dispatch": 1}
+    # A rejection names no tick, so it is never offered as a frame association at all.
+    assert "rejected" not in basis["frame_association"]["by_event_type"]
+    assert {event_type for item in basis["frame_association"]["candidate_positions_per_frame"]
+            for event_type in item["by_event_type"]} == {"actuator_reference", "dispatch", "feedback",
+                                                         "feedback_initial"}
+    assert "command_receipt_rejected" in basis["independent_tracks"]
+    assert "command_receipt_accepted" in basis["independent_tracks"]
+    assert basis["frame_association"]["rules"]["rejected_requests"].endswith("never presented as an executed action")
+    assert "that any command below was physically executed" in basis["not_proven"]
+
+
+def test_an_equal_stamp_without_a_shared_key_never_creates_a_link_or_a_sync_claim(tmp_path):
+    client = _frames_client(tmp_path, record_action_chain=True, record_rejected_receipt=True)
+    page = client.get(ACTION_QUERY).json()
+    basis = page["action_basis"]
+    events_path = tmp_path / "runs" / RUN / "episodes" / EPISODE / "events.jsonl"
+    persisted = [json.loads(line) for line in events_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    rejection = next(item for item in persisted if item["event_type"] == "rejected")
+    anchors = [json.loads(line) for line in
+               (tmp_path / "runs" / RUN / "episodes" / EPISODE / "observations" / "persist.jsonl")
+               .read_text(encoding="utf-8").splitlines() if line.strip()]
+    # The trap is real: the rejection's stamp is numerically EQUAL to a frame's capture stamp.
+    assert rejection["backend_monotonic_s"] == CAPTURE_2
+    assert CAPTURE_2 in [item["capture_backend_monotonic_s"] for item in anchors]
+    assert rejection["control_tick_id"] is None
+    # Equality of stamps buys nothing: no role, no link, no sync claim.
+    assert all("rejected" not in item["by_event_type"] and "requested" not in item["by_event_type"]
+               for item in basis["frame_association"]["candidate_positions_per_frame"])
+    assert basis["frame_association"]["key"].startswith("control_tick_id equals")
+    assert "never upgrade a link" in basis["frame_association"]["rules"]["clock_parity"]
+    assert page["time"]["same_clock_verified"] is False
+    assert page["time"]["clock_sameness"]["verified_by_reader"] is False
+    assert page["time"]["synchronized_across_streams"] is False
+    assert "that a scanned event and a frame share one clock instant" in basis["not_proven"]
+    # The original record is still readable verbatim from the existing records route.
+    records = client.get(f"/api/v1/episodes/{EPISODE}/streams/events/records?run_id={RUN}"
+                         f"&event_seq_from={rejection['event_seq']}&event_seq_to={rejection['event_seq']}").json()
+    assert [item["record"]["payload"]["decision"]["reason"] for item in records["records"]] == \
+           ["outside_declared_workspace"]
+    assert records["records"][0]["record"]["backend_monotonic_s"] == CAPTURE_2
