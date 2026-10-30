@@ -60,6 +60,8 @@ GET /api/v1/episodes/{episode_id}/streams/events/records?run_id={run_id}&limit=5
 
 实际载荷见证据册 `action-basis-complete.json`、`rejected-category.json`、`events-records-command-window-real.json`、`proximity-command-to-anchor.json`。
 
+**兼容性范围（不是"加字段"就算完）**：本轮只在 **opt-in** 块 `action_basis.frame_association.rules` 内新增两个说明键（`clock_parity`、`recorded_target`），并让"归档确实写了 `rejected`"的情形返回 `status=observed` 而不是 `not_recorded_in_this_scan`——后者是**取值变化**，不是新增字段。没有任何字段被删除或改名，`schema_version`（`unirobot-mobilecar-frame-link-2`）与默认帧页逐键均不变，八条 GET 不变，因此**不需要版本迁移**；但两条消费约束必须遵守：①不得把 `rules` 当作封闭键集（新增键是允许的，未知键应忽略而非报错）；②不得把 `categories.*.status` 缓存为永久值——同一类别在不同 Episode 上可在 `observed` 与 `not_recorded_in_this_scan` 之间变化，跨 Episode 复用须按响应重判。A 段（`covers_whole_episode` 语义收紧与旧理由串停用）的迁移说明仍以 M1.5h/DEC-065 与 `version_migration.corrections/additions` 为准。
+
 2. **可精确关联帧的事件**：只有真实携带 `control_tick_id` 且等于帧锚点 `capture_control_tick_id` 的 `feedback`/`feedback_initial`（Actual）与 `actuator_reference`（Target）——以及**有时**的 `dispatch`（实测 1/303）；`rgbd_capture_timing` 按 `payload.sample_id` 关联。
 3. **只能独立浏览**：`requested`、`approved`、`rejected`、`lease_heartbeat`、`lease_expired`、`recording_start`、`recording_stop`、`episode_terminal`（按 `event_seq` 或命名时间基定位）。**根本未记录**：`rejected`（本条归档）、任何"执行完成/失败"回执、`takeover`/控制源切换事件、按 Episode 的必需流声明。
 4. **错误／歧义／缺失状态**：`matched` / `missing` / `ambiguous_candidates`（全部候选列出）/ `stream_absent` / `unresolved_reference`；类别层 `observed` / `not_recorded_in_this_scan`；`sample_id` 命中多个锚点时 `robot-state?sample_id=` 返回 409 `frame_sample_id_ambiguous`。
