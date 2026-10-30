@@ -12,8 +12,8 @@ import { CURVE_FRAME_ORDER, type FrameCurve } from '../adapters/platform-frames'
 
 const WIDTH = 620; const HEIGHT = 96; const PAD = { left: 8, right: 8, top: 10, bottom: 12 };
 
-export function HistoryFrameCurve({ curve, selectedPosition, onPick }: {
-  curve: FrameCurve; selectedPosition: number; onPick: (position: number) => void;
+export function HistoryFrameCurve({ curve, selectedPosition, selectedAnchor, onPick }: {
+  curve: FrameCurve; selectedPosition: number; selectedAnchor: string; onPick: (position: number) => void;
 }) {
   const points = curve.series[0]?.points ?? [];
   const selectedSampleId = points[selectedPosition]?.sampleId ?? null;
@@ -35,6 +35,7 @@ export function HistoryFrameCurve({ curve, selectedPosition, onPick }: {
     data-curve-missing-points={String(curve.withoutValue)}
     data-curve-out-of-order={JSON.stringify(curve.outOfOrder.slice(0, 4))}
     data-curve-selected-position={String(selectedPosition)}
+    data-curve-selected-anchor={selectedAnchor}
     data-curve-selected-sample={selectedSampleId ?? 'none'}
     data-curve-joint-labels={curve.series.map((axis) => axis.field).join(',')}>
     <h4>五轴历史 Actual（只取本页已读取的记录值）</h4>

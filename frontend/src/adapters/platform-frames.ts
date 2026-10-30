@@ -733,7 +733,7 @@ export function intervalGateOf(censusPage: FramePageDto | null, base: string): I
     disclosures.push(`扫描：anchors_in_this_scan=${cov.anchors_in_this_scan} · unique_sample_ids=${cov.unique_sample_ids} · 行号范围 ${text(cov.first_anchor_line_index)}–${text(cov.last_anchor_line_index)} · 已读行 ${text(cov.anchor_lines?.lines_read)}（空行 ${text(cov.anchor_lines?.blank_lines_skipped)}／超限 ${text(cov.anchor_lines?.oversize_lines_skipped)}／坏行 ${text(cov.anchor_lines?.unparseable_lines_skipped)}／非对象 ${text(cov.anchor_lines?.non_object_lines_skipped)}／预过滤 ${text(cov.anchor_lines?.prefiltered_lines_skipped)}）`);
     // The scope clause is read straight after the census, before any base is chosen, so it may not depend on a
     // per-base eligibility row: the page's own filters narrow the frame page, never this judgement.
-    disclosures.push(`范围口径：窗口与分页只筛帧页，这份 census 判定的是整个 Episode 的锚点扫描。page_filter_context 回显本页条件（time_base=${text(cov.page_filter_context?.time_base)}／time_from=${text(cov.page_filter_context?.time_from)}／time_to=${text(cov.page_filter_context?.time_to)}／sample_id=${text(cov.page_filter_context?.sample_id)}／offset=${text(cov.page_filter_context?.offset)}／limit=${text(cov.page_filter_context?.limit)}／returned=${text(cov.page_filter_context?.returned)}），reader 自述：${cov.page_filter_context?.note ?? cov.scope_note ?? 'reader 未复述范围口径'}`);
+    disclosures.push(`范围口径：窗口与分页只筛帧页，这份 census 判定的是它自己那次锚点扫描（是否覆盖整个 Episode 由 coverage 的 whole_anchor_file_scanned／covers_whole_episode 自己说）。page_filter_context 回显本页条件（time_base=${text(cov.page_filter_context?.time_base)}／time_from=${text(cov.page_filter_context?.time_from)}／time_to=${text(cov.page_filter_context?.time_to)}／sample_id=${text(cov.page_filter_context?.sample_id)}／offset=${text(cov.page_filter_context?.offset)}／limit=${text(cov.page_filter_context?.limit)}／returned=${text(cov.page_filter_context?.returned)}），reader 自述：${cov.page_filter_context?.note ?? cov.scope_note ?? 'reader 未复述范围口径'}`);
   }
   const dupes = tq.identity?.duplicate_sample_id_groups ?? 0;
   if (dupes > 0) {
@@ -752,7 +752,7 @@ export function intervalGateOf(censusPage: FramePageDto | null, base: string): I
     });
   }
   if (eligibility) {
-    disclosures.push(`eligible_within_this_scan=${String(eligibility.eligible_within_this_scan)}：这是“本次扫描内”的判定，不是“当前时间窗口内”的资格——窗口只筛帧页，census 仍描述整个 Episode（${cov?.page_filter_context?.note ?? cov?.scope_note ?? 'reader 未复述'}）。`);
+    disclosures.push(`eligible_within_this_scan=${String(eligibility.eligible_within_this_scan)}：这是“本次扫描内”的判定，不是“当前时间窗口内”的资格——窗口只筛帧页，census 描述的是它自己那次锚点扫描（${cov?.page_filter_context?.note ?? cov?.scope_note ?? 'reader 未复述'}）。`);
     if (eligibility.zero_interval_ties_present) disclosures.push(`该基存在相等相邻值（zero_interval_ties_present=true）：按并列处理，不除零、不插值。`);
     disclosures.push(`implied_rate_hz_from_median_recorded_gap=${text(eligibility.implied_rate_hz_from_median_recorded_gap)} 只是本次扫描的中位数换算，${eligibility.implied_rate_note ?? '它不是记录者声明的速率，也不是播放保证'}——排程不使用中位数，只用相邻锚点的真实差值。`);
   }
@@ -808,27 +808,41 @@ export interface RecordedRange {
   base: string; unit: string; present: boolean;
   pageFirst: number | null; pageLast: number | null; pageMin: number | null; pageMax: number | null;
   pageIncomplete: boolean;
+  episodeScope: 'proven' | 'scan-only' | 'unknown';
   episodeFirst: number | null; episodeLast: number | null; episodeMin: number | null; episodeMax: number | null;
   windowFrom: number | null; windowTo: number | null; note: string;
 }
 
 /** Page range from the frames this page holds, Episode range from the census scan, window from the page's
- *  own echo — three different scopes, stated separately, with no total frame count anywhere. */
+ *  own echo — three different scopes, stated separately, with no total frame count anywhere.
+ *
+ *  The Episode-wide span is only claimed when the census's own coverage says the scan covered the whole
+ *  anchor file; a truncated or absent scan keeps the same numbers but labels them as this scan, because a
+ *  prefix of a file says nothing about the Episode's first and last recorded value. */
 export function recordedRangeOf(page: FramePageDto | null, base: string, censusPage: FramePageDto | null = null): RecordedRange {
   const frames = page?.frames ?? [];
   const values = frames.map((frame) => numeric(frame.anchor.clocks?.[base])).filter((value): value is number => value !== null);
-  const row = censusPage?.time_quality?.time_bases?.[base] ?? page?.time_quality?.time_bases?.[base] ?? null;
+  const tq = censusPage?.time_quality ?? null;
+  const row = tq?.time_bases?.[base] ?? page?.time_quality?.time_bases?.[base] ?? null;
+  const cov = tq?.coverage ?? null;
+  const episodeScope: RecordedRange['episodeScope'] = !row ? 'unknown'
+    : (cov && cov.whole_anchor_file_scanned === true && cov.covers_whole_episode === true && cov.stopped_at_line_index === null) ? 'proven' : 'scan-only';
+  const coverageWords = cov ? `whole_anchor_file_scanned=${String(cov.whole_anchor_file_scanned)}／covers_whole_episode=${String(cov.covers_whole_episode)}／stopped_at_line_index=${text(cov.stopped_at_line_index)}／anchor_limit=${text(cov.anchor_limit)}` : 'census 没有 coverage';
   return {
     base, unit: row?.unit ?? page?.time?.units?.['*_s'] ?? '—', present: values.length === frames.length && frames.length > 0,
     pageFirst: frames.length ? values.length === frames.length ? values[0] : null : null,
     pageLast: frames.length ? values.length === frames.length ? values[values.length - 1] : null : null,
     pageMin: values.length ? Math.min(...values) : null, pageMax: values.length ? Math.max(...values) : null,
     pageIncomplete: frames.length > values.length,
+    episodeScope,
     episodeFirst: row?.first_in_file_order ?? null, episodeLast: row?.last_in_file_order ?? null,
     episodeMin: row?.min_recorded_value ?? null, episodeMax: row?.max_recorded_value ?? null,
     windowFrom: page?.time?.time_from ?? null, windowTo: page?.time?.time_to ?? null,
-    note: row ? `整段范围来自 census 本次扫描（${row.source_record ?? 'reader 未说明来源记录'}，${row.description ?? 'reader 未描述该钟'}）：首/末 ${text(row.first_in_file_order)}→${text(row.last_in_file_order)}，最小/最大 ${text(row.min_recorded_value)}/${text(row.max_recorded_value)}，记录间隔 ${text(row.recorded_gaps?.count)} 段（min ${text(row.recorded_gaps?.min_s)}／max ${text(row.recorded_gaps?.max_s)}s）。它描述的是整个 Episode 的锚点，不是本页，也不是当前窗口。`
-      : `本页没有 census：整段范围未知（不猜）。本页读到 ${frames.length} 帧，其中 ${values.length} 帧带 ${base} 的有限数值。`,
+    note: episodeScope === 'proven'
+      ? `整段范围来自 census 本次扫描（${row?.source_record ?? 'reader 未说明来源记录'}，${row?.description ?? 'reader 未描述该钟'}）：首/末 ${text(row?.first_in_file_order)}→${text(row?.last_in_file_order)}，最小/最大 ${text(row?.min_recorded_value)}/${text(row?.max_recorded_value)}，记录间隔 ${text(row?.recorded_gaps?.count)} 段（min ${text(row?.recorded_gaps?.min_s)}／max ${text(row?.recorded_gaps?.max_s)}s）。coverage 自述已扫完整份锚点文件，所以这可以是整个 Episode 的跨度——它不是本页，也不是当前窗口。`
+      : episodeScope === 'scan-only'
+        ? `这些数字只描述本次 census 扫描到的锚点段（${coverageWords}）：扫描没有覆盖整份锚点文件，界面不把它称作整个 Episode 的首末或最小最大，也不据此给出整集跨度。`
+        : `整段范围未知（不猜）：${coverageWords}。本页读到 ${frames.length} 帧，其中 ${values.length} 帧带 ${base} 的有限数值。`,
   };
 }
 
@@ -836,4 +850,14 @@ export function recordedRangeOf(page: FramePageDto | null, base: string, censusP
 export function framePositionKey(episodeId: string, runId: string | null, offset: number, position: number, frame: FrameDto | null): string {
   if (!frame) return `${episodeId}|${runId ?? ''}|none`;
   return `${episodeId}|${runId ?? ''}|${offset}+${position}|line ${frame.anchor.line_index}|${frame.sample_id}`;
+}
+
+/**
+ * The anchor identity every history panel echoes for the one selection: page offset + page position plus the
+ * anchor's own `line_index`. It is the same string in the state, time, media, curve and 3D panes, so a page
+ * that repeats a `sample_id` still shows which concrete anchor each panel is answering for.
+ */
+export function anchorEchoKey(offset: number, position: number, frame: FrameDto | null): string {
+  if (!frame) return 'none';
+  return `${offset}+${position}|line ${frame.anchor.line_index}`;
 }

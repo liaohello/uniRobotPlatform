@@ -341,7 +341,7 @@ def page_attrs(page):
         cursorPending:g('[data-frame-view] .history-cursor','data-frame-cursor-pending'),
         cursorOrder:g('[data-frame-cursor-order]','data-frame-cursor-order'),lineIndexClock:g('[data-frame-line-index-clock]','data-frame-line-index-clock'),
         cursorPosition:g('[data-frame-view] .history-cursor','data-frame-cursor-position'),
-        cursorKey:g('[data-frame-view] .history-cursor','data-cursor-position-key'),
+        cursorKey:g('[data-frame-view] .history-cursor','data-cursor-position-key'),cursorAnchor:g('[data-frame-view] .history-cursor','data-cursor-anchor'),
         cursorRecordedValue:g('[data-frame-view] .history-cursor','data-cursor-recorded-value'),
         cursorRecordedBase:g('[data-frame-view] .history-cursor','data-cursor-recorded-base'),
         playModeChip:g('[data-frame-play-mode]','data-frame-play-mode'),censusStatus:g('[data-time-quality-status]','data-time-quality-status'),
@@ -362,7 +362,8 @@ def page_attrs(page):
         intervalWindow:g('[data-interval-pane]','data-interval-window'),intervalDuplicates:g('[data-interval-pane]','data-interval-duplicates'),
         intervalCurrentValue:g('[data-interval-pane]','data-interval-current-value'),intervalSteps:g('[data-interval-pane]','data-interval-steps'),
         intervalNextPlanned:g('[data-interval-pane]','data-interval-next-planned-ms'),intervalMeaning:g('[data-interval-meaning]','data-interval-meaning'),
-        intervalScopes:g('[data-interval-scopes]','data-interval-scopes'),
+        intervalScopes:g('[data-interval-scopes]','data-interval-scopes'),intervalClock:g('[data-interval-pane]','data-interval-clock'),
+        intervalCoverage:g('[data-interval-pane]','data-interval-coverage'),intervalEpisodeScope:g('[data-interval-pane]','data-interval-episode-scope'),
         intervalRowKinds:q('[data-interval-row]','data-interval-row-kind'),intervalRowGaps:q('[data-interval-row]','data-interval-row-gap'),
         intervalRowWaits:q('[data-interval-row]','data-interval-row-wait'),intervalRowValues:q('[data-interval-row]','data-interval-row-values'),
         intervalRowLines:q('[data-interval-row]','data-interval-row-lines'),
@@ -373,6 +374,9 @@ def page_attrs(page):
         pickPositions:q('[data-frame-pick]','data-pick-position'),pickLines:q('[data-frame-pick]','data-pick-line'),
         curvePickPositions:q('[data-curve-pick]','data-pick-position'),curveMarkerPositions:q('[data-curve-marker]','data-curve-marker-position'),
         curveSelectedPosition:g('[data-frame-curve]','data-curve-selected-position'),modelAnchor:g('[data-model-pane]','data-model-anchor-ref'),
+        curveAnchor:g('[data-frame-curve]','data-curve-selected-anchor'),stateAnchor:g('[data-frame-state-pane]','data-frame-displayed-anchor'),
+        timeAnchor:g('[data-frame-time-pane]','data-frame-displayed-anchor'),mediaAnchor:g('[data-frame-media-pane]','data-frame-displayed-anchor'),
+        assetPositionKey:g('[data-frame-asset-position-key]','data-frame-asset-position-key'),
         curveRowLines:q('[data-curve-row]','data-curve-row-line'),curveRowPersist:q('[data-curve-row]','data-curve-row-persist'),
         stateDisplayed:g('[data-frame-state-pane]','data-frame-displayed-sample'),timeDisplayed:g('[data-frame-time-pane]','data-frame-displayed-sample'),
         playMode:g('[data-frame-play]','data-frame-play'),rateLabel:document.querySelector('[aria-label="播放节奏（每秒展示帧数，界面节奏）"]')?.selectedOptions[0]?.text??'',
@@ -1264,6 +1268,12 @@ async def real_flow(page):
           and real_plans['intervalSteps'] == '4' and real_plans['intervalRowWaits'] == expected_waits
           and real_plans['intervalRowGaps'] == [text_number(round(b - a, 6)) for a, b in zip(raw_clocks, raw_clocks[1:])],
           [real_plans['intervalEpisodeFirst'], real_plans['intervalRowWaits'], expected_waits])
+    check('真实路径的整段跨度有 coverage 依据：Episode 口径 proven，所选基的 clock 与 coverage 原值都在屏上',
+          real_plans['intervalEpisodeScope'] == 'proven'
+          and real_plans['intervalClock'] == str(real_capture.get('clock', ''))
+          and ('covers_whole_episode=%s' % str(real_tq['coverage']['covers_whole_episode']).lower()) in (real_plans['intervalCoverage'] or '').lower()
+          and ('anchors_in_this_scan=%d' % real_tq['coverage']['anchors_in_this_scan']) in (real_plans['intervalCoverage'] or ''),
+          [real_plans['intervalEpisodeScope'], real_plans['intervalClock'], (real_plans['intervalCoverage'] or '')[:140]])
     await page.locator('[aria-label="记录间隔倍速"]').select_option('2')
     real_fast = await page_attrs(page)
     check('真实数据上的 2× 就是把同一段真实差除以 2，且切换倍速不会自动开始播放',
@@ -3194,6 +3204,13 @@ async def synthetic_flow(page):
           and after_buffer_pause['playMode'] == 'play',
           [grown[:3], max([s[2] for s in samples if s[0] == 'buffering'] or [0]), after_buffer_pause['index']])
     report['synthetic'].setdefault('interval_walk', {})['buffer_samples'] = [s for s in samples if s[0] == 'buffering'][:8]
+    positions = [int(s[1]) for s in samples if s[1] not in ('', 'none')]
+    steps = [b - a for a, b in zip(positions, positions[1:])]
+    # "Keep record order, buffer when data is not ready" also means no catch-up burst: a slow asset must not be
+    # paid for by flashing several frames at once afterwards. Every observed move is +1; 0 (same frame) is fine.
+    check('不靠追赶时钟连续闪过一批帧：观察窗里游标只会停在原帧或 +1 前进，没有一次跳号',
+          len(set(positions)) >= 2 and all(step in (0, 1) for step in steps),
+          [positions[:14], steps[:14]])
 
     # The census's own limits: a truncated scan and unjudgeable anchor rows both disable the mode, while the
     # exclusions the reader declares normal (blank / prefiltered lines) do not.
@@ -3208,6 +3225,12 @@ async def synthetic_flow(page):
           and any('没有扫完整份锚点文件' in reason for reason in truncated_base['intervalReasons'])
           and any('anchor_limit=4000' in reason for reason in truncated_base['intervalReasons'])
           and truncated['censusStatus'] == 'ready', truncated_base['intervalReasons'][:1])
+    check('截断扫描不把扫描段称作整个 Episode 的跨度：范围口径标为 scan-only 并写出 coverage 原值',
+          truncated['intervalEpisodeScope'] == 'scan-only'
+          and 'covers_whole_episode=false' in (truncated['intervalCoverage'] or '').lower()
+          and '界面不把它称作整个 Episode 的跨度' in (truncated['intervalScopes'] or '')
+          and 'census 已扫完整份锚点文件' not in (truncated['intervalScopes'] or ''),
+          [truncated['intervalEpisodeScope'], (truncated['intervalCoverage'] or '')[:140]])
 
     await open_episode(page, 'run_a', 'episode_interval_badrows')
     await page.locator('[data-frame-read-census]').click()
@@ -3243,11 +3266,15 @@ async def synthetic_flow(page):
     await wait_model(page, 'ready')
     await wait_asset_settled(page)
     dup_solo = await page_attrs(page)
-    check('唯一 id 的那一行正常带出自己的姿态与数值（为下一条“不沿用旧姿态”建立真实的前态）',
+    check('唯一 id 的那一行正常带出自己的姿态与数值，且五个历史面板回显同一个具体锚点（为下一条“不沿用旧姿态”建立真实的前态）',
           dup_solo['cursorSample'] == 'rgbd_solo' and dup_solo['modelRequested'] == 'rgbd_solo'
           and dup_solo['stateDisplayed'] == 'rgbd_solo' and dup_solo['modelStatus'] == 'ready' and dup_solo['valueNames'] != []
+          and dup_solo['cursorAnchor'] == '0+0|line 2' and dup_solo['stateAnchor'] == '0+0|line 2'
+          and dup_solo['timeAnchor'] == '0+0|line 2' and dup_solo['mediaAnchor'] == '0+0|line 2'
+          and dup_solo['curveAnchor'] == '0+0|line 2' and dup_solo['modelAnchor'] == '0+0|line 2'
           and len(tree_fetch_reads(dup_mark)) == 1,
-          [dup_solo['modelStatus'], dup_solo['cursorSample'], dup_solo['valueNames'][:3], len(tree_fetch_reads(dup_mark))])
+          [dup_solo['modelStatus'], dup_solo['cursorSample'], dup_solo['valueNames'][:3], len(tree_fetch_reads(dup_mark)),
+           dup_solo['cursorAnchor'], dup_solo['stateAnchor'], dup_solo['timeAnchor'], dup_solo['mediaAnchor'], dup_solo['curveAnchor'], dup_solo['modelAnchor']])
     # From here the tree is already acquired for this namespace: the refused frame must not trigger another
     # acquisition, and must not leave any of the previous frame's driven values on screen.
     dup_tree_mark = len(report['requests'])
@@ -3265,6 +3292,25 @@ async def synthetic_flow(page):
           and dup_second['valueNames'] == [] and dup_second['cursorSample'] == 'rgbd_dup'
           and len(tree_fetch_reads(dup_tree_mark)) == 0,
           [dup_second['modelStatus'], dup_second['cursorPosition'], dup_second['valueNames'], dup_second['modelStage'][:180]])
+    # A refused pose must not take the rest of the frame's own information away: the same concrete anchor is
+    # echoed by state, time, media, curve and 3D, and the media chip is attributed to that anchor's position key.
+    check('409 只拒绝姿态：状态/时间/媒体/曲线/3D 五个面板都回显同一个具体锚点 0+2|line 9，其他帧信息仍可检查',
+          dup_second['cursorAnchor'] == '0+2|line 9' and dup_second['stateAnchor'] == '0+2|line 9'
+          and dup_second['timeAnchor'] == '0+2|line 9' and dup_second['mediaAnchor'] == '0+2|line 9'
+          and dup_second['curveAnchor'] == '0+2|line 9' and dup_second['modelAnchor'] == '0+2|line 9'
+          and 'line 9' in (dup_second['assetPositionKey'] or '') and dup_second['assetStatus'] in ('bytes', 'not-loaded', 'loading')
+          and dup_second['stateDisplayed'] == 'rgbd_dup' and dup_second['rowSamples'][2] == 'rgbd_dup',
+          [dup_second['cursorAnchor'], dup_second['stateAnchor'], dup_second['timeAnchor'], dup_second['mediaAnchor'],
+           dup_second['curveAnchor'], dup_second['assetStatus'], dup_second['assetPositionKey']])
+    await page.locator('[data-frame-pick][data-pick-position="0"]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-view] .history-cursor')?.getAttribute('data-frame-cursor-position') ?? '')==='0'", 'dup-back-solo')
+    await wait_model(page, 'ready')
+    dup_recovered = await page_attrs(page)
+    check('选回唯一 id 的行即可重新读到姿态：409 不把面板锁死，检查其他可读帧的能力仍在（树不再重取）',
+          dup_recovered['modelStatus'] == 'ready' and dup_recovered['valueNames'] != []
+          and dup_recovered['modelAnchor'] == '0+0|line 2' and dup_recovered['stateAnchor'] == '0+0|line 2'
+          and len(tree_fetch_reads(dup_tree_mark)) == 0,
+          [dup_recovered['modelStatus'], dup_recovered['valueNames'][:2], dup_recovered['modelAnchor'], len(tree_fetch_reads(dup_tree_mark))])
     # Cold start is a new playback session: nothing carries over, and asking for recorded-interval playback
     # before any census exists refuses on its own terms instead of pretending to schedule.
     cold_interval_mark = len(report['requests'])

@@ -18,7 +18,7 @@ import {
   frameAutoLoadRef, frameBoundaryNotice, frameMediaRefs, framePositionKey,
   framePageExplanation, framePageKind, frameSelectableBases, frameStopNote, frameWindowGate, intervalGateOf,
   intervalScheduleOf, intervalStepOf, linkageScopeText, mediaDeclarationText, provenanceRowsOf, quantityRowsOf,
-  readFramesPage, recorderDeclaredOf, recordedRangeOf, roleCoverageText, roleRowsOf, selectionRulesText,
+  anchorEchoKey, readFramesPage, recorderDeclaredOf, recordedRangeOf, roleCoverageText, roleRowsOf, selectionRulesText,
   simQuantityKeysOf, stateQuantityKeysOf, stateRowsOf, stateSelectionOf, statusPrecedenceText, timeSemanticsText,
   timeQualitySessionKey, versionMigrationText,
   type FrameDto, type FramePageDto, type FrameReadContext, type IntervalStep,
@@ -42,12 +42,12 @@ const BASE_MEANING: Record<string, string> = {
 
 interface FrameTarget { episodeId: string; runId: string | null }
 interface FrameAsset {
-  token: number; sampleId: string; field: string; uri: string; availability: string;
+  token: number; sampleId: string; positionKey: string; field: string; uri: string; availability: string;
   status: 'idle' | 'loading' | 'bytes' | 'failed' | 'not-loaded'; url: string | null; mediaType: string; bytes: number;
   sha: string; declaredSha: string | null; declaredBytes: string; agreesWithRow: string; note: string; error: string;
   decoded: 'unknown' | 'ok' | 'failed';
 }
-const NO_FRAME_ASSET: FrameAsset = { token: 0, sampleId: '', field: '', uri: '', availability: 'none', status: 'idle', url: null, mediaType: '', bytes: 0, sha: '', declaredSha: null, declaredBytes: 'null', agreesWithRow: 'null', note: '', error: '', decoded: 'unknown' };
+const NO_FRAME_ASSET: FrameAsset = { token: 0, sampleId: '', positionKey: 'none', field: '', uri: '', availability: 'none', status: 'idle', url: null, mediaType: '', bytes: 0, sha: '', declaredSha: null, declaredBytes: 'null', agreesWithRow: 'null', note: '', error: '', decoded: 'unknown' };
 
 export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeApi; episodeId: string; runId: string | null }) {
   const [page, setPage] = useState<FramePageDto | null>(null);
@@ -171,15 +171,15 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
     frameKeyRef.current = key;
     revoke(urlRef.current); urlRef.current = null;
     if (!ref) {
-      setAsset({ ...NO_FRAME_ASSET, token, sampleId: frame.sample_id, field: explicitField ?? '', uri: '', availability: refs.length ? 'not_present' : 'no_items', status: 'not-loaded',
+      setAsset({ ...NO_FRAME_ASSET, token, sampleId: frame.sample_id, positionKey: key, field: explicitField ?? '', uri: '', availability: refs.length ? 'not_present' : 'no_items', status: 'not-loaded',
         note: refs.length ? '该帧的引用里没有可按原样读取的 rgb 引用，或所选字段不可读：不显示任何图像，也不保留上一帧的图片冒充当前帧。' : '本帧 media.items 为空：reader 没有给出可读取的引用，界面不按 sample_id 猜文件名。' });
       return;
     }
     if (!ref.loadable) {
-      setAsset({ ...NO_FRAME_ASSET, token, sampleId: frame.sample_id, field: ref.field, uri: ref.uri, availability: ref.availability, status: 'not-loaded', declaredSha: ref.declaredSha256, declaredBytes: ref.declaredBytes, agreesWithRow: ref.agreesWithRow, note: ref.note });
+      setAsset({ ...NO_FRAME_ASSET, token, sampleId: frame.sample_id, positionKey: key, field: ref.field, uri: ref.uri, availability: ref.availability, status: 'not-loaded', declaredSha: ref.declaredSha256, declaredBytes: ref.declaredBytes, agreesWithRow: ref.agreesWithRow, note: ref.note });
       return;
     }
-    setAsset({ ...NO_FRAME_ASSET, token, sampleId: frame.sample_id, field: ref.field, uri: ref.uri, availability: ref.availability, status: 'loading', declaredSha: ref.declaredSha256, declaredBytes: ref.declaredBytes, agreesWithRow: ref.agreesWithRow, note: ref.note });
+    setAsset({ ...NO_FRAME_ASSET, token, sampleId: frame.sample_id, positionKey: key, field: ref.field, uri: ref.uri, availability: ref.availability, status: 'loading', declaredSha: ref.declaredSha256, declaredBytes: ref.declaredBytes, agreesWithRow: ref.agreesWithRow, note: ref.note });
     void api.asset(target.episodeId, target.runId, ref.uri, ref.declaredSha256, track(new AbortController()).signal)
       .then((value) => {
         if (token !== assetSerial.current || frameKeyRef.current !== key) return;
@@ -188,7 +188,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
         const url = inline ? URL.createObjectURL(new Blob([value.bytes], { type: value.mediaType })) : null;
         urlRef.current = url;
         setAsset({
-          token, sampleId: frame.sample_id, field: ref.field, uri: ref.uri, availability: ref.availability, status: 'bytes', url,
+          token, sampleId: frame.sample_id, positionKey: key, field: ref.field, uri: ref.uri, availability: ref.availability, status: 'bytes', url,
           mediaType: value.mediaType, bytes: value.bytes.byteLength, sha: value.assetSha256, declaredSha: ref.declaredSha256,
           declaredBytes: ref.declaredBytes, agreesWithRow: ref.agreesWithRow, note: ref.note,
           error: inline ? '' : `${value.mediaType || '未知类型'} 不能内联显示：本切片只按字节读取并显示服务端重算摘要，不做 NumPy 数值解码、不生成图像，也不画点云。`,
@@ -197,7 +197,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
       })
       .catch((cause) => {
         if (token !== assetSerial.current || frameKeyRef.current !== key) return;
-        setAsset({ ...NO_FRAME_ASSET, token, sampleId: frame.sample_id, field: ref.field, uri: ref.uri, availability: ref.availability, status: 'failed', error: describeHistoryError(cause), declaredSha: ref.declaredSha256, declaredBytes: ref.declaredBytes, agreesWithRow: ref.agreesWithRow, note: ref.note });
+        setAsset({ ...NO_FRAME_ASSET, token, sampleId: frame.sample_id, positionKey: key, field: ref.field, uri: ref.uri, availability: ref.availability, status: 'failed', error: describeHistoryError(cause), declaredSha: ref.declaredSha256, declaredBytes: ref.declaredBytes, agreesWithRow: ref.agreesWithRow, note: ref.note });
       });
   }
 
@@ -460,6 +460,13 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
   const selectable = frameSelectableBases(page);
   const kind = framePageKind(page, context);
   const paged = page?.paging;
+  // One anchor identity, echoed by every history consumer: state, time, media, curve and 3D all answer for
+  // the same concrete anchor (page offset + page position + the anchor's own line_index), not just a sample_id
+  // that a page may repeat.
+  const cursorAnchor = anchorEchoKey(paged?.offset ?? 0, index, frame);
+  const episodeScopeLabel = range.episodeScope === 'proven' ? '整个 Episode（census 已扫完整份锚点文件）'
+    : range.episodeScope === 'scan-only' ? '本次扫描范围（coverage 未覆盖整份锚点文件，界面不把它称作整个 Episode 的跨度）'
+      : '整段范围未知（没有该基的 census 行，不猜）';
   const feedback = frame?.state?.recorder_declared_feedback;
   const activeWindow = context.base ? `${context.base} ${text(context.from)}–${text(context.to)}` : 'none';
   const migration = versionMigrationText(page);
@@ -568,7 +575,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
       {notice && <p className="session-note" role="status" data-frame-notice="true">{notice}</p>}
 
       <section className="session-fields frame-intervals" data-interval-pane="true"
-        data-interval-mode={playMode} data-interval-base={intervalBase || 'none'} data-interval-unit={range.unit}
+        data-interval-mode={playMode} data-interval-base={intervalBase || 'none'} data-interval-unit={range.unit} data-interval-clock={intervalGate.clock} data-interval-coverage={`anchors_in_this_scan=${text(censusPage?.time_quality?.coverage?.anchors_in_this_scan)}／covers_whole_episode=${text(censusPage?.time_quality?.coverage?.covers_whole_episode)}／whole_anchor_file_scanned=${text(censusPage?.time_quality?.coverage?.whole_anchor_file_scanned)}／stopped_at_line_index=${text(censusPage?.time_quality?.coverage?.stopped_at_line_index)}`} data-interval-episode-scope={range.episodeScope}
         data-interval-speed={String(speed)} data-interval-allowed={String(intervalGate.allowed)}
         data-interval-eligible={text(intervalGate.eligibility?.eligible_for_whole_episode)}
         data-interval-scan-eligible={text(intervalGate.eligibility?.eligible_within_this_scan)}
@@ -591,8 +598,8 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
         <p className="session-note" data-interval-meaning={`capture＝采集时刻（${BASE_MEANING.capture_backend_monotonic_s}／${BASE_MEANING.capture_sim_time_s}）；persist＝${BASE_MEANING.persist_backend_monotonic_s}。三个钟含义分别标明，界面不把其中一个叫作另一个，也不合并成一个“真实时间”。等待只用相邻锚点的真实差值，不使用 profile 名（${censusPage?.time_quality?.profile?.profile_ids_seen?.join('、') || '未读'}）或名义帧率，median 只作 census 描述、绝不排程。`}>
           <b>capture / sim / persist 各自是什么</b>：{BASE_MEANING.capture_backend_monotonic_s}；{BASE_MEANING.capture_sim_time_s}；{BASE_MEANING.persist_backend_monotonic_s}。<b>按 persist 排的是写入节奏，不称为机器人运动原速</b>；等待也不使用 profile 名（如 {censusPage?.time_quality?.profile?.profile_ids_seen?.join('、') || '未读'}）或名义帧率，median 只作为 census 的描述值显示，绝不用于排程。
         </p>
-        <p className="session-note" data-interval-scopes={`本页首/末 ${text(range.pageFirst)}→${text(range.pageLast)} · 本页最小/最大 ${text(range.pageMin)}/${text(range.pageMax)} · 当前窗口 ${context.base ? `${text(range.windowFrom)}–${text(range.windowTo)}` : '未设（窗口只筛帧页）'} · 整个 Episode（census）首/末 ${text(range.episodeFirst)}→${text(range.episodeLast)} · 最小/最大 ${text(range.episodeMin)}/${text(range.episodeMax)} · ${range.note}`}>
-          <b>范围分开表达</b>：本页首/末 {text(range.pageFirst)}→{text(range.pageLast)}；本页最小/最大 {text(range.pageMin)}/{text(range.pageMax)}；当前窗口 {context.base ? `${text(range.windowFrom)}–${text(range.windowTo)}` : '未设'}（<b>窗口只筛帧页，census 仍描述整个 Episode</b>）；整个 Episode（本次 census 扫描）首/末 {text(range.episodeFirst)}→{text(range.episodeLast)}、最小/最大 {text(range.episodeMin)}/{text(range.episodeMax)}。{range.note}
+        <p className="session-note" data-interval-episode-scope={range.episodeScope} data-interval-scopes={`本页首/末 ${text(range.pageFirst)}→${text(range.pageLast)} · 本页最小/最大 ${text(range.pageMin)}/${text(range.pageMax)} · 当前窗口 ${context.base ? `${text(range.windowFrom)}–${text(range.windowTo)}` : '未设（窗口只筛帧页）'} · ${episodeScopeLabel} 首/末 ${text(range.episodeFirst)}→${text(range.episodeLast)} · 最小/最大 ${text(range.episodeMin)}/${text(range.episodeMax)} · ${range.note}`}>
+          <b>范围分开表达</b>：本页首/末 {text(range.pageFirst)}→{text(range.pageLast)}；本页最小/最大 {text(range.pageMin)}/{text(range.pageMax)}；当前窗口 {context.base ? `${text(range.windowFrom)}–${text(range.windowTo)}` : '未设'}（<b>窗口只筛帧页，census 仍描述整份锚点扫描</b>）；{episodeScopeLabel} 首/末 {text(range.episodeFirst)}→{text(range.episodeLast)}、最小/最大 {text(range.episodeMin)}/{text(range.episodeMax)}。{range.note}
           {range.pageIncomplete ? <b data-interval-incomplete="true"> 本页有帧缺该基的有限数值：这些段不排程、不补值、不借用别的基。</b> : null}
         </p>
         <table className="frame-record-table" data-interval-table="true"><thead><tr><th>段（本页位置）</th><th>line_index 对</th><th>记录值对</th><th>真实差（s）</th><th>÷ 倍速后等待（ms）</th><th>判定</th></tr></thead>
@@ -620,6 +627,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
             data-frame-cursor-selection={`${text(paged?.offset)}|${index}|${frame?.sample_id ?? 'none'}`}
             data-frame-cursor-position={String(index)}
             data-cursor-position-key={frame ? framePositionKey(episodeId, runId, paged?.offset ?? 0, index, frame) : 'none'}
+            data-cursor-anchor={cursorAnchor}
             data-frame-cursor-pending={String(buffering)} data-frame-buffering={String(buffering)}
             data-cursor-selected-sample={frame?.sample_id ?? 'none'}
             data-cursor-recorded-value={intervalBase ? text(frame?.anchor.clocks?.[intervalBase]) : 'no-base'}
@@ -653,7 +661,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
             clock_sameness：declared_by_recorder={text(page.time.clock_sameness.declared_by_recorder)} · verified_by_reader={text(page.time.clock_sameness.verified_by_reader)} · {page.time.clock_sameness.verified_claim ?? 'reader 未说明'}</p>}
         </section>
 
-        <section className="history-stream-pane" data-frame-state-pane="true" data-frame-displayed-sample={frame?.sample_id ?? 'none'}>
+        <section className="history-stream-pane" data-frame-state-pane="true" data-frame-displayed-sample={frame?.sample_id ?? 'none'} data-frame-displayed-anchor={cursorAnchor}>
           <h4>关联机器人状态（该帧的 feedback 记录）</h4>
           {!frame && <p className="session-note" data-frame-state-empty="true">未绑定帧：没有状态可显示。</p>}
           {frame && <>
@@ -678,7 +686,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
           </>}
         </section>
 
-        <section className="history-stream-pane" data-frame-time-pane="true" data-frame-displayed-sample={frame?.sample_id ?? 'none'}>
+        <section className="history-stream-pane" data-frame-time-pane="true" data-frame-displayed-sample={frame?.sample_id ?? 'none'} data-frame-displayed-anchor={cursorAnchor}>
           <h4>时间与来源（每条都是两个记录字段之差）</h4>
           {!frame && <p className="session-note" data-frame-time-empty="true">未绑定帧：没有时间量可显示。</p>}
           {frame && <>
@@ -698,7 +706,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
           <dl className="session-fields">{provenanceRowsOf(page, frame).map((row) => <div key={row.key} data-provenance-row={row.key}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl>
         </section>
 
-        <section className="history-stream-pane" data-frame-media-pane="true" data-frame-displayed-sample={frame?.sample_id ?? 'none'}>
+        <section className="history-stream-pane" data-frame-media-pane="true" data-frame-displayed-sample={frame?.sample_id ?? 'none'} data-frame-displayed-anchor={cursorAnchor}>
           <h4>媒体（只按本帧 media.items 的引用读取）</h4>
           <p className="session-note" data-media-declaration={mediaDeclarationText(frame)}>{mediaDeclarationText(frame)}</p>
           {!refs.length && <p className="session-note" data-frame-media-none="true">{frame ? '本帧 media.items 没有引用：不显示图像，也不按 sample_id 拼文件名。' : '未绑定帧。'}</p>}
@@ -710,7 +718,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
             <small>{ref.note}</small>
             <button data-frame-media-pick={ref.field} disabled={!ref.loadable || (asset.status === 'loading' && asset.uri === ref.uri)} title={ref.loadable ? '按该引用读取字节' : '该引用不可读取，界面不绕过'} onClick={() => bindFrame(frame, index, { field: ref.field })}>按此引用读取</button>
           </div>)}
-          {asset.uri || asset.status !== 'idle' ? <div className="asset-frame" data-frame-asset-sample={asset.sampleId} data-frame-asset-field={asset.field || '—'} data-frame-asset-uri={asset.uri || 'none'}
+          {asset.uri || asset.status !== 'idle' ? <div className="asset-frame" data-frame-asset-sample={asset.sampleId} data-frame-asset-position-key={asset.positionKey} data-frame-asset-field={asset.field || '—'} data-frame-asset-uri={asset.uri || 'none'}
             data-frame-asset-availability={asset.availability} data-frame-asset-status={asset.status} data-frame-asset-media-type={asset.mediaType || '—'}
             data-frame-asset-bytes={String(asset.bytes)} data-frame-asset-sha={asset.sha || 'none'} data-frame-asset-declared={asset.declaredSha ?? 'null'}
             data-frame-asset-declared-bytes={asset.declaredBytes} data-frame-asset-agrees={asset.agreesWithRow}
@@ -737,7 +745,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
         <label>曲线横轴<select aria-label="曲线横轴" value={curveX} onChange={(event) => setCurveX(event.target.value)}>{xAxes.map((axis) => <option key={axis.key} value={axis.key}>{axis.label}</option>)}</select></label>
         <span className="chip masked" data-frame-curve-scope="true">曲线只用本页已读取的 {frames.length} 帧记录值；点曲线即定位当前帧，不发新请求、不下载整份归档</span>
       </div>
-      <HistoryFrameCurve curve={curve} selectedPosition={index}
+      <HistoryFrameCurve curve={curve} selectedPosition={index} selectedAnchor={cursorAnchor}
         onPick={(position) => { const target = frames[position]; if (!target) return; ++playGen.current; setHeld(null); frozenSince.current = 0; presentedAt.current = performance.now(); setPlaying(false); setIndex(position); bindFrame(target, position); }}/>
 
       <HistoryModelPane episodeId={episodeId} runId={runId} sampleId={frame?.sample_id ?? null}

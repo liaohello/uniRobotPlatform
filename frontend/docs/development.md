@@ -1,3 +1,48 @@
+# M4.1 五个历史面板回显同一个具体锚点，Episode 跨度只在 coverage 说“扫完整份锚点文件”时才这样称谓（2026-10-30）
+
+M4.0 已把定位从 `sample_id` 换成“本页位置＋锚点 `line_index`”，并接入 M1.5g census 的记录间隔播放。这一轮只补两件此前**说得比做得多**的事，不新增播放能力、不改后端契约、不改路由：①“媒体、状态、曲线、3D 回显同一个具体锚点”此前只有游标行、曲线竖线与 3D 面板带位置/行号，状态、时间、媒体三块只有 `sample_id`——一页里重复 `sample_id` 时，看屏幕无法逐字证明它们回答的是哪一条锚点；②范围面板此前无条件把 census 的首末/最小最大写成“整个 Episode（census）”，而截断扫描下这些数字只描述被扫到的前缀。唯一上游仍是 `127.0.0.1:18979`；只改 `frontend/`；不发运动/RESET/STOP/录制/导航；不主张跨流同刻同步、整车重建或正式 M1/M1.5 验收。
+
+## 一、同一锚点：五个消费者共用一个回显键
+
+- 新增纯函数 `anchorEchoKey(offset, position, frame)` → `${offset}+${position}|line ${line_index}`（无帧时 `none`），与 3D 面板既有的 `data-model-anchor-ref` 同一形状。游标行写 `data-frame-cursor-anchor`，状态/时间/媒体三块各写 `data-frame-displayed-anchor`，曲线写 `data-curve-selected-anchor`，3D 仍是 `data-model-anchor-ref`——六处（含游标）逐字相同。
+- 媒体块另带**被请求那一帧**的归属键 `data-frame-asset-position-key`：`framePositionKey(...)`=`episode|run|offset+position|line N|sample_id` 存进 asset state（五处 `setAsset` 都写 `positionKey`），而不是读当前游标——迟到的字节归属请求它的那一帧，不是最后点的那一帧。
+- 409 `frame_sample_id_ambiguous` 仍只拒绝姿态：状态/时间/媒体/曲线/3D 对同一条锚点给出各自可读的信息（媒体块报告该位置键与读取状态），且选回唯一 id 的行即可重新读到姿态——拒绝不是把面板锁死。
+
+## 二、跨度称谓以 coverage 为准
+
+- `recordedRangeOf` 新增 `episodeScope` 三态：`proven`（`whole_anchor_file_scanned=true && covers_whole_episode=true && stopped_at_line_index=null`）、`scan-only`（截断、未声明或不完整）、`unknown`（没有该基的 census 行）。
+- 只在 `proven` 时文字写“整个 Episode 的跨度”；`scan-only` 时同样的首末/最小最大数字照原样显示，但标签改为“本次扫描范围”，并在同一段里回显 `whole_anchor_file_scanned/covers_whole_episode/stopped_at_line_index/anchor_limit` 原值与“不把它称作整个 Episode 的首末或最小最大”；`unknown` 写“不猜”。
+- 新增可断言属性：`data-interval-episode-scope`（三态）、`data-interval-clock`（所选基的 clock 原文）、`data-interval-coverage`（coverage 四个原值）。census 披露文字里“census 判定的是整个 Episode 的锚点扫描”改成“它自己那次锚点扫描（是否覆盖整集由 coverage 自己说）”，`eligible_within_this_scan` 的说明同样改写——窗口仍只筛帧页，这点没变。
+- 单测：`proven` 保持原来的“整段范围来自 census 本次扫描…不是本页，也不是当前窗口”，`scan-only` 断言数字不变而称谓改变，`unknown` 断言语义；`anchorEchoKey` 断言同一 `sample_id` 的两条锚点给出不同回显键。
+
+## 三、这一轮新加的直接断言（浏览器）
+
+- **锚点回显**：唯一 id 一行先正常出姿态，五个面板 + 游标逐字等于 `0+0|line 2`；点曲线落到重复 id 第二条后逐字等于 `0+2|line 9`，同时状态/时间/媒体仍可读、媒体归属键含 `line 9`；再选回唯一行，姿态恢复且树 0 次重取。
+- **不追赶时钟**：在慢媒体（每条资产 0.9 s）的可控时钟走查里逐拍采样游标位置，断言相邻两拍之差只可能是 0 或 +1——没有一次跳号，也就没有“欠账后用一串快速切帧补上”。
+- **截断扫描的称谓**：`episode_interval_truncated` 一档断言 `data-interval-episode-scope=scan-only`、coverage 原值在屏上、范围文字不含“census 已扫完整份锚点文件”。
+- **真实路径**：`episode_27bfed…` 上断言 `episode-scope=proven`、clock 等于直读 census 的 `time_bases.capture_backend_monotonic_s.clock`、coverage 的 `covers_whole_episode` 与 `anchors_in_this_scan` 原值在屏上。
+
+## 四、实际验证与复现入口
+
+## 四、同一冻结 dist 的实际验证与复现入口
+
+最终 release `m1-front-geometry-20261030T040955Z-635833fc2fa8`（110 个文件），上游只有 `127.0.0.1:18979`；真实与合成两条路径跑在**同一个** dist 上（构建、`tsc`、单元、浏览器全在授权服务器）。单元两次都是 208/208（11 个文件）；浏览器逐套件（`status=passed`、`error=null`）：
+
+| 模式 | 套件与检查数 |
+|---|---|
+| 真实 | frames 115、history 78、config 51、session 38、lifecycle 48、geometry 23 |
+| 合成（在线路由被夹具拒绝） | frames 103、history 42 |
+
+真实归档（`episode_27bfed…`）上本轮新增断言的实际读数：`data-interval-episode-scope=proven`，`data-interval-clock` 逐字等于直读 `time_bases.capture_backend_monotonic_s.clock`，`data-interval-coverage` 带 `anchors_in_this_scan=303` 与 `covers_whole_episode=true`。其余数字与同一 dist 上的既有断言一致：census 只按需读一次（带标请求 0→1，`data-time-quality-reads=1`）、303 锚点、逐段真实差 `0.271948/0.196984/0.204121/0.199236 s` → 计划 `272/197/204/199 ms`、2× 首段 `136 ms`、跨页 offset `{1,2,3}` 与跨页那一步 `0.196984 s`、最后一步计划/实际/缓冲 `197/212/4 ms`、相机三值保持、跨页期间树与在线场景各 0 次读取。冷启动仍是新会话：`idle`、0 次 census 读取、模式禁用，按播放只得到“本会话还没有读到 census”的拒绝。
+
+合成夹具上本轮新增的直接行为：唯一 id 一行先正常出姿态，五个面板＋游标逐字回显 `0+0|line 2`；从曲线点选重复 id 的第二条后逐字回显 `0+2|line 9`、面板 `blocked`、媒体归属键含 `line 9`、状态/时间/媒体仍可读；再选回唯一行，姿态恢复 `ready` 且树 0 次重取。慢媒体走查的 16 拍采样里游标位置只出现 0 或 +1（`buffer_samples` 从 `15 ms` 涨到 `701 ms` 才前进到第 2 帧）；截断档 `episode_interval_truncated` 的 `data-interval-episode-scope=scan-only`，范围文字不含“census 已扫完整份锚点文件”。
+
+复现入口：冻结用 `python3 frontend/tools/release-source.py`；验证用 `python3 <release>/frontend/tools/check-release.py <release> … --upstream http://127.0.0.1:18979 --frames --history [--geometry --session --config --lifecycle]`；报告在服务器 `var/reports/m1-front-geometry-20261030T040955Z-635833fc2fa8-{real,synthetic}/`；交付预览 `127.0.0.1:19082`（真实）与 `127.0.0.1:19080`（合成），M4.0 的 `19076/19077`、M3.0 的 `19074/19075` 保留。
+
+两件如实记下的事：①第一次把真实路径排在 `19081`，该端口已被别的监听占用，`check-release.py` 在创建任何报告内容前就退出；那次的空目录保留为 `…-real-portclash19081`，既不算失败也不算通过。②本轮新断言最初把属性名写成 `data-frame-cursor-anchor`（产品写的是 `data-cursor-anchor`），合成路径因此失败一次；用同一套夹具在浏览器里直接读 DOM（两个 `.history-cursor` 节点，帧游标那个带 `data-cursor-anchor='0+0|line 2'`）定位为测试选择器写错，改正后才冻结最终 dist——没有放宽产品断言，也没有靠重跑掩盖。
+
+仍只在更小范围成立的两点：分段级回退/缺值拒绝仍由单元测试证明（真实与合成 census 都在基级别判不合格，浏览器侧只有自相矛盾的 census 才可达）；重复 id 的媒体字节归属仍只在归属键一层证明（两条锚点的资产引用本来就是同一字符串）。本切片不主张跨流同刻同步、整车重建或正式 M1/M1.5 验收。
+
 # M4.0 按记录时间间隔播放：接入 M1.5g census，时间基、倍速、缓冲、暂停恢复与跨页调度（2026-10-30）
 
 在 M3.0 的“一个共用帧游标 + UI 帧节奏播放”之上，加入第二种播放模式：等待时间由**相邻锚点在所选时间基上的真实差值 ÷ 倍速**决定，资格来自后端 M1.5g 的 `include_time_quality` census。唯一完成基址是服务器 `127.0.0.1:18979`（M1.5g）。只修改 `frontend/`；不发运动/RESET/STOP/录制/导航，不改后端、公共契约或 native，不新增路由、不放宽代理白名单；本切片不主张跨流采样同刻同步、整车位姿重建、渲染级 3D 回放或正式 M1/M1.5 验收通过。

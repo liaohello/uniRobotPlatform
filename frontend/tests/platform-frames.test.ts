@@ -25,7 +25,7 @@ import {
   quantityRowsOf,
   readFramesPage,
   recorderDeclaredOf,
-  recordedRangeOf,
+  anchorEchoKey, recordedRangeOf,
   roleCoverageText,
   roleRowsOf,
   selectionRulesText,
@@ -794,9 +794,28 @@ describe('recorded-interval steps: the gap the record actually carries', () => {
     expect(holes.pageIncomplete).toBe(true);
     expect(holes.present).toBe(false);
   });
+
+  it('calls the census span the Episode only when its own coverage says the scan was whole', () => {
+    const page = pageOfTimed([timedFrame('rgbd_a', 0, { [CAPTURE]: 100 }), timedFrame('rgbd_b', 1, { [CAPTURE]: 100.2 })]);
+    expect(recordedRangeOf(page, CAPTURE, censusPage()).episodeScope).toBe('proven');
+    const truncated = recordedRangeOf(page, CAPTURE, censusPage({ coverage: { whole_anchor_file_scanned: false, covers_whole_episode: false, stopped_at_line_index: 3999 } }));
+    expect(truncated.episodeScope).toBe('scan-only');
+    // The scanned numbers stay on screen; the Episode-wide claim is what a truncated scan does not earn.
+    expect(truncated.episodeFirst).toBe(426494.351568496);
+    expect(truncated.note).toContain('不把它称作整个 Episode 的首末或最小最大');
+    expect(truncated.note).toContain('stopped_at_line_index=3999');
+    expect(truncated.note).not.toContain('这可以是整个 Episode 的跨度');
+    expect(recordedRangeOf(page, 'capture_sim_time_s', null).episodeScope).toBe('unknown');
+  });
 });
 
 describe('one page position, not one sample_id, addresses a frame', () => {
+  it('echoes one anchor string that every history pane shows for the same selection', () => {
+    expect(anchorEchoKey(2, 1, timedFrame('rgbd_same', 9, { [CAPTURE]: 2 }))).toBe('2+1|line 9');
+    expect(anchorEchoKey(0, 0, timedFrame('rgbd_same', 4, {}))).toBe('0+0|line 4');   // same id, different anchor
+    expect(anchorEchoKey(0, 0, null)).toBe('none');
+  });
+
   it('gives two rows that share a sample_id different keys, naming the anchor line', () => {
     const twin = timedFrame('rgbd_same', 4, { [CAPTURE]: 1 });
     const other = timedFrame('rgbd_same', 9, { [CAPTURE]: 2 });
