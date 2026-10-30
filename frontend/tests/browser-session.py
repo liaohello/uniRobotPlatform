@@ -25,6 +25,11 @@ def check(name, condition, detail=None):
     if not condition: raise AssertionError(name if detail is None else f'{name} :: {detail}')
     report['checks'].append(name)
 
+def same_numbers(before, after, tol=1e-6):
+    """Camera values are re-derived by the render loop each frame, so "the camera was not rebuilt" is a
+    magnitude claim, not a bit-pattern claim — the same tolerance the frame-browser suite already uses."""
+    return len(before) == len(after) and all(abs(float(x) - float(y)) < tol for x, y in zip(before, after))
+
 def validation(snapshot_id, execution_revision, fingerprint):
     return {'validation_id': 'val-' + snapshot_id, 'execution_revision': execution_revision, 'fingerprint': fingerprint,
             'recipe_fingerprint': 'c' * 64, 'checked_at': '2026-10-24T09:00:00+00:00', 'snapshot_id': snapshot_id,
@@ -368,7 +373,7 @@ async def main():
             check('current identity change disables Start and reports invalidation', await page.locator('.session-drawer article').get_attribute('data-session-startable') == 'false'
                   and await page.locator('.session-drawer [data-session-start]').is_disabled()
                   and await page.locator('.session-drawer article').get_attribute('data-session-current-status') == 'identity_changed')
-            check('invalidation cancels the local target but keeps renderer, camera and layout', after['target'] is None and after['scene']['instanceId'] == before['scene']['instanceId'] and after['scene']['camera'] == before['scene']['camera'] and after['scene']['viewport'] == before['scene']['viewport'],
+            check('invalidation cancels the local target but keeps renderer, camera and layout', after['target'] is None and after['scene']['instanceId'] == before['scene']['instanceId'] and same_numbers(after['scene']['camera'], before['scene']['camera']) and after['scene']['viewport'] == before['scene']['viewport'],
                   {'before': before['scene']['camera'], 'at_flip': at_flip['scene']['camera'], 'after': after['scene']['camera'],
                    'viewport_before': before['scene']['viewport'], 'viewport_after': after['scene']['viewport']})
             check('invalidation does not auto-resend Start', fixture['start_calls'][-1]['session_id'] == 'ps-fixture-a')

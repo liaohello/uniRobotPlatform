@@ -15,22 +15,30 @@ import { HistoryFrameCurve } from './history-frame-curve';
 import { describeHistoryError, type PlatformEpisodeApi } from '../adapters/platform-episodes';
 import {
   CURVE_FRAME_ORDER, NO_FRAME_CONTEXT, ambiguousRoleCount, clockSamenessText, curveXAxesOf, frameActualCurveOf,
-  frameAutoLoadRef, frameBoundaryNotice, frameMediaRefs,
-  framePageExplanation, framePageKind, frameSelectableBases, frameStopNote, frameWindowGate, linkageScopeText,
-  mediaDeclarationText, provenanceRowsOf, quantityRowsOf, readFramesPage, recorderDeclaredOf, roleCoverageText,
-  roleRowsOf, selectionRulesText, simQuantityKeysOf, stateQuantityKeysOf, stateRowsOf, stateSelectionOf, statusPrecedenceText,
-  timeSemanticsText, versionMigrationText,
-  type FrameDto, type FramePageDto, type FrameReadContext,
+  frameAutoLoadRef, frameBoundaryNotice, frameMediaRefs, framePositionKey,
+  framePageExplanation, framePageKind, frameSelectableBases, frameStopNote, frameWindowGate, intervalGateOf,
+  intervalScheduleOf, intervalStepOf, linkageScopeText, mediaDeclarationText, provenanceRowsOf, quantityRowsOf,
+  readFramesPage, recorderDeclaredOf, recordedRangeOf, roleCoverageText, roleRowsOf, selectionRulesText,
+  simQuantityKeysOf, stateQuantityKeysOf, stateRowsOf, stateSelectionOf, statusPrecedenceText, timeSemanticsText,
+  timeQualitySessionKey, versionMigrationText,
+  type FrameDto, type FramePageDto, type FrameReadContext, type IntervalStep,
 } from '../adapters/platform-frames';
 
-/** A frame page is bounded by the reader's own limit (1–200); 1/5/20 keep a single read cheap. */
+/** A frame page is bounded by reader's own limit (1–200); 1/5/20 keep a single read cheap. */
 const FRAME_PAGE_SIZES = [1, 5, 20] as const;
 /**
  * Playback rate is stated as frames shown per second, over frames this page already holds. It is a UI
- * rhythm only: the reader has not qualified the record for time-based playback, so the control is never
- * labelled 原速 or a 真实倍速, and the frames it steps are append-order records, not a clock.
+ * rhythm only: the control is never labelled 原速 or a 真实倍速, and the frames it steps are append-order
+ * records, not a clock. It stays available even when the record does not qualify for interval playback.
  */
 const CADENCES = [{ fps: 2, label: '每秒 2 帧（界面节奏，不是原速）' }, { fps: 1, label: '每秒 1 帧（界面节奏，不是原速）' }, { fps: 0.5, label: '每秒 0.5 帧（界面节奏，不是原速）' }];
+/** The recorded-interval mode is a rate *multiplier* on the recorded gap, never a declared frame rate. */
+const SPEEDS = [0.5, 1, 2] as const;
+const BASE_MEANING: Record<string, string> = {
+  capture_backend_monotonic_s: 'capture_backend_monotonic_s＝采集时刻的原生后端单调钟（记录自己的秒）',
+  capture_sim_time_s: 'capture_sim_time_s＝仿真时间，是另一个钟，不与后端单调钟合并解释',
+  persist_backend_monotonic_s: 'persist_backend_monotonic_s＝落盘时刻的原生后端单调钟：它含写盘抖动，按它排的是“记录写入的节奏”，不称为机器人运动原速',
+};
 
 interface FrameTarget { episodeId: string; runId: string | null }
 interface FrameAsset {
@@ -54,9 +62,38 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
   const [notice, setNotice] = useState('');
   const [playing, setPlaying] = useState(false);
   const [cadenceFps, setCadenceFps] = useState(2);
+  /** Two playback modes, chosen explicitly by the operator: a UI rhythm, or the recorded interval. */
+  const [playMode, setPlayMode] = useState<'ui_cadence' | 'recorded_interval'>('ui_cadence');
+  const [intervalBase, setIntervalBase] = useState('');
+  const [speed, setSpeed] = useState<number>(1);
+  /** The census is read on demand, once per source/run/episode/stream playback session. */
+  const [census, setCensus] = useState<{ page: FramePageDto; key: string } | null>(null);
+  const [censusStatus, setCensusStatus] = useState<'idle' | 'loading' | 'ready' | 'refused'>('idle');
+  const [censusError, setCensusError] = useState('');
+  const [censusReads, setCensusReads] = useState(0);
+  /** A page already read but held back until its recorded interval has elapsed. */
+  const [held, setHeld] = useState<{ page: FramePageDto; step: IntervalStep; armedAt: number } | null>(null);
+  /** What the last armed step planned, what actually happened and how long data took: reported apart. */
+  const [plan, setPlan] = useState<{ kind: string; plannedMs: number | null; actualMs: number | null; bufferMs: number | null; gapS: number | null; cross: boolean; note: string } | null>(null);
   /** The x axis of the recorded-Actual curve: frame order by default, a raw clock base only if complete. */
   const [curveX, setCurveX] = useState<string>(CURVE_FRAME_ORDER);
   const playingRef = useRef(false); playingRef.current = playing;
+  const playModeRef = useRef(playMode); playModeRef.current = playMode;
+  const intervalBaseRef = useRef(intervalBase); intervalBaseRef.current = intervalBase;
+  const speedRef = useRef(speed); speedRef.current = speed;
+  /**
+   * One generation for the whole playback schedule. Every context change that must not be resumed by an
+   * old timer — seek, base, speed, mode, Episode, window, page-size, unmount — bumps it, and the timer's
+   * callback compares it before doing anything. The browser's monotonic clock is used only to execute a
+   * wait and to measure what actually happened; it never stands in for recorded time.
+   */
+  const playGen = useRef(0);
+  const presentedAt = useRef(0);
+  const frozenSince = useRef(0);
+  const censusSerial = useRef(0);
+  const heldSerial = useRef(0);
+  const heldReadInFlight = useRef(false);
+  const heldArmedAt = useRef(0);
 
   // One guard chain: the read must be the newest one AND still belong to the episode/run that asked.
   const contextRef = useRef(context); contextRef.current = context;
@@ -76,6 +113,9 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
     if (!episodeId) return;
     const target: FrameTarget = { episodeId, runId };
     const token = ++pageSerial.current;
+    // A new read is a new playback baseline: any timer armed before this point is stale, and the held
+    // page (if one was being waited on) belongs to the generation that no longer exists.
+    ++playGen.current; setHeld(null); heldReadInFlight.current = false; frozenSince.current = 0; presentedAt.current = performance.now();
     controllers.current.forEach((controller) => controller.abort()); controllers.current = [];
     setError(''); setNotice(opts.notice ?? ''); if (!opts.keepPlaying) setPlaying(false); clearMedia();
     void readFramesPage({
@@ -88,7 +128,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
         setPage(dto);
         const position = opts.landOn === 'last' ? Math.max(0, dto.frames.length - 1) : 0;
         setIndex(position);
-        bindFrame(dto.frames[position] ?? null);
+        bindFrame(dto.frames[position] ?? null, position, { offset: dto.paging.offset });
         if (!dto.frames.length) setNotice(frameStopNote(dto, ctx, Boolean(opts.advancedFromHasMore)));
       })
       .catch((cause) => {
@@ -104,6 +144,11 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
     targetRef.current = { episodeId, runId };
     setIndex(0); setContext(NO_FRAME_CONTEXT); contextRef.current = NO_FRAME_CONTEXT;
     setSampleText(''); setWindowText({ base: '', from: '', to: '' }); setWindowError(''); setNotice(''); setError('');
+    // Another Episode is another playback session: the census read for the old one is dropped rather than
+    // reused, and this session's own counter starts again at zero.
+    setCensus(null); setCensusStatus('idle'); setCensusError(''); setCensusReads(0);
+    setHeld(null); setPlan(null); heldReadInFlight.current = false; frozenSince.current = 0;
+    ++playGen.current; ++censusSerial.current; ++heldSerial.current;
     clearMedia();
     if (!episodeId) { ++pageSerial.current; setPage(null); return; }
     readPage(0, limitRef.current, NO_FRAME_CONTEXT);
@@ -111,18 +156,18 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
   }, [episodeId, runId]);
   useEffect(() => () => { controllers.current.forEach((controller) => controller.abort()); controllers.current = []; revoke(urlRef.current); }, []);
 
-  /** Image, linked state, provenance and the reference surface all follow this one frame object. */
-  function bindFrame(frame: FrameDto | null, explicitField?: string | null) {
+  /** Image, linked state, provenance and the reference surface all follow this one position on this page. */
+  function bindFrame(frame: FrameDto | null, position?: number, opts: { offset?: number; field?: string | null } = {}) {
     if (!frame) { clearMedia(); return; }
-    void loadFrameMedia(frame, explicitField ?? null);
+    const key = framePositionKey(episodeId, runId, opts.offset ?? page?.paging.offset ?? 0, position ?? index, frame);
+    void loadFrameMedia(frame, key, opts.field ?? null);
   }
 
-  function loadFrameMedia(frame: FrameDto, explicitField: string | null) {
+  function loadFrameMedia(frame: FrameDto, key: string, explicitField: string | null) {
     const target: FrameTarget = { episodeId, runId };
     const refs = frameMediaRefs(frame);
     const ref = explicitField ? refs.find((item) => item.field === explicitField) ?? null : frameAutoLoadRef(refs);
     const token = ++assetSerial.current;
-    const key = `${episodeId}|${runId ?? ''}|${frame.sample_id}`;
     frameKeyRef.current = key;
     revoke(urlRef.current); urlRef.current = null;
     if (!ref) {
@@ -157,17 +202,27 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
   }
 
   const step = (delta: number) => {
+    // Any manual move is a new scheduling baseline: what was armed before it may not fire, and time spent
+    // paused or seeking is never added to the next wait.
+    ++playGen.current; setHeld(null); frozenSince.current = 0; presentedAt.current = performance.now();
     if (!page) return;
     const frames = page.frames;
     if (!frames.length) { setPlaying(false); setNotice(framePageExplanation(page, contextRef.current)); return; }
     const next = index + delta;
-    if (next >= 0 && next < frames.length) { const frame = frames[next]; setIndex(next); bindFrame(frame); return; }
+    if (next >= 0 && next < frames.length) { const frame = frames[next]; setIndex(next); bindFrame(frame, next, { offset: page.paging.offset }); return; }
     const ctx = contextRef.current;
     if (next >= frames.length && page.paging.has_more) {
       // v2 keeps next_offset in the anchor file's own line space and re-tests every condition from there.
       // Crossing into the next page keeps playback running when the advance itself came from playback: the
-      // reader's own next_offset is the only way forward, and no page is skipped or invented.
-      readPage(page.paging.next_offset ?? page.paging.offset + page.paging.returned, limitRef.current, ctx, { advancedFromHasMore: true, keepPlaying: playingRef.current });
+      // reader's own next_offset is the only way forward, and no page is skipped or invented. A missing
+      // next_offset therefore stops the walk instead of letting the interface guess an offset for a file
+      // whose layout it was never told.
+      if (page.paging.next_offset === null) {
+        setPlaying(false);
+        setNotice(`has_more=true 但响应没有给 next_offset（offset=${String(page.paging.offset)}、returned=${String(page.paging.returned)}）：界面不自行推算下一页位置，停在这里。`);
+        return;
+      }
+      readPage(page.paging.next_offset, limitRef.current, ctx, { advancedFromHasMore: true, keepPlaying: playingRef.current });
       return;
     }
     if (next >= frames.length) { setPlaying(false); setNotice(`本页最后一帧之后服务端 has_more=${String(page.paging.has_more)}（whole_file_scanned=${String(page.paging.scan?.whole_file_scanned)}）：界面停止推进。这只说明本次读取到此为止，不推断录制结束，也不声称已遍历全部帧。`); return; }
@@ -176,6 +231,102 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
       return;
     }
     setNotice('已到本次读取的起点（offset=0）：不向前伪造帧，也不循环到最后一页。');
+  };
+
+  // ---- recorded-interval scheduling (the reader's mode B) ------------------------------------------
+
+  /** The census belongs to one source/run/episode/anchor-stream session, not to one page or one window. */
+  // Keyed on the page's own identity rather than the caller's local run value: a frame opened without a run_id
+  // still belongs to one readable Episode, and the adoption guard below compares against that same identity.
+  const sessionKey = timeQualitySessionKey({ sourceId: page?.source?.source_id, runId: page?.identity.run_id ?? runId, episodeId: page?.identity.episode_id ?? episodeId, streamId: page?.anchor?.stream_id ?? null });
+  const censusPage = census && census.key === sessionKey ? census.page : null;
+  const intervalGate = intervalGateOf(censusPage, intervalBase);
+  const schedule = intervalScheduleOf(page, intervalBase, speed);
+  const range = recordedRangeOf(page, intervalBase, censusPage);
+
+  /** One on-demand census read: a normal frame page never carries it, and it is not a content-versioned cache. */
+  const readCensus = () => {
+    if (!episodeId) return;
+    const target: FrameTarget = { episodeId, runId };
+    const token = ++censusSerial.current;
+    setCensusStatus('loading'); setCensusError('');
+    void readFramesPage({ episodeId, runId, limit: 1, offset: 0, includeTimeQuality: true }, track(new AbortController()).signal)
+      .then((dto) => {
+        if (token !== censusSerial.current) return;
+        if (dto.identity.episode_id !== target.episodeId || (target.runId !== null && dto.identity.run_id !== target.runId)) {
+          // Refusing is a finished state, not a pending one: leaving this at 'loading' would disable the only
+          // button that could retry and leave the operator with no explanation.
+          setCensusStatus('refused');
+          setCensusError(`census 的响应身份与本会话要看的 Episode 不符（响应 ${dto.identity.episode_id}/${dto.identity.run_id}，本会话 ${target.episodeId}/${target.runId ?? '未带 run_id'}）：不采用别人的资格，也不自动重试。`);
+          return;
+        }
+        setCensusReads((previous) => previous + 1);
+        setCensus({ page: dto, key: timeQualitySessionKey({ sourceId: dto.source.source_id, runId: dto.identity.run_id, episodeId: dto.identity.episode_id, streamId: dto.anchor.stream_id }) });
+        setCensusStatus('ready');
+      })
+      .catch((cause) => {
+        if (token !== censusSerial.current) return;
+        setCensusStatus('refused'); setCensusError(describeHistoryError(cause));
+      });
+  };
+
+  /** The next page is read ahead of time and then held back until its own recorded interval has elapsed. */
+  const readAhead = () => {
+    if (!page) return;
+    const frames = page.frames;
+    const fromFrame = frames[frames.length - 1];
+    if (!fromFrame || heldReadInFlight.current) return;
+    const target: FrameTarget = { episodeId, runId };
+    const token = ++heldSerial.current;
+    const gen = playGen.current;
+    // Only the reader's own forward offset may carry the walk into the next page. Computing `offset + returned`
+    // here would be the interface inventing a position in a file it has not been told the layout of.
+    const offset = page.paging.next_offset;
+    if (offset === null) {
+      setPlaying(false);
+      setNotice(`本页之后 has_more=${String(page.paging.has_more)}，但响应没有给 next_offset：界面不用 offset+returned 自行推算下一页，停在这里。`);
+      return;
+    }
+    heldReadInFlight.current = true;
+    heldArmedAt.current = performance.now();
+    void readFramesPage({
+      episodeId, runId, limit: limitRef.current, offset,
+      ...(contextRef.current.sampleId ? { sampleId: contextRef.current.sampleId } : {}),
+      ...(contextRef.current.base ? { timeBase: contextRef.current.base, ...(contextRef.current.from !== null ? { timeFrom: contextRef.current.from } : {}), ...(contextRef.current.to !== null ? { timeTo: contextRef.current.to } : {})} : {}),
+    }, track(new AbortController()).signal)
+      .then((dto) => {
+        heldReadInFlight.current = false;
+        if (token !== heldSerial.current || gen !== playGen.current) return;
+        if (dto.identity.episode_id !== target.episodeId) {
+          setPlaying(false); setError(`跨页预读到的页不属于本 Episode（响应身份 ${dto.identity.episode_id}）：不呈现、不采用。`); return;
+        }
+        if (!dto.frames.length) {
+          // An empty page after has_more=true is a real answer from the reader; saying nothing here would leave
+          // the interface looking like it is still playing with nothing armed.
+          setPlaying(false); setNotice(frameStopNote(dto, contextRef.current, true)); return;
+        }
+        setHeld({ page: dto, armedAt: heldArmedAt.current,
+          step: intervalStepOf({ from: fromFrame, to: dto.frames[0], base: intervalBaseRef.current, speed: speedRef.current, crossPage: true, fromPosition: frames.length - 1, toPosition: 0 }) });
+      })
+      .catch((cause) => {
+        heldReadInFlight.current = false;
+        if (token !== heldSerial.current || gen !== playGen.current) return;
+        setPlaying(false); setError(`跨页预读失败：${describeHistoryError(cause)}（停在当前帧，不跳过、不伪造下一页）。`);
+      });
+  };
+
+  /** Land one frame and report the three timings apart: planned interval, actual presentation, buffering. */
+  const landFrame = (position: number, source: FramePageDto, planned: IntervalStep | null) => {
+    const actualMs = Math.round(performance.now() - presentedAt.current);
+    const bufferMs = frozenSince.current ? Math.round(performance.now() - frozenSince.current) : null;
+    ++playGen.current;
+    frozenSince.current = 0;
+    presentedAt.current = performance.now();
+    if (source !== page) setPage(source);
+    setIndex(position);
+    bindFrame(source.frames[position] ?? null, position, { offset: source.paging.offset });
+    setPlan({ kind: planned?.kind ?? 'unknown', plannedMs: planned?.waitMs ?? null, actualMs, bufferMs,
+      gapS: planned?.gapS ?? null, cross: planned?.crossPage ?? false, note: planned?.note ?? '' });
   };
 
   const openSample = (value: string | null) => {
@@ -208,12 +359,90 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
     readPage(0, limitRef.current, next, { notice: '已清除时间窗口：回到不带 time_base 的 offset 浏览（reader 要求 time_base 必须伴随边界，所以不带窗口时不发送基）。' });
   };
 
+  /** Mode A — the interface rhythm. It only ever runs while that mode is the one the operator chose. */
   useEffect(() => {
-    if (!playing || !page) return;
-    const timer = setTimeout(() => step(1), Math.round(1000 / cadenceFps));
+    if (!playing || !page || playMode !== 'ui_cadence') return;
+    const gen = playGen.current;
+    const timer = setTimeout(() => { if (gen === playGen.current) step(1); }, Math.round(1000 / cadenceFps));
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, cadenceFps, page, index]);
+  }, [playing, cadenceFps, page, index, playMode]);
+
+  /**
+   * Mode B — one step per real recorded gap on the chosen base, divided by the speed. The plan is armed
+   * again from scratch whenever it is (re)started, so a pause never leaves accumulated record progress
+   * behind, and every armed callback checks the playback generation before touching the cursor.
+   */
+  useEffect(() => {
+    if (!playing || !page || playMode !== 'recorded_interval') return;
+    if (!intervalBase) {
+      setPlaying(false);
+      setNotice('记录间隔模式还没有选定时间基：界面不替你挑一个基，也不静默退回帧节奏模式——模式由你显式选择。');
+      return;
+    }
+    if (!censusPage) {
+      setPlaying(false);
+      setNotice(intervalGate.reasons[0] ?? '没有读到 census 就不排程：请先显式读取一次本 Episode 的时间资格。');
+      return;
+    }
+    if (!intervalGate.allowed) {
+      setPlaying(false);
+      setPlan({ kind: 'refused', plannedMs: null, actualMs: null, bufferMs: null, gapS: null, cross: false, note: intervalGate.reasons[0] ?? '' });
+      setNotice(`记录间隔调度不可用：${intervalGate.reasons[0]} 帧节奏模式仍然可用，但界面不自动切过去。`);
+      return;
+    }
+    if (asset.status === 'loading') {
+      if (!frozenSince.current) frozenSince.current = performance.now();
+      // The elapsed buffer has to keep growing while the operator is watching a frozen cursor: without this
+      // tick the chip would stay at the first sample (0 ms) and a 900 ms stall on slow bytes would be
+      // displayed as though nothing was buffering at all.
+      const showFreeze = () => setPlan((previous) => ({ kind: 'buffering', plannedMs: previous?.plannedMs ?? null, actualMs: previous?.actualMs ?? null,
+        bufferMs: Math.round(performance.now() - frozenSince.current), gapS: previous?.gapS ?? null, cross: previous?.cross ?? false, note: previous?.note ?? '' }));
+      showFreeze();
+      const ticker = setInterval(showFreeze, 100);
+      return () => clearInterval(ticker);
+    }
+    // Coming out of buffering rebuilds the scheduling baseline. The held cross-page step is the one wait measured
+    // from when its page was issued rather than from a landing, so without this it would keep elapsing while the
+    // operator watched a buffer and would present a slow client as if the record had advanced. `presentedAt`
+    // deliberately does not move: the reported actual presentation time must still include the buffering.
+    const resumedFromBuffer = frozenSince.current !== 0;
+    frozenSince.current = 0;
+    if (resumedFromBuffer && held) { setHeld({ ...held, armedAt: performance.now() }); return; }
+    const frames = page.frames;
+    const nextStep = index + 1 < frames.length ? schedule[index] ?? null : null;
+    if (nextStep) {
+      if (nextStep.kind === 'backwards' || nextStep.kind === 'missing') {
+        setPlaying(false);
+        setPlan({ kind: nextStep.kind, plannedMs: null, actualMs: null, bufferMs: null, gapS: nextStep.gapS, cross: nextStep.crossPage, note: nextStep.note });
+        setNotice(`这一段不排程：${nextStep.note} 界面停在当前帧——不跳帧、不重排、不用别的钟补齐这一段。`);
+        return;
+      }
+      const gen = playGen.current;
+      const timer = setTimeout(() => { if (gen === playGen.current) landFrame(nextStep.toPosition, page, nextStep); }, Math.max(0, Math.round(nextStep.waitMs ?? 0)));
+      return () => clearTimeout(timer);
+    }
+    if (held) {
+      if (held.step.kind === 'backwards' || held.step.kind === 'missing') {
+        setPlaying(false);
+        setPlan({ kind: held.step.kind, plannedMs: null, actualMs: null, bufferMs: null, gapS: held.step.gapS, cross: held.step.crossPage, note: held.step.note });
+        setNotice(`跨页那一步的真实间隔不可用：${held.step.note} 已读到的下一页保持不呈现，界面不重排也不丢弃记录顺序。`);
+        return;
+      }
+      const remaining = Math.max(0, Math.round((held.step.waitMs ?? 0) - (performance.now() - held.armedAt)));
+      const gen = playGen.current;
+      const timer = setTimeout(() => {
+        if (gen !== playGen.current) return;
+        setHeld(null);
+        landFrame(0, held.page, held.step);
+      }, remaining);
+      return () => clearTimeout(timer);
+    }
+    if (page.paging.has_more) { readAhead(); return; }
+    setPlaying(false);
+    setNotice(`本页之后 has_more=${String(page.paging.has_more)}（whole_file_scanned=${String(page.paging.scan?.whole_file_scanned)}）：记录间隔播放在此停止。不循环、不伪造后续帧，也不声称已遍历完整归档。`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, page, index, playMode, intervalBase, speed, asset.status, held, censusPage]);
 
   const frames = page?.frames ?? [];
   const frame = frames[index] ?? null;
@@ -286,15 +515,36 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
 
       <div className="session-inline history-controls">
         <button data-frame-play={playing ? 'pause' : 'play'} aria-pressed={playing} disabled={!frames.length}
-          onClick={() => { setPlaying(!playing); if (!playing) setNotice('播放只按界面节奏在本页已读取的帧上前进（到页末按 next_offset 继续）；不发命令、不推进物理，也不宣称录制帧率或跨流同步。'); }}>{playing ? '⏸ 暂停' : '▶ 播放'}</button>
+          onClick={() => {
+            if (playing) { ++playGen.current; setHeld(null); frozenSince.current = 0; setPlaying(false); setNotice('已暂停：停在当前帧。恢复时按同一个记录间隔重新起算等待，暂停期间不累计记录进度。'); return; }
+            if (playMode === 'recorded_interval' && !intervalGate.allowed) { setNotice(`不能开始记录间隔播放：${intervalGate.reasons[0] ?? '还没选定合格的时间基并读到 census'}。可以显式改用帧节奏模式，界面不自动切换。`); return; }
+            ++playGen.current; heldReadInFlight.current = false; frozenSince.current = 0; presentedAt.current = performance.now();
+            setPlaying(true);
+            setNotice(playMode === 'recorded_interval'
+              ? `记录间隔播放开始：下一步等待＝相邻锚点在 ${intervalBase} 上的真实差 ÷ ${speed}×；数据未就绪时冻结并显示缓冲，到页末按 reader 的 next_offset 预读下一页、再按跨页两帧的真实间隔呈现首帧。不发命令、不推进物理，也不宣称跨流同步。`
+              : '播放只按界面节奏在本页已读取的帧上前进（到页末按 next_offset 继续）；不发命令、不推进物理，也不宣称录制帧率或跨流同步。');
+          }}>{playing ? '⏸ 暂停' : '▶ 播放'}</button>
         <button data-frame-prev onClick={() => step(-1)}>◀ 上一帧</button>
         <button data-frame-next onClick={() => step(1)}>下一帧 ▶</button>
         <label>每页帧数<select aria-label="帧分页大小" value={limit} onChange={(event) => { const size = Number(event.target.value); setLimit(size); limitRef.current = size; readPage(0, size, contextRef.current, { notice: '改变每页帧数后从 offset=0 重读（保持 sample_id 与时间窗口条件）。' }); }}>{FRAME_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
+        <label>播放模式<select aria-label="播放模式" data-frame-play-mode={playMode} value={playMode} onChange={(event) => { const mode = event.target.value as 'ui_cadence' | 'recorded_interval'; ++playGen.current; setHeld(null); frozenSince.current = 0; presentedAt.current = performance.now(); setPlaying(false); setPlan(null); setPlayMode(mode); setNotice(mode === 'recorded_interval' ? '已切到记录间隔模式：等待时间由相邻锚点在所选时间基上的真实差值除以倍速决定；先读本 Episode 的时间资格，再选一个合格的基。切换模式本身不自动开始播放。' : '已切到帧节奏模式：等待只是界面节奏（不称原速/真实倍速，也不等于录制帧率）。界面不会替你切回记录间隔模式。'); }}>
+          <option value="ui_cadence">帧节奏（每秒展示 N 帧，界面节奏）</option>
+          <option value="recorded_interval">记录间隔（按相邻锚点的真实时间差 ÷ 倍速）</option>
+        </select></label>
         <label>播放节奏（每秒展示帧数）<select aria-label="播放节奏（每秒展示帧数，界面节奏）" value={cadenceFps} onChange={(event) => setCadenceFps(Number(event.target.value))}>{CADENCES.map((option) => <option key={option.fps} value={option.fps}>{option.label}</option>)}</select></label>
-        <span className="chip masked" data-frame-playback-cadence-ui-only="true" data-frame-playback-not-realtime="true" data-frame-playback-rate-ms={String(cadenceMs)}>每秒展示帧数只是界面推进节奏（{cadenceMs} ms/帧）：reader 未证明记录时间播放资格，所以不称“原速/真实倍速”，也不等于录制帧率</span>
-        <label>本页定位<select aria-label="本页帧定位" value={index} disabled={!frames.length} onChange={(event) => { const position = Number(event.target.value); const target = frames[position]; if (!target) return; setPlaying(false); setIndex(position); bindFrame(target); }}>{frames.map((item, position) => <option key={`${item.sample_id}-${position}`} value={position}>第 {position + 1}/{frames.length} 帧 · line {item.anchor.line_index} · {item.sample_id}</option>)}</select></label>
-        <button data-frame-seek-first disabled={!frames.length} title="跳到本页第一帧（offset 由服务端分页决定，不跨页猜测）" onClick={() => { setPlaying(false); bindFrame(frames[0] ?? null); setIndex(0); }}>本页首帧</button>
-        <button data-frame-seek-last disabled={!frames.length} title="跳到本页最后一帧" onClick={() => { const last = frames.length - 1; setPlaying(false); bindFrame(frames[last] ?? null); setIndex(last); }}>本页末帧</button>
+        <span className="chip masked" data-frame-playback-cadence-ui-only="true" data-frame-playback-not-realtime="true" data-frame-playback-rate-ms={String(cadenceMs)}>{playMode === 'ui_cadence' ? `每秒展示帧数只是界面推进节奏（${cadenceMs} ms/帧）：不称“原速/真实倍速”，也不等于录制帧率` : `帧节奏控件当前没有驱动播放（现在是记录间隔模式）：${cadenceMs} ms/帧只是这一模式的节奏值，界面不自动切回。`}</span>
+        <span className="chip masked" data-time-quality-status={censusStatus} data-time-quality-reads={String(censusReads)} data-time-quality-session={sessionKey}>时间资格 census：{censusStatus === 'ready' ? `已读 ${censusReads} 次（本会话按 source|run|episode|stream 复用，普通帧页不携带）` : censusStatus === 'loading' ? '正在读取…' : censusStatus === 'refused' ? `读取失败：${censusError}` : '未读取（记录间隔模式需要它）'}</span>
+        <button data-frame-read-census disabled={!episodeId || censusStatus === 'loading'} title="只发一次 GET …/frames?limit=1&offset=0&include_time_quality=true：census 描述整个 Episode 的锚点扫描，普通帧页不带它" onClick={() => readCensus()}>读取本 Episode 时间资格（一次）</button>
+        <label>记录间隔时间基<select aria-label="记录间隔时间基" data-frame-interval-base={intervalBase || 'none'} value={intervalBase} onChange={(event) => { const base = event.target.value; ++playGen.current; setHeld(null); frozenSince.current = 0; presentedAt.current = performance.now(); setPlaying(false); setPlan(null); setIntervalBase(base); setNotice(`已选时间基 ${base || '（空）'}：${BASE_MEANING[base] ?? 'reader 未描述该基'}。换基不自动续播，旧定时器已作废。`); }}>
+          <option value="">未选择（不代你挑基）</option>
+          {Object.keys(censusPage?.time_quality?.time_bases ?? {}).map((base) => <option key={base} value={base}>{base}（{intervalGateOf(censusPage, base).allowed ? '整集合格' : '不合格：见下方原因'}）· {censusPage?.time_quality?.time_bases?.[base]?.clock ?? '—'}</option>)}
+        </select></label>
+        <label>记录间隔倍速<select aria-label="记录间隔倍速" data-frame-interval-speed={String(speed)} value={speed} onChange={(event) => { const value = Number(event.target.value); ++playGen.current; setHeld(null); frozenSince.current = 0; presentedAt.current = performance.now(); setSpeed(value); setNotice(`倍速改为 ${value}×：等待＝相邻锚点真实差 ÷ ${value}。改倍速不自动续播，旧的这一段作废。`); }}>{SPEEDS.map((value) => <option key={value} value={value}>{value}× 记录间隔（不是原速宣称）</option>)}</select></label>
+        <span className="chip masked" data-frame-interval-allowed={String(intervalGate.allowed)} data-frame-interval-reasons={intervalGate.reasons.join(' | ') || 'none'}>{playMode !== 'recorded_interval' ? '当前由帧节奏模式驱动；记录间隔模式的资格判定见下，界面不自动切换' : intervalGate.allowed ? `记录间隔可用：${intervalBase} · ${intervalGate.unit} · ${intervalGate.clock}` : `记录间隔不可用：${intervalGate.reasons[0] ?? '还没选定时间基或没读到 census'}`}</span>
+        <span className="chip masked" data-frame-plan-kind={plan?.kind ?? 'none'} data-frame-plan-planned-ms={text(plan?.plannedMs)} data-frame-plan-actual-ms={text(plan?.actualMs)} data-frame-plan-buffer-ms={text(plan?.bufferMs)} data-frame-plan-gap-s={text(round6(plan?.gapS))} data-frame-plan-cross={String(Boolean(plan?.cross))} data-frame-held-pending={String(Boolean(held))}>计划间隔 {text(plan?.plannedMs)} ms · 实际呈现 {text(plan?.actualMs)} ms · 缓冲 {text(plan?.bufferMs)} ms{held ? ' · 下一页已预读，按跨页真实间隔等待中' : ''}（浏览器单调钟只用于执行等待与测量，不替代记录时间；慢客户端不等于严格实时 1×）</span>
+        <label>本页定位<select aria-label="本页帧定位" value={index} disabled={!frames.length} onChange={(event) => { const position = Number(event.target.value); const target = frames[position]; if (!target) return; ++playGen.current; setHeld(null); frozenSince.current = 0; presentedAt.current = performance.now(); setPlaying(false); setIndex(position); bindFrame(target, position); }}>{frames.map((item, position) => <option key={`${item.sample_id}-${position}`} value={position}>第 {position + 1}/{frames.length} 帧 · line {item.anchor.line_index} · {item.sample_id}</option>)}</select></label>
+        <button data-frame-seek-first disabled={!frames.length} title="跳到本页第一帧（offset 由服务端分页决定，不跨页猜测）" onClick={() => { ++playGen.current; setHeld(null); frozenSince.current = 0; presentedAt.current = performance.now(); setPlaying(false); bindFrame(frames[0] ?? null, 0); setIndex(0); }}>本页首帧</button>
+        <button data-frame-seek-last disabled={!frames.length} title="跳到本页最后一帧" onClick={() => { const last = frames.length - 1; ++playGen.current; setHeld(null); frozenSince.current = 0; presentedAt.current = performance.now(); setPlaying(false); bindFrame(frames[last] ?? null, last); setIndex(last); }}>本页末帧</button>
         <span className="chip masked" data-frame-seek-scope={String(frames.length)}>定位范围＝本页已读取的 {frames.length} 帧：响应不给总帧数，界面不显示总时长或全局进度百分比</span>
       </div>
       <div className="session-inline">
@@ -317,6 +567,47 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
       {(windowError || gate.reason) && <p className="session-note" data-frame-window-reason={windowError || gate.reason}>{windowError || gate.reason}</p>}
       {notice && <p className="session-note" role="status" data-frame-notice="true">{notice}</p>}
 
+      <section className="session-fields frame-intervals" data-interval-pane="true"
+        data-interval-mode={playMode} data-interval-base={intervalBase || 'none'} data-interval-unit={range.unit}
+        data-interval-speed={String(speed)} data-interval-allowed={String(intervalGate.allowed)}
+        data-interval-eligible={text(intervalGate.eligibility?.eligible_for_whole_episode)}
+        data-interval-scan-eligible={text(intervalGate.eligibility?.eligible_within_this_scan)}
+        data-interval-blocking={JSON.stringify(intervalGate.eligibility?.blocking_reasons ?? [])}
+        data-interval-page-first={text(range.pageFirst)} data-interval-page-last={text(range.pageLast)}
+        data-interval-page-min={text(range.pageMin)} data-interval-page-max={text(range.pageMax)}
+        data-interval-page-incomplete={String(range.pageIncomplete)}
+        data-interval-episode-first={text(range.episodeFirst)} data-interval-episode-last={text(range.episodeLast)}
+        data-interval-episode-min={text(range.episodeMin)} data-interval-episode-max={text(range.episodeMax)}
+        data-interval-window={context.base ? `${text(range.windowFrom)}–${text(range.windowTo)}` : 'none'}
+        data-interval-duplicates={text(censusPage?.time_quality?.identity?.duplicate_sample_id_groups)}
+        data-interval-current-value={intervalBase ? text(frame?.anchor.clocks?.[intervalBase]) : 'no-base'}
+        data-interval-steps={String(schedule.length)}
+        data-interval-next-planned-ms={text(schedule[index]?.waitMs)}
+        data-interval-total-forbidden="true">
+        <h4>记录间隔与时间资格（census 描述的是整个 Episode 的锚点扫描）</h4>
+        <p className="session-note" data-interval-mode-line={`模式＝${playMode === 'recorded_interval' ? '记录间隔（相邻锚点真实差 ÷ 倍速）' : '帧节奏（界面节奏，不称原速）'} · 时间基＝${intervalBase || '未选'} · 单位＝${range.unit} · 倍速＝${speed}× · 本帧记录值＝${text(frame?.anchor.clocks?.[intervalBase])} · 下一步计划等待＝${text(schedule[index]?.waitMs)} ms`}>
+          当前模式＝<b>{playMode === 'recorded_interval' ? '记录间隔（相邻锚点真实差 ÷ 倍速）' : '帧节奏（界面节奏，不称原速）'}</b> · 时间基＝{intervalBase || '未选'} · 单位＝{range.unit}（来自 census 的 unit 与响应 time.units） · 倍速＝{speed}× · 本帧在该基上的记录值＝{text(frame?.anchor.clocks?.[intervalBase])} · 下一步计划等待＝{text(schedule[index]?.waitMs)} ms（本页 {schedule.length} 段）。这里不显示总时长、总帧数或全局进度：进度控件不为此下载全量帧。
+        </p>
+        <p className="session-note" data-interval-meaning={`capture＝采集时刻（${BASE_MEANING.capture_backend_monotonic_s}／${BASE_MEANING.capture_sim_time_s}）；persist＝${BASE_MEANING.persist_backend_monotonic_s}。三个钟含义分别标明，界面不把其中一个叫作另一个，也不合并成一个“真实时间”。等待只用相邻锚点的真实差值，不使用 profile 名（${censusPage?.time_quality?.profile?.profile_ids_seen?.join('、') || '未读'}）或名义帧率，median 只作 census 描述、绝不排程。`}>
+          <b>capture / sim / persist 各自是什么</b>：{BASE_MEANING.capture_backend_monotonic_s}；{BASE_MEANING.capture_sim_time_s}；{BASE_MEANING.persist_backend_monotonic_s}。<b>按 persist 排的是写入节奏，不称为机器人运动原速</b>；等待也不使用 profile 名（如 {censusPage?.time_quality?.profile?.profile_ids_seen?.join('、') || '未读'}）或名义帧率，median 只作为 census 的描述值显示，绝不用于排程。
+        </p>
+        <p className="session-note" data-interval-scopes={`本页首/末 ${text(range.pageFirst)}→${text(range.pageLast)} · 本页最小/最大 ${text(range.pageMin)}/${text(range.pageMax)} · 当前窗口 ${context.base ? `${text(range.windowFrom)}–${text(range.windowTo)}` : '未设（窗口只筛帧页）'} · 整个 Episode（census）首/末 ${text(range.episodeFirst)}→${text(range.episodeLast)} · 最小/最大 ${text(range.episodeMin)}/${text(range.episodeMax)} · ${range.note}`}>
+          <b>范围分开表达</b>：本页首/末 {text(range.pageFirst)}→{text(range.pageLast)}；本页最小/最大 {text(range.pageMin)}/{text(range.pageMax)}；当前窗口 {context.base ? `${text(range.windowFrom)}–${text(range.windowTo)}` : '未设'}（<b>窗口只筛帧页，census 仍描述整个 Episode</b>）；整个 Episode（本次 census 扫描）首/末 {text(range.episodeFirst)}→{text(range.episodeLast)}、最小/最大 {text(range.episodeMin)}/{text(range.episodeMax)}。{range.note}
+          {range.pageIncomplete ? <b data-interval-incomplete="true"> 本页有帧缺该基的有限数值：这些段不排程、不补值、不借用别的基。</b> : null}
+        </p>
+        <table className="frame-record-table" data-interval-table="true"><thead><tr><th>段（本页位置）</th><th>line_index 对</th><th>记录值对</th><th>真实差（s）</th><th>÷ 倍速后等待（ms）</th><th>判定</th></tr></thead>
+          <tbody>{schedule.map((step) => <tr key={`${step.fromPosition}-${step.toPosition}`} data-interval-row={String(step.fromPosition)} data-interval-row-kind={step.kind}
+            data-interval-row-gap={text(round6(step.gapS))} data-interval-row-wait={text(step.waitMs)} data-interval-row-lines={`${frames[step.fromPosition]?.anchor.line_index ?? '—'}→${frames[step.toPosition]?.anchor.line_index ?? '—'}`}
+            data-interval-row-values={`${text(round6(step.fromValue))}→${text(round6(step.toValue))}`} className={step.fromPosition === index ? 'selected' : ''}>
+            <td>{step.fromPosition + 1}→{step.toPosition + 1}{step.crossPage ? '（跨页）' : ''}</td><td>{frames[step.fromPosition]?.anchor.line_index ?? '—'}→{frames[step.toPosition]?.anchor.line_index ?? '—'}</td>
+            <td><code>{text(round6(step.fromValue))}→{text(round6(step.toValue))}</code></td><td>{text(round6(step.gapS))}</td><td>{text(step.waitMs)}</td>
+            <td>{step.kind}<small>{step.note}</small></td></tr>)}</tbody></table>
+        {held && <p className="session-note" data-interval-held={`${held.step.kind}|${text(round6(held.step.gapS))}|${text(held.step.waitMs)}`}>下一页已按 reader 的 next_offset 预读到（{held.page.frames.length} 帧）：跨页这一步用<b>上一页末帧与下一页首帧</b>在该基上的真实差 {text(held.step.gapS)}s ÷ {speed}× = {text(held.step.waitMs)} ms 呈现，界面停在当前帧等待，不跳帧也不提前显示。</p>}
+        {intervalGate.reasons.length > 0 && <ul className="receipt-layers" data-interval-reasons="true">{intervalGate.reasons.map((reason, position) => <li key={`${position}-${reason.slice(0, 24)}`} data-interval-reason={String(position)}><b>不开放记录间隔播放</b> {reason}</li>)}</ul>}
+        <ul className="receipt-layers" data-interval-disclosures="true">{intervalGate.disclosures.map((line, position) => <li key={`${position}-${line.slice(0, 24)}`} data-interval-disclosure={String(position)}>{line}</li>)}</ul>
+        {!censusPage && <p className="session-note" data-interval-census-absent="true">本会话还没有 census：普通帧页不带 time_quality，所以记录间隔模式先禁用。点上面的按钮读取一次（按 source|run|episode|stream 在本会话内复用）；它不是有内容版本保证的持久缓存，换 Episode 就作废。</p>}
+      </section>
+
       <div className="frame-grid">
         <section className="history-stream-pane" data-frame-list="true">
           <h4>本页帧与角色状态</h4>
@@ -327,8 +618,13 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
             data-frame-declared-ref={frame?.declared_reference_status ?? 'none'} data-frame-state-status={text(frame?.state?.status)}
             data-frame-single-state={text(frame?.state?.single_state_selected)} data-frame-state-candidates={text(frame?.state?.candidate_records)}
             data-frame-cursor-selection={`${text(paged?.offset)}|${index}|${frame?.sample_id ?? 'none'}`}
-            data-frame-cursor-pending={String(buffering)} data-cursor-selected-sample={frame?.sample_id ?? 'none'}>
-            当前：本页第 {frames.length ? index + 1 : 0}/{frames.length} 帧（不是全局序号）{buffering ? ' · 本帧媒体仍在读取/解码：显示缓冲，不拿上一帧的图像顶替' : ''}· line_index={text(frame?.anchor.line_index)} · persist_sequence={text(frame?.anchor.persist_sequence)} · linkage_status={text(frame?.linkage_status)} · primary_roles_matched=[{(frame?.primary_roles_matched ?? []).join(',') || '空'}] · primary_roles_ambiguous=[{(frame?.primary_roles_ambiguous ?? []).join(',') || '空'}] · declared_reference_status={text(frame?.declared_reference_status)} · state single={text(frame?.state?.single_state_selected)}/{text(frame?.state?.candidate_records)} 候选
+            data-frame-cursor-position={String(index)}
+            data-cursor-position-key={frame ? framePositionKey(episodeId, runId, paged?.offset ?? 0, index, frame) : 'none'}
+            data-frame-cursor-pending={String(buffering)} data-frame-buffering={String(buffering)}
+            data-cursor-selected-sample={frame?.sample_id ?? 'none'}
+            data-cursor-recorded-value={intervalBase ? text(frame?.anchor.clocks?.[intervalBase]) : 'no-base'}
+            data-cursor-recorded-base={intervalBase || 'none'}>
+            当前：本页第 {frames.length ? index + 1 : 0}/{frames.length} 帧（不是全局序号）{buffering ? ' · 本帧媒体仍在读取/解码：显示缓冲，不拿上一帧的图像顶替' : ''}· line_index={text(frame?.anchor.line_index)} · persist_sequence={text(frame?.anchor.persist_sequence)} · linkage_status={text(frame?.linkage_status)} · primary_roles_matched=[{(frame?.primary_roles_matched ?? []).join(',') || '空'}] · primary_roles_ambiguous=[{(frame?.primary_roles_ambiguous ?? []).join(',') || '空'}] · declared_reference_status={text(frame?.declared_reference_status)} · state single={text(frame?.state?.single_state_selected)}/{text(frame?.state?.candidate_records)} 候选{intervalBase ? ` · 本帧记录值 ${intervalBase}=${text(frame?.anchor.clocks?.[intervalBase])} ${range.unit}` : ''}
           </div>
           <table className="frame-record-table"><thead><tr><th>line</th><th>persist_seq</th><th>sample_id</th><th>关联</th><th>feedback 引用</th><th>媒体 availability</th></tr></thead>
             <tbody>{frames.map((item, position) => <tr key={`${item.sample_id}-${item.anchor.line_index}`} data-frame-row={item.sample_id} className={position === index ? 'selected' : ''}
@@ -338,7 +634,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
               data-row-single-state={text(item.state?.single_state_selected)} data-row-candidates={text(item.state?.candidate_records)}
               data-row-media={item.media.items.map((media) => `${media.field}:${media.availability}`).join('|')}>
               <td>{item.anchor.line_index}</td><td>{text(item.anchor.persist_sequence)}</td>
-              <td><button data-frame-pick={item.sample_id} onClick={() => { setIndex(position); bindFrame(item); }}>{item.sample_id}</button></td>
+              <td><button data-frame-pick={item.sample_id} data-pick-position={String(position)} data-pick-line={String(item.anchor.line_index)} onClick={() => { ++playGen.current; setHeld(null); frozenSince.current = 0; presentedAt.current = performance.now(); setPlaying(false); setIndex(position); bindFrame(item, position); }}>{item.sample_id}</button></td>
               <td>{item.linkage_status}<small>{item.roles.map((role) => `${role.role}=${role.status}`).join(' · ')}</small></td>
               <td>{item.declared_reference_status}</td>
               <td>{item.media.items.map((media) => `${media.availability}`).join('/')}</td>
@@ -412,7 +708,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
             <b>{ref.field} · {ref.kind}</b><span>{ref.uri}</span>
             <small>声明摘要：{ref.declaredSha256 ? shortOr(ref.declaredSha256) : 'null'}（来自观测行，记录声明而非本次重算）· 声明字节={ref.declaredBytes} · 磁盘字节={ref.bytesOnDisk} · 与观测行 uri 一致={ref.agreesWithRow}（候选 {ref.rowCandidates} 条，行 {ref.rowLines}，行间冲突={ref.rowsConflict}）</small>
             <small>{ref.note}</small>
-            <button data-frame-media-pick={ref.field} disabled={!ref.loadable || (asset.status === 'loading' && asset.uri === ref.uri)} title={ref.loadable ? '按该引用读取字节' : '该引用不可读取，界面不绕过'} onClick={() => bindFrame(frame, ref.field)}>按此引用读取</button>
+            <button data-frame-media-pick={ref.field} disabled={!ref.loadable || (asset.status === 'loading' && asset.uri === ref.uri)} title={ref.loadable ? '按该引用读取字节' : '该引用不可读取，界面不绕过'} onClick={() => bindFrame(frame, index, { field: ref.field })}>按此引用读取</button>
           </div>)}
           {asset.uri || asset.status !== 'idle' ? <div className="asset-frame" data-frame-asset-sample={asset.sampleId} data-frame-asset-field={asset.field || '—'} data-frame-asset-uri={asset.uri || 'none'}
             data-frame-asset-availability={asset.availability} data-frame-asset-status={asset.status} data-frame-asset-media-type={asset.mediaType || '—'}
@@ -441,10 +737,11 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
         <label>曲线横轴<select aria-label="曲线横轴" value={curveX} onChange={(event) => setCurveX(event.target.value)}>{xAxes.map((axis) => <option key={axis.key} value={axis.key}>{axis.label}</option>)}</select></label>
         <span className="chip masked" data-frame-curve-scope="true">曲线只用本页已读取的 {frames.length} 帧记录值；点曲线即定位当前帧，不发新请求、不下载整份归档</span>
       </div>
-      <HistoryFrameCurve curve={curve} selectedSampleId={frame?.sample_id ?? null}
-        onPick={(sampleId) => { const position = frames.findIndex((item) => item.sample_id === sampleId); if (position < 0) return; setPlaying(false); setIndex(position); bindFrame(frames[position]); }}/>
+      <HistoryFrameCurve curve={curve} selectedPosition={index}
+        onPick={(position) => { const target = frames[position]; if (!target) return; ++playGen.current; setHeld(null); frozenSince.current = 0; presentedAt.current = performance.now(); setPlaying(false); setIndex(position); bindFrame(target, position); }}/>
 
-      <HistoryModelPane episodeId={episodeId} runId={runId} sampleId={frame?.sample_id ?? null}/>
+      <HistoryModelPane episodeId={episodeId} runId={runId} sampleId={frame?.sample_id ?? null}
+        anchor={frame ? { position: index, lineIndex: frame.anchor.line_index, offset: paged?.offset ?? 0 } : null}/>
 
       <div className="history-frame-boundary" data-frame-boundary="true" data-3d-disabled={String(page.three_d_replay.this_slice_does_not_enable_3d_replay)}
         data-live-geometry-applied={String(page.three_d_replay.live_geometry_or_actual_may_be_applied)} data-transforms-full-pose={String(page.three_d_replay.transforms_are_full_per_body_pose_sequences)}
@@ -457,4 +754,6 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
 
 function revoke(url: string | null) { if (url) URL.revokeObjectURL(url); }
 const text = (value: unknown) => value === undefined || value === null || value === '' ? 'null' : String(value);
+/** Record values are shown as the reader wrote them; only float noise in a derived difference is rounded. */
+const round6 = (value: number | null | undefined) => typeof value === 'number' && Number.isFinite(value) ? Math.round(value * 1e6) / 1e6 : null;
 const shortOr = (value: string | null | undefined) => !value ? 'null' : value.length > 20 ? `${value.slice(0, 16)}…` : value;

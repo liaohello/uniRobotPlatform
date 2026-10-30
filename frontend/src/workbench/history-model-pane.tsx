@@ -20,7 +20,7 @@ import { Icon } from './Icon';
 import { describeHistoryError } from '../adapters/platform-episodes';
 import { HistoryReferenceScene, type PoseAttribution, type ReferenceSelection } from '../viewport/history-reference-scene';
 import {
-  assertHistoryFrameIdentity, capabilitySummaryText, cachedTree, comparisonRowsOf, drivenValuesOf, fkCrossCheckOf,
+  ambiguousSampleOf, assertHistoryFrameIdentity, capabilitySummaryText, cachedTree, comparisonRowsOf, drivenValuesOf, fkCrossCheckOf,
   forgetTreeNamespace, historySceneManifestOf, historyTreeBindingRowsOf, historyTreeOf, historyTreeRefusal, linkBindingRowsOf, mappingRowsOf,
   mergeVisitedValues, modelResourceText, modelVsUserText, motionCoverageOf, notProvenText, partReadinessOf,
   poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText, readHistoryModelAsset, readRobotState, rememberTree, renderingText,
@@ -56,7 +56,13 @@ const VIEWS = [
 
 const IDLE_STAGE = { status: 'idle', reason: '未选择帧：不请求 robot-state（省略 sample_id 时 reader 会返回它自己的第一条记录），因此不装配任何模型。' };
 
-export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: string; runId: string | null; sampleId: string | null }) {
+export function HistoryModelPane({ episodeId, runId, sampleId, anchor }: {
+  episodeId: string; runId: string | null; sampleId: string | null;
+  /** Where the selected frame sits on this page. `sample_id` alone cannot address a pose when the
+   *  Episode repeats an id, so the refusal text names the anchor position the operator actually chose. */
+  anchor?: { position: number; lineIndex: number | null; offset: number } | null;
+}) {
+  const anchorRef = useRef(anchor); anchorRef.current = anchor;
   const [stage, setStage] = useState<{ status: string; reason: string }>(IDLE_STAGE);
   const [pose, setPose] = useState<HistoryPoseDto | null>(null);
   /** The static tree the pane draws: this Episode's own robot-state answer, keyed by source namespace
@@ -135,7 +141,11 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
         setPose(null);
         view.current?.applyFramePose(null);                            // a refused read shows no pose at all
         setDisplayed(view.current?.attribution() ?? null);
-        setStage({ status: 'failed', reason: `robot-state 读取失败：${describeHistoryError(cause)}；画面回到编译初始布局，不沿用任何上一帧姿态。` });
+        const ambiguous = ambiguousSampleOf(cause);
+        const where = anchorRef.current ? `本页位置 ${anchorRef.current.offset}+${anchorRef.current.position}（line_index=${anchorRef.current.lineIndex ?? '—'}）` : '本页位置未知';
+        setStage(ambiguous
+          ? { status: 'blocked', reason: `reader 409 ${ambiguous.code}：sample_id=${sampleId ?? '—'} 在本 Episode 对上多条锚点记录，无法唯一指认一帧，因此不读取任何姿态。first_matching_anchor_line_index=${String(ambiguous.detail.first_matching_anchor_line_index ?? 'null')} · next_matching_anchor_line_index=${String(ambiguous.detail.next_matching_anchor_line_index ?? 'null')} · no_first_match_was_assumed=${String(ambiguous.detail.no_first_match_was_assumed ?? 'null')} · state_is_not_taken_from_either_candidate=${String(ambiguous.detail.state_is_not_taken_from_either_candidate ?? 'null')}。界面不挑任一候选、不补 0、不沿用上一帧姿态；操作者选的是${where}，但 robot-state 只按 sample_id 寻址——重复位置的逐条清单见 census 的 identity.duplicates（${String(ambiguous.detail.how_to_inspect ?? 'reader 给了检查入口')}）。` }
+          : { status: 'failed', reason: `robot-state 读取失败：${describeHistoryError(cause)}；画面回到编译初始布局，不沿用任何上一帧姿态。` });
       });
     return () => { poseControllers.current.forEach((controller) => controller.abort()); poseControllers.current = []; };
     // `treeReread` re-enters this effect only when a frame's own content identity moved away from the
@@ -256,6 +266,7 @@ export function HistoryModelPane({ episodeId, runId, sampleId }: { episodeId: st
 
   return <section className="history-model-pane" data-model-pane="true"
     data-model-episode={episodeId || 'none'} data-model-status={shownStage.status} data-model-requested-sample={sampleId ?? 'none'}
+    data-model-anchor-ref={anchor ? `${anchor.offset}+${anchor.position}|line ${anchor.lineIndex ?? '—'}` : 'none'}
     data-model-displayed-sample={displayedSample || 'none'} data-model-attribution={attributed ? 'matched' : sampleId ? 'pending' : 'no-frame'}
     data-reference-pose="compiled-initial-layout" data-model-live-poll="off"
     data-frame-pose-verified={String(attributed && Boolean(displayed?.dynamicApplied))}

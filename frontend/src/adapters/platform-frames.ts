@@ -129,6 +129,8 @@ export interface FramePageDto {
     frames_with_no_primary_role_matched: number; frames_with_ambiguous_primary_role: number;
     frames_without_a_linked_state: number; frames_with_unresolved_feedback_reference: number };
   frames: FrameDto[]; not_proven?: string[];
+  /** Present only when this page was read with `include_time_quality=true`; absent on a normal page. */
+  time_quality?: FrameTimeQualityDto | null;
   version_migration?: FrameVersionMigrationDto | null;
   three_d_replay: { this_slice_does_not_enable_3d_replay: boolean; live_geometry_or_actual_may_be_applied: boolean;
     transforms_are_full_per_body_pose_sequences: boolean; robot_pose_readiness_slice?: string };
@@ -136,7 +138,7 @@ export interface FramePageDto {
 }
 
 /** The single GET of this contract. `stream` is left to the reader's own default (`rgbd`). */
-export async function readFramesPage(input: { episodeId: string; runId: string | null; limit?: number; offset?: number; timeBase?: string | null; timeFrom?: number | null; timeTo?: number | null; sampleId?: string | null }, signal: AbortSignal): Promise<FramePageDto> {
+export async function readFramesPage(input: { episodeId: string; runId: string | null; limit?: number; offset?: number; timeBase?: string | null; timeFrom?: number | null; timeTo?: number | null; sampleId?: string | null; includeTimeQuality?: boolean }, signal: AbortSignal): Promise<FramePageDto> {
   const params: Record<string, string | number | undefined> = {
     run_id: input.runId ?? undefined, limit: input.limit, offset: input.offset, sample_id: input.sampleId || undefined,
   };
@@ -148,6 +150,9 @@ export async function readFramesPage(input: { episodeId: string; runId: string |
     if (typeof input.timeFrom === 'number') params.time_from = input.timeFrom;
     if (typeof input.timeTo === 'number') params.time_to = input.timeTo;
   }
+  // Only this literal spelling: the reader's 422 for a non-boolean value is FastAPI's own `bool_parsing`
+  // body rather than the project's `{detail:{code}}` shape, so the client never sends anything else.
+  if (input.includeTimeQuality) params.include_time_quality = 'true';
   return json<FramePageDto>(`/api/v1/episodes/${encodeURIComponent(input.episodeId)}/frames${query(params)}`, signal, FRAME_LINK_SCHEMA);
 }
 
@@ -608,3 +613,227 @@ export function frameActualCurveOf(page: FramePageDto | null, xBase: string): Fr
 }
 
 const numeric = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null;
+
+// ---- M1.5g anchor time quality (the interval census) -------------------------------------------------
+
+/**
+ * `time_quality` exactly as the 18979 candidate answers it (read off the live payload of
+ * `GET …/frames?include_time_quality=true` on 2026-10-30; `schema_version` is still
+ * `unirobot-mobilecar-frame-link-2` and the flag is absent from a normal page by design). A census is a
+ * statement about the whole anchor file scan, so nothing here reads it as a per-page or per-window answer,
+ * and a base the census does not name stays unqualified instead of being guessed.
+ */
+export interface TimeQualityCoverageDto {
+  run_id: string; episode_id: string; stream_id: string; anchor_relative_path: string;
+  anchors_in_this_scan: number; unique_sample_ids: number;
+  rejected_anchors: { excluded_identity_mismatch: number; excluded_stream_mismatch: number; excluded_without_sample_id: number };
+  anchor_lines: FrameAnchorLinesDto;
+  first_anchor_line_index: number | null; last_anchor_line_index: number | null;
+  whole_anchor_file_scanned: boolean; anchor_limit: number; stopped_at_line_index: number | null;
+  covers_whole_episode: boolean; not_a_whole_archive_sweep: boolean; scope_note?: string;
+  page_filter_context?: { time_base: string | null; time_from: number | null; time_to: number | null;
+    sample_id: string | null; offset: number; limit: number; returned: number; note?: string };
+}
+export interface TimeQualityBaseDto {
+  field: string; unit: string; clock?: string; source_record?: string;
+  anchors_scanned: number; numeric_count: number;
+  missing_count: number; missing_line_indexes?: number[]; missing_line_indexes_truncated?: boolean;
+  non_numeric_count: number; non_numeric_samples?: string[]; non_numeric_samples_truncated?: boolean;
+  first_in_file_order: number | null; last_in_file_order: number | null;
+  first_line_index?: number | null; last_line_index?: number | null;
+  min_recorded_value: number | null; max_recorded_value: number | null; first_minus_last_s?: number | null;
+  recorded_gaps?: { count: number; min_s: number | null; max_s: number | null; median_s?: number | null; mean_s?: number | null; total_s?: number | null };
+  equal_adjacent_gaps?: { count: number; line_index_pairs?: number[][]; line_index_pairs_truncated?: boolean };
+  backwards_gaps?: { count: number; steps?: unknown[]; steps_truncated?: boolean };
+  monotonic_non_decreasing_in_file_order?: boolean; file_order_matches_value_order?: boolean; description?: string;
+}
+export interface TimeQualityDuplicateDto { sample_id: string; occurrences: number; line_indexes: number[]; record_positions?: string[] }
+export interface TimeQualityIdentityDto {
+  duplicate_sample_id_groups: number; duplicates?: TimeQualityDuplicateDto[]; duplicates_truncated?: boolean;
+  every_anchor_position_is_reported?: boolean; effect_on_this_route?: string; effect_on_robot_state?: string;
+}
+export interface IntervalEligibilityDto {
+  eligible_for_whole_episode: boolean; eligible_within_this_scan: boolean; blocking_reasons: string[];
+  zero_interval_ties_present?: boolean; implied_rate_hz_from_median_recorded_gap?: number | null; implied_rate_note?: string;
+}
+export interface FrameTimeQualityDto {
+  requested: boolean; coverage: TimeQualityCoverageDto; time_bases: Record<string, TimeQualityBaseDto>;
+  identity?: TimeQualityIdentityDto; recorder_counters?: Record<string, unknown>;
+  profile?: { profile_ids_seen?: string[]; anchor_fields_declaring_a_numeric_rate?: string[]; note?: string };
+  playback_eligibility?: {
+    modes?: Record<string, string>;
+    append_order_display?: { mode?: string; eligible?: boolean; basis?: string; does_not_require?: string[]; anchor_position_never_reordered_by_time?: boolean };
+    recorded_interval_schedule?: {
+      mode?: string; eligible_by_base?: Record<string, IntervalEligibilityDto>; any_base_eligible_for_whole_episode?: boolean;
+      rules_when_unqualified?: Record<string, string>; never_assumed?: Record<string, unknown>
+    };
+    cross_stream_synchronized?: { mode?: string; eligible?: boolean; reason?: string; not_derivable_from?: string[]; same_page_evidence?: Record<string, unknown> };
+  };
+  not_proven?: string[];
+}
+
+/** The census namespace: one session per source/run/episode/anchor-stream, never a content-versioned store. */
+export function timeQualitySessionKey(input: { sourceId?: string; runId: string | null; episodeId: string; streamId: string | null }): string {
+  return `${input.sourceId ?? 'source?'}|${input.runId ?? 'run?'}|${input.episodeId}|${input.streamId ?? 'stream?'}`;
+}
+
+export type IntervalStepKind = 'interval' | 'tie' | 'backwards' | 'missing';
+export interface IntervalStep {
+  kind: IntervalStepKind; fromPosition: number; toPosition: number; crossPage: boolean;
+  fromValue: number | null; toValue: number | null; gapS: number | null; waitMs: number | null; note: string;
+}
+export interface IntervalGate {
+  base: string; present: boolean; allowed: boolean; reasons: string[]; disclosures: string[];
+  eligibility: IntervalEligibilityDto | null; baseRow: TimeQualityBaseDto | null;
+  unit: string; clock: string; description: string;
+}
+
+const UNJUDGEABLE_ANCHOR_LINES = ['unparseable_lines_skipped', 'oversize_lines_skipped', 'non_object_lines_skipped'] as const;
+const REJECTED_ANCHOR_KEYS = ['excluded_identity_mismatch', 'excluded_stream_mismatch', 'excluded_without_sample_id'] as const;
+
+/**
+ * Whether this Episode's census qualifies `base` for scheduling a step by its recorded gap. Each refusal is
+ * stated in the reader's own terms, and the whole-episode claim is only ever taken from
+ * `eligible_for_whole_episode` — `eligible_within_this_scan` is shown beside it, never as "this window's
+ * eligibility", because the window filters the page while the census still describes the whole scan.
+ */
+export function intervalGateOf(censusPage: FramePageDto | null, base: string): IntervalGate {
+  const page = censusPage;
+  const tq = page?.time_quality ?? null;
+  const row = tq?.time_bases?.[base] ?? null;
+  const eligibility = tq?.playback_eligibility?.recorded_interval_schedule?.eligible_by_base?.[base] ?? null;
+  const reasons: string[] = [];
+  const disclosures: string[] = [];
+  const gate: Omit<IntervalGate, 'allowed' | 'reasons' | 'disclosures'> = {
+    base, present: Boolean(tq?.requested), eligibility, baseRow: row,
+    unit: row?.unit ?? '—', clock: row?.clock ?? '未声明', description: row?.description ?? 'reader 未描述这个基',
+  };
+  if (!tq) return { ...gate, allowed: false, reasons: ['本会话还没有读到 census（普通帧页不带 time_quality）：记录间隔模式需要一次 `include_time_quality=true` 的读取，界面不据缺数据开放。'], disclosures };
+  if (tq.requested !== true) reasons.push(`census 自述 requested=${String(tq.requested)}：这份响应不是带资格判定的读取结果，不据此排程。`);
+  const cov = tq.coverage;
+  if (cov) {
+    if (page && (cov.run_id !== page.identity.run_id || cov.episode_id !== page.identity.episode_id)) {
+      reasons.push(`census 身份与本帧页不符（coverage ${cov.episode_id}/${cov.run_id} vs 页面 ${page.identity.episode_id}/${page.identity.run_id}）：不用别的来源的资格开放播放。`);
+    }
+    if (page && cov.stream_id !== page.anchor.requested_stream && cov.stream_id !== page.anchor.stream_id) {
+      // The census names the requested stream (`rgbd`), while `anchor.stream_id` names the file the anchors
+      // were read from (`observations-persist`); those are the reader's own two words for one source, so a
+      // match on either is one stream. Anchors of a genuinely different stream are still refused.
+      reasons.push(`census 的 stream_id 是 ${cov.stream_id}，本页的流是 ${text(page.anchor.requested_stream)}／锚点文件流是 ${text(page.anchor.stream_id)}：不同流的锚点序列不能互相当作同一份节奏。`);
+    }
+    if (cov.whole_anchor_file_scanned !== true || cov.covers_whole_episode !== true || cov.stopped_at_line_index !== null) {
+      reasons.push(`本次 census 没有扫完整份锚点文件（whole_anchor_file_scanned=${String(cov.whole_anchor_file_scanned)}、covers_whole_episode=${String(cov.covers_whole_episode)}、stopped_at_line_index=${text(cov.stopped_at_line_index)}、anchor_limit=${text(cov.anchor_limit)}）：截断扫描不支持整集资格，界面不排程。${cov.scope_note ?? ''}`);
+    }
+    const unjudgeable = UNJUDGEABLE_ANCHOR_LINES.map((key) => `${key}=${cov.anchor_lines?.[key] ?? '未报'}`).join('／');
+    const unjudgeableCount = UNJUDGEABLE_ANCHOR_LINES.reduce((sum, key) => sum + (cov.anchor_lines?.[key] ?? 0), 0);
+    const rejectedCount = REJECTED_ANCHOR_KEYS.reduce((sum, key) => sum + (cov.rejected_anchors?.[key] ?? 0), 0);
+    if (unjudgeableCount + rejectedCount > 0) {
+      reasons.push(`本次扫描里有无法判定时刻的锚点行被跳过（${unjudgeable}；身份/流/无 sample_id 排除 ${REJECTED_ANCHOR_KEYS.map((key) => `${key}=${cov.rejected_anchors?.[key] ?? 0}`).join('／')}）。18979 的整集资格只看扫描是否截断，并没有把这些行写进 blocking_reasons，所以界面不据该资格开放整集记录间隔播放：锚点序列在时间上是否有洞，这份 census 没有回答。空行（blank_lines_skipped=${text(cov.anchor_lines?.blank_lines_skipped)}）与预过滤行（prefiltered_lines_skipped=${text(cov.anchor_lines?.prefiltered_lines_skipped)}）属于 reader 自己声明的正常排除，不在此拒绝之列，也不把“任何计数非零”一律当成拒绝。`);
+    }
+    disclosures.push(`扫描：anchors_in_this_scan=${cov.anchors_in_this_scan} · unique_sample_ids=${cov.unique_sample_ids} · 行号范围 ${text(cov.first_anchor_line_index)}–${text(cov.last_anchor_line_index)} · 已读行 ${text(cov.anchor_lines?.lines_read)}（空行 ${text(cov.anchor_lines?.blank_lines_skipped)}／超限 ${text(cov.anchor_lines?.oversize_lines_skipped)}／坏行 ${text(cov.anchor_lines?.unparseable_lines_skipped)}／非对象 ${text(cov.anchor_lines?.non_object_lines_skipped)}／预过滤 ${text(cov.anchor_lines?.prefiltered_lines_skipped)}）`);
+    // The scope clause is read straight after the census, before any base is chosen, so it may not depend on a
+    // per-base eligibility row: the page's own filters narrow the frame page, never this judgement.
+    disclosures.push(`范围口径：窗口与分页只筛帧页，这份 census 判定的是整个 Episode 的锚点扫描。page_filter_context 回显本页条件（time_base=${text(cov.page_filter_context?.time_base)}／time_from=${text(cov.page_filter_context?.time_from)}／time_to=${text(cov.page_filter_context?.time_to)}／sample_id=${text(cov.page_filter_context?.sample_id)}／offset=${text(cov.page_filter_context?.offset)}／limit=${text(cov.page_filter_context?.limit)}／returned=${text(cov.page_filter_context?.returned)}），reader 自述：${cov.page_filter_context?.note ?? cov.scope_note ?? 'reader 未复述范围口径'}`);
+  }
+  const dupes = tq.identity?.duplicate_sample_id_groups ?? 0;
+  if (dupes > 0) {
+    disclosures.push(`重复 sample_id：${dupes} 组（${(tq.identity?.duplicates ?? []).slice(0, 3).map((d) => `${d.sample_id}×${d.occurrences}@[${d.line_indexes.join(',')}]`).join('；') || '未列出'}${tq.identity?.duplicates_truncated ? '，列表被截断' : ''}）。${tq.identity?.effect_on_this_route ?? ''} ${tq.identity?.effect_on_robot_state ?? ''}`);
+  } else if (tq.identity) {
+    disclosures.push(`重复 sample_id：${dupes} 组（every_anchor_position_is_reported=${text(tq.identity.every_anchor_position_is_reported)}）。${tq.identity.effect_on_robot_state ?? ''}`);
+  }
+  if (!row) reasons.push(`census 的 time_bases 里没有 ${base}（现有：${Object.keys(tq.time_bases ?? {}).join('、') || '空'}）：没有该基的记录数值就没有间隔可算。`);
+  if (!eligibility) reasons.push(`census 的 recorded_interval_schedule.eligible_by_base 里没有 ${base} 的资格判定：界面不替 reader 宣布合格。`);
+  if (eligibility && eligibility.eligible_for_whole_episode !== true) {
+    reasons.push(`${base} 整集不合格（eligible_for_whole_episode=${String(eligibility.eligible_for_whole_episode)}）：blocking_reasons=${(eligibility.blocking_reasons ?? []).join('；') || 'reader 未列'}。`);
+    const rules = tq.playback_eligibility?.recorded_interval_schedule?.rules_when_unqualified ?? {};
+    (eligibility.blocking_reasons ?? []).forEach((reason) => {
+      const hit = Object.entries(rules).find(([key]) => reason.includes(key));
+      if (hit) reasons.push(`reader 对该情形的规则：${hit[1]}`);
+    });
+  }
+  if (eligibility) {
+    disclosures.push(`eligible_within_this_scan=${String(eligibility.eligible_within_this_scan)}：这是“本次扫描内”的判定，不是“当前时间窗口内”的资格——窗口只筛帧页，census 仍描述整个 Episode（${cov?.page_filter_context?.note ?? cov?.scope_note ?? 'reader 未复述'}）。`);
+    if (eligibility.zero_interval_ties_present) disclosures.push(`该基存在相等相邻值（zero_interval_ties_present=true）：按并列处理，不除零、不插值。`);
+    disclosures.push(`implied_rate_hz_from_median_recorded_gap=${text(eligibility.implied_rate_hz_from_median_recorded_gap)} 只是本次扫描的中位数换算，${eligibility.implied_rate_note ?? '它不是记录者声明的速率，也不是播放保证'}——排程不使用中位数，只用相邻锚点的真实差值。`);
+  }
+  const never = tq.playback_eligibility?.recorded_interval_schedule?.never_assumed;
+  if (never) disclosures.push(`never_assumed：default_rate_hz_applied=${text(never.default_rate_hz_applied)} · browser_arrival_time_used=${text(never.browser_arrival_time_used)} · clock_stitched_across_reset=${text(never.clock_stitched_across_reset)} · ${text(never.why)}`);
+  const profile = tq.profile;
+  if (profile) disclosures.push(`profile_ids_seen=${(profile.profile_ids_seen ?? []).join('、') || '无'} · 声明数值速率的锚点字段=${(profile.anchor_fields_declaring_a_numeric_rate ?? []).join('、') || '无'} · ${profile.note ?? ''}`);
+  const cross = tq.playback_eligibility?.cross_stream_synchronized;
+  if (cross) disclosures.push(`模式 C（跨流同刻）eligible=${String(cross.eligible)}：${cross.reason ?? 'reader 未说明'}（不由 A/B 推出：${(cross.not_derivable_from ?? []).join('、') || '未列'}）。`);
+  return { ...gate, allowed: reasons.length === 0, reasons, disclosures };
+}
+
+/**
+ * One step of the schedule: the real recorded difference between two adjacent anchors on the selected
+ * base, divided by the speed factor. Equal values are ties (wait 0, never a division by zero), a negative
+ * difference refuses that segment instead of sorting it away, and a missing or non-numeric value refuses
+ * it instead of borrowing the neighbouring frame's clock.
+ */
+export function intervalStepOf(input: { from: FrameDto | null; to: FrameDto | null; base: string; speed: number; crossPage?: boolean; fromPosition?: number; toPosition?: number }): IntervalStep {
+  const { from, to, base, speed } = input;
+  const fromPosition = input.fromPosition ?? 0;
+  const toPosition = input.toPosition ?? 0;
+  const crossPage = Boolean(input.crossPage);
+  const fromValue = from ? numeric(from.anchor.clocks?.[base]) : null;
+  const toValue = to ? numeric(to.anchor.clocks?.[base]) : null;
+  const voidStep = (kind: IntervalStep['kind'], note: string): IntervalStep =>
+    ({ kind, fromPosition, toPosition, crossPage, fromValue, toValue, gapS: null, waitMs: null, note });
+  if (!from || !to) return voidStep('missing', '相邻锚点不完整：本页或下一页没有可比较的锚点，界面不猜下一帧的时间。');
+  if (fromValue === null || toValue === null) {
+    return voidStep('missing', `该基在锚点 ${from.sample_id}/${to.sample_id} 上没有有限数值（anchor.clocks.${base}=${text(from.anchor.clocks?.[base])}→${text(to.anchor.clocks?.[base])}）：这一段不排程，帧仍按 reader 的追加顺序显示，不借用别的基或别的记录的钟。`);
+  }
+  const gapS = toValue - fromValue;
+  if (gapS === 0) return { kind: 'tie', fromPosition, toPosition, crossPage, fromValue, toValue, gapS, waitMs: 0,
+    note: `相邻两条记录在该基上相等（${fromValue}→${toValue}）：按并列处理，等待 0 ms，不除零、不插值、不算速率。` };
+  if (gapS < 0) return { kind: 'backwards', fromPosition, toPosition, crossPage, fromValue, toValue, gapS, waitMs: null,
+    note: `记录时间回退（${fromValue}→${toValue}，差 ${gapS}s）：一个连续钟没有被记录证明，界面拒绝这一段调度，不排序、不丢弃、不把它当 0。` };
+  return { kind: 'interval', fromPosition, toPosition, crossPage, fromValue, toValue, gapS,
+    waitMs: Math.max(0, Math.round((gapS * 1000) / speed)),
+    note: `相邻锚点真实差 ${gapS}s ÷ 倍速 ${speed}× = ${Math.round((gapS * 1000) / speed)} ms 等待（浏览器单调钟只用于执行这段等待，不替代记录时间）。` };
+}
+
+/** The whole visible schedule of one page, plus the step that crosses into the next page. */
+export function intervalScheduleOf(page: FramePageDto | null, base: string, speed: number): IntervalStep[] {
+  const frames = page?.frames ?? [];
+  const steps: IntervalStep[] = [];
+  for (let position = 0; position + 1 < frames.length; position += 1) {
+    steps.push({ ...intervalStepOf({ from: frames[position], to: frames[position + 1], base, speed }), fromPosition: position, toPosition: position + 1 });
+  }
+  return steps;
+}
+
+export interface RecordedRange {
+  base: string; unit: string; present: boolean;
+  pageFirst: number | null; pageLast: number | null; pageMin: number | null; pageMax: number | null;
+  pageIncomplete: boolean;
+  episodeFirst: number | null; episodeLast: number | null; episodeMin: number | null; episodeMax: number | null;
+  windowFrom: number | null; windowTo: number | null; note: string;
+}
+
+/** Page range from the frames this page holds, Episode range from the census scan, window from the page's
+ *  own echo — three different scopes, stated separately, with no total frame count anywhere. */
+export function recordedRangeOf(page: FramePageDto | null, base: string, censusPage: FramePageDto | null = null): RecordedRange {
+  const frames = page?.frames ?? [];
+  const values = frames.map((frame) => numeric(frame.anchor.clocks?.[base])).filter((value): value is number => value !== null);
+  const row = censusPage?.time_quality?.time_bases?.[base] ?? page?.time_quality?.time_bases?.[base] ?? null;
+  return {
+    base, unit: row?.unit ?? page?.time?.units?.['*_s'] ?? '—', present: values.length === frames.length && frames.length > 0,
+    pageFirst: frames.length ? values.length === frames.length ? values[0] : null : null,
+    pageLast: frames.length ? values.length === frames.length ? values[values.length - 1] : null : null,
+    pageMin: values.length ? Math.min(...values) : null, pageMax: values.length ? Math.max(...values) : null,
+    pageIncomplete: frames.length > values.length,
+    episodeFirst: row?.first_in_file_order ?? null, episodeLast: row?.last_in_file_order ?? null,
+    episodeMin: row?.min_recorded_value ?? null, episodeMax: row?.max_recorded_value ?? null,
+    windowFrom: page?.time?.time_from ?? null, windowTo: page?.time?.time_to ?? null,
+    note: row ? `整段范围来自 census 本次扫描（${row.source_record ?? 'reader 未说明来源记录'}，${row.description ?? 'reader 未描述该钟'}）：首/末 ${text(row.first_in_file_order)}→${text(row.last_in_file_order)}，最小/最大 ${text(row.min_recorded_value)}/${text(row.max_recorded_value)}，记录间隔 ${text(row.recorded_gaps?.count)} 段（min ${text(row.recorded_gaps?.min_s)}／max ${text(row.recorded_gaps?.max_s)}s）。它描述的是整个 Episode 的锚点，不是本页，也不是当前窗口。`
+      : `本页没有 census：整段范围未知（不猜）。本页读到 ${frames.length} 帧，其中 ${values.length} 帧带 ${base} 的有限数值。`,
+  };
+}
+
+/** The cursor's page-local identity. A sample_id alone cannot name a row when one page repeats an id. */
+export function framePositionKey(episodeId: string, runId: string | null, offset: number, position: number, frame: FrameDto | null): string {
+  if (!frame) return `${episodeId}|${runId ?? ''}|none`;
+  return `${episodeId}|${runId ?? ''}|${offset}+${position}|line ${frame.anchor.line_index}|${frame.sample_id}`;
+}

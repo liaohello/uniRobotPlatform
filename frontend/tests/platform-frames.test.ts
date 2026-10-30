@@ -12,15 +12,20 @@ import {
   frameMediaRefs,
   framePageExplanation,
   framePageKind,
+  framePositionKey,
   frameSelectableBases,
   frameStopNote,
   frameWindowGate,
+  intervalGateOf,
+  intervalScheduleOf,
+  intervalStepOf,
   linkageScopeText,
   mediaDeclarationText,
   provenanceRowsOf,
   quantityRowsOf,
   readFramesPage,
   recorderDeclaredOf,
+  recordedRangeOf,
   roleCoverageText,
   roleRowsOf,
   selectionRulesText,
@@ -29,9 +34,15 @@ import {
   stateRowsOf,
   stateSelectionOf,
   statusPrecedenceText,
+  timeQualitySessionKey,
   timeSemanticsText,
   type FrameDto,
   type FramePageDto,
+  type FrameTimeQualityDto,
+  type IntervalEligibilityDto,
+  type TimeQualityBaseDto,
+  type TimeQualityCoverageDto,
+  type TimeQualityIdentityDto,
   versionMigrationText
 } from '../src/adapters/platform-frames';
 
@@ -514,5 +525,287 @@ describe('recorded-Actual curve over the frames already loaded', () => {
     expect(frameActualCurveOf(null, CURVE_FRAME_ORDER).frames).toBe(0);
     expect(frameActualCurveOf(null, CURVE_FRAME_ORDER).series[0].segments).toEqual([]);
     expect(curveXAxesOf(null)).toHaveLength(1);
+  });
+});
+
+// ---- M1.5g time-quality census and recorded-interval scheduling --------------------------------------
+//
+// The census fixtures below are shape copies of what the 18979 candidate actually answered on 2026-10-30
+// for `episode_27bfed…` (`GET …/frames?limit=3&include_time_quality=true`: 303 anchors, every one of the
+// three bases numeric, monotonic and unbroken, median gap ≈ 0.2 s, `profile_ids_seen`
+// `g2a-rgbd-5hz-original` with no field declaring a numeric rate, and mode C refused). Field names, status
+// words and the reader's own sentences are copied, not invented.
+const CAPTURE = 'capture_backend_monotonic_s';
+const SIM = 'capture_sim_time_s';
+const PERSIST = 'persist_backend_monotonic_s';
+
+const censusBase = (field: string, clock: string, over: Partial<TimeQualityBaseDto> = {}): TimeQualityBaseDto => ({
+  field, unit: 's', clock, source_record: 'persisted frame anchor in observations/persist.jsonl',
+  anchors_scanned: 303, numeric_count: 303, missing_count: 0, missing_line_indexes: [], missing_line_indexes_truncated: false,
+  non_numeric_count: 0, non_numeric_samples: [], non_numeric_samples_truncated: false,
+  first_in_file_order: 426494.351568496, last_in_file_order: 426554.824271964, first_line_index: 0, last_line_index: 302,
+  min_recorded_value: 426494.351568496, max_recorded_value: 426554.824271964, first_minus_last_s: -60.47270346805453,
+  recorded_gaps: { count: 302, min_s: 0.10000491904793307, max_s: 0.31082851998507977, median_s: 0.200073431013152, mean_s: 0.20024073996044547, total_s: 60.47270346805453 },
+  equal_adjacent_gaps: { count: 0, line_index_pairs: [], line_index_pairs_truncated: false },
+  backwards_gaps: { count: 0, steps: [], steps_truncated: false },
+  monotonic_non_decreasing_in_file_order: true, file_order_matches_value_order: true,
+  description: `seconds, native backend monotonic clock at ${field}`, ...over,
+});
+const censusEligibility = (over: Partial<IntervalEligibilityDto> = {}): IntervalEligibilityDto => ({
+  eligible_for_whole_episode: true, eligible_within_this_scan: true, blocking_reasons: [], zero_interval_ties_present: false,
+  implied_rate_hz_from_median_recorded_gap: 4.998164898438034,
+  implied_rate_note: 'derived from the recorded values of this scan; it is not a rate the recorder declared and it is not a playback guarantee', ...over,
+});
+const censusCoverage = (over: Partial<TimeQualityCoverageDto> = {}): TimeQualityCoverageDto => ({
+  run_id: RUN, episode_id: EPISODE, stream_id: 'rgbd', anchor_relative_path: 'observations/persist.jsonl',
+  anchors_in_this_scan: 303, unique_sample_ids: 303,
+  rejected_anchors: { excluded_identity_mismatch: 0, excluded_stream_mismatch: 0, excluded_without_sample_id: 0 },
+  anchor_lines: { lines_read: 303, blank_lines_skipped: 0, oversize_lines_skipped: 0, unparseable_lines_skipped: 0, non_object_lines_skipped: 0, prefiltered_lines_skipped: 0 },
+  first_anchor_line_index: 0, last_anchor_line_index: 302, whole_anchor_file_scanned: true, anchor_limit: 4000, stopped_at_line_index: null,
+  covers_whole_episode: true, not_a_whole_archive_sweep: true,
+  scope_note: 'this census re-reads one Episode’s anchor file; a truncated scan or a windowed page supports no whole-episode or whole-archive claim',
+  page_filter_context: { time_base: null, time_from: null, time_to: null, sample_id: null, offset: 0, limit: 1, returned: 1,
+    note: 'the census covers the anchors this Episode exposes in file order, not only the rows of this page' }, ...over,
+});
+const censusIdentity = (over: Partial<TimeQualityIdentityDto> = {}): TimeQualityIdentityDto => ({
+  duplicate_sample_id_groups: 0, duplicates: [], duplicates_truncated: false, every_anchor_position_is_reported: true,
+  effect_on_this_route: 'a duplicated id makes `sample_id=` address more than one anchor, so the page cannot name one position for it',
+  effect_on_robot_state: 'GET /api/v1/episodes/{episode_id}/robot-state?sample_id= refuses with frame_sample_id_ambiguous instead of taking the first match', ...over,
+});
+interface CensusOptions { coverage?: Partial<TimeQualityCoverageDto>; identity?: Partial<TimeQualityIdentityDto>; eligibility?: Partial<IntervalEligibilityDto>; bases?: string[] }
+const censusQuality = (options: CensusOptions = {}): FrameTimeQualityDto => {
+  const bases = options.bases ?? [CAPTURE, SIM, PERSIST];
+  const timeBases: Record<string, TimeQualityBaseDto> = {};
+  const eligibleByBase: Record<string, IntervalEligibilityDto> = {};
+  bases.forEach((base) => {
+    timeBases[base] = censusBase(base, base === SIM ? 'sim' : 'backend_monotonic');
+    eligibleByBase[base] = censusEligibility(options.eligibility);
+  });
+  return {
+    requested: true, coverage: censusCoverage(options.coverage), time_bases: timeBases, identity: censusIdentity(options.identity),
+    recorder_counters: { persist_sequence_backwards_steps_in_file_order: 0, persist_sequence_is_the_recorders_own_counter: true, line_index_is_not_a_clock: true },
+    profile: { profile_ids_seen: ['g2a-rgbd-5hz-original'], anchor_fields_declaring_a_numeric_rate: [], note: 'the anchors carry a profile identifier, not a declared numeric rate; no rate is inferred from the profile name' },
+    playback_eligibility: {
+      modes: { append_order_display: "A: show anchors in the recorder's own append order of the anchor file",
+        recorded_interval_schedule: 'B: schedule a step by the recorded gap on one named capture base',
+        cross_stream_synchronized: 'C: play several streams against one verified shared instant' },
+      append_order_display: { mode: 'A', eligible: true, basis: "the anchor file is read in the recorder's own append order and a full page stops at the first further qualifying anchor",
+        does_not_require: ['a numeric capture time base', 'clock sameness', 'unique sample ids'], anchor_position_never_reordered_by_time: true },
+      recorded_interval_schedule: { mode: 'B', eligible_by_base: eligibleByBase, any_base_eligible_for_whole_episode: bases.length > 0,
+        rules_when_unqualified: {
+          missing_or_non_numeric_time: 'the base is refused for scheduling; the frame stays visible in append order and no value is filled from another record',
+          equal_adjacent_values: 'ties are shown as ties; they are not interpolated and a rate is not computed by dividing by zero',
+          backwards_step: 'the base is refused for scheduling over that range, because one continuous clock across the step is not established by the record',
+          clock_unknown: 'a base that only names a clock is not evidence of a shared clock source' },
+        never_assumed: { default_rate_hz_applied: false, browser_arrival_time_used: false, clock_stitched_across_reset: false,
+          why: 'no record establishes a nominal rate, a host clock relationship across segments, or a RESET boundary on these anchors' } },
+      cross_stream_synchronized: { mode: 'C', eligible: false,
+        reason: 'the records name shared clock bases but nothing lets this reader verify one shared clock source or one sampled instant across streams',
+        not_derivable_from: ['A', 'B'], same_page_evidence: { same_clock_verified: false, synchronized_across_streams: false } },
+    },
+    not_proven: ['a declared sampling rate', 'clock sameness across streams', 'a sampled-instant match', 'coverage beyond the anchors scanned here', 'RESET or segment boundaries on anchors'],
+  };
+};
+const censusPage = (options: CensusOptions = {}, pagePatch: Partial<FramePageDto> = {}): FramePageDto =>
+  pageFixture({ time_quality: censusQuality(options), ...pagePatch });
+const timedFrame = (sampleId: string, lineIndex: number, clocks: Record<string, unknown>): FrameDto => {
+  const base = frameFixture({ sample_id: sampleId });
+  return { ...base, anchor: { ...base.anchor, line_index: lineIndex, persist_sequence: lineIndex + 1, clocks } };
+};
+const pageOfTimed = (frames: FrameDto[]) => pageFixture({ frames });
+
+describe('M1.5g census: read on demand, consumed per base, never widened', () => {
+  it('asks for the census only when the caller says so, on the same exact route', async () => {
+    respondWith(pageFixture());
+    await readFramesPage({ episodeId: EPISODE, runId: RUN, limit: 5, offset: 0 }, new AbortController().signal);
+    expect(urls[0]).not.toContain('include_time_quality');
+    await readFramesPage({ episodeId: EPISODE, runId: RUN, limit: 1, offset: 0, includeTimeQuality: true }, new AbortController().signal);
+    expect(urls[1]).toContain('/frames?');
+    expect(urls[1]).toContain('include_time_quality=true');
+    expect((urls[1].match(/include_time_quality/g) ?? []).length).toBe(1);
+  });
+
+  it('refuses to schedule from a page that carries no census', () => {
+    const gate = intervalGateOf(pageFixture(), CAPTURE);
+    expect(gate.present).toBe(false);
+    expect(gate.allowed).toBe(false);
+    expect(gate.reasons[0]).toContain('普通帧页不带 time_quality');
+    expect(intervalGateOf(null, CAPTURE).allowed).toBe(false);
+  });
+
+  it('states what the census covers the moment it is read, before any base turns the per-base line on', () => {
+    const unselected = intervalGateOf(censusPage(), '');
+    expect(unselected.allowed).toBe(false);
+    expect(unselected.reasons.join(' ')).toContain('time_bases 里没有');
+    const lines = unselected.disclosures.join(' ');
+    expect(lines).toContain('anchors_in_this_scan=303');
+    expect(lines).toContain('窗口与分页只筛帧页');
+    expect(lines).toContain('the census covers the anchors this Episode exposes in file order');
+    expect(lines).not.toContain('eligible_within_this_scan');       // that judgement belongs to a chosen base
+  });
+
+  it('qualifies a whole-episode scan on the base the reader itself named, and keeps scan eligibility out of the window claim', () => {
+    const gate = intervalGateOf(censusPage(), CAPTURE);
+    expect(gate.allowed).toBe(true);
+    expect(gate.reasons).toEqual([]);
+    expect(gate.unit).toBe('s');
+    expect(gate.clock).toBe('backend_monotonic');
+    const lines = gate.disclosures.join(' ');
+    expect(lines).toContain('不是“当前时间窗口内”的资格');                   // eligible_within_this_scan is never “this window”
+    expect(lines).toContain('the census covers the anchors this Episode exposes in file order');
+    expect(lines).toContain('排程不使用中位数');                                // the implied rate is shown, never used
+    expect(lines).toContain('never_assumed');
+    expect(lines).toContain('profile_ids_seen=g2a-rgbd-5hz-original');
+    expect(lines).toContain('模式 C（跨流同刻）eligible=false');
+  });
+
+  it('compares the census stream with the words the reader actually uses, and fails closed when neither matches', () => {
+    const page = censusPage();
+    expect(intervalGateOf(page, CAPTURE).reasons.join(' ')).not.toContain('不同流的锚点序列');     // coverage `rgbd` == anchor.requested_stream
+    const renamed = { ...page, anchor: { ...page.anchor, stream_id: 'observations-persist', requested_stream: 'rgbd' } };
+    expect(intervalGateOf(renamed, CAPTURE).allowed).toBe(true);                                    // two words, one stream
+    const noWord = { ...page, anchor: { ...page.anchor, requested_stream: undefined } };
+    expect(intervalGateOf(noWord, CAPTURE).allowed).toBe(false);                                    // only the file-name word left: not comparable, so refuse
+    expect(intervalGateOf(noWord, CAPTURE).reasons.join(' ')).toContain('本页的流是 null');
+    const other = { ...page, anchor: { ...page.anchor, stream_id: 'wrist-left', requested_stream: 'wrist_left' } };
+    expect(intervalGateOf(other, CAPTURE).reasons.join(' ')).toContain('不同流的锚点序列');
+  });
+
+  it('never reads a truncated scan as whole-episode eligibility', () => {
+    const gate = intervalGateOf(censusPage({ coverage: { whole_anchor_file_scanned: false, covers_whole_episode: false, stopped_at_line_index: 3999 } }), CAPTURE);
+    expect(gate.allowed).toBe(false);
+    expect(gate.reasons.join(' ')).toContain('没有扫完整份锚点文件');
+    expect(gate.reasons.join(' ')).toContain('anchor_limit=4000');
+  });
+
+  it('blocks on anchors whose time could not be judged, but not on the exclusions the reader declares normal', () => {
+    const broken = intervalGateOf(censusPage({ coverage: { anchor_lines: { ...censusCoverage().anchor_lines, unparseable_lines_skipped: 2 } } }), CAPTURE);
+    expect(broken.allowed).toBe(false);
+    expect(broken.reasons.join(' ')).toContain('无法判定时刻的锚点行被跳过');
+    // 18979 does not fold these into blocking_reasons, so the interface says so instead of trusting the claim.
+    expect(broken.reasons.join(' ')).toContain('并没有把这些行写进 blocking_reasons');
+    const rejected = intervalGateOf(censusPage({ coverage: { rejected_anchors: { excluded_identity_mismatch: 0, excluded_stream_mismatch: 0, excluded_without_sample_id: 1 } } }), CAPTURE);
+    expect(rejected.allowed).toBe(false);
+    const ordinary = intervalGateOf(censusPage({ coverage: { anchor_lines: { ...censusCoverage().anchor_lines, blank_lines_skipped: 5, prefiltered_lines_skipped: 7 } } }), CAPTURE);
+    expect(ordinary.allowed).toBe(true);                                   // no blanket “any counter refuses”
+  });
+
+  it('shows the reader’s own blocking reason and its rule for that case', () => {
+    const gate = intervalGateOf(censusPage({ eligibility: { eligible_for_whole_episode: false, blocking_reasons: ['backwards_step: 426494.2 -> 426494.0'] } }), CAPTURE);
+    expect(gate.allowed).toBe(false);
+    expect(gate.reasons.join(' ')).toContain('整集不合格');
+    expect(gate.reasons.join(' ')).toContain('one continuous clock across the step');
+  });
+
+  it('drops a census that does not belong to this page’s episode or requested stream', () => {
+    expect(intervalGateOf(censusPage({ coverage: { episode_id: 'episode_other' } }), CAPTURE).reasons.join(' ')).toContain('census 身份与本帧页不符');
+    expect(intervalGateOf(censusPage({ coverage: { stream_id: 'wrist_rgb' } }), CAPTURE).reasons.join(' ')).toContain('不同流的锚点序列');
+    // The census names the requested stream while `anchor.stream_id` names the anchor file: that is one source.
+    expect(intervalGateOf(censusPage(), CAPTURE).allowed).toBe(true);
+  });
+
+  it('reports duplicated ids with every anchor position, and does not treat that as a rate problem', () => {
+    const gate = intervalGateOf(censusPage({ identity: { duplicate_sample_id_groups: 2, duplicates: [{ sample_id: 'rgbd_dup', occurrences: 2, line_indexes: [4, 9], record_positions: ['observations/persist.jsonl#4', 'observations/persist.jsonl#9'] }] } }), CAPTURE);
+    expect(gate.allowed).toBe(true);
+    const lines = gate.disclosures.join(' ');
+    expect(lines).toContain('重复 sample_id：2 组');
+    expect(lines).toContain('rgbd_dup×2@[4,9]');
+    expect(lines).toContain('frame_sample_id_ambiguous');
+  });
+
+  it('names a base the census does not carry instead of substituting a nearby one', () => {
+    const gate = intervalGateOf(censusPage({ bases: [CAPTURE] }), SIM);
+    expect(gate.allowed).toBe(false);
+    expect(gate.reasons.join(' ')).toContain('time_bases 里没有 capture_sim_time_s');
+    expect(gate.reasons.join(' ')).toContain('eligible_by_base 里没有 capture_sim_time_s');
+  });
+
+  it('scopes the census session to one source/run/episode/stream, so a switch asks again', () => {
+    const key = timeQualitySessionKey({ sourceId: 'mobilecar-server-history-20261017', runId: RUN, episodeId: EPISODE, streamId: 'rgbd' });
+    expect(timeQualitySessionKey({ sourceId: 'mobilecar-server-history-20261017', runId: RUN, episodeId: EPISODE, streamId: 'rgbd' })).toBe(key);
+    expect(timeQualitySessionKey({ sourceId: 'mobilecar-server-history-20261017', runId: RUN, episodeId: EPISODE, streamId: 'wrist' })).not.toBe(key);
+    expect(timeQualitySessionKey({ sourceId: 'mobilecar-server-history-20261017', runId: null, episodeId: EPISODE, streamId: 'rgbd' })).not.toBe(key);
+  });
+});
+
+describe('recorded-interval steps: the gap the record actually carries', () => {
+  const first = timedFrame('rgbd_a', 0, { [CAPTURE]: 426494 });
+  const second = timedFrame('rgbd_b', 1, { [CAPTURE]: 426494.2 });
+
+  it('waits the real difference divided by the speed, and says which clock it used', () => {
+    const step = intervalStepOf({ from: first, to: second, base: CAPTURE, speed: 2 });
+    expect(step.kind).toBe('interval');
+    expect(step.gapS).toBeCloseTo(0.2, 6);
+    expect(step.waitMs).toBe(100);
+    expect(step.note).toContain('真实差');
+    expect(step.note).toContain('浏览器单调钟只用于执行这段等待');
+    expect(intervalStepOf({ from: first, to: second, base: CAPTURE, speed: 0.5 }).waitMs).toBe(400);
+  });
+
+  it('treats equal anchors as a tie, never as a division by zero', () => {
+    const tie = intervalStepOf({ from: first, to: timedFrame('rgbd_b', 1, { [CAPTURE]: 426494 }), base: CAPTURE, speed: 1 });
+    expect(tie.kind).toBe('tie');
+    expect(tie.waitMs).toBe(0);
+    expect(tie.gapS).toBe(0);
+    expect(tie.note).toContain('不除零');
+  });
+
+  it('refuses a backwards segment without reordering the record', () => {
+    const back = intervalStepOf({ from: second, to: first, base: CAPTURE, speed: 1 });
+    expect(back.kind).toBe('backwards');
+    expect(back.waitMs).toBeNull();
+    expect(back.gapS).toBeCloseTo(-0.2, 6);
+    expect(back.note).toContain('不排序');
+  });
+
+  it('refuses a segment whose anchor carries no finite value on that base instead of borrowing another clock', () => {
+    const missing = intervalStepOf({ from: first, to: timedFrame('rgbd_c', 2, { [SIM]: 1 }), base: CAPTURE, speed: 1 });
+    expect(missing.kind).toBe('missing');
+    expect(missing.waitMs).toBeNull();
+    expect(missing.note).toContain('不借用别的基');
+    expect(intervalStepOf({ from: first, to: null, base: CAPTURE, speed: 1 }).kind).toBe('missing');
+  });
+
+  it('walks the page by position and keeps the record order, and marks the step that crosses pages', () => {
+    const page = pageOfTimed([first, second, timedFrame('rgbd_c', 2, { [CAPTURE]: 426494.1 })]);
+    const steps = intervalScheduleOf(page, CAPTURE, 1);
+    expect(steps.map((step) => [step.fromPosition, step.toPosition])).toEqual([[0, 1], [1, 2]]);
+    expect(steps.map((step) => step.kind)).toEqual(['interval', 'backwards']);
+    expect(steps.map((step) => step.crossPage)).toEqual([false, false]);
+    const crossing = intervalStepOf({ from: steps[1].toPosition === 2 ? page.frames[2] : second, to: first, base: CAPTURE, speed: 1, crossPage: true, fromPosition: 2, toPosition: 0 });
+    expect(crossing.crossPage).toBe(true);
+    expect([crossing.fromPosition, crossing.toPosition]).toEqual([2, 0]);
+    expect(intervalScheduleOf(null, CAPTURE, 1)).toEqual([]);
+  });
+
+  it('states page, window and Episode ranges apart, and says the Episode range is unknown without a census', () => {
+    const page = pageOfTimed([timedFrame('rgbd_a', 0, { [CAPTURE]: 100 }), timedFrame('rgbd_b', 1, { [CAPTURE]: 100.2 }), timedFrame('rgbd_c', 2, { [CAPTURE]: 100.5 })]);
+    const withCensus = recordedRangeOf(page, CAPTURE, censusPage());
+    expect([withCensus.pageFirst, withCensus.pageLast, withCensus.pageMin, withCensus.pageMax]).toEqual([100, 100.5, 100, 100.5]);
+    expect(withCensus.episodeFirst).toBe(426494.351568496);
+    expect(withCensus.episodeMax).toBe(426554.824271964);
+    expect(withCensus.windowFrom).toBeNull();
+    expect(withCensus.unit).toBe('s');
+    expect(withCensus.note).toContain('不是本页，也不是当前窗口');
+    const withoutCensus = recordedRangeOf(page, CAPTURE, null);
+    expect(withoutCensus.episodeFirst).toBeNull();
+    expect(withoutCensus.note).toContain('整段范围未知（不猜）');
+    const holes = recordedRangeOf(pageOfTimed([timedFrame('rgbd_a', 0, { [CAPTURE]: 100 }), timedFrame('rgbd_b', 1, {})]), CAPTURE, null);
+    expect(holes.pageIncomplete).toBe(true);
+    expect(holes.present).toBe(false);
+  });
+});
+
+describe('one page position, not one sample_id, addresses a frame', () => {
+  it('gives two rows that share a sample_id different keys, naming the anchor line', () => {
+    const twin = timedFrame('rgbd_same', 4, { [CAPTURE]: 1 });
+    const other = timedFrame('rgbd_same', 9, { [CAPTURE]: 2 });
+    const a = framePositionKey(EPISODE, RUN, 0, 0, twin);
+    const b = framePositionKey(EPISODE, RUN, 0, 1, other);
+    expect(a).not.toBe(b);
+    expect(a).toContain('line 4');
+    expect(b).toContain('line 9');
+    expect(framePositionKey(EPISODE, RUN, 5, 0, twin)).toContain('5+0');
+    expect(framePositionKey(EPISODE, null, 0, 0, null)).toBe(`${EPISODE}||none`);
   });
 });

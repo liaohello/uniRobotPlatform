@@ -25,7 +25,7 @@ as its own exact routes and forwards the new query parameter (no wildcard under 
 mesh bytes never come from the live scene asset route, that the pane never claims 3D replay, cross-stream
 sync or a total frame count, and that live polling never rewrites the frame DOM.
 """
-import argparse, asyncio, hashlib, json, re, struct, traceback, zlib
+import argparse, asyncio, hashlib, json, math, re, struct, traceback, zlib
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
@@ -90,6 +90,27 @@ async def attr(page, selector, name):
 
 async def attr_all(page, selector, name):
     return await page.locator(selector).evaluate_all(f'els=>els.map(e=>e.getAttribute("{name}"))')
+
+
+async def inspected(page):
+    """The model pane's own inspection JSON — the only place the camera and the loaded tree are reported."""
+    return json.loads(await attr(page, '[data-model-inspected]', 'data-model-inspected'))
+
+
+def text_number(value):
+    """Render a number the way the browser's String() does, so a DOM attribute and a direct API read compare."""
+    if value is None:
+        return 'null'
+    number = float(value)
+    if number == int(number) and abs(number) < 1e21:
+        return str(int(number))
+    return repr(number)
+
+
+def js_wait_ms(gap_seconds, speed=1):
+    """Mirror the reader-side wait the pane computes: Math.max(0, Math.round(gap * 1000 / speed)), with JS'
+    half-up rounding, from the raw recorded values rather than a median or a nominal rate."""
+    return str(max(0, math.floor(gap_seconds * 1000 / speed + 0.5)))
 
 
 async def count(page, selector):
@@ -319,6 +340,39 @@ def page_attrs(page):
         cursorSample:g('[data-frame-view] .history-cursor','data-cursor-selected-sample'),cursorSelection:g('[data-frame-view] .history-cursor','data-frame-cursor-selection'),
         cursorPending:g('[data-frame-view] .history-cursor','data-frame-cursor-pending'),
         cursorOrder:g('[data-frame-cursor-order]','data-frame-cursor-order'),lineIndexClock:g('[data-frame-line-index-clock]','data-frame-line-index-clock'),
+        cursorPosition:g('[data-frame-view] .history-cursor','data-frame-cursor-position'),
+        cursorKey:g('[data-frame-view] .history-cursor','data-cursor-position-key'),
+        cursorRecordedValue:g('[data-frame-view] .history-cursor','data-cursor-recorded-value'),
+        cursorRecordedBase:g('[data-frame-view] .history-cursor','data-cursor-recorded-base'),
+        playModeChip:g('[data-frame-play-mode]','data-frame-play-mode'),censusStatus:g('[data-time-quality-status]','data-time-quality-status'),
+        censusReads:g('[data-time-quality-reads]','data-time-quality-reads'),censusSession:g('[data-time-quality-session]','data-time-quality-session'),
+        planKind:g('[data-frame-plan-kind]','data-frame-plan-kind'),planPlanned:g('[data-frame-plan-planned-ms]','data-frame-plan-planned-ms'),
+        planActual:g('[data-frame-plan-actual-ms]','data-frame-plan-actual-ms'),planBuffer:g('[data-frame-plan-buffer-ms]','data-frame-plan-buffer-ms'),
+        planGap:g('[data-frame-plan-gap-s]','data-frame-plan-gap-s'),planCross:g('[data-frame-plan-cross]','data-frame-plan-cross'),
+        heldPending:g('[data-frame-held-pending]','data-frame-held-pending'),
+        intervalMode:g('[data-interval-pane]','data-interval-mode'),intervalBase:g('[data-interval-pane]','data-interval-base'),
+        intervalUnit:g('[data-interval-pane]','data-interval-unit'),intervalSpeed:g('[data-interval-pane]','data-interval-speed'),
+        intervalAllowed:g('[data-interval-pane]','data-interval-allowed'),intervalEligible:g('[data-interval-pane]','data-interval-eligible'),
+        intervalScanEligible:g('[data-interval-pane]','data-interval-scan-eligible'),intervalBlocking:g('[data-interval-pane]','data-interval-blocking'),
+        intervalPageFirst:g('[data-interval-pane]','data-interval-page-first'),intervalPageLast:g('[data-interval-pane]','data-interval-page-last'),
+        intervalPageMin:g('[data-interval-pane]','data-interval-page-min'),intervalPageMax:g('[data-interval-pane]','data-interval-page-max'),
+        intervalPageIncomplete:g('[data-interval-pane]','data-interval-page-incomplete'),
+        intervalEpisodeFirst:g('[data-interval-pane]','data-interval-episode-first'),intervalEpisodeLast:g('[data-interval-pane]','data-interval-episode-last'),
+        intervalEpisodeMin:g('[data-interval-pane]','data-interval-episode-min'),intervalEpisodeMax:g('[data-interval-pane]','data-interval-episode-max'),
+        intervalWindow:g('[data-interval-pane]','data-interval-window'),intervalDuplicates:g('[data-interval-pane]','data-interval-duplicates'),
+        intervalCurrentValue:g('[data-interval-pane]','data-interval-current-value'),intervalSteps:g('[data-interval-pane]','data-interval-steps'),
+        intervalNextPlanned:g('[data-interval-pane]','data-interval-next-planned-ms'),intervalMeaning:g('[data-interval-meaning]','data-interval-meaning'),
+        intervalScopes:g('[data-interval-scopes]','data-interval-scopes'),
+        intervalRowKinds:q('[data-interval-row]','data-interval-row-kind'),intervalRowGaps:q('[data-interval-row]','data-interval-row-gap'),
+        intervalRowWaits:q('[data-interval-row]','data-interval-row-wait'),intervalRowValues:q('[data-interval-row]','data-interval-row-values'),
+        intervalRowLines:q('[data-interval-row]','data-interval-row-lines'),
+        intervalHeld:g('[data-interval-held]','data-interval-held'),
+        intervalReasons:[...document.querySelectorAll('[data-interval-reason]')].map(e=>e.innerText),
+        intervalDisclosures:[...document.querySelectorAll('[data-interval-disclosure]')].map(e=>e.innerText),
+        intervalBaseOptions:[...document.querySelectorAll('[aria-label="记录间隔时间基"] option')].map(e=>e.value+'|'+e.textContent.trim()),
+        pickPositions:q('[data-frame-pick]','data-pick-position'),pickLines:q('[data-frame-pick]','data-pick-line'),
+        curvePickPositions:q('[data-curve-pick]','data-pick-position'),curveMarkerPositions:q('[data-curve-marker]','data-curve-marker-position'),
+        curveSelectedPosition:g('[data-frame-curve]','data-curve-selected-position'),modelAnchor:g('[data-model-pane]','data-model-anchor-ref'),
         curveRowLines:q('[data-curve-row]','data-curve-row-line'),curveRowPersist:q('[data-curve-row]','data-curve-row-persist'),
         stateDisplayed:g('[data-frame-state-pane]','data-frame-displayed-sample'),timeDisplayed:g('[data-frame-time-pane]','data-frame-displayed-sample'),
         playMode:g('[data-frame-play]','data-frame-play'),rateLabel:document.querySelector('[aria-label="播放节奏（每秒展示帧数，界面节奏）"]')?.selectedOptions[0]?.text??'',
@@ -1169,6 +1223,128 @@ async def real_flow(page):
                                   'tree_fetch_reads_during_playback': len(tree_fetch_reads(play_mark)),
                                   'pose_reads_during_playback': len(pose_reads)}
 
+    # ---- M4.0 真实归档：记录间隔模式在 18979 的 census 上排程（每个数字都与直读响应对照） ----
+    real_interval_mark = len(report['requests'])
+    await open_episode(page, a.complete_run, a.complete_episode)
+    await wait_model(page, 'ready')
+    flagged_before = len([r for r in report['requests'][:real_interval_mark] if 'include_time_quality' in r['url']])
+    census_read_mark = len(report['requests'])
+    await page.locator('[data-frame-read-census]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-time-quality-status]')?.getAttribute('data-time-quality-status') ?? '')==='ready'", 'real-census-ready')
+    real_census = await page_attrs(page)
+    direct_census = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/frames',
+                                      {'run_id': a.complete_run, 'limit': 5, 'include_time_quality': 'true'})
+    real_tq = direct_census['time_quality']
+    real_capture = real_tq['time_bases']['capture_backend_monotonic_s']
+    flagged_after = len([r for r in report['requests'][census_read_mark:] if 'include_time_quality' in r['url']])
+    check('真实归档：census 只按需读一次，普通帧页不带该参数，读到的是整个 Episode 的锚点扫描',
+          flagged_before == 0 and flagged_after == 1 and real_census['censusReads'] == '1'
+          and real_census['censusStatus'] == 'ready' and real_census['intervalAllowed'] == 'false' and real_census['intervalBase'] == 'none'
+          and 'anchors_in_this_scan=%d' % real_tq['coverage']['anchors_in_this_scan'] in ' '.join(real_census['intervalDisclosures'])
+          and 'the census covers the anchors this Episode exposes in file order' in ' '.join(real_census['intervalDisclosures'])
+          and real_census['intervalDuplicates'] == str(real_tq['identity']['duplicate_sample_id_groups']),
+          [real_census['censusReads'], real_tq['coverage']['anchors_in_this_scan'], real_census['intervalDuplicates']])
+
+    await page.locator('[aria-label="播放模式"]').select_option('recorded_interval')
+    # The comparison below is against a direct read of one page, so the pane must be showing exactly that page:
+    # five frames from offset 0, no window and no sample filter (this block opened the Episode fresh).
+    await page.locator('select[aria-label="帧分页大小"]').select_option('5')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-limit]')?.getAttribute('data-frame-limit') ?? '')==='5'")
+    await page.locator('[aria-label="记录间隔时间基"]').select_option('capture_backend_monotonic_s')
+    real_plans = await page_attrs(page)
+    raw_clocks = [frame['anchor']['clocks']['capture_backend_monotonic_s'] for frame in direct_census['frames']]
+    expected_waits = [js_wait_ms(b - a) for a, b in zip(raw_clocks, raw_clocks[1:])]
+    check('真实归档：界面写的整段范围逐值等于直读 census，且逐段等待就是相邻锚点真实差换算（不取中位数、不用名义帧率）',
+          real_plans['intervalAllowed'] == 'true' and real_plans['intervalEligible'] == 'true' and real_plans['intervalScanEligible'] == 'true'
+          and real_plans['intervalBlocking'] == '[]'
+          and real_plans['intervalEpisodeFirst'] == text_number(real_capture['first_in_file_order'])
+          and real_plans['intervalEpisodeLast'] == text_number(real_capture['last_in_file_order'])
+          and real_plans['intervalEpisodeMin'] == text_number(real_capture['min_recorded_value'])
+          and real_plans['intervalEpisodeMax'] == text_number(real_capture['max_recorded_value'])
+          and real_plans['intervalSteps'] == '4' and real_plans['intervalRowWaits'] == expected_waits
+          and real_plans['intervalRowGaps'] == [text_number(round(b - a, 6)) for a, b in zip(raw_clocks, raw_clocks[1:])],
+          [real_plans['intervalEpisodeFirst'], real_plans['intervalRowWaits'], expected_waits])
+    await page.locator('[aria-label="记录间隔倍速"]').select_option('2')
+    real_fast = await page_attrs(page)
+    check('真实数据上的 2× 就是把同一段真实差除以 2，且切换倍速不会自动开始播放',
+          real_fast['intervalRowWaits'][0] == js_wait_ms(raw_clocks[1] - raw_clocks[0], 2)
+          and real_fast['playMode'] == 'play' and real_fast['intervalSpeed'] == '2',
+          [real_fast['intervalRowWaits'][0], js_wait_ms(raw_clocks[1] - raw_clocks[0], 2), raw_clocks[1] - raw_clocks[0]])
+    await page.locator('[aria-label="记录间隔倍速"]').select_option('1')
+
+    # Cross-page on the real record: one frame per page, so every step's plan must be the gap between the
+    # last anchor of the previous page and the first of the next, taken through the reader's next_offset.
+    cross_pages = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/frames', {'run_id': a.complete_run, 'limit': 4, 'offset': 0})
+    cross_clocks = [frame['anchor']['clocks']['capture_backend_monotonic_s'] for frame in cross_pages['frames']]
+    await page.locator('select[aria-label="帧分页大小"]').select_option('1')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-limit]')?.getAttribute('data-frame-limit') ?? '')==='1'")
+    cross_walk_mark = len(report['requests'])
+    await page.locator('[data-model-inspect]').click()
+    camera_before = await inspected(page)
+    await page.locator('[data-frame-play]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-offset]')?.getAttribute('data-frame-offset') ?? '')==='2'", 'real-cross-page-to-offset-2', timeout=60000)
+    await page.locator('[data-frame-play]').click()
+    real_paused = await page_attrs(page)
+    await page.locator('[data-model-inspect]').click()
+    camera_after = await inspected(page)
+    cross_offsets = [parse_qs(urlsplit(r['url']).query).get('offset', ['?'])[0]
+                     for r in report['requests'][cross_walk_mark:] if urlsplit(r['url']).path.endswith('/frames')]
+    expected_cross_gap = round(cross_clocks[2] - cross_clocks[1], 6)
+    # How many pages the reader had already fetched ahead of the pause is not fixed — the walk is time-driven —
+    # but which offsets it asked for is: only the reader's own next_offset chain, one page at a time, never a
+    # skipped or invented page. That is the claim, so that is what is asserted.
+    check('真实记录间隔播放跨页推进：按 next_offset 预读、用上一页末帧与下一页首帧的真实差呈现，暂停后游标立刻冻结',
+          real_paused['offset'] == '2' and real_paused['cursorPosition'] == '0'
+          and {'1', '2'} <= set(cross_offsets) and set(cross_offsets) <= {'1', '2', '3'}
+          and real_paused['planCross'] == 'true' and real_paused['planGap'] == text_number(expected_cross_gap)
+          and real_paused['planPlanned'] == js_wait_ms(cross_clocks[2] - cross_clocks[1])
+          and int(real_paused['planActual']) >= int(real_paused['planPlanned'])
+          and len(tree_fetch_reads(cross_walk_mark)) == 0 and live_scene_reads(real_interval_mark) == [],
+          [real_paused['offset'], cross_offsets, real_paused['planGap'], real_paused['planPlanned'], real_paused['planActual']])
+    paused_index_before = real_paused['index']
+    pose_before_pause = len([r for r in report['requests'] if '/robot-state' in r['url']])
+    await page.wait_for_timeout(1400)
+    paused_after = await page_attrs(page)
+    pose_after_pause = len([r for r in report['requests'] if '/robot-state' in r['url']])
+    check('真实路径的暂停就是冻结：观察窗内游标不动、姿态不再被读取（暂停期间的记录时间不累计）',
+          paused_after['index'] == paused_index_before and paused_after['playMode'] == 'play' and pose_after_pause == pose_before_pause,
+          [paused_after['index'], pose_before_pause, pose_after_pause])
+    keep_camera = all(abs(camera_after['camera'][key] - camera_before['camera'][key]) < 1e-6 for key in ('distance', 'azimuthDeg', 'polarDeg'))
+    check('真实记录间隔播放同样不重建视口：三步跨页之后视角三值不变、树仍是一次性读取',
+          keep_camera and camera_after['links'] == 71 and camera_after['pendingLoads'] == 0 and camera_after['assetFailures'] == [],
+          [camera_before['camera'], camera_after['camera']])
+    report['real']['recorded_interval'] = {
+        'census_reads': real_census['censusReads'], 'flagged_reads_before': flagged_before, 'flagged_reads_after': flagged_after,
+        'coverage_anchors': real_tq['coverage']['anchors_in_this_scan'], 'duplicate_groups': real_tq['identity']['duplicate_sample_id_groups'],
+        'episode_first': real_capture['first_in_file_order'], 'episode_last': real_capture['last_in_file_order'],
+        'recorded_gaps_s': real_plans['intervalRowGaps'], 'planned_waits_ms': real_plans['intervalRowWaits'], 'fast_two_x_first_wait_ms': real_fast['intervalRowWaits'][0],
+        'cross_page_reads': cross_offsets, 'cross_page_gap_s': expected_cross_gap,
+        'last_plan': [real_paused['planKind'], real_paused['planPlanned'], real_paused['planActual'], real_paused['planBuffer']],
+        'tree_fetches_during_crossing': len(tree_fetch_reads(cross_walk_mark)), 'live_scene_reads': live_scene_reads(real_interval_mark),
+        'camera_kept': keep_camera}
+    await page.screenshot(path=str(a.output / 'real-recorded-interval.png'), full_page=False)
+
+    # The same cold-start rule on the real record: a reload is a new playback session, so the census that was
+    # read there is gone and the recorded-interval mode is gated again until it is read once on demand.
+    await page.reload(wait_until='domcontentloaded')
+    await open_history(page)
+    await open_episode(page, a.complete_run, a.complete_episode)
+    await wait_model(page, 'ready')
+    real_cold = await page_attrs(page)
+    await page.locator('[aria-label="播放模式"]').select_option('recorded_interval')
+    await page.locator('[data-frame-play]').click()
+    await page.wait_for_timeout(500)
+    real_cold_play = await page_attrs(page)
+    check('真实归档的冷启动也是新会话：重载后 census 归零、记录间隔模式禁用，没有 census 就按下播放只得到拒绝（上一会话的资格不残留）',
+          real_cold['censusStatus'] == 'idle' and real_cold['censusReads'] == '0' and real_cold['intervalAllowed'] == 'false'
+          and real_cold['intervalBase'] == 'none'
+          and real_cold_play['playMode'] == 'play' and real_cold_play['censusReads'] == '0'
+          and any('还没有读到 census' in reason for reason in real_cold_play['intervalReasons']),
+          [real_cold['censusStatus'], real_cold['censusReads'], real_cold_play['playMode'], real_cold_play['intervalReasons'][:1]])
+    report['real']['recorded_interval_cold_start'] = {'status': real_cold['censusStatus'], 'reads': real_cold['censusReads'],
+                                                      'allowed': real_cold['intervalAllowed'],
+                                                      'refusal_after_play': real_cold_play['intervalReasons'][:1]}
+
 
 # ---- synthetic ---------------------------------------------------------------------------------------
 
@@ -1683,7 +1859,8 @@ SYNTH_EPISODES = ['episode_ok', 'episode_no_frames', 'episode_bad_frame_schema',
                   'episode_pose_missing', 'episode_pose_bad_schema', 'episode_pose_late', 'episode_asset_conflict',
                   'episode_no_part_readiness', 'episode_zero_angles', 'episode_no_world_pose_convention',
                   'episode_tree_identity', 'episode_link_order_swap', 'episode_pose_order_swap', 'episode_no_sim_keys',
-                  'episode_tree_refused', 'episode_content_move', 'episode_live_tree', 'episode_play']
+                  'episode_tree_refused', 'episode_content_move', 'episode_live_tree', 'episode_play',
+                  'episode_interval', 'episode_interval_truncated', 'episode_interval_badrows', 'episode_interval_dup']
 # The tree the reader answers with, kept separate from the identity the record's outer fields declare: that
 # is what lets one case prove the binding catches a foreign tree rather than a missing key.
 SCENE = {'content_identity': CONTENT_ID, 'outer_content_identity': CONTENT_ID, 'arm_order': None, 'mode': 'ok'}
@@ -1752,6 +1929,175 @@ def state_ambiguous_frame(sample='rgbd_state_ambiguous'):
                       'multiple_candidates_note': 'two events carried this control_tick_id; the first line in the file is not chosen'}}
 
 
+def base_census(rows, base, clock, description):
+    """One `time_bases` row, computed from this fixture's own anchor clocks the way the reader computes it
+    from the anchor file: counts, file order, min/max and the adjacent-gap census."""
+    values = [row['anchor']['clocks'].get(base) for row in rows]
+    numeric = [value for value in values if isinstance(value, (int, float))]
+    gaps = [round(b - a, 6) for a, b in zip(numeric, numeric[1:])]
+    ties = [index for index, gap in enumerate(gaps) if gap == 0]
+    backwards = [{'from_line_index': rows[index]['anchor']['line_index'], 'to_line_index': rows[index + 1]['anchor']['line_index'], 'delta_s': gap}
+                 for index, gap in enumerate(gaps) if gap < 0]
+    return {'field': base, 'unit': 's', 'clock': clock, 'source_record': 'persisted frame anchor in observations/persist.jsonl',
+            'anchors_scanned': len(rows), 'numeric_count': len(numeric),
+            'missing_count': len(rows) - len(numeric), 'missing_line_indexes': [row['anchor']['line_index'] for row in rows if row['anchor']['clocks'].get(base) is None],
+            'missing_line_indexes_truncated': False,
+            'non_numeric_count': sum(1 for value in values if value is not None and not isinstance(value, (int, float))),
+            'non_numeric_samples': [], 'non_numeric_samples_truncated': False,
+            'first_in_file_order': values[0] if values else None, 'last_in_file_order': values[-1] if values else None,
+            'first_line_index': rows[0]['anchor']['line_index'] if rows else None, 'last_line_index': rows[-1]['anchor']['line_index'] if rows else None,
+            'min_recorded_value': min(numeric) if numeric else None, 'max_recorded_value': max(numeric) if numeric else None,
+            'first_minus_last_s': (values[0] - values[-1]) if values else None,
+            'recorded_gaps': {'count': len(gaps), 'min_s': min(gaps) if gaps else None, 'max_s': max(gaps) if gaps else None,
+                              'median_s': sorted(gaps)[len(gaps) // 2] if gaps else None,
+                              'mean_s': (sum(gaps) / len(gaps)) if gaps else None, 'total_s': sum(gaps) if gaps else None},
+            'equal_adjacent_gaps': {'count': len(ties), 'line_index_pairs': [[rows[i]['anchor']['line_index'], rows[i + 1]['anchor']['line_index']] for i in ties], 'line_index_pairs_truncated': False},
+            'backwards_gaps': {'count': len(backwards), 'steps': backwards, 'steps_truncated': False},
+            'monotonic_non_decreasing_in_file_order': not backwards, 'file_order_matches_value_order': not backwards,
+            'description': description}
+
+
+def interval_eligibility(**patch):
+    value = {'eligible_for_whole_episode': True, 'eligible_within_this_scan': True, 'blocking_reasons': [], 'zero_interval_ties_present': False,
+             'implied_rate_hz_from_median_recorded_gap': 5.0,
+             'implied_rate_note': 'derived from the recorded values of this scan; it is not a rate the recorder declared and it is not a playback guarantee'}
+    value.update(patch)
+    return value
+
+
+def census_fixture(episode, query, rows, coverage_over=None, eligibility_over=None, eligibility_base_over=None, identity_over=None, anchor_lines_over=None):
+    """The M1.5g census as 18979 answers it for this fixture: whole-file scope regardless of the page's own
+    filters, per-base eligibility, duplicate identity and the reader's refusal rules."""
+    base_rows = {'capture_backend_monotonic_s': base_census(rows, 'capture_backend_monotonic_s', 'backend_monotonic', 'seconds, native backend monotonic clock at capture'),
+                 'capture_sim_time_s': base_census(rows, 'capture_sim_time_s', 'sim', 'seconds, simulator time at capture'),
+                 'persist_backend_monotonic_s': base_census(rows, 'persist_backend_monotonic_s', 'backend_monotonic', 'seconds, native backend monotonic clock at persist')}
+    eligible = {}
+    for name in base_rows:
+        one = interval_eligibility(zero_interval_ties_present=base_rows[name]['equal_adjacent_gaps']['count'] > 0)
+        one.update(eligibility_over or {})
+        one.update((eligibility_base_over or {}).get(name, {}))
+        eligible[name] = one
+    ids = [row['sample_id'] for row in rows]
+    duplicates = {sample: [row['anchor']['line_index'] for row in rows if row['sample_id'] == sample] for sample in set(ids) if ids.count(sample) > 1}
+    anchor_lines = {'lines_read': len(rows), 'blank_lines_skipped': 0, 'oversize_lines_skipped': 0, 'unparseable_lines_skipped': 0,
+                    'non_object_lines_skipped': 0, 'prefiltered_lines_skipped': 0}
+    anchor_lines.update(anchor_lines_over or {})
+    coverage = {'run_id': 'run_a', 'episode_id': episode, 'stream_id': 'rgbd', 'anchor_relative_path': 'observations/persist.jsonl',
+                'anchors_in_this_scan': len(rows), 'unique_sample_ids': len(set(ids)),
+                'rejected_anchors': {'excluded_identity_mismatch': 0, 'excluded_stream_mismatch': 0, 'excluded_without_sample_id': 0},
+                'anchor_lines': anchor_lines,
+                'first_anchor_line_index': rows[0]['anchor']['line_index'] if rows else None,
+                'last_anchor_line_index': rows[-1]['anchor']['line_index'] if rows else None,
+                'whole_anchor_file_scanned': True, 'anchor_limit': 4000, 'stopped_at_line_index': None,
+                'covers_whole_episode': True, 'not_a_whole_archive_sweep': True,
+                'scope_note': 'this census re-reads one Episode’s anchor file; a truncated scan or a windowed page supports no whole-episode or whole-archive claim',
+                'page_filter_context': {'time_base': (query.get('time_base') or [None])[0],
+                                        'time_from': float(query['time_from'][0]) if query.get('time_from') else None,
+                                        'time_to': float(query['time_to'][0]) if query.get('time_to') else None,
+                                        'sample_id': (query.get('sample_id') or [None])[0],
+                                        'offset': int((query.get('offset') or ['0'])[0]), 'limit': int((query.get('limit') or ['5'])[0]),
+                                        'returned': len(rows),
+                                        'note': 'the census covers the anchors this Episode exposes in file order, not only the rows of this page'}}
+    coverage.update(coverage_over or {})
+    identity = {'duplicate_sample_id_groups': len(duplicates),
+                'duplicates': [{'sample_id': sample, 'occurrences': len(lines), 'line_indexes': lines,
+                                'record_positions': [f'observations/persist.jsonl#{line}' for line in lines]} for sample, lines in duplicates.items()],
+                'duplicates_truncated': False, 'every_anchor_position_is_reported': True,
+                'effect_on_this_route': 'a duplicated id makes `sample_id=` address more than one anchor, so the page cannot name one position for it',
+                'effect_on_robot_state': 'GET /api/v1/episodes/{episode_id}/robot-state?sample_id= refuses with frame_sample_id_ambiguous instead of taking the first match'}
+    identity.update(identity_over or {})
+    return {'requested': True, 'coverage': coverage, 'time_bases': base_rows, 'identity': identity,
+             'recorder_counters': {'persist_sequence_backwards_steps_in_file_order': 0, 'persist_sequence_is_the_recorders_own_counter': True, 'line_index_is_not_a_clock': True},
+             'profile': {'profile_ids_seen': ['fixture-interval-profile'], 'anchor_fields_declaring_a_numeric_rate': [],
+                         'note': 'the anchors carry a profile identifier, not a declared numeric rate; no rate is inferred from the profile name'},
+             'playback_eligibility': {'modes': {'append_order_display': "A: show anchors in the recorder's own append order of the anchor file",
+                                                'recorded_interval_schedule': 'B: schedule a step by the recorded gap on one named capture base',
+                                                'cross_stream_synchronized': 'C: play several streams against one verified shared instant'},
+                                      'append_order_display': {'mode': 'A', 'eligible': True, 'basis': 'fixture: the anchor file is read in append order',
+                                                              'does_not_require': ['a numeric capture time base', 'clock sameness', 'unique sample ids'],
+                                                              'anchor_position_never_reordered_by_time': True},
+                                      'recorded_interval_schedule': {'mode': 'B', 'eligible_by_base': eligible,
+                                                                     'any_base_eligible_for_whole_episode': True,
+                                                                     'rules_when_unqualified': {'missing_or_non_numeric_time': 'the base is refused for scheduling; the frame stays visible in append order and no value is filled from another record',
+                                                                                                'equal_adjacent_values': 'ties are shown as ties; they are not interpolated and a rate is not computed by dividing by zero',
+                                                                                                'backwards_step': 'the base is refused for scheduling over that range, because one continuous clock across the step is not established by the record',
+                                                                                                'clock_unknown': 'a base that only names a clock is not evidence of a shared clock source'},
+                                                                     'never_assumed': {'default_rate_hz_applied': False, 'browser_arrival_time_used': False, 'clock_stitched_across_reset': False,
+                                                                                       'why': 'no record establishes a nominal rate, a host clock relationship across segments, or a RESET boundary on these anchors'}},
+                                      'cross_stream_synchronized': {'mode': 'C', 'eligible': False,
+                                                                    'reason': 'the records name shared clock bases but nothing lets this reader verify one shared clock source or one sampled instant across streams',
+                                                                    'not_derivable_from': ['A', 'B'],
+                                                                    'same_page_evidence': {'same_clock_verified': False, 'synchronized_across_streams': False}}},
+             'not_proven': ['a declared sampling rate', 'clock sameness across streams', 'a sampled-instant match', 'coverage beyond the anchors scanned here', 'RESET or segment boundaries on anchors']}
+
+
+def interval_frame(position, clocks, sample=None):
+    frame = frame_payload(sample or ('rgbd_i%d' % position))
+    return {**frame, 'anchor': {**frame['anchor'], 'line_index': position, 'persist_sequence': position + 1,
+                                'clocks': {**frame['anchor']['clocks'], **clocks}}}
+
+
+def interval_dup_frame(line, sample, capture=None):
+    """Two anchors, one sample_id: the reader lists both positions and refuses to pick, and robot-state
+    answers 409 rather than attaching a pose to whichever line was read first."""
+    frame = interval_frame(line, {'capture_backend_monotonic_s': capture if capture is not None else 100.0 + line,
+                                  'capture_sim_time_s': 1.0 + line, 'persist_backend_monotonic_s': 100.0 + line}, sample=sample)
+    return {**frame, 'anchor': {**frame['anchor'], 'identity': {**frame['anchor']['identity'], 'episode_id_matches': True}}}
+
+
+INTERVAL_EPISODES = ('episode_interval', 'episode_interval_truncated', 'episode_interval_badrows', 'episode_interval_dup')
+
+
+def interval_rows_for(episode):
+    """A controlled clock, and the only place these fixtures decide timing: capture steps 0.2 s, then a tie
+    (0.0 s), then 0.7 s; sim steps a steady 0.5 s; persist steps backwards once, which is exactly why the
+    reader's own census marks persist unqualified for scheduling."""
+    if episode == 'episode_interval_dup':
+        # Three anchors, two of them sharing one sample_id and the first one unambiguous: a row with a real pose
+        # has to precede the 409, so "the refused frame keeps no pose" is an assertion rather than an emptiness
+        # that would also be true when nothing was ever displayed.
+        return [interval_dup_frame(2, 'rgbd_solo', 100.0), interval_dup_frame(4, 'rgbd_dup', 100.2), interval_dup_frame(9, 'rgbd_dup', 100.4)]
+    return [interval_frame(0, {'capture_backend_monotonic_s': 100.0, 'capture_sim_time_s': 1.0, 'persist_backend_monotonic_s': 100.05}),
+            interval_frame(1, {'capture_backend_monotonic_s': 100.2, 'capture_sim_time_s': 1.5, 'persist_backend_monotonic_s': 100.1}),
+            interval_frame(2, {'capture_backend_monotonic_s': 100.2, 'capture_sim_time_s': 2.0, 'persist_backend_monotonic_s': 100.09}),
+            interval_frame(3, {'capture_backend_monotonic_s': 100.9, 'capture_sim_time_s': 2.5, 'persist_backend_monotonic_s': 101.0})]
+
+
+def interval_census_over(episode):
+    """Each variant changes only what the census itself declares, so an acceptance or a refusal is always
+    traceable to a reader field rather than to a fixture-side UI hint."""
+    if episode == 'episode_interval_truncated':
+        return {'coverage_over': {'whole_anchor_file_scanned': False, 'covers_whole_episode': False, 'stopped_at_line_index': 3999,
+                                  'anchor_limit': 4000, 'anchors_in_this_scan': 4000,
+                                  'scope_note': 'this census stopped at the anchor limit; it supports no whole-episode or whole-archive claim'}}
+    if episode == 'episode_interval_badrows':
+        return {'anchor_lines_over': {'lines_read': 6, 'unparseable_lines_skipped': 2}}
+    return {}
+
+
+def paged_interval_rows(rows, query):
+    # A named time window really filters rows here, the way the reader does: the window narrows the page, and
+    # the census above it keeps describing the whole Episode's anchor scan.
+    base = (query.get('time_base') or [''])[0]
+    lower = (query.get('time_from') or [''])[0]
+    upper = (query.get('time_to') or [''])[0]
+    if base:
+        def inside(frame):
+            value = frame['anchor']['clocks'].get(base)
+            if not isinstance(value, (int, float)):
+                return False
+            return (not lower or value >= float(lower)) and (not upper or value <= float(upper))
+        rows = [frame for frame in rows if inside(frame)]
+    offset = int((query.get('offset') or ['0'])[0])
+    size = int((query.get('limit') or ['5'])[0])
+    window = rows[offset:offset + size]
+    more = offset + size < len(rows)
+    return window, paging_fixture(window, limit=size, offset=offset, returned=len(window), has_more=more,
+                                  next_offset=offset + size if more else None,
+                                  next_qualifying_anchor_line_index=offset + size if more else None,
+                                  skipped_before_offset=offset)
+
+
 async def synthetic_handler(route):
     request = route.request
     path = urlsplit(request.url).path
@@ -1773,6 +2119,17 @@ async def synthetic_handler(route):
             SLOW['pose'] = 'pending'
             await asyncio.sleep(2.4)
             SLOW['pose'] = 'done'
+        if episode == 'episode_interval_dup' and (query.get('sample_id') or [''])[0] == 'rgbd_dup':
+            # The reader will not attach this pose to whichever anchor line happened to be read first: it
+            # names both positions and answers 409, the same body shape the 18979 candidate builds. The episode's
+            # other row keeps its own unique id and is served normally, so a displayed pose really precedes this.
+            await route.fulfill(status=409, content_type='application/json', body=json.dumps({'detail': {
+                'code': 'frame_sample_id_ambiguous',
+                'message': 'more than one persisted anchor records this sample_id, so no single frame can be selected by it',
+                'read_only': True, 'episode_id': episode, 'run_id': 'run_a', 'sample_id': (query.get('sample_id') or [''])[0],
+                'first_matching_anchor_line_index': 4, 'next_matching_anchor_line_index': 9,
+                'no_first_match_was_assumed': True, 'state_is_not_taken_from_either_candidate': True,
+                'how_to_inspect': 'GET /api/v1/episodes/{episode_id}/frames?include_time_quality=true lists every duplicate anchor position for this Episode'}})); return
         sample = (query.get('sample_id') or [''])[0]
         ASK['tree'] = (query.get('include_model_tree') or ['false'])[0] == 'true'
         if episode == 'episode_tree_refused':
@@ -1903,6 +2260,27 @@ async def synthetic_handler(route):
                                      paging=paging_fixture([1, 2], returned=2, next_offset=None, next_qualifying_anchor_line_index=None, has_more=False))
             payload['summary'] = {**payload['summary'], 'frames_returned': 2, 'frames_with_all_primary_roles_matched': 1, 'frames_with_ambiguous_primary_role': 1}
             await route.fulfill(json=payload); return
+        if episode in INTERVAL_EPISODES:
+            # The interval fixture answers with the census only when the page was asked for it, exactly as
+            # 18979 does, and it pages by the reader's own offset/limit so crossing is a real next_offset.
+            rows = interval_rows_for(episode)
+            window, paging = paged_interval_rows(rows, query)
+            payload = frames_payload(episode, window, paging=paging)
+            # Echo the window back the way 18979 does: the interface reads its displayed window from the response,
+            # so a filtered page that never names its own bounds would test nothing.
+            asked_base = (query.get('time_base') or [''])[0]
+            if asked_base:
+                payload['time'] = {**payload['time'], 'selected_time_base': asked_base,
+                                   'time_from': float(query['time_from'][0]) if query.get('time_from') else None,
+                                   'time_to': float(query['time_to'][0]) if query.get('time_to') else None}
+            if (query.get('include_time_quality') or [''])[0] == 'true':
+                payload['time_quality'] = census_fixture(
+                    episode, query, rows,
+                    eligibility_base_over={'persist_backend_monotonic_s': {
+                        'eligible_for_whole_episode': False, 'zero_interval_ties_present': False,
+                        'blocking_reasons': ['backwards_step: 100.1 -> 100.09 in the anchor file order']}},
+                    **interval_census_over(episode))
+            await route.fulfill(json=payload); return
         if episode == 'episode_play':
             # Six frames, paged by the reader's own offset/limit, and a named-clock window really filters the
             # rows out; a playing cursor must cross a page boundary the same way it steps: via next_offset.
@@ -1950,6 +2328,10 @@ async def synthetic_handler(route):
                 SLOW['asset'] = 'pending'
                 await asyncio.sleep(1.4)
                 SLOW['asset'] = 'done'
+            if episode in INTERVAL_EPISODES:
+                # Every recorded gap in the interval fixture is ≤ 0.7 s, so a 0.9 s asset read is always
+                # slower than the schedule: the pane must freeze on the current frame instead of skipping.
+                await asyncio.sleep(0.9)
             if 'bad_digest_rgb.png' in path:
                 await route.fulfill(status=409, content_type='application/json', body=json.dumps({'detail': {'code': 'episode_asset_digest_mismatch',
                                                                                                               'message': 'asset digest does not match the requested sha256',
@@ -2629,6 +3011,312 @@ async def synthetic_flow(page):
                                        'rate_ms': paused_synth['rateMs'], 'rate_label': paused_synth['rateLabel']}
     await page.screenshot(path=str(a.output / 'synthetic-playback-curve.png'), full_page=False)
 
+    # ---- M4.0 合成夹具：记录间隔播放（可控时钟）、census 门控与重复 sample_id ----
+    # The fixture keeps refusing /api/v1/mobilecar/** for all of this, so the history face schedules, buffers
+    # and refuses on its own reads. Every planned wait here is derived from the fixture's own recorded values
+    # (0.2 s, a 0.0 s tie, 0.7 s on capture; a steady 0.5 s on sim; persist steps backwards once), never from a
+    # nominal rate — and each asset read is delayed 0.9 s, longer than any gap, so buffering is guaranteed
+    # rather than hoped for.
+    interval_mark = len(report['requests'])
+    await open_episode(page, 'run_a', 'episode_interval')
+    await wait_model(page, 'ready')
+    normal_pages = len(report['requests'])
+    pre_census_flagged = len([r for r in report['requests'][:normal_pages] if 'include_time_quality' in r['url']])
+    await page.locator('[data-frame-read-census]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-time-quality-status]')?.getAttribute('data-time-quality-status') ?? '')==='ready'", 'census-ready')
+    census_once = await page_attrs(page)
+    census_reads_seen = len([r for r in report['requests'][normal_pages:] if 'include_time_quality' in r['url']])
+    check('census 按需只读一次：普通帧页不带 include_time_quality，读到的资格描述整个 Episode 的锚点扫描而不是本页',
+          census_once['censusStatus'] == 'ready' and census_once['censusReads'] == '1' and pre_census_flagged == 0 and census_reads_seen == 1
+          and census_once['intervalAllowed'] == 'false' and census_once['intervalBase'] == 'none'
+          and 'anchors_in_this_scan=4' in ' '.join(census_once['intervalDisclosures'])
+          and 'the census covers the anchors this Episode exposes in file order' in ' '.join(census_once['intervalDisclosures']),
+          [census_once['censusReads'], pre_census_flagged, census_reads_seen])
+
+    await page.locator('[aria-label="播放模式"]').select_option('recorded_interval')
+    modes_selected = await page_attrs(page)
+    base_labels = '|'.join(modes_selected['intervalBaseOptions'])
+    check('记录间隔模式列出三个钟并逐个给出 reader 自己的判定：capture/sim 整集合格，persist 因回退不合格，界面不代挑基也不静默换模式',
+          modes_selected['playModeChip'] == 'recorded_interval' and '未选择（不代你挑基）' in base_labels
+          and 'capture_backend_monotonic_s（整集合格）· backend_monotonic' in base_labels
+          and 'capture_sim_time_s（整集合格）· sim' in base_labels
+          and 'persist_backend_monotonic_s（不合格：见下方原因）· backend_monotonic' in base_labels
+          and modes_selected['intervalAllowed'] == 'false' and modes_selected['playMode'] == 'play',
+          base_labels[:300])
+
+    await page.locator('[aria-label="记录间隔时间基"]').select_option('capture_backend_monotonic_s')
+    plans_ready = await page_attrs(page)
+    check('选定合格基后计划表用相邻锚点的真实差值：0.2s/并列 0s/0.7s → 200/0/700 ms，等值段不除零、不插值',
+          plans_ready['intervalAllowed'] == 'true' and plans_ready['intervalSteps'] == '3'
+          and plans_ready['intervalRowKinds'] == ['interval', 'tie', 'interval']
+          and plans_ready['intervalRowGaps'] == ['0.2', '0', '0.7']
+          and plans_ready['intervalRowWaits'] == ['200', '0', '700']
+          and plans_ready['intervalRowLines'] == ['0→1', '1→2', '2→3']
+          and plans_ready['intervalRowValues'] == ['100→100.2', '100.2→100.2', '100.2→100.9']
+          and plans_ready['intervalNextPlanned'] == '200' and plans_ready['intervalUnit'] == 's',
+          [plans_ready['intervalRowGaps'], plans_ready['intervalRowWaits'], plans_ready['intervalNextPlanned']])
+    check('capture／sim／persist 三个钟的含义分别写明，按 persist 排的不称为机器人运动原速，且不使用 profile 名或中位数排程',
+          '不称为机器人运动原速' in plans_ready['intervalMeaning'] and 'fixture-interval-profile' in plans_ready['intervalMeaning']
+          and '不是本页，也不是当前窗口' in plans_ready['intervalScopes'], plans_ready['intervalMeaning'][:260])
+
+    #倍速：同一个真实差值在 0.5×/2× 下的计划等待分别是 400/100 ms——这是界面自己的算术核对，不需要真播放。
+    await page.locator('[aria-label="记录间隔倍速"]').select_option('2')
+    fast = await page_attrs(page)
+    await page.locator('[aria-label="记录间隔倍速"]').select_option('0.5')
+    slow_speed = await page_attrs(page)
+    await page.locator('[aria-label="记录间隔倍速"]').select_option('1')
+    back_to_one = await page_attrs(page)
+    check('倍速只除以真实记录差：2× 时首段 100 ms，0.5× 时 400 ms，回到 1× 又回到 200 ms（切换倍速不自动续播）',
+          fast['intervalNextPlanned'] == '100' and slow_speed['intervalNextPlanned'] == '400'
+          and back_to_one['intervalNextPlanned'] == '200' and back_to_one['playMode'] == 'play'
+          and fast['intervalSpeed'] == '2' and slow_speed['intervalSpeed'] == '0.5',
+          [fast['intervalNextPlanned'], slow_speed['intervalNextPlanned'], back_to_one['intervalNextPlanned']])
+
+    #换一个钟就是换一段真实间隔：sim 每段 0.5 s，与 capture 的 0.2/0/0.7 不同，界面按所选基重算。
+    await page.locator('[aria-label="记录间隔时间基"]').select_option('capture_sim_time_s')
+    sim_base = await page_attrs(page)
+    check('换时间基就换一套真实间隔：sim 的三段都是 500 ms，且换基后旧的这一段作废（不自动续播）',
+          sim_base['intervalRowGaps'] == ['0.5', '0.5', '0.5'] and sim_base['intervalRowWaits'] == ['500', '500', '500']
+          and sim_base['intervalBase'] == 'capture_sim_time_s' and sim_base['playMode'] == 'play', sim_base['intervalRowWaits'])
+    await page.locator('[aria-label="记录间隔时间基"]').select_option('persist_backend_monotonic_s')
+    refused_base = await page_attrs(page)
+    await page.locator('[data-frame-play]').click()
+    refused_after_click = await page_attrs(page)
+    check('persist 基被 reader 自己判不合格：界面禁用排程并给出该情形的规则，播放没有开始，模式也没有被静默换掉',
+          refused_base['intervalAllowed'] == 'false' and any('backwards_step' in reason for reason in refused_base['intervalReasons'])
+          and any('one continuous clock across the step' in reason for reason in refused_base['intervalReasons'])
+          and refused_after_click['playMode'] == 'play' and refused_after_click['playModeChip'] == 'recorded_interval'
+          and '不能开始记录间隔播放' in (refused_after_click['notice'] or ''), [refused_base['intervalReasons'][:1], refused_after_click['notice']])
+    await page.locator('[aria-label="记录间隔时间基"]').select_option('capture_backend_monotonic_s')
+
+    # Play it for real: 1×, one page of four frames, every asset slower than the schedule.
+    walk_mark = len(report['requests'])
+    await page.locator('[data-frame-play]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-play]')?.getAttribute('data-frame-play') ?? '')==='play' && /记录间隔播放在此停止/.test(document.querySelector('[data-frame-notice]')?.innerText ?? '')",
+                    'interval-walk-end', timeout=60000)
+    walked = await page_attrs(page)
+    interval_reads = len([r for r in report['requests'][walk_mark:] if urlsplit(r['url']).path.endswith('/frames')])
+    check('记录间隔播放按真实间隔走完本页并自己停：游标落在最后一帧，计划/实际/缓冲三项分开报告，慢数据只冻结进度不跳帧',
+          walked['cursorPosition'] == '3' and walked['index'] == '3' and walked['playMode'] == 'play'
+          and walked['planKind'] == 'buffering' and walked['planPlanned'] == '700' and walked['planGap'] == '0.7'
+          and walked['planCross'] == 'false' and walked['planBuffer'] not in ('null', 'none', '') and int(walked['planActual']) >= 700
+          and walked['offset'] == '0' and interval_reads == 0
+          and walked['cursorSample'] == walked['currentSample'] == walked['assetSample'] == walked['curveSelected'] == 'rgbd_i3'
+          and walked['modelRequested'] == 'rgbd_i3' and walked['stateDisplayed'] == 'rgbd_i3'
+          and live_scene_reads(interval_mark) == [],
+          [walked['planKind'], walked['planPlanned'], walked['planActual'], walked['planBuffer'], interval_reads])
+    report['synthetic'].setdefault('interval_walk', {})['extra_frame_reads'] = interval_reads
+
+    # Pause freezes the schedule; resuming arms the full planned wait again from the current frame, so the
+    # time spent paused never counts as record progress.
+    await page.locator('[data-frame-pick][data-pick-position="1"]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-view] .history-cursor')?.getAttribute('data-frame-cursor-position') ?? '')==='1'", 'seek-to-1')
+    await wait_asset_settled(page)
+    await page.locator('[data-frame-play]').click()
+    await page.locator('[data-frame-play]').click()
+    paused_at = await page_attrs(page)
+    await page.wait_for_timeout(1500)
+    still_paused = await page_attrs(page)
+    pause_reads = len([r for r in report['requests'] if '/robot-state' in r['url']])
+    await page.wait_for_timeout(400)
+    after_quiet = len([r for r in report['requests'] if '/robot-state' in r['url']])
+    check('暂停就是冻结调度：观察窗内游标不动、姿态不再被读取，暂停期间的记录时间不会被累计进下一步等待',
+          paused_at['playMode'] == 'play' and still_paused['playMode'] == 'play'
+          and still_paused['index'] == paused_at['index'] and after_quiet == pause_reads,
+          [paused_at['index'], still_paused['index'], pause_reads, after_quiet])
+
+    # A time window is a new scheduling context: the windowed page replaces the old one, whatever was armed for
+    # the old page is dropped, and the census above the pane still describes the whole Episode's anchor scan.
+    await page.locator('[aria-label="帧时间基"]').select_option('capture_backend_monotonic_s')
+    await page.locator('[aria-label="时间窗口起点"]').fill('100.2')
+    await page.locator('[aria-label="时间窗口终点"]').fill('100.9')
+    await page.locator('[data-frame-window-apply]').click()
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='3'")
+    windowed = await page_attrs(page)
+    await page.wait_for_timeout(900)
+    after_window = await page_attrs(page)
+    check('换时间窗口就是换调度上下文：窗口外的帧不再被呈现、旧预读作废，而 census 的整段范围仍是整个 Episode 而不是窗口',
+          windowed['returned'] == '3' and windowed['heldPending'] == 'false' and windowed['playMode'] == 'play'
+          and windowed['rowSamples'] == ['rgbd_i1', 'rgbd_i2', 'rgbd_i3']
+          and after_window['cursorSample'] in ('rgbd_i1', 'rgbd_i2', 'rgbd_i3')
+          and windowed['intervalWindow'] == '100.2–100.9'
+          and windowed['intervalEpisodeFirst'] == '100' and windowed['intervalEpisodeLast'] == '100.9'
+          and 'rgbd_i0' not in windowed['rowSamples'],
+          [windowed['returned'], windowed['rowSamples'], windowed['intervalWindow'],
+           windowed['intervalEpisodeFirst'], windowed['intervalEpisodeLast']])
+    await page.locator('[data-frame-window-clear]').click()
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='4'")
+
+    # Cross-page: one frame per page means every step is the real gap between the last frame of one page and
+    # the first of the next, taken via the reader's own next_offset.
+    await page.locator('select[aria-label="帧分页大小"]').select_option('1')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-limit]')?.getAttribute('data-frame-limit') ?? '')==='1'")
+    cross_mark = len(report['requests'])
+    await page.locator('[data-frame-play]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-play]')?.getAttribute('data-frame-play') ?? '')==='play' && /记录间隔播放在此停止/.test(document.querySelector('[data-frame-notice]')?.innerText ?? '')",
+                    'cross-page-walk-end', timeout=60000)
+    crossed = await page_attrs(page)
+    cross_reads = len([r for r in report['requests'][cross_mark:] if urlsplit(r['url']).path.endswith('/frames')])
+    check('跨页用 next_offset 预读并按“上一页末帧→下一页首帧”的真实差呈现：三次跨页读取走完 4 帧，最后一步标为跨页',
+          crossed['offset'] == '3' and crossed['cursorPosition'] == '0' and crossed['index'] == '0'
+          and crossed['cursorSample'] == 'rgbd_i3' and cross_reads == 3
+          and crossed['planCross'] == 'true' and crossed['planGap'] == '0.7' and crossed['planPlanned'] == '700'
+          and crossed['hasMore'] == 'false' and len(tree_fetch_reads(cross_mark)) == 0
+          and live_scene_reads(cross_mark) == [],
+          [crossed['offset'], cross_reads, crossed['planCross'], crossed['planGap']])
+
+    # A buffering cursor must show a growing wait, not a decorative zero: the fixture's assets take 0.9 s, so
+    # if the reported buffer never passes 300 ms while the frame stays unbound, the display is lying about a
+    # slow client and the schedule is being measured from the wrong baseline.
+    await page.locator('select[aria-label="帧分页大小"]').select_option('5')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='4'")
+    await page.locator('[data-frame-pick][data-pick-position="1"]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-view] .history-cursor')?.getAttribute('data-frame-cursor-position') ?? '')==='1'", 'buffer-seek')
+    await page.locator('[data-frame-play]').click()
+    # Sample the three chip values from inside the page while the walk runs. Growth has to be shown between two
+    # consecutive samples that belong to the SAME frozen frame: two separate reads taken across an advance
+    # compare a fresh window against an old one and would prove nothing.
+    samples = await page.evaluate("""async () => {
+      const out = [];
+      for (let k = 0; k < 16; k++) {
+        out.push([document.querySelector('[data-frame-plan-kind]')?.getAttribute('data-frame-plan-kind') ?? '',
+                  document.querySelector('[data-frame-view] .history-cursor')?.getAttribute('data-frame-cursor-position') ?? '',
+                  parseInt(document.querySelector('[data-frame-plan-buffer-ms]')?.getAttribute('data-frame-plan-buffer-ms') ?? '0', 10)]);
+        await new Promise((resolve) => setTimeout(resolve, 120));
+      }
+      return out;
+    }""")
+    await page.locator('[data-frame-play]').click()
+    after_buffer_pause = await page_attrs(page)
+    grown = [(a, b) for a, b in zip(samples, samples[1:]) if a[0] == 'buffering' and b[0] == 'buffering' and a[1] == b[1] and b[2] > a[2]]
+    check('缓冲真的冻结进度并把耗时显示成一个会增长的读数（同一帧在等待期间不前进，读数不是停在 0 的装饰）',
+          len(grown) >= 2 and max(s[2] for s in samples if s[0] == 'buffering') >= 300
+          and after_buffer_pause['playMode'] == 'play',
+          [grown[:3], max([s[2] for s in samples if s[0] == 'buffering'] or [0]), after_buffer_pause['index']])
+    report['synthetic'].setdefault('interval_walk', {})['buffer_samples'] = [s for s in samples if s[0] == 'buffering'][:8]
+
+    # The census's own limits: a truncated scan and unjudgeable anchor rows both disable the mode, while the
+    # exclusions the reader declares normal (blank / prefiltered lines) do not.
+    await open_episode(page, 'run_a', 'episode_interval_truncated')
+    await page.locator('[data-frame-read-census]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-time-quality-status]')?.getAttribute('data-time-quality-status') ?? '')==='ready'", 'truncated-census')
+    truncated = await page_attrs(page)
+    await page.locator('[aria-label="记录间隔时间基"]').select_option('capture_backend_monotonic_s')
+    truncated_base = await page_attrs(page)
+    check('截断扫描的 census 不开放整集记录时间播放：界面按 coverage 自己的字段禁用并写明 anchor_limit 与停止行',
+          truncated_base['intervalAllowed'] == 'false'
+          and any('没有扫完整份锚点文件' in reason for reason in truncated_base['intervalReasons'])
+          and any('anchor_limit=4000' in reason for reason in truncated_base['intervalReasons'])
+          and truncated['censusStatus'] == 'ready', truncated_base['intervalReasons'][:1])
+
+    await open_episode(page, 'run_a', 'episode_interval_badrows')
+    await page.locator('[data-frame-read-census]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-time-quality-status]')?.getAttribute('data-time-quality-status') ?? '')==='ready'", 'badrows-census')
+    await page.locator('[aria-label="记录间隔时间基"]').select_option('capture_backend_monotonic_s')
+    badrows = await page_attrs(page)
+    check('无法判定时刻的锚点行被跳过时不据“整集合格”开放播放，并写明这是 18979 的资格口径缺口；空行与预过滤不在此拒绝之列',
+          badrows['intervalAllowed'] == 'false'
+          and any('无法判定时刻的锚点行被跳过' in reason for reason in badrows['intervalReasons'])
+          and any('并没有把这些行写进 blocking_reasons' in reason for reason in badrows['intervalReasons'])
+          and any('blank_lines_skipped=0' in reason for reason in badrows['intervalReasons']),
+          badrows['intervalReasons'][:1])
+
+    # Duplicated sample ids: the pane addresses rows by position, and the pose route's own 409 is shown as a
+    # refusal that names both anchor positions — no candidate is chosen and the old pose is not kept. A row that
+    # does have a pose is selected first, so "not kept" is checked against a displayed pose instead of emptiness.
+    dup_mark = len(report['requests'])
+    await open_episode(page, 'run_a', 'episode_interval_dup')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='3'")
+    await page.locator('[data-frame-read-census]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-time-quality-status]')?.getAttribute('data-time-quality-status') ?? '')==='ready'", 'dup-census')
+    dup_page = await page_attrs(page)
+    check('同一 sample_id 的两条锚点各自可寻：列表与曲线的选中用本页位置＋line_index，不会都落到第一条',
+          dup_page['rowSamples'] == ['rgbd_solo', 'rgbd_dup', 'rgbd_dup'] and dup_page['rowLines'] == ['2', '4', '9']
+          and dup_page['pickPositions'] == ['0', '1', '2'] and dup_page['pickLines'] == ['2', '4', '9']
+          and set(dup_page['pickLines']) == {'2', '4', '9'} and '2' in dup_page['curvePickPositions']
+          and dup_page['intervalDuplicates'] == '1'
+          and any('rgbd_dup×2@[4,9]' in line for line in dup_page['intervalDisclosures']),
+          [dup_page['rowSamples'], dup_page['rowLines'], dup_page['pickPositions'], dup_page['pickLines'],
+           dup_page['curvePickPositions'], dup_page['intervalDuplicates'], ' '.join(dup_page['intervalDisclosures'])[:300]])
+    await page.locator('[data-frame-pick][data-pick-position="0"]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-view] .history-cursor')?.getAttribute('data-frame-cursor-position') ?? '')==='0'", 'dup-solo-row')
+    await wait_model(page, 'ready')
+    await wait_asset_settled(page)
+    dup_solo = await page_attrs(page)
+    check('唯一 id 的那一行正常带出自己的姿态与数值（为下一条“不沿用旧姿态”建立真实的前态）',
+          dup_solo['cursorSample'] == 'rgbd_solo' and dup_solo['modelRequested'] == 'rgbd_solo'
+          and dup_solo['stateDisplayed'] == 'rgbd_solo' and dup_solo['modelStatus'] == 'ready' and dup_solo['valueNames'] != []
+          and len(tree_fetch_reads(dup_mark)) == 1,
+          [dup_solo['modelStatus'], dup_solo['cursorSample'], dup_solo['valueNames'][:3], len(tree_fetch_reads(dup_mark))])
+    # From here the tree is already acquired for this namespace: the refused frame must not trigger another
+    # acquisition, and must not leave any of the previous frame's driven values on screen.
+    dup_tree_mark = len(report['requests'])
+    await page.locator('[data-curve-pick][data-pick-position="2"]').first.click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-view] .history-cursor')?.getAttribute('data-frame-cursor-position') ?? '')==='2'", 'dup-curve-second')
+    await page.wait_for_function("()=>(document.querySelector('[data-model-pane]')?.getAttribute('data-model-status') ?? '')==='blocked'", timeout=40000)
+    dup_second = await page_attrs(page)
+    check('曲线点选重复 id 的第二条：游标按位置＋line 9 定位，409 被如实显示，前一帧已展示的姿态不被沿用、不选任一候选、不补 0',
+          dup_second['line'] == '9' and dup_second['cursorPosition'] == '2' and 'line 9' in dup_second['cursorKey']
+          and dup_second['modelAnchor'].endswith('line 9') and dup_second['modelStatus'] == 'blocked'
+          and dup_second['modelRequested'] == 'rgbd_dup' and dup_second['curveSelectedPosition'] == '2'
+          and 'frame_sample_id_ambiguous' in dup_second['modelStage']
+          and 'first_matching_anchor_line_index=4' in dup_second['modelStage']
+          and 'next_matching_anchor_line_index=9' in dup_second['modelStage']
+          and dup_second['valueNames'] == [] and dup_second['cursorSample'] == 'rgbd_dup'
+          and len(tree_fetch_reads(dup_tree_mark)) == 0,
+          [dup_second['modelStatus'], dup_second['cursorPosition'], dup_second['valueNames'], dup_second['modelStage'][:180]])
+    # Cold start is a new playback session: nothing carries over, and asking for recorded-interval playback
+    # before any census exists refuses on its own terms instead of pretending to schedule.
+    cold_interval_mark = len(report['requests'])
+    await page.reload(wait_until='domcontentloaded')
+    await open_history(page)
+    await open_episode(page, 'run_a', 'episode_interval')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='4'")
+    cold_idle = await page_attrs(page)
+    # No census means no base options at all (they come from the census's own time_bases), so the cold refusal
+    # that is actually reachable is the gate's missing-census reason, not a per-base one.
+    await page.locator('[aria-label="播放模式"]').select_option('recorded_interval')
+    await page.locator('[data-frame-play]').click()
+    await page.wait_for_timeout(700)
+    cold_without_census = await page_attrs(page)
+    cold_flagged = len([r for r in report['requests'][cold_interval_mark:] if 'include_time_quality' in r['url']])
+    check('冷启动就是一次新会话：census 归零、记录间隔模式禁用；没有 census 就按下播放只得到拒绝，不静默换模式、也不自己去读 census',
+          cold_idle['censusStatus'] == 'idle' and cold_idle['censusReads'] == '0'
+          and cold_idle['intervalAllowed'] == 'false' and cold_idle['intervalBase'] == 'none'
+          and cold_idle['intervalBaseOptions'] == ['|未选择（不代你挑基）']
+          and cold_idle['playModeChip'] == 'ui_cadence'
+          and cold_without_census['playMode'] == 'play' and cold_without_census['playModeChip'] == 'recorded_interval'
+          and cold_without_census['censusReads'] == '0' and cold_flagged == 0
+          and any('还没有读到 census' in reason for reason in cold_without_census['intervalReasons']),
+          [cold_idle['censusStatus'], cold_idle['intervalBaseOptions'], cold_without_census['playModeChip'], cold_flagged])
+    await page.locator('[data-frame-read-census]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-time-quality-status]')?.getAttribute('data-time-quality-status') ?? '')==='ready'", 'cold-census-ready')
+    await page.locator('[aria-label="记录间隔时间基"]').select_option('capture_backend_monotonic_s')
+    cold_after_read = await page_attrs(page)
+    check('冷启动读取一次 census 后，同一个会话里的记录间隔模式才开放：仍是那一次按需读取，不是每帧页各带一份',
+          cold_after_read['censusStatus'] == 'ready' and cold_after_read['censusReads'] == '1'
+          and cold_after_read['intervalAllowed'] == 'true' and cold_after_read['intervalBase'] == 'capture_backend_monotonic_s'
+          and cold_after_read['playModeChip'] == 'recorded_interval'
+          and len([r for r in report['requests'][cold_interval_mark:] if 'include_time_quality' in r['url']]) == 1,
+          [cold_after_read['censusReads'], cold_after_read['intervalAllowed'], cold_after_read['intervalBase']])
+    report['synthetic']['interval'] = {
+        'planned_waits_ms': plans_ready['intervalRowWaits'], 'recorded_gaps_s': plans_ready['intervalRowGaps'],
+        'row_kinds': plans_ready['intervalRowKinds'], 'speed_two_ms': fast['intervalNextPlanned'],
+        'speed_half_ms': slow_speed['intervalNextPlanned'], 'sim_gaps_s': sim_base['intervalRowGaps'],
+        'persist_refusal': refused_base['intervalReasons'][:1], 'walk_last_plan': [walked['planKind'], walked['planPlanned'], walked['planActual'], walked['planBuffer']],
+        'walk_frame_reads': interval_reads, 'cross_page_reads': cross_reads, 'cross_page_last': [crossed['planGap'], crossed['planPlanned'], crossed['offset']],
+        'census_reads': census_once['censusReads'], 'flagged_page_reads': census_reads_seen,
+        'truncated_reasons': truncated_base['intervalReasons'][:1], 'badrow_reasons': badrows['intervalReasons'][:1],
+        'duplicate_groups': dup_page['intervalDuplicates'], 'ambiguous_stage': dup_second['modelStage'][:240],
+        'window_page_rows': windowed['rowSamples'], 'window_shown': windowed['intervalWindow'],
+        'window_episode_range': [windowed['intervalEpisodeFirst'], windowed['intervalEpisodeLast']],
+        'cold_start': {'status': cold_idle['censusStatus'], 'reads': cold_idle['censusReads'], 'allowed': cold_idle['intervalAllowed'],
+                       'mode_after_play_refusal': cold_without_census['playModeChip'], 'flagged_reads': cold_flagged,
+                       'after_census': [cold_after_read['censusReads'], cold_after_read['intervalAllowed']]},
+        'live_scene_reads': live_scene_reads(interval_mark)}
+    await page.screenshot(path=str(a.output / 'synthetic-recorded-interval.png'), full_page=False)
+
+
 async def boundary_checks(page):
     episode = a.complete_episode if a.mode == 'real' else 'episode_ok'
     for method, path in (('POST', f'/api/v1/episodes/{episode}/frames'),
@@ -2672,6 +3360,29 @@ async def boundary_checks(page):
               and len(flagged_json['model_resource']['model_tree']['links']) == flagged_json['model_resource']['link_count']
               and len(flagged_json['model_resource']['model_tree']['world_links']) == len(flagged_json['model_resource']['world_links']),
               report['real']['proxy_passthrough'])
+        # The same opt-in shape for the M1.5g census: the flag rides the frames route the pane already
+        # calls, so no path is added and the allowlist is untouched.
+        plain_frames = await page.request.get(a.url + f'/api/v1/episodes/{episode}/frames?run_id={a.complete_run}&limit=1')
+        flagged_frames = await page.request.get(a.url + f'/api/v1/episodes/{episode}/frames?run_id={a.complete_run}&limit=1&include_time_quality=true')
+        plain_fj, flagged_fj = await plain_frames.json(), await flagged_frames.json()
+        census_coverage = flagged_fj['time_quality']['coverage']
+        report['real']['time_quality_passthrough'] = {
+            'plain_status': plain_frames.status, 'flagged_status': flagged_frames.status,
+            'plain_has_census': 'time_quality' in plain_fj, 'flagged_requested': flagged_fj['time_quality']['requested'],
+            'page_rows': len(flagged_fj['frames']), 'scan_anchors': census_coverage['anchors_in_this_scan'],
+            'covers_whole_episode': census_coverage['covers_whole_episode'],
+            'window_echo': census_coverage['page_filter_context']['limit']}
+        check('既有 frames 路由原样转发 include_time_quality：默认响应没有 time_quality 键，带标的响应有，且 census 描述整集而不只是这一页',
+              plain_frames.status == flagged_frames.status == 200 and 'time_quality' not in plain_fj
+              and flagged_fj['time_quality']['requested'] is True and len(flagged_fj['frames']) == 1
+              and census_coverage['anchors_in_this_scan'] > 1 and census_coverage['covers_whole_episode'] is True
+              and census_coverage['page_filter_context']['limit'] == 1
+              and flagged_fj['time_quality']['playback_eligibility']['cross_stream_synchronized']['eligible'] is False,
+              report['real']['time_quality_passthrough'])
+        bad_census_flag = await page.request.get(a.url + f'/api/v1/episodes/{episode}/frames?run_id={a.complete_run}&limit=1&include_time_quality=maybe')
+        check('非布尔的 include_time_quality 由 reader 自己拒 422，所以界面只发字面 "true"',
+              bad_census_flag.status == 422 and 'bool_parsing' in json.dumps(await bad_census_flag.json()),
+              (bad_census_flag.status, (await bad_census_flag.text())[:160]))
         bad_flag = await page.request.get(a.url + f'/api/v1/episodes/{episode}/robot-state?run_id={a.complete_run}&sample_id={sample}&include_model_tree=maybe')
         check('a non-boolean tree flag is the reader’s own 422, so the pane’s literal "true" is the only shape it sends',
               bad_flag.status == 422 and 'bool_parsing' in json.dumps(await bad_flag.json()),

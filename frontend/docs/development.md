@@ -1,4 +1,98 @@
+# M4.0 按记录时间间隔播放：接入 M1.5g census，时间基、倍速、缓冲、暂停恢复与跨页调度（2026-10-30）
+
+在 M3.0 的“一个共用帧游标 + UI 帧节奏播放”之上，加入第二种播放模式：等待时间由**相邻锚点在所选时间基上的真实差值 ÷ 倍速**决定，资格来自后端 M1.5g 的 `include_time_quality` census。唯一完成基址是服务器 `127.0.0.1:18979`（M1.5g）。只修改 `frontend/`；不发运动/RESET/STOP/录制/导航，不改后端、公共契约或 native，不新增路由、不放宽代理白名单；本切片不主张跨流采样同刻同步、整车位姿重建、渲染级 3D 回放或正式 M1/M1.5 验收通过。
+
+## 一、census 接入（先读实际载荷，再建类型）
+
+- `readFramesPage` 增加可选 `includeTimeQuality`，只发字面 `include_time_quality=true`（实测非布尔值由 FastAPI 自身回 422 `bool_parsing`，形状不是项目的 `{detail:{code}}`，所以界面不猜别的写法）；census 的类型逐字段照抄 18979 实际响应的八个顶层键与逐基字段，未返回的字段保持缺席，不补默认值。
+- census **按需读一次**：普通帧页不带该参数；点“读取本 Episode 时间资格（一次）”或选择记录间隔模式才发一条 `limit=1&offset=0&include_time_quality=true`。复用范围是 `source_id|run_id|episode_id|anchor.stream_id` 组成的播放会话键（`data-time-quality-session` 如实写出），换 Episode/run 就作废并重新计数（`data-time-quality-reads`）；它**不是**带内容版本保证的持久缓存，界面也这样说明。
+- 逐基消费：`playback_eligibility.recorded_interval_schedule.eligible_by_base.<base>.eligible_for_whole_episode` 决定该基能否排程；`blocking_reasons` 原样列出并附上 reader 自己的 `rules_when_unqualified` 对应条款；`coverage` 的 `whole_anchor_file_scanned / covers_whole_episode / stopped_at_line_index / anchor_limit` 决定“扫完整集没有”；`identity.duplicate_sample_id_groups` 与 `duplicates[]` 的每条位置都显示。
+- 窗口与 census 的口径分开：`coverage.page_filter_context` 原样回显本页窗口条件，而 `scope_note` 说 census 覆盖整 Episode 的锚点，所以界面写“窗口只筛帧页”，并且明确 `eligible_within_this_scan` 是“本次扫描内”的判定、**不是**“当前窗口的资格”。
+- 已知口径缺口的处理：18979 的整集资格没有把无法判定的锚点行纳入 `blocking_reasons`，因此当 `unparseable/oversize/non_object_lines_skipped` 或 `rejected_anchors.*` 非零时，界面不据 `eligible_for_whole_episode=true` 开放整集记录时间播放，并显示具体局限；`blank_lines_skipped`／`prefiltered_lines_skipped` 是 reader 声明的正常排除，不在此拒绝之列——规则没有被扩成“任何计数非零都拒绝”。
+
+## 二、记录间隔模式与帧节奏模式并存
+
+- 播放模式是显式选择：`帧节奏（每秒展示 N 帧，界面节奏）` 与 `记录间隔（相邻锚点真实差 ÷ 倍速）`，各自回显 `data-frame-play-mode`。资格缺失、不合格或扫描截断时记录间隔模式被禁用并写明原因；帧节奏模式仍可由用户选，**任何一侧都不静默改成另一侧**（换模式、换基、换倍速都先停掉播放并作废旧定时器）。
+- 新增时间基下拉（选项文字直接带上 reader 的判定：`整集合格`／`不合格：见下方原因`，以及该基的 `clock`）与 `0.5×／1×／2×` 倍速下拉；等待时间只由 `anchor.clocks.<base>` 相邻两条的差值除以倍速得出。`median_s`、`implied_rate_hz_from_median_recorded_gap` 和 `profile_ids_seen` 只作为 census 的描述显示，写明不用于排程。
+- 三个钟分别说明含义（capture 后端单调、sim 仿真时间、persist 落盘后端单调），并按 `never_assumed` 原文列出“不套默认速率、不用浏览器到达时间、不跨 RESET 拼钟”；**按 persist 排的是写入节奏，界面明说不称为机器人运动原速**；帧节奏模式的等待也始终标为界面节奏，不称原速/真实倍速。
+
+## 三、调度、缓冲与上下文失效
+
+- 新增一个播放代次 `playGen`：定位、换基、换倍速、换模式、切 Episode、改窗口、翻页读取与卸载都会推进它，所有已武装的 `setTimeout` 回调先比对代次再动游标——旧定时器与迟到响应都不能重启播放或覆盖新选择。归属仍复用 M3.0 已有的 `pageSerial/assetSerial/frameKeyRef` 与模型面板 `poseSerial`，没有第二套调度框架。
+- “保持记录顺序，数据未就绪时缓冲”：当前帧的媒体还在读取时面板写 `data-frame-buffering=true`、`data-frame-cursor-pending=true`，计划状态变成 `kind=buffering` 并累计 `data-frame-plan-buffer-ms`，**进度冻结、不跳帧**；数据落定后按同一段计划等待重新起算（恢复时重建调度基准），暂停期间的时长不并入记录进度。
+- 屏幕上的三项时间是分开报告的：`data-frame-plan-planned-ms`（计划等待 = 真实差 ÷ 倍速）、`data-frame-plan-actual-ms`（两次呈现之间的实际墙钟，由 `performance.now()` 测得）、`data-frame-plan-buffer-ms`（缓冲耗时），另有 `data-frame-plan-gap-s` 与 `data-frame-plan-cross` 说明这一步用的真实差与它是否跨页。界面写明浏览器单调钟只用于执行等待与测量，不替代记录时间，慢客户端不被说成严格实时 1×。
+- 跨页：到页末时按 reader 自己的 `next_offset` 预读下一页（`held` 状态），呈现前用**上一页末帧与下一页首帧**在所选基上的真实差计算等待，已读到的那一页在间隔到达前保持不显示（`data-frame-held-pending=true`、`data-interval-held="kind|差|等待"`）；`has_more=false` 时自己停止，不循环、不伪造后续帧。**这一条只认响应给的 forward offset**：实测 18979 在 `has_more=true` 时总是带 `next_offset`（`limit=1/5/20` → `1/5/20`），所以界面把旧的 `offset + returned` 兜底删掉了——万一没有 `next_offset`，界面停住并写明"不自行推算下一页位置"，帧节奏模式的页末前进同样如此。预读回来若是空页或不属于本 Episode 的页，也不再静默丢弃：空页按 reader 的停止口径写进 notice，身份不符写成明确的错误，播放关掉，不留"看起来还在播但没有任何定时器"的状态。
+- 缓冲与跨页等待的相互作用修了一处真实缺陷：`held`（已预读到的下一页）原来的等待是从"发出那一页读取的时刻"倒数的，若当前帧的媒体还在缓冲，这段缓冲时间会被算进记录间隔里，等于把慢客户端说成记录自己在推进。现在从缓冲恢复时会用当前时刻重建这一段基准（`armedAt` 重设，等待重新倒数），而 `presentedAt` 故意不动——两次呈现之间的实际时长仍必须把缓冲算进去，三项数字才没有被偷偷改写。
+- 缓冲读数本身也有一处只能从实测数字看出的缺陷：原来它只在"发生重渲染的那一拍"计算，于是夹具里一次真实的 0.9 s 停顿在界面上停在 **0 ms**（合成报告的 `walk_last_plan` 就是 `["buffering",700,1613,0]`——计划 700、实际 1613 都对，唯独"缓冲"看起来没发生），这正是目标点名要防的"把慢客户端说成严格实时"。现在读取中的每一拍由一个 100 ms 计时器重算 `data-frame-plan-buffer-ms`；它只更新显示，推进仍由同一 `playGen` 代次判定，没有引入第二个调度器。合成路径新增一条断言：等待期间游标停在同一帧、`planKind=buffering`、缓冲读数严格增长并越过 300 ms，暂停之后也不前进。
+- 相等的相邻时间按并列处理：等待 0 ms、写明“不除零、不插值、不算速率”；记录时间回退或该基上没有有限数值时**拒绝这一段调度**（停在当前帧并给出原因），不排序、不丢弃、不用别的钟补齐。
+
+## 四、重复 sample_id 的定位修正
+
+- 游标、表行、曲线点选与选中标记一律以“本页位置 + 锚点 `line_index`”为准：曲线点击回调按 `position` 定位（旧的 `findIndex(sample_id===…)` 会把重复 id 都落到第一条），表行/曲线行 key 用位置与 line_index，媒体归属键 `data-cursor-position-key` 是 `episode|run|offset+position|line N|sample_id`，曲线竖线带 `data-curve-marker-position/-line`，模型面板带 `data-model-anchor-ref`。
+- 遇到 reader 的 409 `frame_sample_id_ambiguous`（它给出 `first_matching_anchor_line_index`、`next_matching_anchor_line_index`、`no_first_match_was_assumed`、`state_is_not_taken_from_either_candidate`、`how_to_inspect`）时，面板状态为 `blocked` 并逐字段点名两条候选位置：不选任一候选、不补 0、不沿用上一帧姿态，装配与驱动都保持为空。
+
+## 五、显示范围
+
+- 记录间隔面板逐段列出：本页位置段、`line_index` 对、记录值对、真实差（秒）、÷ 倍速后的等待（毫秒）、判定（interval/tie/backwards/missing）与其说明；当前模式、时间基、单位（census 的 `unit` 与响应 `time.units`）、倍速、本帧在该基上的记录值都单独回显。
+- 三种范围分开表达：本页首/末与最小/最大、当前窗口两端（回显自 `time.time_from/time_to`）、整个 Episode 的首/末与最小/最大（回显自 census 的 `time_bases.<base>`），并写明整段范围来自 census 的锚点扫描、不是本页也不是当前窗口。进度控件不为此下载全量帧，界面继续不显示总帧数、总时长或全局百分比（`data-interval-total-forbidden`、既有 `data-frame-total-forbidden` 一并保留）。
+- 曲线保持原样：只画本页读取的记录值、按原顺序、缺值断点不插值，Actual 语义与“速度/旋量不是位置目标”的说明不变。
+
+## 六、同一冻结 dist 的实际验证与复现入口
+
+最终 release：`m1-front-geometry-20261030T020906Z-0624d8e54bba`（110 个文件，聚合摘要前缀 `0624d8e54bba`），上游只有 `127.0.0.1:18979`，真实与合成两条路径跑在同一个 dist、同一台服务器（构建/类型检查/单元/浏览器全在授权服务器）。单元层两次都是 206/206；浏览器层逐套件（`status=passed`）：
+
+| 模式 | 套件与检查数 |
+|---|---|
+| 真实 | frames 114、history 78、config 51、session 38、lifecycle 48、geometry 23 |
+| 合成（在线路由被夹具拒绝） | frames 99、history 42（含“在线路由被夹具拒绝时历史装配仍成立：12 条身份行与逐节点行全等，网格字节只走历史端点”） |
+
+真实归档上界面写的数字逐值等于直读响应：census 按需只读一次（此前所有普通帧页 `include_time_quality` 计数 0，读到之后为 1，`data-time-quality-reads=1`），本次扫描 `anchors_in_this_scan=303`、`duplicate_sample_id_groups=0`；capture 首页四段真实差 `0.271948/0.196984/0.204121/0.199236 s` → 计划等待 `272/197/204/199 ms`，2× 后首段 `136 ms`；整段范围 `426494.351568496 → 426554.824271964`。跨页按 reader 的 `next_offset` 走：请求过的 offset 集合是 `{1,2,3}`（不含界面自算的值），跨页那一步的真实差 `0.196984 s` 就是计划等待 `197 ms`，实际呈现 245 ms、缓冲 0 ms 三项分开报告；三步期间取树 0 次、在线 `/mobilecar/scene` 读 0 次、相机三值保持。真实归档的冷启动同样是新会话：`censusStatus=idle`、`reads=0`、`allowed=false`，没有 census 就按播放得到“本会话还没有读到 census…”的拒绝。
+
+合成夹具用可控时钟逐项钉住语义：capture 三段 `0.2 / 并列 0 / 0.7 s` → `200 / 0 / 700 ms`（并列段判为 `tie`，不除零）；倍速把同一段真实差换算成 2× `100 ms`、0.5× `400 ms`；换 sim 就是另一套真实间隔（三段各 `500 ms`）；persist 由 reader 自己判为整集不合格，界面禁用排程并引用它的 `backwards_step: 100.1 -> 100.09` 与规则原文，模式不被静默切换。慢媒体（每条资产 0.9 s）下缓冲读数真的在增长：页内采样在游标停在第 1 帧期间读到 `100 → 200 → 300 → 400 → 600 → 700 ms`，随后才前进，走完本页的计划/实际/缓冲三项是 `700 / 1618 / 800 ms`，且整页走完多发了 0 条帧读取。截断扫描与坏行两种 census 各自给出禁用原因（前者含 `anchor_limit=4000`、`stopped_at_line_index=3999`；后者点名 `unparseable_lines_skipped=2` 并说明 18979 没把它写进 `blocking_reasons`，同时声明空行与预过滤行不在拒绝之列）。重复 `sample_id` 一档现在有三条锚点：唯一 id 那一行先正常展示姿态与数值（取树恰好一次），随后从曲线点选重复 id 的第二条，游标按位置＋`line 9` 落位、面板 `blocked` 并逐字段点名 `first=4／next=9`、刚才的数值集合清空（不再沿用），该步骤之后取树 0 次。时间窗口一档现在由夹具真的按 `time_base/time_from/time_to` 过滤：窗口 `100.2–100.9` 把本页筛成三行、旧页的预读 `held` 作废，而面板上的整段范围仍是全 Episode 的 `100 / 100.9`。
+
+复现入口：冻结用 `python3 frontend/tools/release-source.py`，验证用 `python3 <release>/frontend/tools/check-release.py <release> … --upstream http://127.0.0.1:18979 --frames --history [--geometry --session --config --lifecycle]`，报告在服务器 `var/reports/m1-front-geometry-20261030T020906Z-0624d8e54bba-{real,synthetic}/`；交付预览为 `127.0.0.1:19076`（真实）与 `127.0.0.1:19077`（合成），M3.0 的 `19074/19075` 保留，四者验证后均回 200。**分段级的回退/缺值拒绝只在单元测试里证明**（真实与合成的 census 都在基级别就判不合格，浏览器侧只有构造自相矛盾的 census 才可达），重复 id 的媒体归属也只在归属键一层证明（两条锚点的资产引用本来就是同一字符串）；这两点不写成浏览器已验证。
+
+合成夹具的身份与"为什么不是碰运气"：`episode_interval`（capture `0.2 / 并列 0 / 0.7 s`、sim 每段 `0.5 s`、persist 中间一步回退）、`episode_interval_truncated`（截断扫描）、`episode_interval_badrows`（无法判定的坏行计数）、`episode_interval_dup`（同一 `sample_id` 的 line 4 与 line 9 加 reader 的 409）。每一档的数值都写死在夹具里，所以逐段等待、禁用原因与定位修正都是确定值；资产读取一律延迟 0.9 s，比任何一段间隔都慢，因此缓冲必然发生而不是靠调度偶然。真实路径把界面上的每个数字与同一 `limit/offset/time_base` 参数的直读响应逐项对照（扫描规模、整段首末/最小最大、逐段真实差与换算等待、跨页那一步的真实差）。
+
+覆盖目标点名的另外两类上下文，浏览器侧各有一条直接断言（不靠“顺便没坏”来推断）：
+
+- **窗口就是换一个调度上下文**（合成）：夹具的 `/frames` 处理器现在真的按 `time_base/time_from/time_to` 过滤 `episode_interval` 的行（和它对 `episode_play` 一样），界面把窗口设成 `100.2–100.9` 后，页里只剩窗口内三帧、`data-frame-held-pending=false`（为旧页武装的跨页预读被丢弃），`data-interval-window` 写 `100.2–100.9` 而 `data-interval-episode-first/last` 仍是整 Episode 的 `100`/`100.9`——这就是“窗口只筛帧页、census 仍描述整集”的可断言形式，而不是只写在说明文字里。
+- **冷启动就是一次新会话**（合成 + 真实）：`page.reload()` 之后 `data-time-quality-status=idle`、`data-time-quality-reads=0`、模式回到 `ui_cadence`、记录间隔禁用，而且**时间基下拉里除了"未选择"没有任何选项**——基的候选本身就来自 census 的 `time_bases`，没读到资格就没有可挑的钟（这是这一轮验证自己发现并被写进断言的事实：`intervalBaseOptions == ['|未选择（不代你挑基）']`）。此时把模式显式切到记录间隔并按下播放，得到的是网关级的"本会话还没有读到 census"拒绝：`data-frame-play` 仍是 `play`（没播）、模式芯片仍是 `recorded_interval`（没静默换回帧节奏）、并且从按下播放到观察窗结束**没有任何一条带 `include_time_quality` 的请求**（界面不会自己去读 census 来"凑齐条件"）。随后显式点一次按钮，基的候选才出现、门才开、计数才变成 1，仍只发那一条参数。
+- 真实路径的对照基线也修了一处自己的错误：界面默认每页 20 帧，而直读对照过去只取 5 帧，两边不是同一页；现在真实块先把分页大小显式设为 5 再选时间基，使”界面写的逐段等待”与”同一 `limit/offset` 直读算出的真实差”严格同页可比。
+
+## 七、只读复核这一轮改掉了什么（不是”看了没问题”）
+
+三个只读子任务分别复核调度/暂停/跨页、census 与错误码、媒体与姿态归属，回传的都是证据不是结论，处理由主智能体完成。它们找到六处真实缺陷，其中四处改了产品代码、一处改强了断言、一处是本轮自己的验证错误：
+
+- **缓冲会吃掉跨页等待**（真实缺陷）：`held` 的等待从”发出那一页读取”起算，当前帧媒体缓冲时这段墙钟被算进记录间隔里，等价于把慢客户端呈现成记录自己在推进。现在从缓冲恢复时重建这一段基准；`presentedAt` 不动，实际呈现时长仍包含缓冲，三项数字没有被改写。
+- **预读失败/异常页静默停摆**（真实缺陷）：预读回来的页若为空或不属于本 Episode，旧代码 `return` 掉、什么都不改，于是界面显示”还在播放”但没有任何定时器armed。现在空页走 reader 自己的停止说明、身份不符写成明确错误，两种都关掉播放。
+- **`next_offset` 兜底是界面在猜**（口径修正）：`next_offset ?? offset + returned` 在两种模式下都存在；实测 18979 在 `has_more=true` 时总带 `next_offset`，于是删掉兜底，缺它就停下并写明”不自行推算下一页位置”。这不是理论风险：一旦后端某天改了分页语义，旧写法会读到一个界面自己算出来的偏移。
+- **census 身份不符时把按钮锁死**（真实缺陷）：不匹配时旧代码直接 `return`，`censusStatus` 停在 `loading`，而读取按钮正是 `loading` 时禁用——操作员既得不到解释也没有重试入口。现在这种情况判为 `refused` 并写明两边的身份值。会话键也改为以响应自己的身份为准，避免 `run_id` 缺省时永远匹配不上。
+- **姿态”不沿用上一帧”当时是空断言**（测试缺陷）：合成夹具的两条重复锚点都返回 409，界面上从来没有出现过姿态，因此 `valueNames==[]` 在代码写错时也会通过。现在 `episode_interval_dup` 多一条唯一 id 的行，先真的展示一帧姿态与数值，再从**曲线**点选重复 id 的第二条（这条路径此前只断言了标签，没有点过），断言游标按位置＋`line 9` 落位、409 逐字段点名、且刚才显示过的数值集合被清空。
+- **重复 id 的媒体归属只有单元测试**（如实声明，不伪装成浏览器已验证）：两条重复锚点的资产引用是同一个字符串，界面按位置取哪一条都指向同一份字节，所以端到端无法区分；本切片只在 `framePositionKey`（含 `offset+position` 与 `line N`）这一层证明键不同，不声称浏览器验证过”媒体落在第几条锚点”。
+
+另有一处是本轮验证自身的错误，同样记下来：真实块一度拿 20 帧的界面页去比 5 帧的直读页；一次改动后 TypeScript 语法错误没有被本地发现，直到服务器 `npm run build` 才暴露，因此现在先在工作树快照上跑 `tsc && vite build` 与 vitest，绿了才冻结——这是流程修正，不是代码修正。
+
+同一轮真实回归里 `browser-session.py` 有一条“Session 失效后保留渲染器/相机/布局”的检查失败：三项目视值在第 17 位十进制上不同（`0.663349008101105**5**` 对 `…05**4**`）。这是渲染循环每帧重算出来的浮点数，不是相机被重建的证据，而同一份相机值在帧浏览套件里本来就用 `1e-6` 容差比较。于是 session 套件改用同样的逐值容差（`same_numbers`），实例 id 与视口尺寸仍要求逐字相等。这里没有放宽任何被测行为的门槛：真正要证明的是"视角没有被重置"，而 1e-16 的漂移证明不了相反的事；改动的适用面只有这一条断言。
+
+## 八、一条与本切片无关的既有抖动（如实记录，不算通过也不算回归）
+
+`browser-session.py` 的相机保持容差修正之后，真实路径的 `browser-geometry.py` 在一次运行里停在
+“Actual refresh preserves ongoing TCP drag, target and camera”。核对了来源清单而不是重跑碰运气：
+这一次与上一次真实全绿的冻结之间，**唯一的差异文件是 `tests/browser-frames.py`，源码 0 个文件不同**
+（逐文件摘要比对），而该检查读的是在线工作台 3D 的实时指针拖拽与刷新次序，历史帧浏览的代码不参与其渲染路径。
+因此它属于 M1.2 起就存在的软件渲染时序抖动（同一台机器、同一 SwiftShader 环境），本切片既不把它算作
+本功能的失败，也不靠反复重跑把它说成已消除；最终那一次运行的逐套件结果记在第六节。
+
+
+## 九、断言强度的两处自我修正（避免"看着绿、其实空"）
+
+- 曲线的点选元素是**每条子图各一份**（五条轴 → 同一个 `data-pick-position` 出现五次），所以"曲线点选位置列表等于本页位置序列"这种整表相等断言本来就不成立；合成路径改为"位置集合里确实有这一条"＋**真的点一次**该位置并断言游标落到对应 `line_index`，用行为而不是标签证明归属。同类地，点击定位器加了 `.first`，否则 Playwright 的严格多元素匹配会直接报错。
+- 重复 id 的姿态断言原先只检查"数值为空"，在夹具从来没有展示过姿态时也会通过；现在先选一条唯一 id 的行、等到 `data-model-status=ready` 且数值非空，再点重复 id 的第二条，要求刚才那批数值消失。这样"不沿用上一帧姿态"才是被验证的，而不是被措辞声称的。
+
 # M3.0 单 Episode 共用帧游标与连续只读播放工作台（2026-10-29）
+
+
 
 在 M2.4 的“历史装配只剩一个来源”之上，把**当前查看位置**收敛成 FrameBrowser 内的一个游标：帧列表与定位控件、RGB、关联状态、时间面板、历史 3D 与新增的五轴历史 Actual 曲线全部跟随同一个选择；播放跨过页末时按 reader 自己的 `next_offset` 连续前进、到 `has_more=false` 自己停止；节奏措辞改为“每秒展示帧数”，并明确它**不是原速/真实倍速**（后端未证明记录时间播放资格）。只修改 `frontend/`；不发运动/RESET/录制/STOP/导航，不改后端、公共契约或 native，不新增路由、不放宽代理白名单。本切片不主张跨流采样同刻同步、整车位姿重建、已验证 3D 历史回放或正式 M1/M1.5 验收通过。
 

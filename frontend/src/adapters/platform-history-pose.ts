@@ -15,7 +15,7 @@
  */
 import { json, query, EpisodeContractError, type EpisodeSource } from './platform-episodes';
 import type { MeshAsset, SceneManifest } from './types';
-import { parseError } from './platform-config';
+import { ApiError, parseError } from './platform-config';
 
 export const HISTORY_POSE_SCHEMA = 'unirobot-mobilecar-history-pose-1';
 
@@ -136,6 +136,13 @@ export async function readRobotState(input: { episodeId: string; runId: string |
   return json<HistoryPoseDto>(`/api/v1/episodes/${encodeURIComponent(input.episodeId)}/robot-state${query(params)}`, signal, HISTORY_POSE_SCHEMA);
 }
 
+/** The reader refuses to guess which anchor a duplicated `sample_id` means (409). The pane shows the
+ *  refusal with the candidate positions the reader itself named, and drives nothing in the meantime. */
+export function ambiguousSampleOf(cause: unknown): { code: string; status: number; detail: Record<string, unknown> } | null {
+  if (!(cause instanceof ApiError) || cause.code !== 'frame_sample_id_ambiguous') return null;
+  const detail = cause.detail && typeof cause.detail === 'object' ? cause.detail as Record<string, unknown> : {};
+  return { code: cause.code, status: cause.status, detail };
+}
 /** The response must still be the frame that was asked for; identity is checked, not assumed. */
 export function assertHistoryFrameIdentity(dto: HistoryPoseDto, expected: { episodeId: string; runId: string | null; sampleId: string }): void {
   if (dto.frame?.sample_id !== expected.sampleId) throw new EpisodeContractError('robot-state 返回的帧身份与所选帧不符', String(dto.frame?.sample_id));

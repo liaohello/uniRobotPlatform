@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EpisodeContractError, describeHistoryError } from '../src/adapters/platform-episodes';
+import { ApiError } from '../src/adapters/platform-config';
 import {
-  HISTORY_POSE_SCHEMA, assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, drivenValuesOf, etagDigest,
+  HISTORY_POSE_SCHEMA, ambiguousSampleOf, assertHistoryFrameIdentity, capabilitySummaryText, comparisonRowsOf, drivenValuesOf, etagDigest,
   fkCrossCheckOf, mappingRowsOf, mergeVisitedValues, modelAssetRowsOf, modelResourceText, modelVsUserText,
   motionCoverageOf, notProvenText, partReadinessOf, poseBoundaryText, poseDriveOf, poseReadinessText, poseStateText,
   readHistoryModelAsset, readRobotState, renderingText, historyTreeBindingRowsOf, historyTreeOf, historyTreeRefusal, historySceneManifestOf,
@@ -664,5 +665,31 @@ describe('history static tree: gate, manifest and content-keyed cache', () => {
     forgetTreeNamespace(namespace);
     expect(shouldRequestTree(namespace)).toBe(true);                      // content changed → ask again
     expect(cachedTree('episode_never|run_z')).toBeNull();
+  });
+});
+
+describe('a duplicated sample_id is refused, not resolved by picking one', () => {
+  // The body below is the shape the 18979 candidate's robot-state route builds for its own 409: the reader
+  // names both anchor positions and states that it assumed neither.
+  const ambiguousBody = {
+    code: 'frame_sample_id_ambiguous',
+    message: 'more than one persisted anchor records this sample_id, so no single frame can be selected by it',
+    read_only: true, episode_id: EPISODE, run_id: RUN, sample_id: 'rgbd_dup',
+    first_matching_anchor_line_index: 4, next_matching_anchor_line_index: 9,
+    no_first_match_was_assumed: true, state_is_not_taken_from_either_candidate: true,
+    how_to_inspect: 'GET /api/v1/episodes/{episode_id}/frames?include_time_quality=true lists every duplicate anchor position for this Episode',
+  };
+
+  it('recognises only the reader’s own ambiguity refusal and keeps both candidate positions', () => {
+    const found = ambiguousSampleOf(new ApiError(409, ambiguousBody.code, ambiguousBody.message, ambiguousBody));
+    expect(found?.status).toBe(409);
+    expect(found?.detail.first_matching_anchor_line_index).toBe(4);
+    expect(found?.detail.next_matching_anchor_line_index).toBe(9);
+    expect(found?.detail.no_first_match_was_assumed).toBe(true);
+    expect(found?.detail.state_is_not_taken_from_either_candidate).toBe(true);
+    expect(ambiguousSampleOf(new ApiError(404, 'frame_not_found', 'nothing matched', { code: 'frame_not_found' }))).toBeNull();
+    expect(ambiguousSampleOf(new Error('network'))).toBeNull();
+    // The general error text still carries the code, so nothing is presented as a generic read failure.
+    expect(describeHistoryError(new ApiError(409, ambiguousBody.code, ambiguousBody.message, ambiguousBody))).toContain('frame_sample_id_ambiguous');
   });
 });
