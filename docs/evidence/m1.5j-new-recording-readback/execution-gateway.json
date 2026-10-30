@@ -1,0 +1,96 @@
+{
+ "classification": {
+  "input": "synthetic (mock), labelled; not a human recording and not a physical sensor measurement",
+  "physics": "none; the mock backend does not step MuJoCo",
+  "platform": "real unirobot reader app served over real HTTP",
+  "writer": "real Recorder inside the real mobilecar app; mock backend; synthetic media and events"
+ },
+ "database": {
+  "existed_before": false,
+  "path": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/db/execution.sqlite3"
+ },
+ "geometry": {
+  "configured": false,
+  "effect": "robot-state and model/assets refuse with history_model_bundle_not_configured; no online geometry is substituted"
+ },
+ "history": {
+  "resolved_recording_root": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/recordings",
+  "source_file": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/history-source-testonly.json",
+  "source_file_sha256": "fd53c3adb47aa66bcb60df0d8f8f1e38b87c9e79f300a9db0d03ec2aec0d7dce",
+  "source_id": "testonly-execution-source"
+ },
+ "label": "execution-new-recording",
+ "listen": {
+  "host": "127.0.0.1",
+  "port": 18981,
+  "was_free_before_start": true
+ },
+ "native": {
+  "base_url": "http://127.0.0.1:18980",
+  "reachable_at_start": false
+ },
+ "platform_source": {
+  "aggregate": "107f897ddfe2485fb116eba8c6bbdef32258c4c2ab483d80f27a01e1cf803d59",
+  "backend_root": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/platform/backend",
+  "file_count": 50,
+  "files": {
+   "config/catalog.local.yaml": "4e12dc6be6d8fe95a34419d0ab7b5df847b01fc3f5edc3bec0a7c7381cb91718",
+   "config/catalog.yaml": "3b7b277a04358a9e2aad19bcbed5ca10828c6dc434e12691e8f0403bc72cff50",
+   "config/maps.catalog.json": "3cbd3a9410e59bdf488425bf5eb5df2fd6be0c6533da7b258648b55a6199a9f9",
+   "config/mobilecar-g1-recipe-v2.json": "632f268245d77c19bf42d78832e7dcf806375fc9d0c855e663cf700ba708a8c2",
+   "config/mobilecar-g1-source.json": "146d331f7b1e72316432835a648238eadce57fec78d89b48b4fe062f283d9768",
+   "config/mobilecar-history-source.json": "fbfcc6a69edb9472007e9076c39e9677b2797b4a7e7bb2e4b8eac432fde9c394",
+   "config/mobilecar-landerpi-kinematics-v1.json": "6e2d3d08f6b30a8e7424d808bcff1212b44b996d54d44369e067827f419f3fd5",
+   "config/release-identity.native-m1h.json": "32d4322a61063fa24bb86938d6e9b557cca2d8745fbaff33721e87301d97c1f3",
+   "src/unirobot/__init__.py": "d420e2db76b2650af8361ded2892d984086dd8b539b43e2a93be04682fdd651a",
+   "src/unirobot/__main__.py": "466e1c3162113201a16d7f2bf9837f57a0f3e799870eacc5bf5963513d9c6dd8",
+   "src/unirobot/adapters.py": "2c62e8ce4f9dec4ab2365528d7bbd555fe719a6066522c0dfdac7d539adbfe44",
+   "src/unirobot/api.py": "8ab4e61be741d16527ebb3827081ae7d235c33ff72a3a2a7764f88aa2b54c383",
+   "src/unirobot/catalog.py": "35bb44461993601cd02972dcc5b473ab964ede2f2ec90329917abb64dfcc0e3a",
+   "src/unirobot/contracts.py": "674464a27f09815f96cdda4be0ecab8acf5feab354a4cec9064ef1ac70e9c30c",
+   "src/unirobot/drafts.py": "3c1979f749b557b211fb6b037c3657e21de96677076e1034435f2adf7906bcbd",
+   "src/unirobot/episodes.py": "590f0290c1bd9990d335bde49e1c8f8ddba26f740fba64a891413d4c904390f5",
+   "src/unirobot/frames.py": "9ae98b126e42760aa54ef99ab3c74bfc4b445b70605a39e30a0fdd3b4903f06f",
+   "src/unirobot/history_fk.py": "2822e6641eb363296b9b37d0f204bb7523710c0ede8f7283321199a2cd5be2ee",
+   "src/unirobot/history_pose.py": "75fdb86700ebb09ba85e029b88491d88a3b5112eaa3b9224c5614a1392616b64",
+   "src/unirobot/maps.py": "ea4afd1c76bdac68aff9438419ed8824d101c782ac1138932c8ce95a296bf86d",
+   "src/unirobot/migrate.py": "5f7f7ff0875d9379838b6d1e87657b6a0dd8636ee7c21164eb68eb11c006e41a",
+   "src/unirobot/mobilecar.py": "cd7049ec40bad73193eb9ffa3bc10994a3379fb74f2460848c3ddd34a6c3130c",
+   "src/unirobot/mobilecar_geometry.py": "257c28c32d6043b94e7256503cb0dfb58d7f98969048b19d2bd3a7c1282cd8c4",
+   "src/unirobot/mobilecar_read.py": "07c1c2a602dc400d8505288f2a40f56594494d5969f047f0a4a5f7370c919f4a",
+   "src/unirobot/prepare.py": "36b4e6571d272e49d1c0715f593096e672cd413062b2f968af82c7d1b7f137ed",
+   "src/unirobot/recipe.py": "149a0b3dfe61ddb37cc0f31df9b8858a6c8e9cac5b215e9b19b20ad1779d9bd8",
+   "src/unirobot/routes.py": "dc2b32dfb59d7da4f73d2a4ad7265c7b8c238dfd9ad83feca9304d5f1adb11a8",
+   "src/unirobot/runtime.py": "7cc0fc18c720b9b40d52c6b0ecbdaf8d8c4c63a13d4cd7e0b64b22b3877cd086",
+   "src/unirobot/settings.py": "1d298b8ac9ae91190c9d934c5fb4007c3f38d399e3cb1c3fed7432c3b7c6dbee",
+   "src/unirobot/static/index.html": "c481d84b3b17659d3829a2e19dc737da6554b188d619c10991340562507a5340",
+   "src/unirobot/static/mobilecar/app.js": "3767444673a28af72a11a1e686530eec3b0e552c6d8bbff9615edc60f346fcf6",
+   "src/unirobot/static/mobilecar/drafts.js": "19a2f0bf0d71887128fa00af289ebf5fa690c69dd8b23304f807bd439e3761a5",
+   "src/unirobot/static/mobilecar/index.html": "31cecbde8da80ba6dfcbe71783f5a1876d1043bf40504c66cd5c6ff595b9ccec",
+   "src/unirobot/static/mobilecar/panel.js": "25c87a19946790295583660255850398c5033aeda8f7419dcaa52a333efc600b",
+   "src/unirobot/static/mobilecar/styles.css": "a9f48915298d5c9713ceab5c66c95cb340e589d22fc073c6fbe5aaef18a5e51c",
+   "tools/anchor_coverage_repro.py": "8c54909703b1caa26212827e8684e009e326902a1c8ceb6ea06f099c21f75e55",
+   "tools/check_compiled_geometry.py": "ce975a3b5bf9503ea702fa3d990a7c7d81beb75de2b5d31fa262abb69a5a8aae",
+   "tools/cross_http_protocol_check.py": "b65bc5739b5aaa3e0f389ee8dd3910209ab7a461e4c0159eb2155cad14fa42de",
+   "tools/cross_http_stop_end_check.py": "1224b5222f7aacc4c12c0a31fbeba208f4c1287f720461d3679bcbb0a0e55f1c",
+   "tools/episode_history_check.py": "9848968fd6348af5109ed5e79588ef7545e9b94d1e65baef149915a77c90944c",
+   "tools/export_compiled_geometry.py": "b58742cca32b621d7fd6d6b4336c9f61c5a3363561ffecdc8f47bfd58775fb56",
+   "tools/history_fk_check.py": "8ab92d4fb9f53d588b239044e088ebffa14348a4907455c86c2228eab76050e6",
+   "tools/history_replay_facts.py": "238108b42dce1f2d9f895b11685f663fb947e23b9e16fcf257c53a2c8d519da0",
+   "tools/launch_unified_gateway.py": "6d3d9c05f914a5c9e337b59109a63da4ea97d8ba318aaebf765d3f5a3e29a1cd",
+   "tools/mock_native_protocol_app.py": "22879091b1a220354d5c528290d465701f7d6503cf6a47593661c956ac98c5ea",
+   "tools/native_get_probe.py": "36ec686932a0b8c87f8d773a8165af54f942c84ba3b7ab2959a3609952f82fd7",
+   "tools/native_recipe_identity.py": "d4b36500cbce0d75ce6ae071e576e4678054b7f5e30579769660f9081fc83274",
+   "tools/release_identity.py": "453cdd08ee7b0c795055a0215ab6b8007a80cd324efe916bc93e1014c3839827",
+   "tools/source_digest.py": "4514a0f8195dcd9b8f571243c3b902950ea97122ef65bced6767f3605876c6af",
+   "tools/unified_candidate_check.py": "45b47c537f10bac9097367cf96e9a15f3b41aca0aa8573d1e0d2416b7a791c10"
+  }
+ },
+ "read_only": true,
+ "recipe": {
+  "fingerprint": "9759035b6ca61a0852c01a836560123b2c5dd3891db6af71686b0ea85d470d47",
+  "path": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/recipe/testonly-recipe.json",
+  "recipe_id": "mobilecar.g1.teleop.mock-testonly",
+  "sha256": "07c91e54a4f001de49ac746171c6c31ca21a3bf5d9bc72deca063503493ddd6f"
+ }
+}

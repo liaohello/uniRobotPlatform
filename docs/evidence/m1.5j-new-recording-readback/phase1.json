@@ -1,0 +1,502 @@
+{
+ "classification": {
+  "backend": "mock (no MuJoCo, no render, no physics stepping)",
+  "input": "synthetic media bytes + synthetic events, labelled",
+  "writer": "real Recorder inside the real mobilecar app",
+  "transport": "prepare/start/begin/stop/end over real HTTP through the platform",
+  "injection": "in-process Recorder.publish_observation/publish (no production route added)"
+ },
+ "native_release": "/home/liaozhengyan/Desktop/mobileCar/releases/m1h-20261024T152235Z-native",
+ "native_release_identity": {
+  "recorder_py_sha256": "16de4a54c517daa7ee2aa66b2c6e7e4d133406915c6729c99e23ccb3374ce3fb",
+  "app_py_sha256": "7c41b67d8030e00c11206caa4abf08a569e9c3b84201adcb8f6b9fd0fafc9ce4"
+ },
+ "declared_by_writer": {
+  "sensor_streams": [
+   "rgb",
+   "depth",
+   "lidar",
+   "imu",
+   "encoders",
+   "joint_feedback",
+   "image_transforms"
+  ],
+  "recording_profile": null,
+  "source": "native /api/v1/capabilities (writer's own declaration)"
+ },
+ "test_expected_streams": [
+  "rgb",
+  "depth"
+ ],
+ "test_expected_streams_are_not_a_manifest_fact": true,
+ "platform_requests": [
+  {
+   "method": "GET",
+   "path": "/api/v1/mobilecar/execution-recipe",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/experiment-drafts",
+   "status": 201
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/experiment-drafts/draft-63ea408c44d3461b99d2dca97cf09437/validate",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/sessions",
+   "status": 201
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/sessions/ps-22782a06575849238728f5a32ff24493/start",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/sessions/ps-22782a06575849238728f5a32ff24493/recording/begin",
+   "status": 201
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/sessions/ps-22782a06575849238728f5a32ff24493/stop",
+   "status": 201
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/sessions/ps-22782a06575849238728f5a32ff24493/recording/end",
+   "status": 201
+  }
+ ],
+ "run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+ "backend_generation": 1,
+ "episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+ "platform_recipe_id": "mobilecar.g1.teleop.mock-testonly",
+ "platform_session_id": "ps-22782a06575849238728f5a32ff24493",
+ "recording_begin_receipt": {
+  "binding_id": "bind_619ddfe14e6d41d7bc5f8fa1b1ce80cf",
+  "native_session_id": "ps-22782a06575849238728f5a32ff24493",
+  "run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+  "backend_generation": 1,
+  "episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+  "config_fingerprint": "cs-90b98fbaa313db60e9e4353076300470ba7d6854",
+  "recording_segment_id": "seg_001_0b569f3d11",
+  "recording_status": "RECORDING",
+  "command_capture_ready": true,
+  "recording_start_event_seq": 1,
+  "initial_snapshot_sha256": "faccf11913cd6c8b4dc900d48ff254271eb535f176acee9a553af45d099f191d",
+  "durable_start_records": true,
+  "started_at_backend_monotonic_s": 1533789.481982186
+ },
+ "no_reset_boundary": {
+  "episode_before_begin": "episode_7f432849f34940ad908513d15a2098ed",
+  "episode_after_begin": "episode_7f432849f34940ad908513d15a2098ed",
+  "unchanged": true
+ },
+ "samples": [
+  {
+   "sample_id": "synthetic_frame_00",
+   "capture_control_tick_id": "synthetic_tick_0000",
+   "rgb_sha256": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+   "depth_sha256": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+   "rgb_bytes": 79,
+   "depth_bytes": 144
+  },
+  {
+   "sample_id": "synthetic_frame_01",
+   "capture_control_tick_id": "synthetic_tick_0001",
+   "rgb_sha256": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+   "depth_sha256": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+   "rgb_bytes": 79,
+   "depth_bytes": 144
+  }
+ ],
+ "ticks": [
+  "synthetic_tick_0000",
+  "synthetic_tick_0001",
+  "synthetic_tick_0002",
+  "synthetic_tick_0003"
+ ],
+ "persist_rows": [
+  {
+   "interface_profile": "g2a-1.0",
+   "run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+   "episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+   "stream_id": "rgbd",
+   "sample_id": "synthetic_frame_00",
+   "kinds": [
+    "rgb",
+    "depth"
+   ],
+   "persist_sequence": 1,
+   "persist_backend_monotonic_s": 1533789.518469569,
+   "arrival_backend_monotonic_s": 1533789.6093009422,
+   "capture_backend_monotonic_s": 1533789.597300942,
+   "capture_sim_time_s": 0.34,
+   "capture_control_tick_id": "synthetic_tick_0000",
+   "feedback_sample_id": "joint_feedback_synthetic_tick_0000",
+   "arrival_to_persist_ms": -90.83137311972678,
+   "capture_to_persist_ms": -78.83137301541865,
+   "rgb_uri": "assets/rgb/synthetic_frame_00.png",
+   "depth_uri": "assets/depth/synthetic_frame_00.npy",
+   "valid_mask_uri": null,
+   "profile_id": "g2a-rgbd-5hz-original",
+   "profile_version": "1.0",
+   "profile_sha256": "9473171d7460ba968813b40ad1cae2f392bbc168e85ef4524eced6f38b5e3042"
+  },
+  {
+   "interface_profile": "g2a-1.0",
+   "run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+   "episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+   "stream_id": "rgbd",
+   "sample_id": "synthetic_frame_01",
+   "kinds": [
+    "rgb",
+    "depth"
+   ],
+   "persist_sequence": 2,
+   "persist_backend_monotonic_s": 1533789.523832009,
+   "arrival_backend_monotonic_s": 1533789.809300942,
+   "capture_backend_monotonic_s": 1533789.797300942,
+   "capture_sim_time_s": 0.36000000000000004,
+   "capture_control_tick_id": "synthetic_tick_0001",
+   "feedback_sample_id": "joint_feedback_synthetic_tick_0001",
+   "arrival_to_persist_ms": -285.468933172524,
+   "capture_to_persist_ms": -273.46893306821585,
+   "rgb_uri": "assets/rgb/synthetic_frame_01.png",
+   "depth_uri": "assets/depth/synthetic_frame_01.npy",
+   "valid_mask_uri": null,
+   "profile_id": "g2a-rgbd-5hz-original",
+   "profile_version": "1.0",
+   "profile_sha256": "9473171d7460ba968813b40ad1cae2f392bbc168e85ef4524eced6f38b5e3042"
+  }
+ ],
+ "persist_sha256": "da08e501c4ef9c7956c3e5eb49f2b579a0090ba186c0f5fbb98d6e4e52b58185",
+ "index_rows": 4,
+ "event_type_counts": {
+  "recording_start": 1,
+  "feedback_initial": 1,
+  "actuator_reference": 4,
+  "feedback": 4,
+  "rgbd_capture_timing": 2,
+  "requested": 2,
+  "approved": 2,
+  "recording_stop": 1,
+  "episode_terminal": 1
+ },
+ "stop_receipt": {
+  "accepted": true,
+  "code": "stopped",
+  "recording_touched": false,
+  "motion_restored": false,
+  "recording_status": "RECORDING"
+ },
+ "stop_dispatch": {
+  "dispatched": true,
+  "command_id": "stop_38c0c9b6b3624e7b8115362d99db6e23",
+  "status": "DISPATCHED",
+  "status_detail": ""
+ },
+ "stop_parking": {
+  "confirmed": true,
+  "waited_ms": 1,
+  "timeout_ms": 5000,
+  "base_stopped": true,
+  "base_stop_latched": true,
+  "base_velocity_m_s": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "arm_max_joint_velocity_rad_s": 0.0,
+  "control_tick_id": "mock_000000027",
+  "observed_at_backend_monotonic_s": 1533789.679243258,
+  "scope_coverage": {
+   "base": "confirmed",
+   "arm": "confirmed",
+   "gripper": "not_observed"
+  },
+  "observed_confirmed": true,
+  "coverage_complete": false,
+  "coverage_note": "parking proof covers the base velocity state and observed arm joint rates only; scopes reported as not_observed have no backend feedback and are never inferred"
+ },
+ "end_receipt": {
+  "accepted": true,
+  "code": "ended",
+  "reason": "",
+  "protocol": "m1-end-1",
+  "request_id": "roundtrip-end",
+  "replayed": false,
+  "binding_id": "bind_619ddfe14e6d41d7bc5f8fa1b1ce80cf",
+  "session_id": "ps-22782a06575849238728f5a32ff24493",
+  "config_fingerprint": "cs-90b98fbaa313db60e9e4353076300470ba7d6854",
+  "run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+  "backend_generation": 1,
+  "episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+  "recording_segment_id": "seg_001_0b569f3d11",
+  "active_segment_id": "seg_001_0b569f3d11",
+  "binding_state": "started",
+  "dispatch": {
+   "dispatched": true,
+   "command_id": "stop_7d5f1f2a1be447b3b282433807b98d20",
+   "status": "DISPATCHED",
+   "status_detail": ""
+  },
+  "parking": {
+   "confirmed": true,
+   "waited_ms": 1,
+   "timeout_ms": 5000,
+   "base_stopped": true,
+   "base_stop_latched": true,
+   "base_velocity_m_s": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "arm_max_joint_velocity_rad_s": 0.0,
+   "control_tick_id": "mock_000000031",
+   "observed_at_backend_monotonic_s": 1533789.757279411,
+   "scope_coverage": {
+    "base": "confirmed",
+    "arm": "confirmed",
+    "gripper": "not_observed"
+   },
+   "observed_confirmed": true,
+   "coverage_complete": false,
+   "coverage_note": "parking proof covers the base velocity state and observed arm joint rates only; scopes reported as not_observed have no backend feedback and are never inferred"
+  },
+  "drain": {
+   "completed": true,
+   "fanout_drained": false,
+   "recorder_queue_empty": true,
+   "queued_events": 0,
+   "dropped_events": 0
+  },
+  "finalize": {
+   "completed": true,
+   "error": null,
+   "terminal_event_written": true,
+   "complete_tail": true,
+   "recording_status": "COMPLETE",
+   "audit_status": "COMPLETE",
+   "event_count": 18,
+   "dropped_events": 0,
+   "storage_ref": "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed",
+   "episode_complete_sha256": "9599926fb5df8594472b0a2246a7fb57f39c9654c3a549d7a960add673b7f0c9",
+   "checksummed_artifacts": 14,
+   "preserved_records": true
+  },
+  "integrity": "complete",
+  "recording_status": "COMPLETE",
+  "safety_latched": true,
+  "reset_issued": false,
+  "safety_cleared": false,
+  "owner_acquired": false,
+  "observed_at": "2026-10-30T11:45:25+00:00"
+ },
+ "end_accepted": true,
+ "episode_complete_sha256": "9599926fb5df8594472b0a2246a7fb57f39c9654c3a549d7a960add673b7f0c9",
+ "episode_complete_matches_receipt": true,
+ "manifest": {
+  "clocks": [
+   "sim",
+   "backend_monotonic",
+   "device",
+   "wall_utc"
+  ],
+  "contract_version": "mobilecar-1.0",
+  "created_wall_utc": "2026-10-30T11:45:24.951921Z",
+  "map_mode": "unavailable",
+  "model_id": null,
+  "model_sha256": null,
+  "run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+  "scene_id": null,
+  "software": {
+   "name": "mobilecar",
+   "version": "0.1.0"
+  },
+  "truth_access": "GT_DEBUG_SEPARATE_FROM_DEFAULT_OBSERVATION"
+ },
+ "episode_json": {
+  "audit_status": "COMPLETE",
+  "contract_version": "mobilecar-1.0",
+  "created_wall_utc": "2026-10-30T11:45:24.956267Z",
+  "ended_wall_utc": "2026-10-30T11:45:25.261138Z",
+  "episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+  "map_mode": "unavailable",
+  "operator_id": "m1j-synthetic-driver",
+  "operator_kind": "human_teleop",
+  "recording_status": "COMPLETE",
+  "require_recording": true,
+  "result": "unknown",
+  "run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+  "segments": [
+   {
+    "ended_wall_utc": "2026-10-30T11:45:25.261119Z",
+    "previous_recording_segment_id": null,
+    "reason": "OPERATOR_FINISHED",
+    "recording_segment_id": "seg_001_0b569f3d11",
+    "started_backend_monotonic_s": 1533789.454840672,
+    "started_wall_utc": "2026-10-30T11:45:24.956330Z",
+    "status": "COMPLETE",
+    "termination_reason": "OPERATOR_FINISHED"
+   }
+  ],
+  "task_assessed_wall_utc": "2026-10-30T11:45:25.285499Z",
+  "task_language": "Drive to the cube, grasp it, lift at least 50 mm and hold for 2 s.",
+  "task_result_source": "world_sim_isolated_oracle_v1",
+  "termination_reason": "OPERATOR_FINISHED",
+  "view_source": "third_person_3d"
+ },
+ "quality_report": {
+  "actual_rates_hz": {
+   "rgbd": 5.0
+  },
+  "audit_status": "INCOMPLETE",
+  "contract_version": "mobilecar-1.0",
+  "counts": {
+   "assets_referenced": 4,
+   "commands": 4,
+   "control": 10,
+   "events": 18,
+   "observations": 4,
+   "segments": 1,
+   "transforms": 2
+  },
+  "coverage": {
+   "rgbd": 1.0
+  },
+  "episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+  "errors": [
+   "observation stream rgbd depth lacks an explicit valid mask",
+   "observation stream rgbd depth lacks an explicit valid mask"
+  ],
+  "gate_reasons": [],
+  "gates": {},
+  "generated_wall_utc": "2026-10-30T11:45:25.280395Z",
+  "max_gap_s": {
+   "rgbd": 0.2
+  },
+  "passed": false,
+  "profile_id": null,
+  "profile_sha256": null,
+  "profile_version": null,
+  "recording_status": "COMPLETE",
+  "termination_reason": "OPERATOR_FINISHED",
+  "timing": null,
+  "warnings": []
+ },
+ "checks": {
+  "begin_did_not_reset_the_episode": true,
+  "persist_has_one_row_per_sample": true,
+  "rgb_and_depth_share_each_persist_key": true,
+  "every_media_file_exists_with_the_injected_bytes": true,
+  "writer_emitted_capture_timing_per_sample": true,
+  "writer_emitted_feedback_and_reference_per_tick": true,
+  "exactly_one_terminal_event": true,
+  "tail_exists_and_names_the_segment": true,
+  "tail_digest_matches_the_end_receipt": true,
+  "stop_was_dispatched_and_parking_confirmed": true,
+  "stop_does_not_claim_full_parking_coverage": true,
+  "stop_left_the_recording_running": true,
+  "end_accepted": true
+ },
+ "inventory_after_stop": {
+  "assessments/eligibility.json": {
+   "bytes": 764,
+   "sha256": "0c5db4ca3b599ac7e8109510f680a823e214a00d8391765c7150d0411adc9754",
+   "mtime_ns": 1793360725287938050
+  },
+  "assessments/task_assessment.json": {
+   "bytes": 390,
+   "sha256": "57e0e1e13214bdcaae0990e6df8b5c17f32591ae12b43bc0c17545448f1be78b",
+   "mtime_ns": 1793360725281937912
+  },
+  "assets/depth/synthetic_frame_00.npy": {
+   "bytes": 144,
+   "sha256": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+   "mtime_ns": 1793360724991931256
+  },
+  "assets/depth/synthetic_frame_01.npy": {
+   "bytes": 144,
+   "sha256": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+   "mtime_ns": 1793360724996931371
+  },
+  "assets/rgb/synthetic_frame_00.png": {
+   "bytes": 79,
+   "sha256": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+   "mtime_ns": 1793360724983931072
+  },
+  "assets/rgb/synthetic_frame_01.png": {
+   "bytes": 79,
+   "sha256": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+   "mtime_ns": 1793360724994931325
+  },
+  "commands.jsonl": {
+   "bytes": 3586,
+   "sha256": "4bd55d62de6be5001db0a52e019030670ced4e787dd5e8c88ec6cc3a51b6360b",
+   "mtime_ns": 1793360725247937132
+  },
+  "control.jsonl": {
+   "bytes": 7204,
+   "sha256": "26c9b03167eab25c2a09483fc9aef2533c431c74a959e9e7ff64cb484f277c43",
+   "mtime_ns": 1793360725247937132
+  },
+  "episode.json": {
+   "bytes": 1175,
+   "sha256": "a4314ae71ac0b1db8eb1a499a0c25694bd89b12a536d378d3987964825f72aa7",
+   "mtime_ns": 1793360725283937958
+  },
+  "episode_complete.json": {
+   "bytes": 1755,
+   "sha256": "9599926fb5df8594472b0a2246a7fb57f39c9654c3a549d7a960add673b7f0c9",
+   "mtime_ns": 1793360725257937361
+  },
+  "events.jsonl": {
+   "bytes": 24166,
+   "sha256": "4ffff35e9396f7ac8d884591a46fbb13a43d8a0fc12c492efc763dacae8068f1",
+   "mtime_ns": 1793360725247937132
+  },
+  "initial_snapshot.json": {
+   "bytes": 7505,
+   "sha256": "faccf11913cd6c8b4dc900d48ff254271eb535f176acee9a553af45d099f191d",
+   "mtime_ns": 1793360724960930543
+  },
+  "observations/depth.jsonl": {
+   "bytes": 2786,
+   "sha256": "bc9318e1690b9eee4bff1a1d81dfdec622c8e5eff04ecd4eecd077c805003730",
+   "mtime_ns": 1793360725004931554
+  },
+  "observations/index.jsonl": {
+   "bytes": 5472,
+   "sha256": "0f405fba2366a2bda0e7ed70b60b3b9960d4e04778751407a6c476ae3f2fdbf0",
+   "mtime_ns": 1793360725004931554
+  },
+  "observations/persist.jsonl": {
+   "bytes": 1732,
+   "sha256": "da08e501c4ef9c7956c3e5eb49f2b579a0090ba186c0f5fbb98d6e4e52b58185",
+   "mtime_ns": 1793360725006931600
+  },
+  "observations/rgb.jsonl": {
+   "bytes": 2686,
+   "sha256": "76d3b972a4208935c1fd6d1496f302dac668b36fd2bdf1a4534eacbb222d12cb",
+   "mtime_ns": 1793360725004931554
+  },
+  "quality_report.json": {
+   "bytes": 869,
+   "sha256": "16dd77e20f939030e720bd42638f4329707068aa94c02eed11172841da534c9e",
+   "mtime_ns": 1793360725278937843
+  },
+  "transforms.jsonl": {
+   "bytes": 2041,
+   "sha256": "8010a23786364a76d7b967c11c143ea34ba0e2ac398b4255c0aae2658c8889a2",
+   "mtime_ns": 1793360725004931554
+  }
+ },
+ "manifest_sha256": "1701c55866c875871066bdfbc19d8aba2ad6a2b01656dc4b54aad5fb1417dafe",
+ "writer_stopped_at_utc": "2026-10-30T11:45:25Z",
+ "writer_process_alive_after_shutdown": false
+}

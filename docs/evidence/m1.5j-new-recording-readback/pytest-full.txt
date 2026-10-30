@@ -1,0 +1,62 @@
+......FF................................................................ [ 34%]
+.............................F.......................................... [ 69%]
+................................................................         [100%]
+=================================== FAILURES ===================================
+________________________ test_catalog_loads_real_tasks _________________________
+
+    def test_catalog_loads_real_tasks():
+        catalog = load_catalog(CONFIG_PATH)
+        assert len(catalog.tasks) == 12
+        assert {robot.id for robot in catalog.robots.values()} == {"landerpi", "so101_dual"}
+        assert {adapter.id for adapter in catalog.adapters.values()} == {
+            "mobilecar",
+            "bimanual",
+            "landerpi",
+        }
+>       assert catalog.warnings == []
+E       AssertionError: assert ['adapter mob...port.md', ...] == []
+E         
+E         Left contains 25 more items, first extra item: 'adapter mobilecar: project root missing: ../mobileCar'
+E         Use -v to get more diff
+
+/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1h-dev-20261030T001453Z/backend/tests/test_catalog.py:17: AssertionError
+____________________ test_every_task_has_existing_evidence _____________________
+
+    def test_every_task_has_existing_evidence():
+        catalog = load_catalog(CONFIG_PATH)
+        for task in catalog.tasks.values():
+            assert task.evidence, task.id
+            for path in task.evidence_paths:
+>               assert Path(path).exists(), f"{task.id}: {path}"
+E               AssertionError: mobilecar.g1.teleop: /tmp/mobileCar/docs/acceptance_report.md
+E               assert False
+E                +  where False = exists()
+E                +    where exists = PosixPath('/tmp/mobileCar/docs/acceptance_report.md').exists
+E                +      where PosixPath('/tmp/mobileCar/docs/acceptance_report.md') = Path('/tmp/mobileCar/docs/acceptance_report.md')
+
+/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1h-dev-20261030T001453Z/backend/tests/test_catalog.py:25: AssertionError
+_________________________ test_manifest_sources_exist __________________________
+
+    def test_manifest_sources_exist():
+        report = audit()
+        assert report["manifest_version"] == "0.1"
+        assert len(report["modules"]) == 15
+        missing = [item["id"] for item in report["modules"] if not item["source_exists"]]
+>       assert missing == []
+E       AssertionError: assert ['MC-CONTRACT...LIDATOR', ...] == []
+E         
+E         Left contains 15 more items, first extra item: 'MC-CONTRACTS'
+E         Use -v to get more diff
+
+/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1h-dev-20261030T001453Z/backend/tests/test_migrate.py:9: AssertionError
+=============================== warnings summary ===============================
+../../home/liaozhengyan/Desktop/uniRobotPlatform/envs/gateway-py314/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /home/liaozhengyan/Desktop/uniRobotPlatform/envs/gateway-py314/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_catalog.py::test_catalog_loads_real_tasks - Asserti...
+FAILED backend/tests/test_catalog.py::test_every_task_has_existing_evidence
+FAILED backend/tests/test_migrate.py::test_manifest_sources_exist - Assertion...
+3 failed, 205 passed, 1 warning in 30.10s

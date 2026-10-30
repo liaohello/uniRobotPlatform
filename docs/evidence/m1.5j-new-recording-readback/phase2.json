@@ -1,0 +1,2639 @@
+{
+ "action_basis": {
+  "categories": {
+   "actual_state_feedback": {
+    "absent_event_types": [],
+    "counts": {
+     "feedback": 4
+    },
+    "event_types_recorded": [
+     "feedback"
+    ],
+    "meaning": "recorded robot state as measured (Actual); never promoted to a live read",
+    "status": "observed"
+   },
+   "capture_timing": {
+    "absent_event_types": [],
+    "counts": {
+     "rgbd_capture_timing": 2
+    },
+    "event_types_recorded": [
+     "rgbd_capture_timing"
+    ],
+    "meaning": "the recorder's own per-frame capture timing event",
+    "status": "observed"
+   },
+   "command_dispatched": {
+    "absent_event_types": [
+     "dispatch"
+    ],
+    "counts": {},
+    "event_types_recorded": [],
+    "meaning": "a command the recorder marked as dispatched",
+    "status": "not_recorded_in_this_scan",
+    "status_note": "the scan found no record of this category; that is a fact about this Episode's events stream, not a claim that the recorder can never write one"
+   },
+   "command_intent": {
+    "absent_event_types": [],
+    "counts": {
+     "requested": 2
+    },
+    "event_types_recorded": [
+     "requested"
+    ],
+    "meaning": "a command the recorder saw requested; intent only, no execution claim",
+    "status": "observed"
+   },
+   "command_receipt_accepted": {
+    "absent_event_types": [],
+    "counts": {
+     "approved": 2
+    },
+    "event_types_recorded": [
+     "approved"
+    ],
+    "meaning": "a recorded approval decision beside the request",
+    "status": "observed"
+   },
+   "command_receipt_rejected": {
+    "absent_event_types": [
+     "rejected"
+    ],
+    "counts": {},
+    "event_types_recorded": [],
+    "meaning": "a recorded rejection; its absence is not evidence that nothing was rejected",
+    "status": "not_recorded_in_this_scan",
+    "status_note": "the scan found no record of this category; that is a fact about this Episode's events stream, not a claim that the recorder can never write one"
+   },
+   "episode_lifecycle": {
+    "absent_event_types": [],
+    "counts": {
+     "episode_terminal": 1,
+     "recording_start": 1,
+     "recording_stop": 1
+    },
+    "event_types_recorded": [
+     "episode_terminal",
+     "recording_start",
+     "recording_stop"
+    ],
+    "meaning": "segment start, stop request and terminal declaration",
+    "status": "observed"
+   },
+   "lease_boundary": {
+    "absent_event_types": [
+     "lease_expired",
+     "lease_heartbeat"
+    ],
+    "counts": {},
+    "event_types_recorded": [],
+    "meaning": "lease renewal and expiry records naming a session; they are not a takeover protocol",
+    "status": "not_recorded_in_this_scan",
+    "status_note": "the scan found no record of this category; that is a fact about this Episode's events stream, not a claim that the recorder can never write one"
+   },
+   "recorded_state_initial": {
+    "absent_event_types": [],
+    "counts": {
+     "feedback_initial": 1
+    },
+    "event_types_recorded": [
+     "feedback_initial"
+    ],
+    "meaning": "the state snapshot the recorder took when the segment started",
+    "status": "observed"
+   },
+   "recorded_target": {
+    "absent_event_types": [],
+    "counts": {
+     "actuator_reference": 4
+    },
+    "event_types_recorded": [
+     "actuator_reference"
+    ],
+    "meaning": "recorded actuator reference (Target); a target is not an achieved state",
+    "status": "observed"
+   }
+  },
+  "command_chain": {
+   "commands": [
+    {
+     "command_id": "stop_38c0c9b6b3624e7b8115362d99db6e23",
+     "control_tick_id_present": 0,
+     "positions": {
+      "approved": [
+       "events.jsonl#13"
+      ],
+      "requested": [
+       "events.jsonl#12"
+      ]
+     },
+     "stages": {
+      "approved": 1,
+      "requested": 1
+     }
+    },
+    {
+     "command_id": "stop_7d5f1f2a1be447b3b282433807b98d20",
+     "control_tick_id_present": 0,
+     "positions": {
+      "approved": [
+       "events.jsonl#15"
+      ],
+      "requested": [
+       "events.jsonl#14"
+      ]
+     },
+     "stages": {
+      "approved": 1,
+      "requested": 1
+     }
+    }
+   ],
+   "commands_truncated": false,
+   "grouped_by": "command_id",
+   "note": "a request, its approval and its dispatch are separate records joined by command_id; the chain proves no execution result, and a rejected request never becomes an executed action"
+  },
+  "control_source": {
+   "fields_observed": {
+    "approved": [
+     "payload.command.operator_id",
+     "payload.command.operator_kind",
+     "payload.command.session_id"
+    ],
+    "recording_start": [
+     "payload.operator_id",
+     "payload.operator_kind",
+     "payload.view_source"
+    ],
+    "requested": [
+     "payload.request.operator_id",
+     "payload.request.operator_kind",
+     "payload.request.session_id",
+     "payload.request.view_source"
+    ]
+   },
+   "lease_evidence": {},
+   "note": "the recorder names an operator inside some payloads and a lease beside its own session id; it records no control-source switch or takeover event in this scan, and the reader never defaults a source to Human",
+   "status": "recorded_only_inside_payload_fields",
+   "takeover_event_type_recorded": false
+  },
+  "frame_association": {
+   "by_event_type": {
+    "actuator_reference": {
+     "candidate_count_per_frame_on_this_page": {
+      "1": 2
+     },
+     "frames_with_this_verdict": 2
+    },
+    "dispatch": {
+     "candidate_count_per_frame_on_this_page": {
+      "0": 2
+     },
+     "frames_with_this_verdict": 2
+    },
+    "feedback": {
+     "candidate_count_per_frame_on_this_page": {
+      "1": 2
+     },
+     "frames_with_this_verdict": 2
+    },
+    "feedback_initial": {
+     "candidate_count_per_frame_on_this_page": {
+      "0": 2
+     },
+     "frames_with_this_verdict": 2
+    }
+   },
+   "candidate_list_limit": 8,
+   "candidate_lists_truncated": false,
+   "candidate_positions_per_frame": [
+    {
+     "by_event_type": {
+      "actuator_reference": {
+       "candidate_count": 1,
+       "record_positions": [
+        "events.jsonl#2"
+       ],
+       "status": "matched"
+      },
+      "dispatch": {
+       "looked_for": {
+        "control_tick_id": "synthetic_tick_0000"
+       },
+       "reason": "no record of this type names this capture tick",
+       "status": "missing"
+      },
+      "feedback": {
+       "candidate_count": 1,
+       "record_positions": [
+        "events.jsonl#3"
+       ],
+       "status": "matched"
+      },
+      "feedback_initial": {
+       "looked_for": {
+        "control_tick_id": "synthetic_tick_0000"
+       },
+       "reason": "no record of this type names this capture tick",
+       "status": "missing"
+      }
+     },
+     "capture_control_tick_id": "synthetic_tick_0000",
+     "sample_id": "synthetic_frame_00"
+    },
+    {
+     "by_event_type": {
+      "actuator_reference": {
+       "candidate_count": 1,
+       "record_positions": [
+        "events.jsonl#4"
+       ],
+       "status": "matched"
+      },
+      "dispatch": {
+       "looked_for": {
+        "control_tick_id": "synthetic_tick_0001"
+       },
+       "reason": "no record of this type names this capture tick",
+       "status": "missing"
+      },
+      "feedback": {
+       "candidate_count": 1,
+       "record_positions": [
+        "events.jsonl#5"
+       ],
+       "status": "matched"
+      },
+      "feedback_initial": {
+       "looked_for": {
+        "control_tick_id": "synthetic_tick_0001"
+       },
+       "reason": "no record of this type names this capture tick",
+       "status": "missing"
+      }
+     },
+     "capture_control_tick_id": "synthetic_tick_0001",
+     "sample_id": "synthetic_frame_01"
+    }
+   ],
+   "key": "control_tick_id equals the frame anchor's own capture_control_tick_id",
+   "rules": {
+    "association": "exact equality of the recorded key; a frame's capture tick matched against the record's control_tick_id",
+    "clock_parity": "numerically close or even equal stamps never upgrade a link: `synchronized_across_streams` and `same_clock_verified` stay false, and an event whose time equals a frame's capture time but which names no shared key stays an independent track",
+    "no_shared_key": "the category is reported as an independent event track, readable by event_seq and named time bases only",
+    "operator_source": "the source is whatever the record's own operator fields name; it is never defaulted to Human",
+    "recorded_target": "an actuator reference is a recorded Target and is never reported as measured Actual state",
+    "rejected_requests": "a rejected or unapproved request is never presented as an executed action",
+    "units": "taken from the recorder's own field-name suffix; a field without a unit-bearing suffix is reported as unknown_from_field_name",
+    "when_nothing_matches": "missing, with the key that was looked for \u2014 no carry-over from the previous tick, no nearest-in-time",
+    "when_several_match": "ambiguous_candidates with every candidate position listed; the first line in the file is not chosen",
+    "zero_action": "no action vector is invented for a tick that records none"
+   }
+  },
+  "independent_tracks": [
+   "command_intent",
+   "command_receipt_accepted",
+   "episode_lifecycle",
+   "recorded_state_initial"
+  ],
+  "not_proven": [
+   "that any command below was physically executed",
+   "a control-source switch or takeover",
+   "that an absent category is impossible for the recorder",
+   "any cross-stream simultaneity",
+   "that a scanned event and a frame share one clock instant"
+  ],
+  "scope": {
+   "anchors_on_this_page": 2,
+   "events_stream_present": true,
+   "page_ticks_considered": 2,
+   "reached_end_of_file": true,
+   "record_limit": 20000,
+   "records_scanned": 18,
+   "records_without_an_event_type": 0,
+   "relative_path": "events.jsonl",
+   "scope_note": "the vocabulary covers every record the scan read in this Episode's events stream; a scan that stopped at the record limit describes only what it read",
+   "stopped_at_line_index": null,
+   "stream_id": "events"
+  }
+ },
+ "checks": [
+  {
+   "detail": {
+    "begin_did_not_reset_the_episode": true,
+    "end_accepted": true,
+    "every_media_file_exists_with_the_injected_bytes": true,
+    "exactly_one_terminal_event": true,
+    "persist_has_one_row_per_sample": true,
+    "rgb_and_depth_share_each_persist_key": true,
+    "stop_does_not_claim_full_parking_coverage": true,
+    "stop_left_the_recording_running": true,
+    "stop_was_dispatched_and_parking_confirmed": true,
+    "tail_digest_matches_the_end_receipt": true,
+    "tail_exists_and_names_the_segment": true,
+    "writer_emitted_capture_timing_per_sample": true,
+    "writer_emitted_feedback_and_reference_per_tick": true
+   },
+   "name": "the frozen generator reported every writer check passed",
+   "passed": true
+  },
+  {
+   "detail": false,
+   "name": "the frozen generator shut its mock native writer down",
+   "passed": true
+  },
+  {
+   "detail": {
+    "port": 18980
+   },
+   "name": "no mock writer is listening on the recorded native port",
+   "passed": true
+  },
+  {
+   "detail": {
+    "persist_rows": 2,
+    "samples": 2
+   },
+   "name": "the writer recorded at least two paired RGB/depth samples on disk",
+   "passed": true
+  },
+  {
+   "detail": {
+    "actuator_reference": 4,
+    "feedback": 4,
+    "ticks": 4
+   },
+   "name": "the writer emitted feedback and actuator references for every tick",
+   "passed": true
+  },
+  {
+   "detail": {
+    "rgbd_capture_timing": 2,
+    "samples": 2
+   },
+   "name": "the writer emitted one capture-timing record per sample",
+   "passed": true
+  },
+  {
+   "detail": 1,
+   "name": "the writer recorded one Episode terminal event",
+   "passed": true
+  },
+  {
+   "detail": true,
+   "name": "the Episode tail exists and matches the end receipt",
+   "passed": true
+  },
+  {
+   "detail": {
+    "episode_dir": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/recordings/run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed"
+   },
+   "name": "the recording tree contains the Episode and persist anchors",
+   "passed": true
+  },
+  {
+   "detail": {
+    "actual": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+    "expected": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+    "path": "assets/rgb/synthetic_frame_00.png"
+   },
+   "name": "synthetic_frame_00 rgb file exists with the injected bytes",
+   "passed": true
+  },
+  {
+   "detail": {
+    "actual": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+    "expected": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+    "path": "assets/depth/synthetic_frame_00.npy"
+   },
+   "name": "synthetic_frame_00 depth file exists with the injected bytes",
+   "passed": true
+  },
+  {
+   "detail": {
+    "actual": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+    "expected": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+    "path": "assets/rgb/synthetic_frame_01.png"
+   },
+   "name": "synthetic_frame_01 rgb file exists with the injected bytes",
+   "passed": true
+  },
+  {
+   "detail": {
+    "actual": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+    "expected": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+    "path": "assets/depth/synthetic_frame_01.npy"
+   },
+   "name": "synthetic_frame_01 depth file exists with the injected bytes",
+   "passed": true
+  },
+  {
+   "detail": {
+    "actual_aggregate": "107f897ddfe2485fb116eba8c6bbdef32258c4c2ab483d80f27a01e1cf803d59",
+    "actual_files": 50,
+    "recorded_aggregate": "107f897ddfe2485fb116eba8c6bbdef32258c4c2ab483d80f27a01e1cf803d59",
+    "recorded_files": 50
+   },
+   "name": "the reader runs the frozen platform source recorded by the startup manifest",
+   "passed": true
+  },
+  {
+   "detail": {
+    "episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+    "listed": 1,
+    "run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+    "status": 200
+   },
+   "name": "the reader list returns the new Episode",
+   "passed": true
+  },
+  {
+   "detail": {
+    "declared": {
+     "audit_status": "COMPLETE",
+     "recording_status": "COMPLETE",
+     "require_recording": true,
+     "result": "unknown",
+     "termination_reason": "OPERATOR_FINISHED"
+    },
+    "readable": true
+   },
+   "name": "the list marks the new Episode readable and COMPLETE",
+   "passed": true
+  },
+  {
+   "detail": "testonly-new-recording-run_5f972f067e014b8596d38c20f5f6042c",
+   "name": "the list source is the test-only source, not the production archive",
+   "passed": true
+  },
+  {
+   "detail": {
+    "identity_episode": "episode_7f432849f34940ad908513d15a2098ed",
+    "identity_run": "run_5f972f067e014b8596d38c20f5f6042c",
+    "recording_root_resolved": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/recordings",
+    "status": 200
+   },
+   "name": "the reader detail keeps the new run/episode identity",
+   "passed": true
+  },
+  {
+   "detail": {
+    "complete_tail_file_present": true,
+    "episode_json_readable": true,
+    "tail_json_readable": true
+   },
+   "name": "the detail reads the Episode and tail declarations",
+   "passed": true
+  },
+  {
+   "detail": {
+    "actual": {
+     "events": {
+      "available": true,
+      "records": 18
+     },
+     "observations-index": {
+      "available": true,
+      "records": 4
+     },
+     "observations-persist": {
+      "available": true,
+      "records": 2
+     },
+     "transforms": {
+      "available": true,
+      "records": 2
+     }
+    },
+    "expected": {
+     "events": 18,
+     "observations-index": 4,
+     "observations-persist": 2,
+     "transforms": 2
+    },
+    "status": 200
+   },
+   "name": "the stream catalogue lists and counts every written stream",
+   "passed": true
+  },
+  {
+   "detail": {
+    "records": 18,
+    "status": 200,
+    "writer": 18
+   },
+   "name": "bounded event records return every written event with its line position",
+   "passed": true
+  },
+  {
+   "detail": {
+    "reader": {
+     "actuator_reference": 4,
+     "approved": 2,
+     "episode_terminal": 1,
+     "feedback": 4,
+     "feedback_initial": 1,
+     "recording_start": 1,
+     "recording_stop": 1,
+     "requested": 2,
+     "rgbd_capture_timing": 2
+    },
+    "writer": {
+     "actuator_reference": 4,
+     "approved": 2,
+     "episode_terminal": 1,
+     "feedback": 4,
+     "feedback_initial": 1,
+     "recording_start": 1,
+     "recording_stop": 1,
+     "requested": 2,
+     "rgbd_capture_timing": 2
+    }
+   },
+   "name": "the reader reads the same event vocabulary as the writer",
+   "passed": true
+  },
+  {
+   "detail": {
+    "counts": [
+     2,
+     2
+    ],
+    "mismatches": []
+   },
+   "name": "bounded persist records match the writer row for row",
+   "passed": true
+  },
+  {
+   "detail": {
+    "samples": [
+     "synthetic_frame_00",
+     "synthetic_frame_01"
+    ],
+    "status": 200
+   },
+   "name": "bounded transform records reach every sample by sample_id",
+   "passed": true
+  },
+  {
+   "detail": {
+    "sample_ids": [
+     "synthetic_frame_00",
+     "synthetic_frame_01"
+    ],
+    "status": 200
+   },
+   "name": "the reader returns both new frames in append order",
+   "passed": true
+  },
+  {
+   "detail": {
+    "synthetic_frame_00": {
+     "anchor": {
+      "clocks": {
+       "arrival_backend_monotonic_s": 1533789.6093009422,
+       "arrival_to_persist_ms": -90.83137311972678,
+       "capture_backend_monotonic_s": 1533789.597300942,
+       "capture_sim_time_s": 0.34,
+       "capture_to_persist_ms": -78.83137301541865,
+       "persist_backend_monotonic_s": 1533789.518469569
+      },
+      "declared_keys": [
+       "arrival_backend_monotonic_s",
+       "arrival_to_persist_ms",
+       "capture_backend_monotonic_s",
+       "capture_control_tick_id",
+       "capture_sim_time_s",
+       "capture_to_persist_ms",
+       "depth_uri",
+       "episode_id",
+       "feedback_sample_id",
+       "interface_profile",
+       "kinds",
+       "persist_backend_monotonic_s",
+       "persist_sequence",
+       "profile_id",
+       "profile_sha256",
+       "profile_version",
+       "rgb_uri",
+       "run_id",
+       "sample_id",
+       "stream_id",
+       "valid_mask_uri"
+      ],
+      "identity": {
+       "declared_episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+       "declared_run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+       "episode_id_matches": true,
+       "run_id_matches": true
+      },
+      "line_index": 0,
+      "persist_sequence": 1,
+      "profile": {
+       "interface_profile": "g2a-1.0",
+       "kinds": [
+        "rgb",
+        "depth"
+       ],
+       "profile_id": "g2a-rgbd-5hz-original",
+       "profile_sha256": "9473171d7460ba968813b40ad1cae2f392bbc168e85ef4524eced6f38b5e3042",
+       "profile_version": "1.0"
+      },
+      "reference_keys": {
+       "capture_control_tick_id": "synthetic_tick_0000",
+       "feedback_sample_id": "joint_feedback_synthetic_tick_0000"
+      },
+      "relative_path": "observations/persist.jsonl"
+     },
+     "linkage_status": "matched",
+     "roles": {
+      "camera_transform": {
+       "candidate_records": 1,
+       "matched_records": 1
+      },
+      "capture_timing_event": {
+       "candidate_records": 1,
+       "matched_records": 1
+      },
+      "feedback_observation_row": {
+       "candidate_records": 0,
+       "matched_records": 0
+      },
+      "image_observation": {
+       "candidate_records": 2,
+       "matched_records": 2
+      },
+      "state_feedback_event": {
+       "candidate_records": 1,
+       "matched_records": 1
+      }
+     }
+    },
+    "synthetic_frame_01": {
+     "anchor": {
+      "clocks": {
+       "arrival_backend_monotonic_s": 1533789.809300942,
+       "arrival_to_persist_ms": -285.468933172524,
+       "capture_backend_monotonic_s": 1533789.797300942,
+       "capture_sim_time_s": 0.36000000000000004,
+       "capture_to_persist_ms": -273.46893306821585,
+       "persist_backend_monotonic_s": 1533789.523832009
+      },
+      "declared_keys": [
+       "arrival_backend_monotonic_s",
+       "arrival_to_persist_ms",
+       "capture_backend_monotonic_s",
+       "capture_control_tick_id",
+       "capture_sim_time_s",
+       "capture_to_persist_ms",
+       "depth_uri",
+       "episode_id",
+       "feedback_sample_id",
+       "interface_profile",
+       "kinds",
+       "persist_backend_monotonic_s",
+       "persist_sequence",
+       "profile_id",
+       "profile_sha256",
+       "profile_version",
+       "rgb_uri",
+       "run_id",
+       "sample_id",
+       "stream_id",
+       "valid_mask_uri"
+      ],
+      "identity": {
+       "declared_episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+       "declared_run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+       "episode_id_matches": true,
+       "run_id_matches": true
+      },
+      "line_index": 1,
+      "persist_sequence": 2,
+      "profile": {
+       "interface_profile": "g2a-1.0",
+       "kinds": [
+        "rgb",
+        "depth"
+       ],
+       "profile_id": "g2a-rgbd-5hz-original",
+       "profile_sha256": "9473171d7460ba968813b40ad1cae2f392bbc168e85ef4524eced6f38b5e3042",
+       "profile_version": "1.0"
+      },
+      "reference_keys": {
+       "capture_control_tick_id": "synthetic_tick_0001",
+       "feedback_sample_id": "joint_feedback_synthetic_tick_0001"
+      },
+      "relative_path": "observations/persist.jsonl"
+     },
+     "linkage_status": "matched",
+     "roles": {
+      "camera_transform": {
+       "candidate_records": 1,
+       "matched_records": 1
+      },
+      "capture_timing_event": {
+       "candidate_records": 1,
+       "matched_records": 1
+      },
+      "feedback_observation_row": {
+       "candidate_records": 0,
+       "matched_records": 0
+      },
+      "image_observation": {
+       "candidate_records": 2,
+       "matched_records": 2
+      },
+      "state_feedback_event": {
+       "candidate_records": 1,
+       "matched_records": 1
+      }
+     }
+    }
+   },
+   "name": "every frame matches image rows, transform, capture timing and state by recorded keys",
+   "passed": true
+  },
+  {
+   "detail": [
+    {
+     "sample_id": "synthetic_frame_00",
+     "tick": "synthetic_tick_0000"
+    },
+    {
+     "sample_id": "synthetic_frame_01",
+     "tick": "synthetic_tick_0001"
+    }
+   ],
+   "name": "each frame carries the writer's sample id and capture tick",
+   "passed": true
+  },
+  {
+   "detail": {
+    "anchors_in_this_scan": 2,
+    "covers_whole_episode": true,
+    "line_accounting": {
+     "benign_lines": {
+      "blank_lines_skipped": 0,
+      "prefiltered_lines_skipped": 0
+     },
+     "every_line_of_the_anchor_file_is_decided": true,
+     "note": "a blank line and a line that cannot carry the requested stream token are decided, not corruption; a line the reader could not parse is undecided and could have carried an anchor, so it blocks a whole-episode claim",
+     "parsed_records_rejected_by_rule": 0,
+     "rules": {
+      "blank_lines_skipped": {
+       "affects_whole_episode_qualification": false,
+       "classification": "benign",
+       "may_hide_an_anchor": false,
+       "why": "an empty line carries no record at all, so nothing about it is unknown"
+      },
+      "non_object_lines_skipped": {
+       "affects_whole_episode_qualification": true,
+       "classification": "undecidable",
+       "may_hide_an_anchor": true,
+       "why": "valid JSON that is not an object is not a conforming record, and what it was meant to carry is unknown"
+      },
+      "oversize_lines_skipped": {
+       "affects_whole_episode_qualification": true,
+       "classification": "undecidable",
+       "may_hide_an_anchor": true,
+       "why": "the content was never parsed, so it cannot be ruled out as an anchor record"
+      },
+      "prefiltered_lines_skipped": {
+       "affects_whole_episode_qualification": false,
+       "classification": "benign",
+       "may_hide_an_anchor": false,
+       "why": "raw text that cannot contain the requested stream_id token is not an anchor record of the requested stream under the reader's own documented prefilter rule"
+      },
+      "unparseable_lines_skipped": {
+       "affects_whole_episode_qualification": true,
+       "classification": "undecidable",
+       "may_hide_an_anchor": true,
+       "why": "a truncated or half-written line is exactly how a lost anchor would look"
+      }
+     },
+     "undecidable_lines": {
+      "non_object_lines_skipped": 0,
+      "oversize_lines_skipped": 0,
+      "unparseable_lines_skipped": 0
+     },
+     "undecidable_positions": [],
+     "undecidable_positions_truncated": false,
+     "undecidable_total": 0
+    },
+    "reached_end_of_file": true
+   },
+   "name": "time quality scanned to EOF and decided every anchor line",
+   "passed": true
+  },
+  {
+   "detail": {
+    "append": {
+     "anchor_position_never_reordered_by_time": true,
+     "basis": "the anchor file is read in the recorder's own append order and a full page stops at the first further qualifying anchor",
+     "displayed_sequence_may_have_gaps": false,
+     "does_not_require": [
+      "a numeric capture time base",
+      "clock sameness",
+      "unique sample ids"
+     ],
+     "eligible": true,
+     "gap_note": "A stays available: undecidable lines are reported with their positions so the reader can show what it could not decide, but they are not silently presented as a complete frame sequence",
+     "mode": "A"
+    },
+    "by_base": {
+     "capture_backend_monotonic_s": {
+      "blocking_reason_scope": {
+       "coverage": [],
+       "timing": []
+      },
+      "blocking_reasons": [],
+      "eligible_for_whole_episode": true,
+      "eligible_within_this_scan": true,
+      "every_line_of_the_anchor_file_is_decided": true,
+      "implied_rate_hz_from_median_recorded_gap": 5.000000001164153,
+      "implied_rate_note": "derived from the recorded values of this scan; it is not a rate the recorder declared and it is not a playback guarantee",
+      "reached_end_of_file": true,
+      "readable_anchor_timing_satisfies_schedule": true,
+      "zero_interval_ties_present": false
+     },
+     "capture_sim_time_s": {
+      "blocking_reason_scope": {
+       "coverage": [],
+       "timing": []
+      },
+      "blocking_reasons": [],
+      "eligible_for_whole_episode": true,
+      "eligible_within_this_scan": true,
+      "every_line_of_the_anchor_file_is_decided": true,
+      "implied_rate_hz_from_median_recorded_gap": 49.99999999999996,
+      "implied_rate_note": "derived from the recorded values of this scan; it is not a rate the recorder declared and it is not a playback guarantee",
+      "reached_end_of_file": true,
+      "readable_anchor_timing_satisfies_schedule": true,
+      "zero_interval_ties_present": false
+     },
+     "persist_backend_monotonic_s": {
+      "blocking_reason_scope": {
+       "coverage": [],
+       "timing": []
+      },
+      "blocking_reasons": [],
+      "eligible_for_whole_episode": true,
+      "eligible_within_this_scan": true,
+      "every_line_of_the_anchor_file_is_decided": true,
+      "implied_rate_hz_from_median_recorded_gap": 186.48227645055226,
+      "implied_rate_note": "derived from the recorded values of this scan; it is not a rate the recorder declared and it is not a playback guarantee",
+      "reached_end_of_file": true,
+      "readable_anchor_timing_satisfies_schedule": true,
+      "zero_interval_ties_present": false
+     }
+    }
+   },
+   "name": "append-order display stays eligible and every base satisfies whole-Episode timing",
+   "passed": true
+  },
+  {
+   "detail": {
+    "capture_backend_monotonic_s": {
+     "first_in_file_order": 1533789.597300942,
+     "last_in_file_order": 1533789.797300942,
+     "missing_count": 0,
+     "non_numeric_count": 0,
+     "numeric_count": 2
+    },
+    "capture_sim_time_s": {
+     "first_in_file_order": 0.34,
+     "last_in_file_order": 0.36000000000000004,
+     "missing_count": 0,
+     "non_numeric_count": 0,
+     "numeric_count": 2
+    },
+    "persist_backend_monotonic_s": {
+     "first_in_file_order": 1533789.518469569,
+     "last_in_file_order": 1533789.523832009,
+     "missing_count": 0,
+     "non_numeric_count": 0,
+     "numeric_count": 2
+    }
+   },
+   "name": "each capture base exposes exactly the written numeric anchors",
+   "passed": true
+  },
+  {
+   "detail": {
+    "capture_backend_monotonic_s": {
+     "reader_first": 1533789.597300942,
+     "reader_last": 1533789.797300942,
+     "writer_first": 1533789.597300942,
+     "writer_last": 1533789.797300942
+    },
+    "capture_sim_time_s": {
+     "reader_first": 0.34,
+     "reader_last": 0.36000000000000004,
+     "writer_first": 0.34,
+     "writer_last": 0.36000000000000004
+    },
+    "persist_backend_monotonic_s": {
+     "reader_first": 1533789.518469569,
+     "reader_last": 1533789.523832009,
+     "writer_first": 1533789.518469569,
+     "writer_last": 1533789.523832009
+    }
+   },
+   "name": "the reader's first/last values are the writer's own values",
+   "passed": true
+  },
+  {
+   "detail": {
+    "categories": {
+     "actual_state_feedback": {
+      "absent_event_types": [],
+      "counts": {
+       "feedback": 4
+      },
+      "event_types_recorded": [
+       "feedback"
+      ],
+      "meaning": "recorded robot state as measured (Actual); never promoted to a live read",
+      "status": "observed"
+     },
+     "capture_timing": {
+      "absent_event_types": [],
+      "counts": {
+       "rgbd_capture_timing": 2
+      },
+      "event_types_recorded": [
+       "rgbd_capture_timing"
+      ],
+      "meaning": "the recorder's own per-frame capture timing event",
+      "status": "observed"
+     },
+     "command_dispatched": {
+      "absent_event_types": [
+       "dispatch"
+      ],
+      "counts": {},
+      "event_types_recorded": [],
+      "meaning": "a command the recorder marked as dispatched",
+      "status": "not_recorded_in_this_scan",
+      "status_note": "the scan found no record of this category; that is a fact about this Episode's events stream, not a claim that the recorder can never write one"
+     },
+     "command_intent": {
+      "absent_event_types": [],
+      "counts": {
+       "requested": 2
+      },
+      "event_types_recorded": [
+       "requested"
+      ],
+      "meaning": "a command the recorder saw requested; intent only, no execution claim",
+      "status": "observed"
+     },
+     "command_receipt_rejected": {
+      "absent_event_types": [
+       "rejected"
+      ],
+      "counts": {},
+      "event_types_recorded": [],
+      "meaning": "a recorded rejection; its absence is not evidence that nothing was rejected",
+      "status": "not_recorded_in_this_scan",
+      "status_note": "the scan found no record of this category; that is a fact about this Episode's events stream, not a claim that the recorder can never write one"
+     },
+     "episode_lifecycle": {
+      "absent_event_types": [],
+      "counts": {
+       "episode_terminal": 1,
+       "recording_start": 1,
+       "recording_stop": 1
+      },
+      "event_types_recorded": [
+       "episode_terminal",
+       "recording_start",
+       "recording_stop"
+      ],
+      "meaning": "segment start, stop request and terminal declaration",
+      "status": "observed"
+     },
+     "lease_boundary": {
+      "absent_event_types": [
+       "lease_expired",
+       "lease_heartbeat"
+      ],
+      "counts": {},
+      "event_types_recorded": [],
+      "meaning": "lease renewal and expiry records naming a session; they are not a takeover protocol",
+      "status": "not_recorded_in_this_scan",
+      "status_note": "the scan found no record of this category; that is a fact about this Episode's events stream, not a claim that the recorder can never write one"
+     },
+     "recorded_target": {
+      "absent_event_types": [],
+      "counts": {
+       "actuator_reference": 4
+      },
+      "event_types_recorded": [
+       "actuator_reference"
+      ],
+      "meaning": "recorded actuator reference (Target); a target is not an achieved state",
+      "status": "observed"
+     }
+    }
+   },
+   "name": "action basis accounts for every written event type",
+   "passed": true
+  },
+  {
+   "detail": {
+    "actuator_reference": {
+     "candidate_count_per_frame_on_this_page": {
+      "1": 2
+     },
+     "frames_with_this_verdict": 2
+    },
+    "dispatch": {
+     "candidate_count_per_frame_on_this_page": {
+      "0": 2
+     },
+     "frames_with_this_verdict": 2
+    },
+    "feedback": {
+     "candidate_count_per_frame_on_this_page": {
+      "1": 2
+     },
+     "frames_with_this_verdict": 2
+    },
+    "feedback_initial": {
+     "candidate_count_per_frame_on_this_page": {
+      "0": 2
+     },
+     "frames_with_this_verdict": 2
+    }
+   },
+   "name": "per-frame association lists exactly one actual and one target candidate",
+   "passed": true
+  },
+  {
+   "detail": {
+    "clock_parity": "numerically close or even equal stamps never upgrade a link: `synchronized_across_streams` and `same_clock_verified` stay false, and an event whose time equals a frame's capture time but which names no shared key stays an independent track",
+    "recorded_target": "an actuator reference is a recorded Target and is never reported as measured Actual state",
+    "rejected_requests": "a rejected or unapproved request is never presented as an executed action"
+   },
+   "name": "the action rules keep rejection, Target and clock parity in separate domains",
+   "passed": true
+  },
+  {
+   "detail": {
+    "fields_observed": {
+     "approved": [
+      "payload.command.operator_id",
+      "payload.command.operator_kind",
+      "payload.command.session_id"
+     ],
+     "recording_start": [
+      "payload.operator_id",
+      "payload.operator_kind",
+      "payload.view_source"
+     ],
+     "requested": [
+      "payload.request.operator_id",
+      "payload.request.operator_kind",
+      "payload.request.session_id",
+      "payload.request.view_source"
+     ]
+    },
+    "lease_evidence": {},
+    "note": "the recorder names an operator inside some payloads and a lease beside its own session id; it records no control-source switch or takeover event in this scan, and the reader never defaults a source to Human",
+    "status": "recorded_only_inside_payload_fields",
+    "takeover_event_type_recorded": false
+   },
+   "name": "the absent command control source is not defaulted to Human",
+   "passed": true
+  },
+  {
+   "detail": {
+    "anchors_on_this_page": 2,
+    "events_stream_present": true,
+    "page_ticks_considered": 2,
+    "reached_end_of_file": true,
+    "record_limit": 20000,
+    "records_scanned": 18,
+    "records_without_an_event_type": 0,
+    "relative_path": "events.jsonl",
+    "scope_note": "the vocabulary covers every record the scan read in this Episode's events stream; a scan that stopped at the record limit describes only what it read",
+    "stopped_at_line_index": null,
+    "stream_id": "events"
+   },
+   "name": "action basis scanned the same event stream to EOF",
+   "passed": true
+  },
+  {
+   "detail": [
+    {
+     "digest": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+     "expected": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+     "kind": "rgb",
+     "passed": true,
+     "sample_id": "synthetic_frame_00",
+     "status": 200,
+     "uri": "assets/rgb/synthetic_frame_00.png"
+    },
+    {
+     "kind": "rgb",
+     "sample_id": "synthetic_frame_00",
+     "wrong_digest_code": null,
+     "wrong_digest_status": 409
+    },
+    {
+     "digest": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+     "expected": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+     "kind": "depth",
+     "passed": true,
+     "sample_id": "synthetic_frame_00",
+     "status": 200,
+     "uri": "assets/depth/synthetic_frame_00.npy"
+    },
+    {
+     "kind": "depth",
+     "sample_id": "synthetic_frame_00",
+     "wrong_digest_code": null,
+     "wrong_digest_status": 409
+    },
+    {
+     "digest": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+     "expected": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+     "kind": "rgb",
+     "passed": true,
+     "sample_id": "synthetic_frame_01",
+     "status": 200,
+     "uri": "assets/rgb/synthetic_frame_01.png"
+    },
+    {
+     "kind": "rgb",
+     "sample_id": "synthetic_frame_01",
+     "wrong_digest_code": null,
+     "wrong_digest_status": 409
+    },
+    {
+     "digest": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+     "expected": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+     "kind": "depth",
+     "passed": true,
+     "sample_id": "synthetic_frame_01",
+     "status": 200,
+     "uri": "assets/depth/synthetic_frame_01.npy"
+    },
+    {
+     "kind": "depth",
+     "sample_id": "synthetic_frame_01",
+     "wrong_digest_code": null,
+     "wrong_digest_status": 409
+    }
+   ],
+   "name": "every media asset is served with the writer's bytes and digest",
+   "passed": true
+  },
+  {
+   "detail": [
+    {
+     "digest": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+     "expected": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+     "kind": "rgb",
+     "passed": true,
+     "sample_id": "synthetic_frame_00",
+     "status": 200,
+     "uri": "assets/rgb/synthetic_frame_00.png"
+    },
+    {
+     "kind": "rgb",
+     "sample_id": "synthetic_frame_00",
+     "wrong_digest_code": null,
+     "wrong_digest_status": 409
+    },
+    {
+     "digest": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+     "expected": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+     "kind": "depth",
+     "passed": true,
+     "sample_id": "synthetic_frame_00",
+     "status": 200,
+     "uri": "assets/depth/synthetic_frame_00.npy"
+    },
+    {
+     "kind": "depth",
+     "sample_id": "synthetic_frame_00",
+     "wrong_digest_code": null,
+     "wrong_digest_status": 409
+    },
+    {
+     "digest": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+     "expected": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+     "kind": "rgb",
+     "passed": true,
+     "sample_id": "synthetic_frame_01",
+     "status": 200,
+     "uri": "assets/rgb/synthetic_frame_01.png"
+    },
+    {
+     "kind": "rgb",
+     "sample_id": "synthetic_frame_01",
+     "wrong_digest_code": null,
+     "wrong_digest_status": 409
+    },
+    {
+     "digest": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+     "expected": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+     "kind": "depth",
+     "passed": true,
+     "sample_id": "synthetic_frame_01",
+     "status": 200,
+     "uri": "assets/depth/synthetic_frame_01.npy"
+    },
+    {
+     "kind": "depth",
+     "sample_id": "synthetic_frame_01",
+     "wrong_digest_code": null,
+     "wrong_digest_status": 409
+    }
+   ],
+   "name": "a requested digest that does not match is refused",
+   "passed": true
+  },
+  {
+   "detail": {
+    "scene_status": 503
+   },
+   "name": "history reads continue while the mock writer is stopped",
+   "passed": true
+  },
+  {
+   "detail": {
+    "code": "history_model_bundle_not_configured",
+    "status": 503
+   },
+   "name": "no geometry bundle means a stated refusal, not a substituted online tree",
+   "passed": true
+  },
+  {
+   "detail": {
+    "added": [],
+    "after": "3d8ea7c50a9715383868ecdd2ad38a2fc29902bedaffbecbf3d1265b6ad97973",
+    "before": "3d8ea7c50a9715383868ecdd2ad38a2fc29902bedaffbecbf3d1265b6ad97973",
+    "removed": []
+   },
+   "name": "the read pass leaves the recording tree byte-identical",
+   "passed": true
+  },
+  {
+   "detail": {
+    "count": 18,
+    "methods": [
+     "GET"
+    ]
+   },
+   "name": "every reader request was a GET",
+   "passed": true
+  },
+  {
+   "detail": {
+    "asset_code": "episode_asset_missing",
+    "asset_status": 404,
+    "frame_media_availability": "absent"
+   },
+   "name": "a missing media file is diagnosed, not invented",
+   "passed": true
+  },
+  {
+   "detail": {
+    "declared": {
+     "audit_status": "COMPLETE",
+     "complete_tail_file_present": true,
+     "declared_checksum_entries": 14,
+     "episode_json_readable": true,
+     "recording_status": "COMPLETE",
+     "require_recording": true,
+     "result": "unknown",
+     "tail_json_readable": true,
+     "task_result_source": "world_sim_isolated_oracle_v1",
+     "termination_reason": "OPERATOR_FINISHED"
+    },
+    "detail_status": 200,
+    "frames_status": 200
+   },
+   "name": "the missing-media copy is still readable as a record, with its loss visible",
+   "passed": true
+  },
+  {
+   "detail": {
+    "after": "ace06a8f9d6e60fb62429561266ff2d31fc8f2d300cffa01fff755c084c8e62f",
+    "before": "ace06a8f9d6e60fb62429561266ff2d31fc8f2d300cffa01fff755c084c8e62f"
+   },
+   "name": "reading the missing-media copy does not rewrite it",
+   "passed": true
+  },
+  {
+   "detail": {
+    "missing_media_port_closed_after_shutdown": true,
+    "native_port_closed_after_reader": true,
+    "reader_port_closed_after_shutdown": true
+   },
+   "name": "the reader and missing-media reader are stopped after the read pass",
+   "passed": true
+  }
+ ],
+ "classification": {
+  "input": "synthetic (mock), labelled; not a human recording and not a physical sensor measurement",
+  "physics": "none; the mock backend does not step MuJoCo",
+  "platform": "real unirobot reader app served over real HTTP",
+  "writer": "real Recorder inside the real mobilecar app; mock backend; synthetic media and events"
+ },
+ "declared_detail": {
+  "audit_status": "COMPLETE",
+  "complete_tail_file_present": true,
+  "declared_checksum_entries": 14,
+  "episode_json_readable": true,
+  "recording_status": "COMPLETE",
+  "require_recording": true,
+  "result": "unknown",
+  "tail_json_readable": true,
+  "task_result_source": "world_sim_isolated_oracle_v1",
+  "termination_reason": "OPERATOR_FINISHED"
+ },
+ "digest": {
+  "after": {
+   "aggregate": "3d8ea7c50a9715383868ecdd2ad38a2fc29902bedaffbecbf3d1265b6ad97973",
+   "episode_files": {
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assessments/eligibility.json": {
+     "bytes": 764,
+     "mtime_ns": 1793360725571944569,
+     "sha256": "0c5db4ca3b599ac7e8109510f680a823e214a00d8391765c7150d0411adc9754"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assessments/task_assessment.json": {
+     "bytes": 390,
+     "mtime_ns": 1793360725566944454,
+     "sha256": "57e0e1e13214bdcaae0990e6df8b5c17f32591ae12b43bc0c17545448f1be78b"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/depth/synthetic_frame_00.npy": {
+     "bytes": 144,
+     "mtime_ns": 1793360724991931256,
+     "sha256": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/depth/synthetic_frame_01.npy": {
+     "bytes": 144,
+     "mtime_ns": 1793360724996931371,
+     "sha256": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/rgb/synthetic_frame_00.png": {
+     "bytes": 79,
+     "mtime_ns": 1793360724983931072,
+     "sha256": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/rgb/synthetic_frame_01.png": {
+     "bytes": 79,
+     "mtime_ns": 1793360724994931325,
+     "sha256": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/commands.jsonl": {
+     "bytes": 3586,
+     "mtime_ns": 1793360725247937132,
+     "sha256": "4bd55d62de6be5001db0a52e019030670ced4e787dd5e8c88ec6cc3a51b6360b"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/control.jsonl": {
+     "bytes": 7204,
+     "mtime_ns": 1793360725247937132,
+     "sha256": "26c9b03167eab25c2a09483fc9aef2533c431c74a959e9e7ff64cb484f277c43"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/episode.json": {
+     "bytes": 1175,
+     "mtime_ns": 1793360725568944500,
+     "sha256": "e3bba06bb76cbb7141b56c573c9839a6d3726292972b3f82e006e36f0edd7339"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/episode_complete.json": {
+     "bytes": 1755,
+     "mtime_ns": 1793360725257937361,
+     "sha256": "9599926fb5df8594472b0a2246a7fb57f39c9654c3a549d7a960add673b7f0c9"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/events.jsonl": {
+     "bytes": 24166,
+     "mtime_ns": 1793360725247937132,
+     "sha256": "4ffff35e9396f7ac8d884591a46fbb13a43d8a0fc12c492efc763dacae8068f1"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/initial_snapshot.json": {
+     "bytes": 7505,
+     "mtime_ns": 1793360724960930543,
+     "sha256": "faccf11913cd6c8b4dc900d48ff254271eb535f176acee9a553af45d099f191d"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/observations/depth.jsonl": {
+     "bytes": 2786,
+     "mtime_ns": 1793360725004931554,
+     "sha256": "bc9318e1690b9eee4bff1a1d81dfdec622c8e5eff04ecd4eecd077c805003730"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/observations/index.jsonl": {
+     "bytes": 5472,
+     "mtime_ns": 1793360725004931554,
+     "sha256": "0f405fba2366a2bda0e7ed70b60b3b9960d4e04778751407a6c476ae3f2fdbf0"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/observations/persist.jsonl": {
+     "bytes": 1732,
+     "mtime_ns": 1793360725006931600,
+     "sha256": "da08e501c4ef9c7956c3e5eb49f2b579a0090ba186c0f5fbb98d6e4e52b58185"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/observations/rgb.jsonl": {
+     "bytes": 2686,
+     "mtime_ns": 1793360725004931554,
+     "sha256": "76d3b972a4208935c1fd6d1496f302dac668b36fd2bdf1a4534eacbb222d12cb"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/quality_report.json": {
+     "bytes": 869,
+     "mtime_ns": 1793360725561944339,
+     "sha256": "ae81a777a9fe5aef3c94d53c93009e47c5638400b2cf7443c826dda20545b3da"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/transforms.jsonl": {
+     "bytes": 2041,
+     "mtime_ns": 1793360725004931554,
+     "sha256": "8010a23786364a76d7b967c11c143ea34ba0e2ac398b4255c0aae2658c8889a2"
+    }
+   },
+   "file_count": 21
+  },
+  "before": {
+   "aggregate": "3d8ea7c50a9715383868ecdd2ad38a2fc29902bedaffbecbf3d1265b6ad97973",
+   "episode_files": {
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assessments/eligibility.json": {
+     "bytes": 764,
+     "mtime_ns": 1793360725571944569,
+     "sha256": "0c5db4ca3b599ac7e8109510f680a823e214a00d8391765c7150d0411adc9754"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assessments/task_assessment.json": {
+     "bytes": 390,
+     "mtime_ns": 1793360725566944454,
+     "sha256": "57e0e1e13214bdcaae0990e6df8b5c17f32591ae12b43bc0c17545448f1be78b"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/depth/synthetic_frame_00.npy": {
+     "bytes": 144,
+     "mtime_ns": 1793360724991931256,
+     "sha256": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/depth/synthetic_frame_01.npy": {
+     "bytes": 144,
+     "mtime_ns": 1793360724996931371,
+     "sha256": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/rgb/synthetic_frame_00.png": {
+     "bytes": 79,
+     "mtime_ns": 1793360724983931072,
+     "sha256": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/rgb/synthetic_frame_01.png": {
+     "bytes": 79,
+     "mtime_ns": 1793360724994931325,
+     "sha256": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/commands.jsonl": {
+     "bytes": 3586,
+     "mtime_ns": 1793360725247937132,
+     "sha256": "4bd55d62de6be5001db0a52e019030670ced4e787dd5e8c88ec6cc3a51b6360b"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/control.jsonl": {
+     "bytes": 7204,
+     "mtime_ns": 1793360725247937132,
+     "sha256": "26c9b03167eab25c2a09483fc9aef2533c431c74a959e9e7ff64cb484f277c43"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/episode.json": {
+     "bytes": 1175,
+     "mtime_ns": 1793360725568944500,
+     "sha256": "e3bba06bb76cbb7141b56c573c9839a6d3726292972b3f82e006e36f0edd7339"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/episode_complete.json": {
+     "bytes": 1755,
+     "mtime_ns": 1793360725257937361,
+     "sha256": "9599926fb5df8594472b0a2246a7fb57f39c9654c3a549d7a960add673b7f0c9"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/events.jsonl": {
+     "bytes": 24166,
+     "mtime_ns": 1793360725247937132,
+     "sha256": "4ffff35e9396f7ac8d884591a46fbb13a43d8a0fc12c492efc763dacae8068f1"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/initial_snapshot.json": {
+     "bytes": 7505,
+     "mtime_ns": 1793360724960930543,
+     "sha256": "faccf11913cd6c8b4dc900d48ff254271eb535f176acee9a553af45d099f191d"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/observations/depth.jsonl": {
+     "bytes": 2786,
+     "mtime_ns": 1793360725004931554,
+     "sha256": "bc9318e1690b9eee4bff1a1d81dfdec622c8e5eff04ecd4eecd077c805003730"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/observations/index.jsonl": {
+     "bytes": 5472,
+     "mtime_ns": 1793360725004931554,
+     "sha256": "0f405fba2366a2bda0e7ed70b60b3b9960d4e04778751407a6c476ae3f2fdbf0"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/observations/persist.jsonl": {
+     "bytes": 1732,
+     "mtime_ns": 1793360725006931600,
+     "sha256": "da08e501c4ef9c7956c3e5eb49f2b579a0090ba186c0f5fbb98d6e4e52b58185"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/observations/rgb.jsonl": {
+     "bytes": 2686,
+     "mtime_ns": 1793360725004931554,
+     "sha256": "76d3b972a4208935c1fd6d1496f302dac668b36fd2bdf1a4534eacbb222d12cb"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/quality_report.json": {
+     "bytes": 869,
+     "mtime_ns": 1793360725561944339,
+     "sha256": "ae81a777a9fe5aef3c94d53c93009e47c5638400b2cf7443c826dda20545b3da"
+    },
+    "run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed/transforms.jsonl": {
+     "bytes": 2041,
+     "mtime_ns": 1793360725004931554,
+     "sha256": "8010a23786364a76d7b967c11c143ea34ba0e2ac398b4255c0aae2658c8889a2"
+    }
+   },
+   "file_count": 21
+  },
+  "equal": true
+ },
+ "episode_directory": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/recordings/run_5f972f067e014b8596d38c20f5f6042c/episodes/episode_7f432849f34940ad908513d15a2098ed",
+ "episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+ "failed": [],
+ "frame_roles": {
+  "synthetic_frame_00": {
+   "anchor": {
+    "clocks": {
+     "arrival_backend_monotonic_s": 1533789.6093009422,
+     "arrival_to_persist_ms": -90.83137311972678,
+     "capture_backend_monotonic_s": 1533789.597300942,
+     "capture_sim_time_s": 0.34,
+     "capture_to_persist_ms": -78.83137301541865,
+     "persist_backend_monotonic_s": 1533789.518469569
+    },
+    "declared_keys": [
+     "arrival_backend_monotonic_s",
+     "arrival_to_persist_ms",
+     "capture_backend_monotonic_s",
+     "capture_control_tick_id",
+     "capture_sim_time_s",
+     "capture_to_persist_ms",
+     "depth_uri",
+     "episode_id",
+     "feedback_sample_id",
+     "interface_profile",
+     "kinds",
+     "persist_backend_monotonic_s",
+     "persist_sequence",
+     "profile_id",
+     "profile_sha256",
+     "profile_version",
+     "rgb_uri",
+     "run_id",
+     "sample_id",
+     "stream_id",
+     "valid_mask_uri"
+    ],
+    "identity": {
+     "declared_episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+     "declared_run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+     "episode_id_matches": true,
+     "run_id_matches": true
+    },
+    "line_index": 0,
+    "persist_sequence": 1,
+    "profile": {
+     "interface_profile": "g2a-1.0",
+     "kinds": [
+      "rgb",
+      "depth"
+     ],
+     "profile_id": "g2a-rgbd-5hz-original",
+     "profile_sha256": "9473171d7460ba968813b40ad1cae2f392bbc168e85ef4524eced6f38b5e3042",
+     "profile_version": "1.0"
+    },
+    "reference_keys": {
+     "capture_control_tick_id": "synthetic_tick_0000",
+     "feedback_sample_id": "joint_feedback_synthetic_tick_0000"
+    },
+    "relative_path": "observations/persist.jsonl"
+   },
+   "linkage_status": "matched",
+   "roles": {
+    "camera_transform": {
+     "candidate_records": 1,
+     "matched_records": 1
+    },
+    "capture_timing_event": {
+     "candidate_records": 1,
+     "matched_records": 1
+    },
+    "feedback_observation_row": {
+     "candidate_records": 0,
+     "matched_records": 0
+    },
+    "image_observation": {
+     "candidate_records": 2,
+     "matched_records": 2
+    },
+    "state_feedback_event": {
+     "candidate_records": 1,
+     "matched_records": 1
+    }
+   }
+  },
+  "synthetic_frame_01": {
+   "anchor": {
+    "clocks": {
+     "arrival_backend_monotonic_s": 1533789.809300942,
+     "arrival_to_persist_ms": -285.468933172524,
+     "capture_backend_monotonic_s": 1533789.797300942,
+     "capture_sim_time_s": 0.36000000000000004,
+     "capture_to_persist_ms": -273.46893306821585,
+     "persist_backend_monotonic_s": 1533789.523832009
+    },
+    "declared_keys": [
+     "arrival_backend_monotonic_s",
+     "arrival_to_persist_ms",
+     "capture_backend_monotonic_s",
+     "capture_control_tick_id",
+     "capture_sim_time_s",
+     "capture_to_persist_ms",
+     "depth_uri",
+     "episode_id",
+     "feedback_sample_id",
+     "interface_profile",
+     "kinds",
+     "persist_backend_monotonic_s",
+     "persist_sequence",
+     "profile_id",
+     "profile_sha256",
+     "profile_version",
+     "rgb_uri",
+     "run_id",
+     "sample_id",
+     "stream_id",
+     "valid_mask_uri"
+    ],
+    "identity": {
+     "declared_episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+     "declared_run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+     "episode_id_matches": true,
+     "run_id_matches": true
+    },
+    "line_index": 1,
+    "persist_sequence": 2,
+    "profile": {
+     "interface_profile": "g2a-1.0",
+     "kinds": [
+      "rgb",
+      "depth"
+     ],
+     "profile_id": "g2a-rgbd-5hz-original",
+     "profile_sha256": "9473171d7460ba968813b40ad1cae2f392bbc168e85ef4524eced6f38b5e3042",
+     "profile_version": "1.0"
+    },
+    "reference_keys": {
+     "capture_control_tick_id": "synthetic_tick_0001",
+     "feedback_sample_id": "joint_feedback_synthetic_tick_0001"
+    },
+    "relative_path": "observations/persist.jsonl"
+   },
+   "linkage_status": "matched",
+   "roles": {
+    "camera_transform": {
+     "candidate_records": 1,
+     "matched_records": 1
+    },
+    "capture_timing_event": {
+     "candidate_records": 1,
+     "matched_records": 1
+    },
+    "feedback_observation_row": {
+     "candidate_records": 0,
+     "matched_records": 0
+    },
+    "image_observation": {
+     "candidate_records": 2,
+     "matched_records": 2
+    },
+    "state_feedback_event": {
+     "candidate_records": 1,
+     "matched_records": 1
+    }
+   }
+  }
+ },
+ "integrity": {
+  "checksum_verification": {
+   "declared_entries": 14,
+   "matched": [],
+   "meaning": "a tail checksum is the recorder's own declaration; only the files listed here were re-computed by this request, and a mismatch is reported as a finding instead of relabeled",
+   "mismatched": [
+    {
+     "actual_sha256": "e3bba06bb76cbb7141b56c573c9839a6d3726292972b3f82e006e36f0edd7339",
+     "declared_sha256": "e89f6a2aa8824d039d804c1930c5c6bb9d1809c5343eb9377a2dfc0292875b06",
+     "relative_path": "episode.json"
+    }
+   ],
+   "verdict": "mismatch_present"
+  },
+  "declaration_is_not_verification": true,
+  "not_verified": [
+   "files not opened by this request",
+   "asset payloads except the ones actually served",
+   "archive-wide per-record checksum verification",
+   "physical settle/stop evidence behind a recorded status"
+  ],
+  "scope": "this episode, as read by this request",
+  "status": "complete",
+  "this_read_evidence": {
+   "episode_json_parsed": true,
+   "episode_json_sha256": "e3bba06bb76cbb7141b56c573c9839a6d3726292972b3f82e006e36f0edd7339",
+   "files_recomputed_here": [
+    "episode.json",
+    "episode_complete.json"
+   ],
+   "tail_json_parsed": true,
+   "tail_json_sha256": "9599926fb5df8594472b0a2246a7fb57f39c9654c3a549d7a960add673b7f0c9"
+  }
+ },
+ "limitations": {
+  "live_native_scene": {
+   "code": "native_offline",
+   "meaning": "the writer is stopped; history reads do not need the live native scene",
+   "status": 503
+  },
+  "robot_state": {
+   "code": "history_model_bundle_not_configured",
+   "meaning": "no geometry bundle was configured; no online geometry is substituted",
+   "status": 503
+  }
+ },
+ "media": [
+  {
+   "digest": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+   "expected": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+   "kind": "rgb",
+   "passed": true,
+   "sample_id": "synthetic_frame_00",
+   "status": 200,
+   "uri": "assets/rgb/synthetic_frame_00.png"
+  },
+  {
+   "kind": "rgb",
+   "sample_id": "synthetic_frame_00",
+   "wrong_digest_code": null,
+   "wrong_digest_status": 409
+  },
+  {
+   "digest": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+   "expected": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+   "kind": "depth",
+   "passed": true,
+   "sample_id": "synthetic_frame_00",
+   "status": 200,
+   "uri": "assets/depth/synthetic_frame_00.npy"
+  },
+  {
+   "kind": "depth",
+   "sample_id": "synthetic_frame_00",
+   "wrong_digest_code": null,
+   "wrong_digest_status": 409
+  },
+  {
+   "digest": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+   "expected": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+   "kind": "rgb",
+   "passed": true,
+   "sample_id": "synthetic_frame_01",
+   "status": 200,
+   "uri": "assets/rgb/synthetic_frame_01.png"
+  },
+  {
+   "kind": "rgb",
+   "sample_id": "synthetic_frame_01",
+   "wrong_digest_code": null,
+   "wrong_digest_status": 409
+  },
+  {
+   "digest": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+   "expected": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+   "kind": "depth",
+   "passed": true,
+   "sample_id": "synthetic_frame_01",
+   "status": 200,
+   "uri": "assets/depth/synthetic_frame_01.npy"
+  },
+  {
+   "kind": "depth",
+   "sample_id": "synthetic_frame_01",
+   "wrong_digest_code": null,
+   "wrong_digest_status": 409
+  }
+ ],
+ "media_summary": {
+  "assets_root": "assets/",
+  "declared_sha256_source": "episode_complete.json checksums when present",
+  "excluded_count": 0,
+  "kinds": {
+   "depth": {
+    "bytes_total": 288,
+    "count": 2,
+    "declared_sha256_coverage": "2/2",
+    "sample": [
+     {
+      "bytes": 144,
+      "declared_sha256": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+      "relative_path": "assets/depth/synthetic_frame_00.npy"
+     },
+     {
+      "bytes": 144,
+      "declared_sha256": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+      "relative_path": "assets/depth/synthetic_frame_01.npy"
+     }
+    ],
+    "sample_truncated": false
+   },
+   "masks": {
+    "bytes_total": 0,
+    "count": 0,
+    "declared_sha256_coverage": "0/0",
+    "sample": [],
+    "sample_truncated": false
+   },
+   "rgb": {
+    "bytes_total": 158,
+    "count": 2,
+    "declared_sha256_coverage": "2/2",
+    "sample": [
+     {
+      "bytes": 79,
+      "declared_sha256": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+      "relative_path": "assets/rgb/synthetic_frame_00.png"
+     },
+     {
+      "bytes": 79,
+      "declared_sha256": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+      "relative_path": "assets/rgb/synthetic_frame_01.png"
+     }
+    ],
+    "sample_truncated": false
+   }
+  },
+  "symlink_or_escape_excluded": [],
+  "uri_convention": "assets/<kind>/<file>, served only from this episode directory",
+  "verification": "digests are recomputed only for assets actually served by the asset endpoint"
+ },
+ "missing_media": {
+  "asset_code": "episode_asset_missing",
+  "asset_status": 404,
+  "classification": "isolated copy; the successful recording root was not modified",
+  "copy_root": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/missing-media/recordings",
+  "declared": {
+   "audit_status": "COMPLETE",
+   "complete_tail_file_present": true,
+   "declared_checksum_entries": 14,
+   "episode_json_readable": true,
+   "recording_status": "COMPLETE",
+   "require_recording": true,
+   "result": "unknown",
+   "tail_json_readable": true,
+   "task_result_source": "world_sim_isolated_oracle_v1",
+   "termination_reason": "OPERATOR_FINISHED"
+  },
+  "deleted_relative_path": "assets/depth/synthetic_frame_00.npy",
+  "deleted_sha256": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+  "detail_status": 200,
+  "frame_media_availability": "absent",
+  "integrity": {
+   "checksum_verification": {
+    "declared_entries": 14,
+    "matched": [],
+    "meaning": "a tail checksum is the recorder's own declaration; only the files listed here were re-computed by this request, and a mismatch is reported as a finding instead of relabeled",
+    "mismatched": [
+     {
+      "actual_sha256": "e3bba06bb76cbb7141b56c573c9839a6d3726292972b3f82e006e36f0edd7339",
+      "declared_sha256": "e89f6a2aa8824d039d804c1930c5c6bb9d1809c5343eb9377a2dfc0292875b06",
+      "relative_path": "episode.json"
+     }
+    ],
+    "verdict": "mismatch_present"
+   },
+   "declaration_is_not_verification": true,
+   "not_verified": [
+    "files not opened by this request",
+    "asset payloads except the ones actually served",
+    "archive-wide per-record checksum verification",
+    "physical settle/stop evidence behind a recorded status"
+   ],
+   "scope": "this episode, as read by this request",
+   "status": "complete",
+   "this_read_evidence": {
+    "episode_json_parsed": true,
+    "episode_json_sha256": "e3bba06bb76cbb7141b56c573c9839a6d3726292972b3f82e006e36f0edd7339",
+    "files_recomputed_here": [
+     "episode.json",
+     "episode_complete.json"
+    ],
+    "tail_json_parsed": true,
+    "tail_json_sha256": "9599926fb5df8594472b0a2246a7fb57f39c9654c3a549d7a960add673b7f0c9"
+   }
+  },
+  "reader_manifest": {
+   "classification": {
+    "input": "synthetic (mock), labelled; not a human recording and not a physical sensor measurement",
+    "physics": "none; the mock backend does not step MuJoCo",
+    "platform": "real unirobot reader app served over real HTTP",
+    "writer": "real Recorder inside the real mobilecar app; mock backend; synthetic media and events"
+   },
+   "database": {
+    "existed_before": false,
+    "path": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/db/missing-reader.sqlite3"
+   },
+   "geometry": {
+    "configured": false,
+    "effect": "robot-state and model/assets refuse with history_model_bundle_not_configured; no online geometry is substituted"
+   },
+   "history": {
+    "resolved_recording_root": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/missing-media/recordings",
+    "source_file": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/missing-media/recordings/history-source-testonly.json",
+    "source_file_sha256": "c4abcd5d7aead3d6369bf52688f5f5d382c42bf2ff55e513bc96831e61fe9a7f",
+    "source_id": "testonly-missing-media-run_5f972f067e014b8596d38c20f5f6042c"
+   },
+   "label": "reader-missing-media-copy",
+   "listen": {
+    "host": "127.0.0.1",
+    "port": 18988,
+    "was_free_before_start": true
+   },
+   "native": {
+    "base_url": "http://127.0.0.1:18980",
+    "reachable_at_start": false
+   },
+   "platform_source": {
+    "aggregate": "107f897ddfe2485fb116eba8c6bbdef32258c4c2ab483d80f27a01e1cf803d59",
+    "backend_root": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/platform/backend",
+    "file_count": 50,
+    "files": {
+     "config/catalog.local.yaml": "4e12dc6be6d8fe95a34419d0ab7b5df847b01fc3f5edc3bec0a7c7381cb91718",
+     "config/catalog.yaml": "3b7b277a04358a9e2aad19bcbed5ca10828c6dc434e12691e8f0403bc72cff50",
+     "config/maps.catalog.json": "3cbd3a9410e59bdf488425bf5eb5df2fd6be0c6533da7b258648b55a6199a9f9",
+     "config/mobilecar-g1-recipe-v2.json": "632f268245d77c19bf42d78832e7dcf806375fc9d0c855e663cf700ba708a8c2",
+     "config/mobilecar-g1-source.json": "146d331f7b1e72316432835a648238eadce57fec78d89b48b4fe062f283d9768",
+     "config/mobilecar-history-source.json": "fbfcc6a69edb9472007e9076c39e9677b2797b4a7e7bb2e4b8eac432fde9c394",
+     "config/mobilecar-landerpi-kinematics-v1.json": "6e2d3d08f6b30a8e7424d808bcff1212b44b996d54d44369e067827f419f3fd5",
+     "config/release-identity.native-m1h.json": "32d4322a61063fa24bb86938d6e9b557cca2d8745fbaff33721e87301d97c1f3",
+     "src/unirobot/__init__.py": "d420e2db76b2650af8361ded2892d984086dd8b539b43e2a93be04682fdd651a",
+     "src/unirobot/__main__.py": "466e1c3162113201a16d7f2bf9837f57a0f3e799870eacc5bf5963513d9c6dd8",
+     "src/unirobot/adapters.py": "2c62e8ce4f9dec4ab2365528d7bbd555fe719a6066522c0dfdac7d539adbfe44",
+     "src/unirobot/api.py": "8ab4e61be741d16527ebb3827081ae7d235c33ff72a3a2a7764f88aa2b54c383",
+     "src/unirobot/catalog.py": "35bb44461993601cd02972dcc5b473ab964ede2f2ec90329917abb64dfcc0e3a",
+     "src/unirobot/contracts.py": "674464a27f09815f96cdda4be0ecab8acf5feab354a4cec9064ef1ac70e9c30c",
+     "src/unirobot/drafts.py": "3c1979f749b557b211fb6b037c3657e21de96677076e1034435f2adf7906bcbd",
+     "src/unirobot/episodes.py": "590f0290c1bd9990d335bde49e1c8f8ddba26f740fba64a891413d4c904390f5",
+     "src/unirobot/frames.py": "9ae98b126e42760aa54ef99ab3c74bfc4b445b70605a39e30a0fdd3b4903f06f",
+     "src/unirobot/history_fk.py": "2822e6641eb363296b9b37d0f204bb7523710c0ede8f7283321199a2cd5be2ee",
+     "src/unirobot/history_pose.py": "75fdb86700ebb09ba85e029b88491d88a3b5112eaa3b9224c5614a1392616b64",
+     "src/unirobot/maps.py": "ea4afd1c76bdac68aff9438419ed8824d101c782ac1138932c8ce95a296bf86d",
+     "src/unirobot/migrate.py": "5f7f7ff0875d9379838b6d1e87657b6a0dd8636ee7c21164eb68eb11c006e41a",
+     "src/unirobot/mobilecar.py": "cd7049ec40bad73193eb9ffa3bc10994a3379fb74f2460848c3ddd34a6c3130c",
+     "src/unirobot/mobilecar_geometry.py": "257c28c32d6043b94e7256503cb0dfb58d7f98969048b19d2bd3a7c1282cd8c4",
+     "src/unirobot/mobilecar_read.py": "07c1c2a602dc400d8505288f2a40f56594494d5969f047f0a4a5f7370c919f4a",
+     "src/unirobot/prepare.py": "36b4e6571d272e49d1c0715f593096e672cd413062b2f968af82c7d1b7f137ed",
+     "src/unirobot/recipe.py": "149a0b3dfe61ddb37cc0f31df9b8858a6c8e9cac5b215e9b19b20ad1779d9bd8",
+     "src/unirobot/routes.py": "dc2b32dfb59d7da4f73d2a4ad7265c7b8c238dfd9ad83feca9304d5f1adb11a8",
+     "src/unirobot/runtime.py": "7cc0fc18c720b9b40d52c6b0ecbdaf8d8c4c63a13d4cd7e0b64b22b3877cd086",
+     "src/unirobot/settings.py": "1d298b8ac9ae91190c9d934c5fb4007c3f38d399e3cb1c3fed7432c3b7c6dbee",
+     "src/unirobot/static/index.html": "c481d84b3b17659d3829a2e19dc737da6554b188d619c10991340562507a5340",
+     "src/unirobot/static/mobilecar/app.js": "3767444673a28af72a11a1e686530eec3b0e552c6d8bbff9615edc60f346fcf6",
+     "src/unirobot/static/mobilecar/drafts.js": "19a2f0bf0d71887128fa00af289ebf5fa690c69dd8b23304f807bd439e3761a5",
+     "src/unirobot/static/mobilecar/index.html": "31cecbde8da80ba6dfcbe71783f5a1876d1043bf40504c66cd5c6ff595b9ccec",
+     "src/unirobot/static/mobilecar/panel.js": "25c87a19946790295583660255850398c5033aeda8f7419dcaa52a333efc600b",
+     "src/unirobot/static/mobilecar/styles.css": "a9f48915298d5c9713ceab5c66c95cb340e589d22fc073c6fbe5aaef18a5e51c",
+     "tools/anchor_coverage_repro.py": "8c54909703b1caa26212827e8684e009e326902a1c8ceb6ea06f099c21f75e55",
+     "tools/check_compiled_geometry.py": "ce975a3b5bf9503ea702fa3d990a7c7d81beb75de2b5d31fa262abb69a5a8aae",
+     "tools/cross_http_protocol_check.py": "b65bc5739b5aaa3e0f389ee8dd3910209ab7a461e4c0159eb2155cad14fa42de",
+     "tools/cross_http_stop_end_check.py": "1224b5222f7aacc4c12c0a31fbeba208f4c1287f720461d3679bcbb0a0e55f1c",
+     "tools/episode_history_check.py": "9848968fd6348af5109ed5e79588ef7545e9b94d1e65baef149915a77c90944c",
+     "tools/export_compiled_geometry.py": "b58742cca32b621d7fd6d6b4336c9f61c5a3363561ffecdc8f47bfd58775fb56",
+     "tools/history_fk_check.py": "8ab92d4fb9f53d588b239044e088ebffa14348a4907455c86c2228eab76050e6",
+     "tools/history_replay_facts.py": "238108b42dce1f2d9f895b11685f663fb947e23b9e16fcf257c53a2c8d519da0",
+     "tools/launch_unified_gateway.py": "6d3d9c05f914a5c9e337b59109a63da4ea97d8ba318aaebf765d3f5a3e29a1cd",
+     "tools/mock_native_protocol_app.py": "22879091b1a220354d5c528290d465701f7d6503cf6a47593661c956ac98c5ea",
+     "tools/native_get_probe.py": "36ec686932a0b8c87f8d773a8165af54f942c84ba3b7ab2959a3609952f82fd7",
+     "tools/native_recipe_identity.py": "d4b36500cbce0d75ce6ae071e576e4678054b7f5e30579769660f9081fc83274",
+     "tools/release_identity.py": "453cdd08ee7b0c795055a0215ab6b8007a80cd324efe916bc93e1014c3839827",
+     "tools/source_digest.py": "4514a0f8195dcd9b8f571243c3b902950ea97122ef65bced6767f3605876c6af",
+     "tools/unified_candidate_check.py": "45b47c537f10bac9097367cf96e9a15f3b41aca0aa8573d1e0d2416b7a791c10"
+    }
+   },
+   "read_only": true,
+   "recipe": {
+    "fingerprint": "9759035b6ca61a0852c01a836560123b2c5dd3891db6af71686b0ea85d470d47",
+    "path": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/recipe/testonly-recipe.json",
+    "recipe_id": "mobilecar.g1.teleop.mock-testonly",
+    "sha256": "07c91e54a4f001de49ac746171c6c31ca21a3bf5d9bc72deca063503493ddd6f"
+   }
+  }
+ },
+ "not_proven": [
+  "any physical sensor measurement or human demonstration",
+  "cross-stream synchronization",
+  "M1 acceptance or production deployment"
+ ],
+ "passed": 46,
+ "phase1": {
+  "path": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/phase1.json",
+  "sha256": "4ae1c2bfc94b45ac99fbaa92fa897db9885426ec1e34c3a8157f5b489e9ae964"
+ },
+ "post_run": {
+  "missing_media_port_closed_after_shutdown": true,
+  "native_port_closed_after_reader": true,
+  "reader_port_closed_after_shutdown": true
+ },
+ "reader": {
+  "classification": {
+   "input": "synthetic (mock), labelled; not a human recording and not a physical sensor measurement",
+   "physics": "none; the mock backend does not step MuJoCo",
+   "platform": "real unirobot reader app served over real HTTP",
+   "writer": "real Recorder inside the real mobilecar app; mock backend; synthetic media and events"
+  },
+  "database": {
+   "existed_before": false,
+   "path": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/db/reader.sqlite3"
+  },
+  "geometry": {
+   "configured": false,
+   "effect": "robot-state and model/assets refuse with history_model_bundle_not_configured; no online geometry is substituted"
+  },
+  "history": {
+   "resolved_recording_root": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/recordings",
+   "source_file": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/history-source-reader.json",
+   "source_file_sha256": "e24f1372d0b544f2f07a801e97c937be71ad575577a4de1b0dd0b006d50d3ed4",
+   "source_id": "testonly-new-recording-run_5f972f067e014b8596d38c20f5f6042c"
+  },
+  "label": "reader-new-recording",
+  "listen": {
+   "host": "127.0.0.1",
+   "port": 18987,
+   "was_free_before_start": true
+  },
+  "native": {
+   "base_url": "http://127.0.0.1:18980",
+   "reachable_at_start": false
+  },
+  "platform_source": {
+   "aggregate": "107f897ddfe2485fb116eba8c6bbdef32258c4c2ab483d80f27a01e1cf803d59",
+   "backend_root": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/platform/backend",
+   "file_count": 50,
+   "files": {
+    "config/catalog.local.yaml": "4e12dc6be6d8fe95a34419d0ab7b5df847b01fc3f5edc3bec0a7c7381cb91718",
+    "config/catalog.yaml": "3b7b277a04358a9e2aad19bcbed5ca10828c6dc434e12691e8f0403bc72cff50",
+    "config/maps.catalog.json": "3cbd3a9410e59bdf488425bf5eb5df2fd6be0c6533da7b258648b55a6199a9f9",
+    "config/mobilecar-g1-recipe-v2.json": "632f268245d77c19bf42d78832e7dcf806375fc9d0c855e663cf700ba708a8c2",
+    "config/mobilecar-g1-source.json": "146d331f7b1e72316432835a648238eadce57fec78d89b48b4fe062f283d9768",
+    "config/mobilecar-history-source.json": "fbfcc6a69edb9472007e9076c39e9677b2797b4a7e7bb2e4b8eac432fde9c394",
+    "config/mobilecar-landerpi-kinematics-v1.json": "6e2d3d08f6b30a8e7424d808bcff1212b44b996d54d44369e067827f419f3fd5",
+    "config/release-identity.native-m1h.json": "32d4322a61063fa24bb86938d6e9b557cca2d8745fbaff33721e87301d97c1f3",
+    "src/unirobot/__init__.py": "d420e2db76b2650af8361ded2892d984086dd8b539b43e2a93be04682fdd651a",
+    "src/unirobot/__main__.py": "466e1c3162113201a16d7f2bf9837f57a0f3e799870eacc5bf5963513d9c6dd8",
+    "src/unirobot/adapters.py": "2c62e8ce4f9dec4ab2365528d7bbd555fe719a6066522c0dfdac7d539adbfe44",
+    "src/unirobot/api.py": "8ab4e61be741d16527ebb3827081ae7d235c33ff72a3a2a7764f88aa2b54c383",
+    "src/unirobot/catalog.py": "35bb44461993601cd02972dcc5b473ab964ede2f2ec90329917abb64dfcc0e3a",
+    "src/unirobot/contracts.py": "674464a27f09815f96cdda4be0ecab8acf5feab354a4cec9064ef1ac70e9c30c",
+    "src/unirobot/drafts.py": "3c1979f749b557b211fb6b037c3657e21de96677076e1034435f2adf7906bcbd",
+    "src/unirobot/episodes.py": "590f0290c1bd9990d335bde49e1c8f8ddba26f740fba64a891413d4c904390f5",
+    "src/unirobot/frames.py": "9ae98b126e42760aa54ef99ab3c74bfc4b445b70605a39e30a0fdd3b4903f06f",
+    "src/unirobot/history_fk.py": "2822e6641eb363296b9b37d0f204bb7523710c0ede8f7283321199a2cd5be2ee",
+    "src/unirobot/history_pose.py": "75fdb86700ebb09ba85e029b88491d88a3b5112eaa3b9224c5614a1392616b64",
+    "src/unirobot/maps.py": "ea4afd1c76bdac68aff9438419ed8824d101c782ac1138932c8ce95a296bf86d",
+    "src/unirobot/migrate.py": "5f7f7ff0875d9379838b6d1e87657b6a0dd8636ee7c21164eb68eb11c006e41a",
+    "src/unirobot/mobilecar.py": "cd7049ec40bad73193eb9ffa3bc10994a3379fb74f2460848c3ddd34a6c3130c",
+    "src/unirobot/mobilecar_geometry.py": "257c28c32d6043b94e7256503cb0dfb58d7f98969048b19d2bd3a7c1282cd8c4",
+    "src/unirobot/mobilecar_read.py": "07c1c2a602dc400d8505288f2a40f56594494d5969f047f0a4a5f7370c919f4a",
+    "src/unirobot/prepare.py": "36b4e6571d272e49d1c0715f593096e672cd413062b2f968af82c7d1b7f137ed",
+    "src/unirobot/recipe.py": "149a0b3dfe61ddb37cc0f31df9b8858a6c8e9cac5b215e9b19b20ad1779d9bd8",
+    "src/unirobot/routes.py": "dc2b32dfb59d7da4f73d2a4ad7265c7b8c238dfd9ad83feca9304d5f1adb11a8",
+    "src/unirobot/runtime.py": "7cc0fc18c720b9b40d52c6b0ecbdaf8d8c4c63a13d4cd7e0b64b22b3877cd086",
+    "src/unirobot/settings.py": "1d298b8ac9ae91190c9d934c5fb4007c3f38d399e3cb1c3fed7432c3b7c6dbee",
+    "src/unirobot/static/index.html": "c481d84b3b17659d3829a2e19dc737da6554b188d619c10991340562507a5340",
+    "src/unirobot/static/mobilecar/app.js": "3767444673a28af72a11a1e686530eec3b0e552c6d8bbff9615edc60f346fcf6",
+    "src/unirobot/static/mobilecar/drafts.js": "19a2f0bf0d71887128fa00af289ebf5fa690c69dd8b23304f807bd439e3761a5",
+    "src/unirobot/static/mobilecar/index.html": "31cecbde8da80ba6dfcbe71783f5a1876d1043bf40504c66cd5c6ff595b9ccec",
+    "src/unirobot/static/mobilecar/panel.js": "25c87a19946790295583660255850398c5033aeda8f7419dcaa52a333efc600b",
+    "src/unirobot/static/mobilecar/styles.css": "a9f48915298d5c9713ceab5c66c95cb340e589d22fc073c6fbe5aaef18a5e51c",
+    "tools/anchor_coverage_repro.py": "8c54909703b1caa26212827e8684e009e326902a1c8ceb6ea06f099c21f75e55",
+    "tools/check_compiled_geometry.py": "ce975a3b5bf9503ea702fa3d990a7c7d81beb75de2b5d31fa262abb69a5a8aae",
+    "tools/cross_http_protocol_check.py": "b65bc5739b5aaa3e0f389ee8dd3910209ab7a461e4c0159eb2155cad14fa42de",
+    "tools/cross_http_stop_end_check.py": "1224b5222f7aacc4c12c0a31fbeba208f4c1287f720461d3679bcbb0a0e55f1c",
+    "tools/episode_history_check.py": "9848968fd6348af5109ed5e79588ef7545e9b94d1e65baef149915a77c90944c",
+    "tools/export_compiled_geometry.py": "b58742cca32b621d7fd6d6b4336c9f61c5a3363561ffecdc8f47bfd58775fb56",
+    "tools/history_fk_check.py": "8ab92d4fb9f53d588b239044e088ebffa14348a4907455c86c2228eab76050e6",
+    "tools/history_replay_facts.py": "238108b42dce1f2d9f895b11685f663fb947e23b9e16fcf257c53a2c8d519da0",
+    "tools/launch_unified_gateway.py": "6d3d9c05f914a5c9e337b59109a63da4ea97d8ba318aaebf765d3f5a3e29a1cd",
+    "tools/mock_native_protocol_app.py": "22879091b1a220354d5c528290d465701f7d6503cf6a47593661c956ac98c5ea",
+    "tools/native_get_probe.py": "36ec686932a0b8c87f8d773a8165af54f942c84ba3b7ab2959a3609952f82fd7",
+    "tools/native_recipe_identity.py": "d4b36500cbce0d75ce6ae071e576e4678054b7f5e30579769660f9081fc83274",
+    "tools/release_identity.py": "453cdd08ee7b0c795055a0215ab6b8007a80cd324efe916bc93e1014c3839827",
+    "tools/source_digest.py": "4514a0f8195dcd9b8f571243c3b902950ea97122ef65bced6767f3605876c6af",
+    "tools/unified_candidate_check.py": "45b47c537f10bac9097367cf96e9a15f3b41aca0aa8573d1e0d2416b7a791c10"
+   }
+  },
+  "read_only": true,
+  "recipe": {
+   "fingerprint": "9759035b6ca61a0852c01a836560123b2c5dd3891db6af71686b0ea85d470d47",
+   "path": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/recipe/testonly-recipe.json",
+   "recipe_id": "mobilecar.g1.teleop.mock-testonly",
+   "sha256": "07c91e54a4f001de49ac746171c6c31ca21a3bf5d9bc72deca063503493ddd6f"
+  }
+ },
+ "recorded_model_identity": {
+  "map_mode": "unavailable",
+  "model_id": null,
+  "model_sha256": null,
+  "run_contract_version": "mobilecar-1.0",
+  "scene_id": null,
+  "source": "run manifest.json as recorded",
+  "truth_access": "GT_DEBUG_SEPARATE_FROM_DEFAULT_OBSERVATION"
+ },
+ "recording_root": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/recordings",
+ "requests": [
+  {
+   "bytes": 2299,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes?limit=1",
+   "sha256": "cd47c4443b5e69ac7886b185a760832eade6791e3a8023f49b70385d3664a563",
+   "status": 200
+  },
+  {
+   "bytes": 2300,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes?limit=50",
+   "sha256": "5cc6db36adc259c99dcbcc4507f058b35a17c61ea873ac0d7635bdbe0259489a",
+   "status": 200
+  },
+  {
+   "bytes": 10186,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed?run_id=run_5f972f067e014b8596d38c20f5f6042c",
+   "sha256": "b8798f5325834b711effafa6a1942833032e4d3c1581e156e56aa0b025e8055f",
+   "status": 200
+  },
+  {
+   "bytes": 5715,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/streams?run_id=run_5f972f067e014b8596d38c20f5f6042c",
+   "sha256": "8276d133e1675135e45a512b462352c1523806659d62ebd51ab9a6554abdb2eb",
+   "status": 200
+  },
+  {
+   "bytes": 27446,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/streams/events/records?run_id=run_5f972f067e014b8596d38c20f5f6042c&limit=200",
+   "sha256": "c41ebfc4824bc8a10188260afd644876d3b74cd45f4524971c4f01ca3534e8e6",
+   "status": 200
+  },
+  {
+   "bytes": 4586,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/streams/observations-persist/records?run_id=run_5f972f067e014b8596d38c20f5f6042c&limit=50",
+   "sha256": "581199ffb26572157a12160b6004a1ae9be15d4fa4c6d02c61c5a97bb1a15d9e",
+   "status": 200
+  },
+  {
+   "bytes": 4876,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/streams/transforms/records?run_id=run_5f972f067e014b8596d38c20f5f6042c&limit=50",
+   "sha256": "3369d5da055641331fa3124db8628f4a203daa1aa1d20a3fdedab7bcc2b638d6",
+   "status": 200
+  },
+  {
+   "bytes": 81537,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/frames?run_id=run_5f972f067e014b8596d38c20f5f6042c&limit=10&include_time_quality=true&include_action_basis=true",
+   "sha256": "b9d45c346451414cd74020b09dc46120a873f4ff3433f9779273887a92b1cafd",
+   "status": 200
+  },
+  {
+   "bytes": 79,
+   "content_type": "image/png",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/assets/rgb/synthetic_frame_00.png?run_id=run_5f972f067e014b8596d38c20f5f6042c",
+   "sha256": "dd9756d348f12b3d63de4fdf89368b29c22151a6f371cd88b5ea1730d936b1e3",
+   "status": 200
+  },
+  {
+   "bytes": 283,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/assets/rgb/synthetic_frame_00.png?run_id=run_5f972f067e014b8596d38c20f5f6042c&sha256=0000000000000000000000000000000000000000000000000000000000000000",
+   "sha256": "4c48c7d1b0fbf79f42986c6e1a734d9ceacb41d433d66f38594f8b19430bfd08",
+   "status": 409
+  },
+  {
+   "bytes": 144,
+   "content_type": "application/octet-stream",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/assets/depth/synthetic_frame_00.npy?run_id=run_5f972f067e014b8596d38c20f5f6042c",
+   "sha256": "db57f174d2da4226f89b4f4da28cf75a52c198176cb1470537eeec3e5ebc3416",
+   "status": 200
+  },
+  {
+   "bytes": 283,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/assets/depth/synthetic_frame_00.npy?run_id=run_5f972f067e014b8596d38c20f5f6042c&sha256=0000000000000000000000000000000000000000000000000000000000000000",
+   "sha256": "9c049246ea5d201bc0b67682a514ef9b5c21c08576a4f22be7c6243f68c5f24e",
+   "status": 409
+  },
+  {
+   "bytes": 79,
+   "content_type": "image/png",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/assets/rgb/synthetic_frame_01.png?run_id=run_5f972f067e014b8596d38c20f5f6042c",
+   "sha256": "a1d7b2b8d7a9dd54835e805e6260ba0fecaff58c2993c16622924fd59c837568",
+   "status": 200
+  },
+  {
+   "bytes": 283,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/assets/rgb/synthetic_frame_01.png?run_id=run_5f972f067e014b8596d38c20f5f6042c&sha256=0000000000000000000000000000000000000000000000000000000000000000",
+   "sha256": "2b4fe291b00fabe2322ad3d37d617b9b3863b50858998e2b97d37e125048f570",
+   "status": 409
+  },
+  {
+   "bytes": 144,
+   "content_type": "application/octet-stream",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/assets/depth/synthetic_frame_01.npy?run_id=run_5f972f067e014b8596d38c20f5f6042c",
+   "sha256": "72fefb1c263322d72d344eac6f5293055be79093895dee942b0cf5577aeac3d3",
+   "status": 200
+  },
+  {
+   "bytes": 283,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/assets/depth/synthetic_frame_01.npy?run_id=run_5f972f067e014b8596d38c20f5f6042c&sha256=0000000000000000000000000000000000000000000000000000000000000000",
+   "sha256": "1f70d989e766d4569dcdc0a6a40aca9eb2f0793eff1a773fb5c4d3aeb82fffd1",
+   "status": 409
+  },
+  {
+   "bytes": 136,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/mobilecar/scene",
+   "sha256": "e8fd83f22298313790a49a11033ca77887d16a05c0b7ce2466d9c7789e40f1c5",
+   "status": 503
+  },
+  {
+   "bytes": 191,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/robot-state?run_id=run_5f972f067e014b8596d38c20f5f6042c",
+   "sha256": "c08ee2e9c71e3b3db90198ac3ae7168865778024029bc1c02587e0f21dcd602a",
+   "status": 503
+  },
+  {
+   "bytes": 2327,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes?limit=1",
+   "sha256": "9c651e7f27b59ea4266927bf7b2e19740e8fa51852622753259d6a14b6bdf5ff",
+   "status": 200
+  },
+  {
+   "bytes": 10103,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed?run_id=run_5f972f067e014b8596d38c20f5f6042c",
+   "sha256": "db215d7f3b76ff5490f0d6acaaef93b9ad6a8786083dc5d95b235dc344d0b62e",
+   "status": 200
+  },
+  {
+   "bytes": 163,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/assets/assets/depth/synthetic_frame_00.npy?run_id=run_5f972f067e014b8596d38c20f5f6042c",
+   "sha256": "1026b73b2155716494d5dab257b36279174352f80c3810bb98b199eeff1b2839",
+   "status": 404
+  },
+  {
+   "bytes": 55831,
+   "content_type": "application/json",
+   "method": "GET",
+   "path": "/api/v1/episodes/episode_7f432849f34940ad908513d15a2098ed/frames?run_id=run_5f972f067e014b8596d38c20f5f6042c&limit=10",
+   "sha256": "9fddaec88bd7ebd137f3679f70bdb32b043ba2b276c35c4251d3cbbf167196ff",
+   "status": 200
+  }
+ ],
+ "required_streams": {
+  "manifest_declared_stream_fields": {},
+  "note": "test expectations are not written into the manifest; no Episode-level required-stream set is invented",
+  "status": "unknown",
+  "test_expectation_only": [
+   "rgb",
+   "depth"
+  ],
+  "writer_declaration": [
+   "rgb",
+   "depth",
+   "lidar",
+   "imu",
+   "encoders",
+   "joint_feedback",
+   "image_transforms"
+  ]
+ },
+ "run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+ "schema_version": "unirobot-new-recording-readback-1",
+ "three_d_replay": {
+  "live_geometry_or_actual_may_be_applied": false,
+  "model_match": "unknown",
+  "reasons": [
+   "recorded model identity is missing or the reference pin is unavailable",
+   "recorded scene id is missing or the reference scene is unavailable",
+   "rendered-replay correctness is not verified by this slice and live Actual/geometry is never substituted for recorded state"
+  ],
+  "recorded_model_sha256": null,
+  "recorded_scene_id": null,
+  "recorded_transforms_available": true,
+  "reference_model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+  "reference_scene_id": "mobile_pick",
+  "scene_match": "unknown",
+  "status": "restricted",
+  "still_available": [
+   "metadata",
+   "events",
+   "recorded transforms",
+   "media assets that exist"
+  ]
+ },
+ "time_quality": {
+  "coverage": {
+   "anchor_limit": 4000,
+   "anchor_lines": {
+    "blank_lines_skipped": 0,
+    "lines_read": 2,
+    "non_object_lines_skipped": 0,
+    "oversize_lines_skipped": 0,
+    "prefiltered_lines_skipped": 0,
+    "unparseable_lines_skipped": 0
+   },
+   "anchor_relative_path": "observations/persist.jsonl",
+   "anchors_in_this_scan": 2,
+   "covers_whole_episode": true,
+   "episode_id": "episode_7f432849f34940ad908513d15a2098ed",
+   "first_anchor_line_index": 0,
+   "last_anchor_line_index": 1,
+   "line_accounting": {
+    "benign_lines": {
+     "blank_lines_skipped": 0,
+     "prefiltered_lines_skipped": 0
+    },
+    "every_line_of_the_anchor_file_is_decided": true,
+    "note": "a blank line and a line that cannot carry the requested stream token are decided, not corruption; a line the reader could not parse is undecided and could have carried an anchor, so it blocks a whole-episode claim",
+    "parsed_records_rejected_by_rule": 0,
+    "rules": {
+     "blank_lines_skipped": {
+      "affects_whole_episode_qualification": false,
+      "classification": "benign",
+      "may_hide_an_anchor": false,
+      "why": "an empty line carries no record at all, so nothing about it is unknown"
+     },
+     "non_object_lines_skipped": {
+      "affects_whole_episode_qualification": true,
+      "classification": "undecidable",
+      "may_hide_an_anchor": true,
+      "why": "valid JSON that is not an object is not a conforming record, and what it was meant to carry is unknown"
+     },
+     "oversize_lines_skipped": {
+      "affects_whole_episode_qualification": true,
+      "classification": "undecidable",
+      "may_hide_an_anchor": true,
+      "why": "the content was never parsed, so it cannot be ruled out as an anchor record"
+     },
+     "prefiltered_lines_skipped": {
+      "affects_whole_episode_qualification": false,
+      "classification": "benign",
+      "may_hide_an_anchor": false,
+      "why": "raw text that cannot contain the requested stream_id token is not an anchor record of the requested stream under the reader's own documented prefilter rule"
+     },
+     "unparseable_lines_skipped": {
+      "affects_whole_episode_qualification": true,
+      "classification": "undecidable",
+      "may_hide_an_anchor": true,
+      "why": "a truncated or half-written line is exactly how a lost anchor would look"
+     }
+    },
+    "undecidable_lines": {
+     "non_object_lines_skipped": 0,
+     "oversize_lines_skipped": 0,
+     "unparseable_lines_skipped": 0
+    },
+    "undecidable_positions": [],
+    "undecidable_positions_truncated": false,
+    "undecidable_total": 0
+   },
+   "not_a_whole_archive_sweep": true,
+   "page_filter_context": {
+    "limit": 10,
+    "note": "the census covers the anchors this Episode exposes in file order, not only the rows of this page",
+    "offset": 0,
+    "returned": 2,
+    "sample_id": null,
+    "time_base": null,
+    "time_from": null,
+    "time_to": null
+   },
+   "reached_end_of_file": true,
+   "rejected_anchors": {
+    "excluded_identity_mismatch": 0,
+    "excluded_stream_mismatch": 0,
+    "excluded_without_sample_id": 0
+   },
+   "run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+   "scope_note": "the census scans this Episode's anchor file itself; a time window or page filter narrows the frame page, not the census, so whole-episode support depends only on this scan reaching EOF with every line decided \u2014 a scan that stopped at the anchor limit or met undecidable content supports no whole-episode or whole-archive claim",
+   "stopped_at_line_index": null,
+   "stream_id": "rgbd",
+   "unique_sample_ids": 2,
+   "whole_anchor_file_scanned": true
+  },
+  "playback_eligibility": {
+   "append_order_display": {
+    "anchor_position_never_reordered_by_time": true,
+    "basis": "the anchor file is read in the recorder's own append order and a full page stops at the first further qualifying anchor",
+    "displayed_sequence_may_have_gaps": false,
+    "does_not_require": [
+     "a numeric capture time base",
+     "clock sameness",
+     "unique sample ids"
+    ],
+    "eligible": true,
+    "gap_note": "A stays available: undecidable lines are reported with their positions so the reader can show what it could not decide, but they are not silently presented as a complete frame sequence",
+    "mode": "A"
+   },
+   "cross_stream_synchronized": {
+    "eligible": false,
+    "mode": "C",
+    "not_derivable_from": [
+     "A",
+     "B"
+    ],
+    "reason": "the records name shared clock bases but nothing lets this reader verify one shared clock source or one sampled instant across streams",
+    "same_page_evidence": {
+     "same_clock_verified": false,
+     "synchronized_across_streams": false
+    }
+   },
+   "modes": {
+    "append_order_display": "A: show anchors in the recorder's own append order of the anchor file",
+    "cross_stream_synchronized": "C: play several streams against one verified shared instant",
+    "recorded_interval_schedule": "B: schedule a step by the recorded gap on one named capture base"
+   },
+   "recorded_interval_schedule": {
+    "any_base_eligible_for_whole_episode": true,
+    "coverage_is_a_separate_question_from_timing": true,
+    "eligible_by_base": {
+     "capture_backend_monotonic_s": {
+      "blocking_reason_scope": {
+       "coverage": [],
+       "timing": []
+      },
+      "blocking_reasons": [],
+      "eligible_for_whole_episode": true,
+      "eligible_within_this_scan": true,
+      "every_line_of_the_anchor_file_is_decided": true,
+      "implied_rate_hz_from_median_recorded_gap": 5.000000001164153,
+      "implied_rate_note": "derived from the recorded values of this scan; it is not a rate the recorder declared and it is not a playback guarantee",
+      "reached_end_of_file": true,
+      "readable_anchor_timing_satisfies_schedule": true,
+      "zero_interval_ties_present": false
+     },
+     "capture_sim_time_s": {
+      "blocking_reason_scope": {
+       "coverage": [],
+       "timing": []
+      },
+      "blocking_reasons": [],
+      "eligible_for_whole_episode": true,
+      "eligible_within_this_scan": true,
+      "every_line_of_the_anchor_file_is_decided": true,
+      "implied_rate_hz_from_median_recorded_gap": 49.99999999999996,
+      "implied_rate_note": "derived from the recorded values of this scan; it is not a rate the recorder declared and it is not a playback guarantee",
+      "reached_end_of_file": true,
+      "readable_anchor_timing_satisfies_schedule": true,
+      "zero_interval_ties_present": false
+     },
+     "persist_backend_monotonic_s": {
+      "blocking_reason_scope": {
+       "coverage": [],
+       "timing": []
+      },
+      "blocking_reasons": [],
+      "eligible_for_whole_episode": true,
+      "eligible_within_this_scan": true,
+      "every_line_of_the_anchor_file_is_decided": true,
+      "implied_rate_hz_from_median_recorded_gap": 186.48227645055226,
+      "implied_rate_note": "derived from the recorded values of this scan; it is not a rate the recorder declared and it is not a playback guarantee",
+      "reached_end_of_file": true,
+      "readable_anchor_timing_satisfies_schedule": true,
+      "zero_interval_ties_present": false
+     }
+    },
+    "mode": "B",
+    "never_assumed": {
+     "browser_arrival_time_used": false,
+     "clock_stitched_across_reset": false,
+     "default_rate_hz_applied": false,
+     "why": "no record establishes a nominal rate, a host clock relationship across segments, or a RESET boundary on these anchors"
+    },
+    "rules_when_unqualified": {
+     "backwards_step": "the base is refused for scheduling over that range, because one continuous clock across the step is not established by the record",
+     "clock_unknown": "a base that only names a clock is not evidence of a shared clock source",
+     "equal_adjacent_values": "ties are shown as ties; they are not interpolated and a rate is not computed by dividing by zero",
+     "missing_or_non_numeric_time": "the base is refused for scheduling; the frame stays visible in append order and no value is filled from another record",
+     "undecidable_or_truncated_scan": "no whole-episode schedule is claimed: undecided content could hide an anchor, so the clean timing of the readable anchors cannot prove the rest of the Episode"
+    }
+   }
+  },
+  "time_bases": {
+   "capture_backend_monotonic_s": {
+    "first_in_file_order": 1533789.597300942,
+    "last_in_file_order": 1533789.797300942,
+    "missing_count": 0,
+    "non_numeric_count": 0,
+    "numeric_count": 2
+   },
+   "capture_sim_time_s": {
+    "first_in_file_order": 0.34,
+    "last_in_file_order": 0.36000000000000004,
+    "missing_count": 0,
+    "non_numeric_count": 0,
+    "numeric_count": 2
+   },
+   "persist_backend_monotonic_s": {
+    "first_in_file_order": 1533789.518469569,
+    "last_in_file_order": 1533789.523832009,
+    "missing_count": 0,
+    "non_numeric_count": 0,
+    "numeric_count": 2
+   }
+  }
+ },
+ "total": 46,
+ "writer_self_report": {
+  "declared_sensor_streams": [
+   "rgb",
+   "depth",
+   "lidar",
+   "imu",
+   "encoders",
+   "joint_feedback",
+   "image_transforms"
+  ],
+  "declared_source": "native /api/v1/capabilities (writer's own declaration)",
+  "event_type_counts": {
+   "actuator_reference": 4,
+   "approved": 2,
+   "episode_terminal": 1,
+   "feedback": 4,
+   "feedback_initial": 1,
+   "recording_start": 1,
+   "recording_stop": 1,
+   "requested": 2,
+   "rgbd_capture_timing": 2
+  },
+  "manifest": {
+   "clocks": [
+    "sim",
+    "backend_monotonic",
+    "device",
+    "wall_utc"
+   ],
+   "contract_version": "mobilecar-1.0",
+   "created_wall_utc": "2026-10-30T11:45:24.951921Z",
+   "map_mode": "unavailable",
+   "model_id": null,
+   "model_sha256": null,
+   "run_id": "run_5f972f067e014b8596d38c20f5f6042c",
+   "scene_id": null,
+   "software": {
+    "name": "mobilecar",
+    "version": "0.1.0"
+   },
+   "truth_access": "GT_DEBUG_SEPARATE_FROM_DEFAULT_OBSERVATION"
+  },
+  "persist_rows_written": 2,
+  "samples_written": 2,
+  "test_expected_streams": [
+   "rgb",
+   "depth"
+  ],
+  "test_expected_streams_are_not_a_manifest_fact": true
+ }
+}

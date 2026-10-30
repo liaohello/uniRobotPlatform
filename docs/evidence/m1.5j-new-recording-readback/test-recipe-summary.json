@@ -1,0 +1,34 @@
+{
+  "classification": "test-only mock recipe; the production G1 recipe, pin and fingerprint were not changed",
+  "source_path_on_server": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/recipe/testonly-recipe.json",
+  "sha256": "07c91e54a4f001de49ac746171c6c31ca21a3bf5d9bc72deca063503493ddd6f",
+  "recipe_id": "mobilecar.g1.teleop.mock-testonly",
+  "fingerprint": "9759035b6ca61a0852c01a836560123b2c5dd3891db6af71686b0ea85d470d47",
+  "required_protocols": {
+    "recording_begin": "m1-recording-1",
+    "recording_end": "m1-end-1",
+    "session_binding": "m1-binding-1",
+    "session_stop": "m1-stop-1"
+  },
+  "expected": {
+    "contract_version": "mobilecar-1.0",
+    "model_id": "landerpi_mock_same_geometry",
+    "model_sha256": "3ca3d6d0a92a48bbfbce5ac7a04e37a0f7cf7a73297045ae327bf461ad50e280",
+    "scene_id": "mobile_pick",
+    "config_manifest_sha256": "fb57144ab281228e457d3c074120828f17f2bc27ff4369ce0f870ad31b3a2f0a",
+    "scene_manifest_sha256": "dba426da1eb70d3e72d75a65818d31e2c54e80a91381fc77f36c8251ebb33856",
+    "sensor_streams": [
+      "rgb",
+      "depth",
+      "lidar",
+      "imu",
+      "encoders",
+      "joint_feedback",
+      "image_transforms"
+    ]
+  },
+  "native_attestation": {
+    "backend_kind": "mock",
+    "mock_native": "http://127.0.0.1:18980"
+  }
+}

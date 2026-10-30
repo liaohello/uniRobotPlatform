@@ -22,6 +22,10 @@
 
 [前端需求分析 V0.2](frontend_analysis_v0.2.md)、[产品需求初稿](productReq.md)、[原始前端参考材料摘录](设计过程与Specification总册_20261021.md#doc-044)、[原始需求分析](requireAnalysis.md)、[任务意图](coreIntent.md) 是历史与参考材料。其内容与更新用户决定不一致时，以当前规范中的来源与取代记录为准；目录整理不把建议转为已确认需求。
 
+### 2026-10-30 新 Recorder 产物的平台历史 reader 重载
+
+[M1.5j 交付记录](backend-m1.5j-new-recording-readback.md)：用未跟踪生成器的冻结副本在隔离 root 生成全新 Episode（`run_5f972f… / episode_7f4328…`），writer 停止后由当前平台 reader 经真实 HTTP GET 重载，46/46 检查通过、22 次请求全为 GET、读取前后 21 个文件摘要一致；缺媒体副本返回 `episode_asset_missing`。未改平台 reader 源码；只新增 test-only 验收工具。详见[证据册](evidence/m1.5j-new-recording-readback/README.md)。
+
 ### V0.3 前端图片与页面 Specification
 
 [页面与图片索引](specs/10-frontend/page-designs/README.md) · [设计冲突分析](specs/90-governance/08-visual-design-conflicts.md) · [图片/PPT 对照](specs/references/04-visual-asset-catalog.md)。原素材保留，页面设计与功能/后端规范交叉索引。

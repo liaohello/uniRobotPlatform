@@ -1,0 +1,43 @@
+{
+  "classification": "external test inputs; no original file was modified or committed",
+  "generator": {
+    "source_path": "/home/liaozhengyan/.codex/worktrees/backend-m1-read/uniRobotPlatform/backend/tools/new_recording_roundtrip.py",
+    "source_sha256_before_copy": "b1d5c08a6820438ce0c5391239a50bc390e4551a20e4554497761ba381be63f2",
+    "source_sha256_after_run": "b1d5c08a6820438ce0c5391239a50bc390e4551a20e4554497761ba381be63f2",
+    "frozen_copy_path_on_server": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/input/new_recording_roundtrip.py",
+    "frozen_copy_sha256_before_run": "b1d5c08a6820438ce0c5391239a50bc390e4551a20e4554497761ba381be63f2",
+    "frozen_copy_sha256_after_run": "b1d5c08a6820438ce0c5391239a50bc390e4551a20e4554497761ba381be63f2",
+    "patch_applied": null,
+    "patch_note": "none; the frozen copy ran unmodified",
+    "committed": false
+  },
+  "probe_native": {
+    "path_on_server": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/probe/probe_native.py",
+    "sha256": "5f41ca4acc61044bf79b16a32d00ec0767fb2c71a4d843574d0fd59a84290a9e",
+    "purpose": "start the mock native only to build the test-only recipe; it recorded nothing and was stopped before the writer ran",
+    "committed": false
+  },
+  "readback_tool": {
+    "committed_path": "backend/tools/new_recording_readback_check.py",
+    "sha256": "60d59c5e7205f5ee57a2b62ea455df7087093be620232602f3eb833df28ba084",
+    "path_on_server": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1j-new-recording-20261030T1144Z/harness/new_recording_readback_check.py"
+  },
+  "native_release": {
+    "id": "m1h-20261024T152235Z-native",
+    "path": "/home/liaozhengyan/Desktop/mobileCar/releases/m1h-20261024T152235Z-native",
+    "modified": false
+  },
+  "platform_source": {
+    "file_count": 50,
+    "aggregate": "107f897ddfe2485fb116eba8c6bbdef32258c4c2ab483d80f27a01e1cf803d59",
+    "startup_manifest": "/home/liaozhengyan/Desktop/uniRobotPlatform/var/reports/m1i-20261030T035643Z-platform/history-startup.json"
+  },
+  "ports": {
+    "native_mock": 18980,
+    "execution_gateway": 18981,
+    "reader": 18987,
+    "missing_media_reader": 18988,
+    "free_before_start": true,
+    "closed_after_run": true
+  }
+}
