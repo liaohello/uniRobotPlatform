@@ -111,6 +111,49 @@ export interface FrameClockSamenessDto {
   verified_claim?: string; note?: string;
   writer_version_binding?: { recorded?: string[]; not_recorded?: string[]; consequence?: string; synchronized_upgraded_by_numeric_closeness?: boolean };
 }
+export interface ActionBasisScopeDto {
+  stream_id: string; relative_path: string; records_scanned: number; reached_end_of_file: boolean;
+  stopped_at_line_index: number | null; record_limit: number; events_stream_present: boolean;
+  records_without_an_event_type: number; scope_note?: string; page_ticks_considered?: number; anchors_on_this_page?: number;
+}
+export interface ActionBasisCategoryDto {
+  event_types_recorded: string[]; counts: Record<string, number>; status: string;
+  meaning?: string; absent_event_types?: string[]; status_note?: string;
+}
+export interface ActionBasisJoinKeyDto { envelope: { present: number; null: number }; payload: { present: number; null: number } }
+export interface ActionBasisTimeFieldDto { unit: string; numeric: number; null: number; other: number }
+export interface ActionBasisVocabularyEntryDto {
+  count: number; first_line_index: number; last_line_index: number; record_positions: string[];
+  join_keys?: Record<string, ActionBasisJoinKeyDto>; time_fields?: Record<string, ActionBasisTimeFieldDto>;
+}
+export interface ActionBasisVerdictDto {
+  status: string; candidate_count?: number; record_positions?: string[]; reason?: string;
+  looked_for?: Record<string, unknown>; note?: string;
+}
+export interface ActionBasisFrameCandidatesDto {
+  sample_id: string | null; capture_control_tick_id: string | null;
+  by_event_type: Record<string, ActionBasisVerdictDto>;
+}
+export interface ActionBasisCommandDto {
+  command_id: string; stages: Record<string, number>; positions: Record<string, string[]>;
+  control_tick_id_present: number;
+}
+export interface ActionBasisDto {
+  requested: boolean; scope: ActionBasisScopeDto; categories: Record<string, ActionBasisCategoryDto>;
+  vocabulary: Record<string, ActionBasisVocabularyEntryDto>;
+  frame_association: {
+    key: string;
+    by_event_type: Record<string, { candidate_count_per_frame_on_this_page: Record<string, number>; frames_with_this_verdict: number }>;
+    candidate_positions_per_frame: ActionBasisFrameCandidatesDto[];
+    candidate_list_limit: number; candidate_lists_truncated: boolean; rules: Record<string, string>;
+  };
+  command_chain?: { grouped_by: string; commands: ActionBasisCommandDto[]; commands_truncated: boolean; note?: string };
+  control_source?: {
+    status: string; fields_observed: Record<string, string[]>; takeover_event_type_recorded: boolean;
+    lease_evidence: Record<string, number>; note?: string;
+  };
+  independent_tracks?: string[]; independent_track_reason?: string; not_proven?: string[];
+}
 export interface FramePageDto {
   schema_version: string; read_only: boolean; source: EpisodeSource; retrieved_at: string;
   identity: FrameIdentity;
@@ -131,6 +174,8 @@ export interface FramePageDto {
   frames: FrameDto[]; not_proven?: string[];
   /** Present only when this page was read with `include_time_quality=true`; absent on a normal page. */
   time_quality?: FrameTimeQualityDto | null;
+  /** Present only when this page was read with `include_action_basis=true`; absent on a normal page. */
+  action_basis?: ActionBasisDto | null;
   version_migration?: FrameVersionMigrationDto | null;
   three_d_replay: { this_slice_does_not_enable_3d_replay: boolean; live_geometry_or_actual_may_be_applied: boolean;
     transforms_are_full_per_body_pose_sequences: boolean; robot_pose_readiness_slice?: string };
@@ -138,7 +183,7 @@ export interface FramePageDto {
 }
 
 /** The single GET of this contract. `stream` is left to the reader's own default (`rgbd`). */
-export async function readFramesPage(input: { episodeId: string; runId: string | null; limit?: number; offset?: number; timeBase?: string | null; timeFrom?: number | null; timeTo?: number | null; sampleId?: string | null; includeTimeQuality?: boolean }, signal: AbortSignal): Promise<FramePageDto> {
+export async function readFramesPage(input: { episodeId: string; runId: string | null; limit?: number; offset?: number; timeBase?: string | null; timeFrom?: number | null; timeTo?: number | null; sampleId?: string | null; includeTimeQuality?: boolean; includeActionBasis?: boolean }, signal: AbortSignal): Promise<FramePageDto> {
   const params: Record<string, string | number | undefined> = {
     run_id: input.runId ?? undefined, limit: input.limit, offset: input.offset, sample_id: input.sampleId || undefined,
   };
@@ -153,6 +198,7 @@ export async function readFramesPage(input: { episodeId: string; runId: string |
   // Only this literal spelling: the reader's 422 for a non-boolean value is FastAPI's own `bool_parsing`
   // body rather than the project's `{detail:{code}}` shape, so the client never sends anything else.
   if (input.includeTimeQuality) params.include_time_quality = 'true';
+  if (input.includeActionBasis) params.include_action_basis = 'true';
   return json<FramePageDto>(`/api/v1/episodes/${encodeURIComponent(input.episodeId)}/frames${query(params)}`, signal, FRAME_LINK_SCHEMA);
 }
 
@@ -623,12 +669,26 @@ const numeric = (value: unknown): number | null => typeof value === 'number' && 
  * statement about the whole anchor file scan, so nothing here reads it as a per-page or per-window answer,
  * and a base the census does not name stays unqualified instead of being guessed.
  */
+export interface LineAccountingDto {
+  benign_lines?: { blank_lines_skipped: number; prefiltered_lines_skipped: number };
+  undecidable_lines?: { oversize_lines_skipped: number; unparseable_lines_skipped: number; non_object_lines_skipped: number };
+  undecidable_total?: number;
+  undecidable_positions?: { line_index: number; record_position?: string; reason?: string }[];
+  undecidable_positions_truncated?: boolean;
+  parsed_records_rejected_by_rule?: number;
+  every_line_of_the_anchor_file_is_decided?: boolean;
+  rules?: Record<string, { classification?: string; may_hide_an_anchor?: boolean; affects_whole_episode_qualification?: boolean; why?: string }>;
+  note?: string;
+}
 export interface TimeQualityCoverageDto {
   run_id: string; episode_id: string; stream_id: string; anchor_relative_path: string;
   anchors_in_this_scan: number; unique_sample_ids: number;
   rejected_anchors: { excluded_identity_mismatch: number; excluded_stream_mismatch: number; excluded_without_sample_id: number };
   anchor_lines: FrameAnchorLinesDto;
   first_anchor_line_index: number | null; last_anchor_line_index: number | null;
+  /** M1.5h splits the old "whole file" claim into three facts; older fixtures carry only the two below. */
+  reached_end_of_file?: boolean; line_accounting?: LineAccountingDto;
+  readable_anchor_timing_satisfies_schedule?: boolean;
   whole_anchor_file_scanned: boolean; anchor_limit: number; stopped_at_line_index: number | null;
   covers_whole_episode: boolean; not_a_whole_archive_sweep: boolean; scope_note?: string;
   page_filter_context?: { time_base: string | null; time_from: number | null; time_to: number | null;
@@ -653,7 +713,11 @@ export interface TimeQualityIdentityDto {
   every_anchor_position_is_reported?: boolean; effect_on_this_route?: string; effect_on_robot_state?: string;
 }
 export interface IntervalEligibilityDto {
+  /** M1.5h restates the three facts per base; older fixtures carry only the verdict and reasons. */
+  reached_end_of_file?: boolean; every_line_of_the_anchor_file_is_decided?: boolean;
+  readable_anchor_timing_satisfies_schedule?: boolean;
   eligible_for_whole_episode: boolean; eligible_within_this_scan: boolean; blocking_reasons: string[];
+  blocking_reason_scope?: { coverage: string[]; timing: string[] };
   zero_interval_ties_present?: boolean; implied_rate_hz_from_median_recorded_gap?: number | null; implied_rate_note?: string;
 }
 export interface FrameTimeQualityDto {
@@ -724,11 +788,31 @@ export function intervalGateOf(censusPage: FramePageDto | null, base: string): I
     if (cov.whole_anchor_file_scanned !== true || cov.covers_whole_episode !== true || cov.stopped_at_line_index !== null) {
       reasons.push(`本次 census 没有扫完整份锚点文件（whole_anchor_file_scanned=${String(cov.whole_anchor_file_scanned)}、covers_whole_episode=${String(cov.covers_whole_episode)}、stopped_at_line_index=${text(cov.stopped_at_line_index)}、anchor_limit=${text(cov.anchor_limit)}）：截断扫描不支持整集资格，界面不排程。${cov.scope_note ?? ''}`);
     }
-    const unjudgeable = UNJUDGEABLE_ANCHOR_LINES.map((key) => `${key}=${cov.anchor_lines?.[key] ?? '未报'}`).join('／');
-    const unjudgeableCount = UNJUDGEABLE_ANCHOR_LINES.reduce((sum, key) => sum + (cov.anchor_lines?.[key] ?? 0), 0);
-    const rejectedCount = REJECTED_ANCHOR_KEYS.reduce((sum, key) => sum + (cov.rejected_anchors?.[key] ?? 0), 0);
-    if (unjudgeableCount + rejectedCount > 0) {
-      reasons.push(`本次扫描里有无法判定时刻的锚点行被跳过（${unjudgeable}；身份/流/无 sample_id 排除 ${REJECTED_ANCHOR_KEYS.map((key) => `${key}=${cov.rejected_anchors?.[key] ?? 0}`).join('／')}）。18979 的整集资格只看扫描是否截断，并没有把这些行写进 blocking_reasons，所以界面不据该资格开放整集记录间隔播放：锚点序列在时间上是否有洞，这份 census 没有回答。空行（blank_lines_skipped=${text(cov.anchor_lines?.blank_lines_skipped)}）与预过滤行（prefiltered_lines_skipped=${text(cov.anchor_lines?.prefiltered_lines_skipped)}）属于 reader 自己声明的正常排除，不在此拒绝之列，也不把“任何计数非零”一律当成拒绝。`);
+    // M1.5h: the whole-episode claim now needs the scan to reach EOF AND every line to be decided. When
+    // the reader publishes those two facts they are authoritative; only a legacy census without them falls
+    // back to the 18979-era by-count rule below.
+    const lineAccounting = cov.line_accounting;
+    const migrated = cov.reached_end_of_file !== undefined || lineAccounting !== undefined;
+    if (migrated) {
+      if (cov.reached_end_of_file !== true) {
+        reasons.push(`coverage.reached_end_of_file=${String(cov.reached_end_of_file)}（stopped_at_line_index=${text(cov.stopped_at_line_index)}、anchor_limit=${text(cov.anchor_limit)}）：扫描没有到达文件末尾，整集范围无从证明。`);
+      }
+      if (lineAccounting && lineAccounting.every_line_of_the_anchor_file_is_decided !== true) {
+        const undecidable = lineAccounting.undecidable_lines ?? { oversize_lines_skipped: 0, unparseable_lines_skipped: 0, non_object_lines_skipped: 0 };
+        const positions = (lineAccounting.undecidable_positions ?? []).slice(0, 3)
+          .map((item) => item.record_position ?? `line ${item.line_index}`).join('、') || 'reader 未列出位置';
+        reasons.push(`coverage.line_accounting.every_line_of_the_anchor_file_is_decided=${String(lineAccounting.every_line_of_the_anchor_file_is_decided)}（不可判定 ${lineAccounting.undecidable_total ?? 0} 行：超限 ${undecidable.oversize_lines_skipped}／坏行 ${undecidable.unparseable_lines_skipped}／非对象 ${undecidable.non_object_lines_skipped}；位置 ${positions}${lineAccounting.undecidable_positions_truncated ? '…' : ''}）：这些行从未被解析，可能藏着锚点，界面不据整集资格排程。空行与预过滤行是 reader 声明的良性排除，不在此列。`);
+      }
+      if (lineAccounting) {
+        disclosures.push(`line_accounting：reached_end_of_file=${text(cov.reached_end_of_file)} · every_line_of_the_anchor_file_is_decided=${text(lineAccounting.every_line_of_the_anchor_file_is_decided)} · 不可判定 ${text(lineAccounting.undecidable_total)} 行 · 已由规则排除但仍是已见锚点 ${text(lineAccounting.parsed_records_rejected_by_rule)} 条 · 良性行 空行 ${text(lineAccounting.benign_lines?.blank_lines_skipped)}／预过滤 ${text(lineAccounting.benign_lines?.prefiltered_lines_skipped)}`);
+      }
+    } else {
+      const unjudgeable = UNJUDGEABLE_ANCHOR_LINES.map((key) => `${key}=${cov.anchor_lines?.[key] ?? '未报'}`).join('／');
+      const unjudgeableCount = UNJUDGEABLE_ANCHOR_LINES.reduce((sum, key) => sum + (cov.anchor_lines?.[key] ?? 0), 0);
+      const rejectedCount = REJECTED_ANCHOR_KEYS.reduce((sum, key) => sum + (cov.rejected_anchors?.[key] ?? 0), 0);
+      if (unjudgeableCount + rejectedCount > 0) {
+        reasons.push(`本次扫描里有无法判定时刻的锚点行被跳过（${unjudgeable}；身份/流/无 sample_id 排除 ${REJECTED_ANCHOR_KEYS.map((key) => `${key}=${cov.rejected_anchors?.[key] ?? 0}`).join('／')}）。18979 的整集资格只看扫描是否截断，并没有把这些行写进 blocking_reasons，所以界面不据该资格开放整集记录间隔播放：锚点序列在时间上是否有洞，这份 census 没有回答。空行（blank_lines_skipped=${text(cov.anchor_lines?.blank_lines_skipped)}）与预过滤行（prefiltered_lines_skipped=${text(cov.anchor_lines?.prefiltered_lines_skipped)}）属于 reader 自己声明的正常排除，不在此拒绝之列，也不把“任何计数非零”一律当成拒绝。`);
+      }
     }
     disclosures.push(`扫描：anchors_in_this_scan=${cov.anchors_in_this_scan} · unique_sample_ids=${cov.unique_sample_ids} · 行号范围 ${text(cov.first_anchor_line_index)}–${text(cov.last_anchor_line_index)} · 已读行 ${text(cov.anchor_lines?.lines_read)}（空行 ${text(cov.anchor_lines?.blank_lines_skipped)}／超限 ${text(cov.anchor_lines?.oversize_lines_skipped)}／坏行 ${text(cov.anchor_lines?.unparseable_lines_skipped)}／非对象 ${text(cov.anchor_lines?.non_object_lines_skipped)}／预过滤 ${text(cov.anchor_lines?.prefiltered_lines_skipped)}）`);
     // The scope clause is read straight after the census, before any base is chosen, so it may not depend on a
@@ -752,6 +836,17 @@ export function intervalGateOf(censusPage: FramePageDto | null, base: string): I
     });
   }
   if (eligibility) {
+    // M1.5h/i publish which of the three facts blocked the verdict. An `eligible=true` that still carries a
+    // scoped reason is a contradiction, so it is refused rather than averaged away.
+    const byScope = eligibility.blocking_reason_scope;
+    if (byScope) {
+      const scopeText = `coverage=[${(byScope.coverage ?? []).join('；') || '空'}] · timing=[${(byScope.timing ?? []).join('；') || '空'}]`;
+      const scoped = (byScope.coverage ?? []).length + (byScope.timing ?? []).length;
+      if (scoped > 0) reasons.push(`${base} 的 blocking_reason_scope 仍有原因（${scopeText}）：${eligibility.eligible_for_whole_episode === true ? '这与 eligible_for_whole_episode=true 自相矛盾，界面按有阻塞处理' : '整集记录间隔播放因此不开放'}。`);
+      else disclosures.push(`${base} 的 blocking_reason_scope 为空：coverage（到达 EOF、每行被判定）与 timing（可读锚点时间满足调度）分别无阻塞。${scopeText}`);
+    }
+    const facts = `reached_end_of_file=${text(eligibility.reached_end_of_file)} · every_line_of_the_anchor_file_is_decided=${text(eligibility.every_line_of_the_anchor_file_is_decided)} · readable_anchor_timing_satisfies_schedule=${text(eligibility.readable_anchor_timing_satisfies_schedule)}`;
+    if (eligibility.reached_end_of_file !== undefined || eligibility.every_line_of_the_anchor_file_is_decided !== undefined) disclosures.push(`${base} 的三个独立事实（M1.5h）：${facts}；三者同真才支持整集资格，且都不推出跨流同步。`);
     disclosures.push(`eligible_within_this_scan=${String(eligibility.eligible_within_this_scan)}：这是“本次扫描内”的判定，不是“当前时间窗口内”的资格——窗口只筛帧页，census 描述的是它自己那次锚点扫描（${cov?.page_filter_context?.note ?? cov?.scope_note ?? 'reader 未复述'}）。`);
     if (eligibility.zero_interval_ties_present) disclosures.push(`该基存在相等相邻值（zero_interval_ties_present=true）：按并列处理，不除零、不插值。`);
     disclosures.push(`implied_rate_hz_from_median_recorded_gap=${text(eligibility.implied_rate_hz_from_median_recorded_gap)} 只是本次扫描的中位数换算，${eligibility.implied_rate_note ?? '它不是记录者声明的速率，也不是播放保证'}——排程不使用中位数，只用相邻锚点的真实差值。`);
@@ -860,4 +955,136 @@ export function framePositionKey(episodeId: string, runId: string | null, offset
 export function anchorEchoKey(offset: number, position: number, frame: FrameDto | null): string {
   if (!frame) return 'none';
   return `${offset}+${position}|line ${frame.anchor.line_index}`;
+}
+
+// ---- M1.5h/i action basis: page-local association, episode-level vocabulary ---------------------
+
+/**
+ * The three event types the frame page can associate exactly, in the order the action card shows them.
+ * `Actual` is the recorded feedback state, `Target` is the recorded actuator reference, and `dispatch`
+ * is the recorder's own dispatch row. None of the three is a command result; the labels say so.
+ */
+export const ACTION_EVENT_ROLES = [
+  { type: 'feedback', label: 'Actual（feedback 测量状态）' },
+  { type: 'actuator_reference', label: 'actuator_reference（记录 Target）' },
+  { type: 'dispatch', label: 'dispatch（下发，不是执行成功）' },
+] as const;
+export type ActionEventType = typeof ACTION_EVENT_ROLES[number]['type'];
+
+/** A page's own association block. The first page's candidates are never reused for another page. */
+export function actionCandidatesOf(page: FramePageDto | null, position: number): ActionBasisFrameCandidatesDto | null {
+  const rows = page?.action_basis?.frame_association?.candidate_positions_per_frame;
+  return rows && position >= 0 && position < rows.length ? rows[position] : null;
+}
+
+/** `events.jsonl#<line_index>` is the only position form the reader publishes for events. */
+export function parseRecordPosition(position: string): { streamId: string; lineIndex: number } | null {
+  const match = /^([^#]+)#(\d+)$/.exec(position);
+  if (!match) return null;
+  const lineIndex = Number(match[2]);
+  if (!Number.isInteger(lineIndex) || lineIndex < 0) return null;
+  return { streamId: match[1], lineIndex };
+}
+
+/** `record_position` names the file (`events.jsonl`), while the records route names the stream
+ *  (`events`). Only the reader's own basenames are mapped; an unknown basename keeps its own word. */
+export function streamIdOfRecordPath(relativePath: string): string {
+  const base = relativePath.split('/').pop() ?? relativePath;
+  const known: Record<string, string> = {
+    'events.jsonl': 'events', 'persist.jsonl': 'observations-persist', 'index.jsonl': 'observations-index',
+  };
+  return known[base] ?? base.replace(/\.jsonl$/i, '');
+}
+
+/** A bounded read window around one position. The records route has no line-index filter, so the
+ *  interface asks for a few lines and matches the reader's own `line_index`; it never scans the file. */
+export function actionReadWindow(position: string, span = 1): { streamId: string; relativePath: string; lineIndex: number; offset: number; limit: number } | null {
+  const parsed = parseRecordPosition(position);
+  if (!parsed) return null;
+  const offset = Math.max(0, parsed.lineIndex - span);
+  return { streamId: streamIdOfRecordPath(parsed.streamId), relativePath: parsed.streamId, lineIndex: parsed.lineIndex, offset, limit: parsed.lineIndex - offset + span + 1 };
+}
+
+export interface ActionPayloadRow {
+  field: string; index: number | null; value: string; unit: string; unitBasis: string; note: string;
+}
+
+/** Units are claimed only when the recorder's own field name carries a recognised suffix. */
+export function unitFromFieldName(field: string): { unit: string; basis: string } {
+  const name = field.toLowerCase();
+  const claim = (unit: string, suffix: string): { unit: string; basis: string } =>
+    ({ unit, basis: `字段名后缀 ${suffix}` });
+  if (name.endsWith('_rad_s')) return claim('rad/s', '_rad_s');
+  if (name.endsWith('_m_s')) return claim('m/s', '_m_s');
+  if (name.endsWith('_rad')) return claim('rad', '_rad');
+  if (name.endsWith('_nm')) return claim('N·m', '_nm');
+  if (name.endsWith('_ms')) return claim('ms', '_ms');
+  if (name.endsWith('_hz')) return claim('Hz', '_hz');
+  if (name.endsWith('_m')) return claim('m', '_m');
+  if (name.endsWith('_s')) return claim('s', '_s');
+  return { unit: 'unknown_from_field_name', basis: '字段名没有可证明的单位后缀' };
+}
+
+const payloadValueText = (value: unknown): string => {
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : String(value);
+  if (typeof value === 'string') return value;
+  if (value === null) return 'null';
+  if (value === undefined) return 'absent';
+  return JSON.stringify(value);
+};
+const actionNote = (field: string): string =>
+  field === 'arm_model_reference_rad' ? '记录 Target 的六项参考数组：reader 没有声明它与五轴 Actual 的维度或顺序映射，界面不套用、不改名、不补零'
+    : field === 'arm_model_qpos_rad' ? '记录的实际模型关节角（测量值）：不是 Target'
+      : field === 'base_twist' || field === 'base_twist_body_m_s' ? '旋量数组：字段名未声明单位，界面不猜它的物理含义'
+        : '';
+
+/** Flattens one payload into original field names plus array indices. Objects keep dot paths; arrays
+ *  become one row per index so a six-entry reference is never collapsed onto a five-axis vector. */
+export function payloadRowsOf(payload: Record<string, unknown> | null | undefined): ActionPayloadRow[] {
+  const rows: ActionPayloadRow[] = [];
+  const walk = (field: string, value: unknown, index: number | null) => {
+    if (Array.isArray(value)) {
+      if (!value.length) {
+        const unit = unitFromFieldName(field);
+        rows.push({ field, index, value: '[]', unit: unit.unit, unitBasis: unit.basis, note: '记录为空数组' });
+        return;
+      }
+      value.forEach((item, position) => {
+        if (item !== null && typeof item === 'object') walk(`${field}[${position}]`, item, position);
+        else {
+          const unit = unitFromFieldName(field);
+          rows.push({ field, index: position, value: payloadValueText(item), unit: unit.unit, unitBasis: unit.basis, note: actionNote(field) });
+        }
+      });
+      return;
+    }
+    if (value !== null && typeof value === 'object') {
+      Object.entries(value as Record<string, unknown>).forEach(([key, item]) => walk(`${field}.${key}`, item, null));
+      return;
+    }
+    const unit = unitFromFieldName(field);
+    rows.push({ field, index, value: payloadValueText(value), unit: unit.unit, unitBasis: unit.basis, note: actionNote(field) });
+  };
+  Object.entries(payload ?? {}).forEach(([key, value]) => walk(key, value, null));
+  return rows;
+}
+
+/** Envelope time fields, exactly as recorded. `wall_utc` is a calendar string, not a numeric instant. */
+export interface EventTimeRow { field: string; value: string; unit: string; numeric: boolean; basis: string }
+export function eventTimeRowsOf(record: Record<string, unknown> | null | undefined): EventTimeRow[] {
+  if (!record) return [];
+  const fields = ['backend_monotonic_s', 'sim_time_s', 'wall_utc'];
+  return fields.filter((field) => field in record).map((field) => {
+    const value = record[field];
+    const numeric = typeof value === 'number' && Number.isFinite(value);
+    return {
+      field, value: payloadValueText(value), numeric, unit: field === 'wall_utc' ? 'iso8601_utc' : 's',
+      basis: field === 'wall_utc' ? '字段名 wall_utc：日历时刻，不是数值时间基，界面不把它换算成秒' : '字段名后缀 _s',
+    };
+  });
+}
+
+export function actionBasisJsonBytes(basis: ActionBasisDto | null | undefined): number {
+  if (!basis) return 0;
+  try { return new Blob([JSON.stringify(basis)]).size; } catch { return JSON.stringify(basis).length; }
 }

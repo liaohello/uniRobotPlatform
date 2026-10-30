@@ -12,9 +12,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { HistoryModelPane } from './history-model-pane';
 import { HistoryFrameCurve } from './history-frame-curve';
-import { describeHistoryError, type PlatformEpisodeApi } from '../adapters/platform-episodes';
+import { FrameActionPane, type ActionBasisStatus, type ActionBasisView } from './frame-action-pane';
+import { describeHistoryError, type EpisodeDetailDto, type PlatformEpisodeApi } from '../adapters/platform-episodes';
 import {
-  CURVE_FRAME_ORDER, NO_FRAME_CONTEXT, ambiguousRoleCount, clockSamenessText, curveXAxesOf, frameActualCurveOf,
+  CURVE_FRAME_ORDER, NO_FRAME_CONTEXT, actionBasisJsonBytes, ambiguousRoleCount, clockSamenessText, curveXAxesOf, frameActualCurveOf,
   frameAutoLoadRef, frameBoundaryNotice, frameMediaRefs, framePositionKey,
   framePageExplanation, framePageKind, frameSelectableBases, frameStopNote, frameWindowGate, intervalGateOf,
   intervalScheduleOf, intervalStepOf, linkageScopeText, mediaDeclarationText, provenanceRowsOf, quantityRowsOf,
@@ -49,7 +50,7 @@ interface FrameAsset {
 }
 const NO_FRAME_ASSET: FrameAsset = { token: 0, sampleId: '', positionKey: 'none', field: '', uri: '', availability: 'none', status: 'idle', url: null, mediaType: '', bytes: 0, sha: '', declaredSha: null, declaredBytes: 'null', agreesWithRow: 'null', note: '', error: '', decoded: 'unknown' };
 
-export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeApi; episodeId: string; runId: string | null }) {
+export function FrameBrowser({ api, episodeId, runId, semantics }: { api: PlatformEpisodeApi; episodeId: string; runId: string | null; semantics?: EpisodeDetailDto['action_semantics'] }) {
   const [page, setPage] = useState<FramePageDto | null>(null);
   const [error, setError] = useState('');
   const [index, setIndex] = useState(0);
@@ -77,6 +78,10 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
   const [plan, setPlan] = useState<{ kind: string; plannedMs: number | null; actualMs: number | null; bufferMs: number | null; gapS: number | null; cross: boolean; note: string } | null>(null);
   /** The x axis of the recorded-Actual curve: frame order by default, a raw clock base only if complete. */
   const [curveX, setCurveX] = useState<string>(CURVE_FRAME_ORDER);
+  /** action_basis belongs to the one page that returned it; any page/condition/Episode change drops it. */
+  const [basis, setBasis] = useState<ActionBasisView | null>(null);
+  const [basisStatus, setBasisStatus] = useState<ActionBasisStatus>('idle');
+  const [basisError, setBasisError] = useState('');
   const playingRef = useRef(false); playingRef.current = playing;
   const playModeRef = useRef(playMode); playModeRef.current = playMode;
   const intervalBaseRef = useRef(intervalBase); intervalBaseRef.current = intervalBase;
@@ -91,6 +96,7 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
   const presentedAt = useRef(0);
   const frozenSince = useRef(0);
   const censusSerial = useRef(0);
+  const basisSerial = useRef(0);
   const heldSerial = useRef(0);
   const heldReadInFlight = useRef(false);
   const heldArmedAt = useRef(0);
@@ -117,6 +123,9 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
     // page (if one was being waited on) belongs to the generation that no longer exists.
     ++playGen.current; setHeld(null); heldReadInFlight.current = false; frozenSince.current = 0; presentedAt.current = performance.now();
     controllers.current.forEach((controller) => controller.abort()); controllers.current = [];
+    // action_basis is page-scoped: a new page makes every previous candidate/position stale, so the pane
+    // drops the whole block instead of carrying the first page's association into this one.
+    ++basisSerial.current; setBasis(null); setBasisStatus('idle'); setBasisError('');
     setError(''); setNotice(opts.notice ?? ''); if (!opts.keepPlaying) setPlaying(false); clearMedia();
     void readFramesPage({
       episodeId, runId, limit: size, offset,
@@ -147,14 +156,15 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
     // Another Episode is another playback session: the census read for the old one is dropped rather than
     // reused, and this session's own counter starts again at zero.
     setCensus(null); setCensusStatus('idle'); setCensusError(''); setCensusReads(0);
+    setBasis(null); setBasisStatus('idle'); setBasisError('');
     setHeld(null); setPlan(null); heldReadInFlight.current = false; frozenSince.current = 0;
-    ++playGen.current; ++censusSerial.current; ++heldSerial.current;
+    ++playGen.current; ++censusSerial.current; ++heldSerial.current; ++basisSerial.current;
     clearMedia();
     if (!episodeId) { ++pageSerial.current; setPage(null); return; }
     readPage(0, limitRef.current, NO_FRAME_CONTEXT);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [episodeId, runId]);
-  useEffect(() => () => { controllers.current.forEach((controller) => controller.abort()); controllers.current = []; revoke(urlRef.current); }, []);
+  useEffect(() => () => { controllers.current.forEach((controller) => controller.abort()); controllers.current = []; ++basisSerial.current; revoke(urlRef.current); }, []);
 
   /** Image, linked state, provenance and the reference surface all follow this one position on this page. */
   function bindFrame(frame: FrameDto | null, position?: number, opts: { offset?: number; field?: string | null } = {}) {
@@ -267,6 +277,56 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
       .catch((cause) => {
         if (token !== censusSerial.current) return;
         setCensusStatus('refused'); setCensusError(describeHistoryError(cause));
+      });
+  };
+
+  /**
+   * One on-demand action-basis read for *this* page. It repeats the page's own offset/limit/conditions
+   * with the opt-in flag, checks the returned identity and page, then stores the block under a page key.
+   * A page/condition/Episode change bumps `basisSerial` and drops the block, so a late answer cannot write
+   * its candidates into a newer page.
+   */
+  const readActionBasis = () => {
+    if (!episodeId || !page) return;
+    const target: FrameTarget = { episodeId, runId };
+    const token = ++basisSerial.current;
+    const pageKey = actionPageKey(page, contextRef.current);
+    const targetOffset = page.paging.offset;
+    const targetReturned = page.paging.returned;
+    setBasisStatus('loading'); setBasisError('');
+    void readFramesPage({
+      episodeId, runId, limit: page.paging.limit, offset: page.paging.offset,
+      ...(contextRef.current.sampleId ? { sampleId: contextRef.current.sampleId } : {}),
+      ...(contextRef.current.base ? { timeBase: contextRef.current.base, ...(contextRef.current.from !== null ? { timeFrom: contextRef.current.from } : {}), ...(contextRef.current.to !== null ? { timeTo: contextRef.current.to } : {}) } : {}),
+      includeActionBasis: true,
+    }, track(new AbortController()).signal)
+      .then((dto) => {
+        if (token !== basisSerial.current) return;
+        if (dto.identity.episode_id !== target.episodeId || (target.runId !== null && dto.identity.run_id !== target.runId)) {
+          setBasisStatus('refused');
+          setBasisError(`action_basis 的响应身份与本页不符（响应 ${dto.identity.episode_id}/${dto.identity.run_id}，本页 ${target.episodeId}/${target.runId ?? '未带 run_id'}）：不采用；换回本页后再读。`);
+          return;
+        }
+        if (dto.paging.offset !== targetOffset || dto.paging.returned !== targetReturned || actionPageKey(dto, contextRef.current) !== pageKey) {
+          setBasisStatus('refused');
+          setBasisError(`action_basis 响应描述的不是当前页（offset ${dto.paging.offset} vs ${targetOffset}、returned ${dto.paging.returned} vs ${targetReturned}）：不把它的逐帧候选挂到已变化的页。`);
+          return;
+        }
+        if (!dto.action_basis) {
+          setBasisStatus('refused');
+          setBasisError('响应没有 action_basis 块：上游可能未交付该 opt-in 字段；界面不伪造。');
+          return;
+        }
+        const basisBytes = actionBasisJsonBytes(dto.action_basis);
+        setBasis((previous) => ({
+          page: dto, key: pageKey, reads: previous?.reads ? previous.reads + 1 : 1,
+          pageBytes: jsonBytes(dto), basisBytes,
+        }));
+        setBasisStatus('ready');
+      })
+      .catch((cause) => {
+        if (token !== basisSerial.current) return;
+        setBasisStatus('refused'); setBasisError(describeHistoryError(cause));
       });
   };
 
@@ -741,6 +801,9 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
         </section>
       </div>
 
+      <FrameActionPane api={api} episodeId={episodeId} runId={runId} page={page} position={index} frame={frame}
+        semantics={semantics} basis={basis} basisStatus={basisStatus} basisError={basisError} onReadBasis={readActionBasis}/>
+
       <div className="session-inline" data-frame-curve-controls="true">
         <label>曲线横轴<select aria-label="曲线横轴" value={curveX} onChange={(event) => setCurveX(event.target.value)}>{xAxes.map((axis) => <option key={axis.key} value={axis.key}>{axis.label}</option>)}</select></label>
         <span className="chip masked" data-frame-curve-scope="true">曲线只用本页已读取的 {frames.length} 帧记录值；点曲线即定位当前帧，不发新请求、不下载整份归档</span>
@@ -761,6 +824,13 @@ export function FrameBrowser({ api, episodeId, runId }: { api: PlatformEpisodeAp
 }
 
 function revoke(url: string | null) { if (url) URL.revokeObjectURL(url); }
+/** Page + conditions identity. The action basis is only ever adopted for the exact page that answered it. */
+function actionPageKey(page: FramePageDto, ctx: FrameReadContext): string {
+  return `${page.paging.offset}|${page.paging.limit}|${page.paging.returned}|${page.cursor.first_line_index ?? 'none'}|${page.cursor.last_line_index ?? 'none'}|${ctx.sampleId ?? ''}|${ctx.base ?? ''}|${ctx.from ?? ''}|${ctx.to ?? ''}`;
+}
+function jsonBytes(value: unknown): number {
+  try { return new Blob([JSON.stringify(value)]).size; } catch { return JSON.stringify(value).length; }
+}
 const text = (value: unknown) => value === undefined || value === null || value === '' ? 'null' : String(value);
 /** Record values are shown as the reader wrote them; only float noise in a derived difference is rounded. */
 const round6 = (value: number | null | undefined) => typeof value === 'number' && Number.isFinite(value) ? Math.round(value * 1e6) / 1e6 : null;

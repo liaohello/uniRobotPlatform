@@ -1354,6 +1354,130 @@ async def real_flow(page):
     report['real']['recorded_interval_cold_start'] = {'status': real_cold['censusStatus'], 'reads': real_cold['censusReads'],
                                                       'allowed': real_cold['intervalAllowed'],
                                                       'refusal_after_play': real_cold_play['intervalReasons'][:1]}
+    await action_checks_real(page)
+
+
+# ---- action / command event surface (M1.5h/i) -------------------------------------------------------
+
+async def wait_action_ready(page, selector='[data-action-role="actuator_reference"] [data-action-record-status="ready"]', timeout=60000):
+    try:
+        await page.wait_for_selector(selector, timeout=timeout)
+    except PlaywrightTimeoutError:
+        state = await page.evaluate("""()=>{const p=document.querySelector('[data-action-pane]');
+          return {status:p?.getAttribute('data-action-status'), selection:p?.getAttribute('data-action-selection'),
+            basis:p?.getAttribute('data-action-basis-key'), text:(p?.innerText??'').slice(0,600)}};""")
+        raise AssertionError(f'action read timed out :: {json.dumps(state, ensure_ascii=False)}')
+
+
+async def action_checks_real(page):
+    await open_episode(page, a.complete_run, a.complete_episode)
+    await wait_frames(page)
+    mark = len(report['requests'])
+    await page.locator('[data-action-read-basis]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-action-basis-status]')?.getAttribute('data-action-basis-status') ?? '')==='ready'", 'real-action-basis')
+    await wait_action_ready(page)
+    pane = {name: await attr(page, '[data-action-pane]', f'data-action-{name}') for name in
+            ('basis-key', 'basis-page-offset', 'basis-frames', 'page-matches', 'basis-reads', 'basis-bytes', 'record-reads', 'record-bytes', 'selection')}
+    direct = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/frames',
+                               {'run_id': a.complete_run, 'limit': 5, 'offset': 0, 'include_action_basis': 'true'})
+    association = direct['action_basis']['frame_association']['candidate_positions_per_frame'][0]
+    target_position = association['by_event_type']['actuator_reference']['record_positions'][0]
+    target_line = int(target_position.split('#')[1])
+    target_record = (await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/streams/events/records',
+                                        {'run_id': a.complete_run, 'limit': 1, 'offset': target_line}))['records'][0]['record']
+    target_role = page.locator('[data-action-role="actuator_reference"]')
+    target_rec = target_role.locator('[data-action-record-status="ready"]').first
+    target_values = await target_role.locator('[data-action-payload-field="arm_model_reference_rad"]').evaluate_all(
+        'els=>els.map(e=>[e.getAttribute("data-action-payload-index"),e.getAttribute("data-action-payload-unit"),e.querySelectorAll("code")[1]?.textContent??""])')
+    check('真实 Target：页面显示本页候选的原始位置、六项参考数组及其索引/单位，未套成五轴 Actual',
+          pane['basis-page-offset'] == '0' and pane['basis-frames'] == '5' and pane['page-matches'] == 'true'
+          and pane['basis-bytes'] != '0' and pane['record-reads'] == '2'
+          and await target_role.get_attribute('data-action-verdict') == 'matched'
+          and await target_rec.get_attribute('data-action-record-line') == str(target_line)
+          and await target_rec.get_attribute('data-action-record-stream') == 'events.jsonl'
+          and (await target_rec.get_attribute('data-action-record-window-text')).startswith('offset=')
+          and len(target_values) == 6 and [row[0] for row in target_values] == [str(i) for i in range(6)]
+          and all(row[1] == 'rad' for row in target_values)
+          and [row[2] for row in target_values] == [text_number(value) for value in target_record['payload']['arm_model_reference_rad']]
+          and await target_role.locator('[data-action-payload-field="arm_model_qpos_rad"]').count() == 0,
+          [pane, target_position, target_values[:3], target_record['payload']['arm_model_reference_rad']])
+    check('真实 Actual 与 Target 分开：feedback 的 payload 单独显示，且候选只来自本页 action_basis',
+          await page.locator('[data-action-role="feedback"] [data-action-payload-field="arm_model_qpos_rad"]').count() == 5
+          and 'position=events.jsonl#27' in await page.locator('[data-action-role="feedback"]').inner_text(),
+          (await page.locator('[data-action-role="feedback"]').inner_text())[:300])
+    missing = page.locator('[data-action-role="dispatch"]')
+    check('真实 dispatch 缺失如实呈现：没有记录元素、写明不补零也不借用相邻 tick',
+          await missing.get_attribute('data-action-verdict') == 'missing'
+          and await missing.locator('[data-action-record]').count() == 0
+          and '不补零、不沿用上一 tick、不借用相邻帧' in await missing.inner_text(),
+          (await missing.inner_text())[:240])
+    chain_count = await page.locator('[data-action-command]').count()
+    first_stages = await attr(page, '[data-action-command]', 'data-action-command-stages')
+    chain_note = await page.locator('[data-action-command-chain]').inner_text()
+    check('真实命令链按 command_id 列出请求/受理/下发，明确都不是执行结果',
+          chain_count == len(direct['action_basis']['command_chain']['commands'])
+          and first_stages == 'requested=1,approved=1,rejected=0,dispatch=1'
+          and '都不等于执行结果' in chain_note and 'dispatch 是下发记录' in chain_note,
+          [chain_count, first_stages, chain_note[:260]])
+    # Cross-page: the first page's association may not be reused. Crossing drops the block; a new read
+    # answers for offset=5 with a different target position.
+    returned = int(await attr(page, '[data-frame-returned]', 'data-frame-returned'))
+    for _ in range(returned):
+        await page.locator('[data-frame-next]').click()
+    await page.wait_for_function("()=>(document.querySelector('[data-frame-offset]')?.getAttribute('data-frame-offset') ?? '')==='5'", timeout=60000)
+    dropped = await attr(page, '[data-action-pane]', 'data-action-basis-key')
+    absent = await count(page, '[data-action-basis-absent]')
+    await page.locator('[data-action-read-basis]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-action-basis-status]')?.getAttribute('data-action-basis-status') ?? '')==='ready'", 'real-action-basis-page2')
+    await wait_action_ready(page)
+    page2_target = await attr(page, '[data-action-role="actuator_reference"] [data-action-record-status="ready"]', 'data-action-record-line')
+    direct2 = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/frames',
+                                {'run_id': a.complete_run, 'limit': 5, 'offset': 5, 'include_action_basis': 'true'})
+    expected2 = direct2['action_basis']['frame_association']['candidate_positions_per_frame'][0]['by_event_type']['actuator_reference']['record_positions'][0].split('#')[1]
+    check('真实跨页不复用首屏候选：换页后 action_basis 被丢弃，新读结果绑定 offset=5 且 Target 位置不同',
+          dropped == 'none' and absent == 1 and page2_target == expected2 and page2_target != str(target_line)
+          and await attr(page, '[data-action-pane]', 'data-action-basis-page-offset') == '5',
+          [dropped, absent, page2_target, expected2, target_line])
+    # Real dispatch hit: find a page-200 frame whose dispatch candidate is matched, open it by sample id.
+    wide = await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/frames',
+                             {'run_id': a.complete_run, 'limit': 200, 'offset': 0, 'include_action_basis': 'true'})
+    hit = next((row for row in wide['action_basis']['frame_association']['candidate_positions_per_frame']
+                if row['by_event_type']['dispatch']['status'] == 'matched'), None)
+    check('真实归档里能找到 dispatch 实际命中的帧（不是只验证缺失）', hit is not None)
+    hit_position = hit['by_event_type']['dispatch']['record_positions'][0]
+    hit_line = hit_position.split('#')[1]
+    await page.locator('input[aria-label="sample_id 精确打开"]').fill(hit['sample_id'])
+    await page.locator('[data-frame-open-sample]').click()
+    await page.wait_for_function("(want)=>(document.querySelector('[data-frame-current-sample]')?.textContent ?? '')===want", arg=hit['sample_id'], timeout=60000)
+    await page.locator('[data-action-read-basis]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-action-basis-status]')?.getAttribute('data-action-basis-status') ?? '')==='ready'", 'real-action-hit')
+    await wait_action_ready(page, '[data-action-role="dispatch"] [data-action-record-status="ready"]')
+    dispatch_text = await page.locator('[data-action-role="dispatch"]').inner_text()
+    dispatch_line = await attr(page, '[data-action-role="dispatch"] [data-action-record]', 'data-action-record-line')
+    check('真实 dispatch 命中与缺失分开：显示原始位置、下发记录，并明确“不代表执行成功”',
+          dispatch_line == hit_line and '不是执行成功' in dispatch_text
+          and 'requested' in dispatch_text and 'command_id=g2a_command' in dispatch_text,
+          [hit_position, dispatch_line, dispatch_text[:300]])
+    await page.screenshot(path=str(a.output / 'real-action-dispatch-hit.png'), full_page=False)
+    # Independent lifecycle: only wall_utc is present on episode_terminal; the pane must not invent a
+    # numeric instant, and selecting the track must not move the frame cursor.
+    terminal_position = (await read_direct(page, f'/api/v1/episodes/{a.complete_episode}/frames',
+                                           {'run_id': a.complete_run, 'limit': 5, 'offset': 0, 'include_action_basis': 'true'}))['action_basis']['vocabulary']['episode_terminal']['record_positions'][0]
+    cursor_before = await attr(page, '[data-frame-index]', 'data-frame-index')
+    await page.locator(f'[data-action-track-read="{terminal_position}"][data-action-track-type="episode_terminal"]').click()
+    await page.wait_for_selector('[data-action-track-status="ready"]', timeout=60000)
+    cursor_after = await attr(page, '[data-frame-index]', 'data-frame-index')
+    track_text = await page.locator('[data-action-track-detail]').inner_text()
+    check('独立生命周期事件按自身 event_seq/位置显示；只有 wall_utc 时不补数值时刻，且不改帧游标',
+          'event_seq=' in track_text and terminal_position in track_text
+          and await attr(page, '[data-action-no-numeric-time]', 'data-action-no-numeric-time') == 'true'
+          and cursor_before == cursor_after,
+          [terminal_position, cursor_before, cursor_after, track_text[:320]])
+    report['real']['action_surface'] = {'target_position': target_position, 'target_values': target_values,
+                                        'dispatch_missing': True, 'dispatch_hit': hit_position,
+                                        'command_rows': chain_count, 'page2_target': page2_target,
+                                        'pane': pane, 'requests': [r['url'] for r in report['requests'][mark:] if '/streams/events/records' in r['url']]}
+    await page.screenshot(path=str(a.output / 'real-action-target.png'), full_page=False)
 
 
 # ---- synthetic ---------------------------------------------------------------------------------------
@@ -1870,7 +1994,8 @@ SYNTH_EPISODES = ['episode_ok', 'episode_no_frames', 'episode_bad_frame_schema',
                   'episode_no_part_readiness', 'episode_zero_angles', 'episode_no_world_pose_convention',
                   'episode_tree_identity', 'episode_link_order_swap', 'episode_pose_order_swap', 'episode_no_sim_keys',
                   'episode_tree_refused', 'episode_content_move', 'episode_live_tree', 'episode_play',
-                  'episode_interval', 'episode_interval_truncated', 'episode_interval_badrows', 'episode_interval_dup']
+                  'episode_interval', 'episode_interval_truncated', 'episode_interval_badrows', 'episode_interval_dup',
+                  'episode_action', 'episode_action_late', 'episode_action_rejected']
 # The tree the reader answers with, kept separate from the identity the record's outer fields declare: that
 # is what lets one case prove the binding catches a foreign tree rather than a missing key.
 SCENE = {'content_identity': CONTENT_ID, 'outer_content_identity': CONTENT_ID, 'arm_order': None, 'mode': 'ok'}
@@ -2108,6 +2233,185 @@ def paged_interval_rows(rows, query):
                                   skipped_before_offset=offset)
 
 
+ACTION_EPISODES = ('episode_action', 'episode_action_late', 'episode_action_rejected')
+
+
+def action_frames(episode):
+    """Synthetic frames whose anchor ticks name the fixture event lines: six frames for page-local
+    candidate checks, two for the late-read check, one for the rejection receipt."""
+    count = {'episode_action': 6, 'episode_action_late': 2, 'episode_action_rejected': 1}[episode]
+    frames = []
+    for position in range(count):
+        tick = f'tick_{26 + 2 * position}'
+        frame = frame_payload(f'rgbd_action_{position}')
+        frame = {**frame, 'anchor': {**frame['anchor'], 'line_index': position,
+                                     'reference_keys': {'capture_control_tick_id': tick, 'feedback_sample_id': None}},
+                 'state': {**frame['state'], 'key_value': tick, 'source': {'stream_id': 'events', 'relative_path': 'events.jsonl',
+                                                                          'line_index': 27 + 2 * position, 'event_seq': 28 + 2 * position,
+                                                                          'event_type': 'feedback'}}}
+        frames.append(frame)
+    return frames
+
+
+def action_event_rows(episode):
+    rows = {}
+
+    def add(line, event_type, tick, payload, command_id=None, numeric_times=True):
+        rows[line] = {'contract_version': 'mobilecar-1.0', 'run_id': 'run_a', 'episode_id': episode, 'event_seq': line + 1,
+                      'event_type': event_type, 'wall_utc': f'2026-01-01T00:00:{line % 60:02d}Z',
+                      'backend_monotonic_s': 100.0 + line / 10 if numeric_times else None,
+                      'sim_time_s': line / 10 if numeric_times else None, 'command_id': command_id,
+                      'control_tick_id': tick, 'plan_id': None, 'task_phase': None, 'payload': payload}
+
+    for position in range(6 if episode != 'episode_action_rejected' else 1):
+        tick = f'tick_{26 + 2 * position}'
+        add(26 + 2 * position, 'actuator_reference', tick, {
+            'base_twist': [0.0, 0.0, 0.0], 'wheel_target_rad_s': [0.0, 0.0, 0.0, 0.0],
+            'wheel_torque_nm': [0.0, 0.0, 0.0, 0.0],
+            'arm_model_reference_rad': [0.0, 0.0, 0.0, -1.5707963267948966, 0.0, -1.077632656580025],
+            'arm_torque_limit_nm': [0.35, 0.6, 0.45, 0.3, 0.15, 0.16], 'gripper_width_target_m': 0.025})
+        add(27 + 2 * position, 'feedback', tick, {
+            'feedback_time_monotonic': 100.0 + position / 10, 'sim_time_s': position / 10,
+            'posture_is_not_a_target': True,
+            'arm_model_qpos_rad': [0.001 * axis for axis in range(5)],
+            'base_position_world_sim_m': [0.0, 0.0, 0.05], 'gripper_width_m': 0.025,
+            'tcp_position_world_m': [0.17, 0.0, 0.3]})
+    if episode != 'episode_action_rejected':
+        add(100, 'dispatch', 'tick_28', {'kind': 'base_twist', 'requested': [0.018, 0.0, 0.04],
+                                        'command': {'command_id': 'cmd_1', 'command_seq': 1}}, command_id='cmd_1')
+        add(101, 'dispatch', 'tick_30', {'kind': 'base_twist', 'requested': [0.02, 0.0, 0.01],
+                                        'command': {'command_id': 'cmd_1', 'command_seq': 1}}, command_id='cmd_1')
+        add(102, 'dispatch', 'tick_30', {'kind': 'base_twist', 'requested': [0.021, 0.0, 0.01],
+                                        'command': {'command_id': 'cmd_1', 'command_seq': 2}}, command_id='cmd_1')
+        add(60, 'recording_start', None, {'operator_id': 'fixture_operator', 'operator_kind': 'fixture_kind'})
+        add(61, 'lease_heartbeat', None, {'session_id': 'session_fixture'})
+        add(62, 'recording_stop', None, {'reason': 'fixture finished'})
+        add(63, 'episode_terminal', None, {'reason': 'fixture terminal'}, numeric_times=False)
+    else:
+        add(50, 'requested', None, {'request': {'contract_version': 'mobilecar-1.0', 'operator_id': 'fixture_operator',
+                                                'operator_kind': 'fixture_kind'}}, command_id='cmd_rej')
+        add(51, 'rejected', None, {'decision': {'approved': False, 'reason': 'fixture rejection'}}, command_id='cmd_rej')
+        add(62, 'recording_stop', None, {'reason': 'fixture finished'})
+        add(63, 'episode_terminal', None, {'reason': 'fixture terminal'}, numeric_times=False)
+    return rows
+
+
+def action_records_payload(episode, rows, offset, limit):
+    lines = sorted(rows)
+    picked = [line for line in lines if offset <= line < offset + limit]
+    records = [{'line_index': line, 'record': rows[line]} for line in picked]
+    cursor = {'order': 'native_append_order', 'line_index_is_not_a_clock': True,
+              'first_line_index': picked[0] if picked else None, 'last_line_index': picked[-1] if picked else None,
+              'first_event_seq': rows[picked[0]]['event_seq'] if picked else None,
+              'last_event_seq': rows[picked[-1]]['event_seq'] if picked else None}
+    return {'schema_version': READ_SCHEMA, 'read_only': True, 'source': SOURCE_FIXTURE, 'retrieved_at': '2026-01-01T00:00:00Z',
+            'identity': {'run_id': 'run_a', 'episode_id': episode, 'native_contract_version': 'mobilecar-1.0'},
+            'stream': {'stream_id': 'events', 'relative_path': 'events.jsonl', 'format': 'jsonl'},
+            'paging': {'limit': limit, 'offset': offset, 'returned': len(records), 'scanned_lines': lines[-1] + 1,
+                       'skipped_before_offset': offset, 'next_offset': offset + limit if offset + limit <= lines[-1] else None,
+                       'has_more': offset + limit <= lines[-1]},
+            'cursor': cursor,
+            'time': {'selected_time_base': None, 'time_from': None, 'time_to': None, 'units': 'seconds for *_s',
+                     'numeric_time_bases': ['backend_monotonic_s', 'sim_time_s'], 'synchronized_across_streams': False},
+            'filtering': {'event_seq_range': {'from': None, 'to': None, 'active': False, 'excluded_without_valid_event_seq': 0, 'anomalies': []}},
+            'records': records,
+            'integrity': {'corrupt_lines': [], 'lines_over_read_size_limit': [], 'declared_status': {}, 'scope': 'fixture', 'not_verified': ['fixture']}}
+
+
+def action_basis_fixture(episode, frames, page_offset):
+    rows = action_event_rows(episode)
+    rejected = episode == 'episode_action_rejected'
+    candidates = []
+    for frame in frames:
+        tick = frame['anchor']['reference_keys']['capture_control_tick_id']
+        number = int(tick.split('_')[1])
+        dispatch = ({'status': 'missing', 'reason': 'no record of this type names this capture tick',
+                     'looked_for': {'control_tick_id': tick}} if number != 28 and number != 30 else
+                    {'status': 'matched', 'candidate_count': 1, 'record_positions': ['events.jsonl#100']} if number == 28 else
+                    {'status': 'ambiguous_candidates', 'candidate_count': 2, 'record_positions': ['events.jsonl#101', 'events.jsonl#102'],
+                     'note': 'two dispatch records name this tick; both are listed'})
+        candidates.append({'sample_id': frame['sample_id'], 'capture_control_tick_id': tick,
+                           'by_event_type': {
+                               'feedback': {'status': 'matched', 'candidate_count': 1, 'record_positions': [f'events.jsonl#{number + 1}']},
+                               'actuator_reference': {'status': 'matched', 'candidate_count': 1, 'record_positions': [f'events.jsonl#{number}']},
+                               'dispatch': dispatch}})
+    by_type = {}
+    for event_type in ('feedback', 'actuator_reference', 'dispatch'):
+        counts = {}
+        for item in candidates:
+            value = item['by_event_type'][event_type]
+            key = str(value.get('candidate_count', 0)) if value['status'] != 'missing' else '0'
+            counts[key] = counts.get(key, 0) + 1
+        by_type[event_type] = {'candidate_count_per_frame_on_this_page': counts, 'frames_with_this_verdict': len(candidates)}
+    vocabulary = {}
+    for line, record in sorted(rows.items()):
+        event_type = record['event_type']
+        entry = vocabulary.setdefault(event_type, {'count': 0, 'first_line_index': line, 'last_line_index': line,
+                                                   'record_positions': [],
+                                                   'join_keys': {'control_tick_id': {'envelope': {'present': 0, 'null': 0}, 'payload': {'present': 0, 'null': 0}},
+                                                                 'command_id': {'envelope': {'present': 0, 'null': 0}, 'payload': {'present': 0, 'null': 0}}},
+                                                   'time_fields': {'backend_monotonic_s': {'unit': 'second', 'numeric': 0, 'null': 0, 'other': 0},
+                                                                   'sim_time_s': {'unit': 'second', 'numeric': 0, 'null': 0, 'other': 0},
+                                                                   'wall_utc': {'unit': 'iso8601_utc', 'numeric': 0, 'null': 0, 'other': 0}}})
+        entry['count'] += 1
+        entry['last_line_index'] = line
+        if len(entry['record_positions']) < 3:
+            entry['record_positions'].append(f'events.jsonl#{line}')
+        for key in ('control_tick_id', 'command_id'):
+            slot = entry['join_keys'][key]['envelope']
+            if record.get(key) is None:
+                slot['null'] += 1
+            else:
+                slot['present'] += 1
+        for key in ('backend_monotonic_s', 'sim_time_s'):
+            if record.get(key) is None:
+                vocabulary[event_type]['time_fields'][key]['null'] += 1
+            else:
+                vocabulary[event_type]['time_fields'][key]['numeric'] += 1
+        vocabulary[event_type]['time_fields']['wall_utc']['other'] += 1
+    categories = {
+        'actual_state_feedback': {'event_types_recorded': ['feedback'], 'counts': {'feedback': 1 if rejected else 6}, 'status': 'observed', 'meaning': 'measured Actual'},
+        'recorded_target': {'event_types_recorded': ['actuator_reference'], 'counts': {'actuator_reference': 1 if rejected else 6}, 'status': 'observed', 'meaning': 'recorded Target, never Actual'},
+        'command_intent': {'event_types_recorded': ['requested'], 'counts': {'requested': 1}, 'status': 'observed', 'meaning': 'intent only'},
+        'command_receipt_accepted': {'event_types_recorded': [] if rejected else ['approved'], 'counts': {} if rejected else {'approved': 1},
+                                     'status': 'not_recorded_in_this_scan' if rejected else 'observed', 'meaning': 'acceptance receipt', 'absent_event_types': ['approved'] if rejected else []},
+        'command_receipt_rejected': {'event_types_recorded': ['rejected'] if rejected else [], 'counts': {'rejected': 1} if rejected else {},
+                                     'status': 'observed' if rejected else 'not_recorded_in_this_scan', 'meaning': 'a receipt, never an executed action', 'absent_event_types': [] if rejected else ['rejected']},
+        'command_dispatched': {'event_types_recorded': [] if rejected else ['dispatch'], 'counts': {} if rejected else {'dispatch': 3},
+                               'status': 'not_recorded_in_this_scan' if rejected else 'observed', 'meaning': 'dispatch is not execution success', 'absent_event_types': ['dispatch'] if rejected else []},
+        'episode_lifecycle': {'event_types_recorded': ['recording_stop', 'episode_terminal'], 'counts': {'recording_stop': 1, 'episode_terminal': 1}, 'status': 'observed', 'meaning': 'lifecycle, independent of frames'},
+    }
+    command = ({'command_id': 'cmd_rej', 'stages': {'requested': 1, 'approved': 0, 'rejected': 1, 'dispatch': 0},
+                'positions': {'requested': ['events.jsonl#50'], 'rejected': ['events.jsonl#51']}, 'control_tick_id_present': 0} if rejected else
+               {'command_id': 'cmd_1', 'stages': {'requested': 1, 'approved': 1, 'rejected': 0, 'dispatch': 1},
+                'positions': {'requested': ['events.jsonl#98'], 'approved': ['events.jsonl#99'], 'dispatch': ['events.jsonl#100']}, 'control_tick_id_present': 1})
+    return {
+        'requested': True,
+        'scope': {'stream_id': 'events', 'relative_path': 'events.jsonl', 'records_scanned': len(rows), 'reached_end_of_file': True,
+                  'stopped_at_line_index': None, 'record_limit': 20000, 'events_stream_present': True, 'records_without_an_event_type': 0,
+                  'scope_note': 'fixture vocabulary covers every record this scan read', 'page_ticks_considered': len(frames), 'anchors_on_this_page': len(frames)},
+        'categories': categories, 'vocabulary': vocabulary,
+        'frame_association': {'key': "control_tick_id equals the frame anchor's own capture_control_tick_id",
+                              'by_event_type': by_type, 'candidate_positions_per_frame': candidates,
+                              'candidate_list_limit': 8, 'candidate_lists_truncated': False,
+                              'rules': {'association': 'exact recorded key equality', 'no_shared_key': 'read the category as an independent track',
+                                        'when_several_match': 'list every candidate; do not take the first line',
+                                        'when_nothing_matches': 'missing; never borrow the neighbouring tick',
+                                        'rejected_requests': 'a rejection is a receipt, never an executed action',
+                                        'recorded_target': 'an actuator reference is a recorded Target, never measured Actual',
+                                        'operator_source': 'never defaulted to Human',
+                                        'clock_parity': 'numerically close stamps never upgrade a link; synchronized_across_streams and same_clock_verified stay false',
+                                        'units': 'taken from the field-name suffix; unknown otherwise'}},
+        'command_chain': {'grouped_by': 'command_id', 'commands': [command], 'commands_truncated': False,
+                          'note': 'requested/approved/rejected are receipts and intents; none is an execution result'},
+        'control_source': {'status': 'recorded_only_inside_payload_fields', 'fields_observed': {}, 'takeover_event_type_recorded': False,
+                           'lease_evidence': {'lease_heartbeat': 1}, 'note': 'the reader never defaults a source to Human'},
+        'independent_tracks': ['command_intent', 'command_receipt_rejected' if rejected else 'command_receipt_accepted', 'episode_lifecycle'],
+        'independent_track_reason': 'no shared key with a frame; read by event_seq or a named time base',
+        'not_proven': ['that any command was physically executed', 'a control-source switch or takeover', 'any cross-stream simultaneity'],
+    }
+
+
 async def synthetic_handler(route):
     request = route.request
     path = urlsplit(request.url).path
@@ -2204,6 +2508,20 @@ async def synthetic_handler(route):
                 'asset_id': asset, 'bundle_sha256': STL_SHA, 'requested_sha256': declared}})); return
         await route.fulfill(status=200, body=STL, content_type='model/stl', headers={'ETag': f'"sha256:{STL_SHA}"', 'Cache-Control': 'no-store'}); return
     if path.endswith('/frames'):
+        if episode in ACTION_EPISODES:
+            all_frames = action_frames(episode)
+            offset = int((query.get('offset') or ['0'])[0])
+            size = int((query.get('limit') or ['5'])[0])
+            window = all_frames[offset:offset + size]
+            more = offset + size < len(all_frames)
+            payload = frames_payload(episode, window,
+                                     paging=paging_fixture(window, limit=size, offset=offset, returned=len(window), has_more=more,
+                                                           next_offset=offset + size if more else None,
+                                                           next_qualifying_anchor_line_index=offset + size if more else None,
+                                                           skipped_before_offset=offset))
+            if (query.get('include_action_basis') or [''])[0] == 'true':
+                payload['action_basis'] = action_basis_fixture(episode, window, offset)
+            await route.fulfill(json=payload); return
         if episode == 'episode_no_frames':
             await route.fulfill(status=404, content_type='application/json', body=json.dumps({'detail': {
                 'code': 'episode_stream_unavailable', 'message': 'this record has no observations/persist.jsonl', 'read_only': True}})); return
@@ -2357,6 +2675,15 @@ async def synthetic_handler(route):
         await route.fulfill(json=detail_payload(episode)); return
     if path.endswith('/records'):
         stream = path.split('/streams/')[1].split('/')[0]
+        if stream == 'events' and episode in ACTION_EPISODES:
+            rows = action_event_rows(episode)
+            offset = int((query.get('offset') or ['0'])[0])
+            limit = int((query.get('limit') or ['5'])[0])
+            if episode == 'episode_action_late' and offset <= 26 < offset + limit:
+                SLOW['records'] = 'pending'
+                await asyncio.sleep(1.8)
+                SLOW['records'] = 'done'
+            await route.fulfill(json=action_records_payload(episode, rows, offset, limit)); return
         if stream == 'observations-persist':
             await route.fulfill(json=records_payload(episode, stream, [{'sample_id': 'rgbd_1', 'persist_sequence': 1, 'sim_time_s': 1.0, 'rgb_uri': 'assets/rgb/rgbd_1_rgb.png'}],
                                                     time={**records_payload(episode, stream, [])['time'], 'numeric_time_bases': []}))
@@ -3361,6 +3688,111 @@ async def synthetic_flow(page):
                        'after_census': [cold_after_read['censusReads'], cold_after_read['intervalAllowed']]},
         'live_scene_reads': live_scene_reads(interval_mark)}
     await page.screenshot(path=str(a.output / 'synthetic-recorded-interval.png'), full_page=False)
+    await action_checks_synthetic(page)
+
+
+async def action_checks_synthetic(page):
+    await open_episode(page, 'run_a', 'episode_action')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='5'")
+    await page.locator('[data-action-read-basis]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-action-basis-status]')?.getAttribute('data-action-basis-status') ?? '')==='ready'", 'syn-action-basis')
+    await wait_action_ready(page)
+    target_values = await page.locator('[data-action-role="actuator_reference"] [data-action-payload-field="arm_model_reference_rad"]').evaluate_all(
+        'els=>els.map(e=>[e.getAttribute("data-action-payload-index"),e.getAttribute("data-action-payload-unit"),e.querySelectorAll("code")[1]?.textContent??""])')
+    check('合成 Target：六项参考数组逐个列出索引与单位，Target 位置与候选一致，dispatch 缺失不补零',
+          await attr(page, '[data-action-pane]', 'data-action-basis-page-offset') == '0'
+          and await attr(page, '[data-action-pane]', 'data-action-basis-frames') == '5'
+          and await attr(page, '[data-action-role="actuator_reference"] [data-action-record-status="ready"]', 'data-action-record-line') == '26'
+          and len(target_values) == 6 and [row[0] for row in target_values] == [str(i) for i in range(6)]
+          and all(row[1] == 'rad' for row in target_values)
+          and await page.locator('[data-action-role="dispatch"]').get_attribute('data-action-verdict') == 'missing'
+          and await page.locator('[data-action-role="dispatch"] [data-action-record]').count() == 0,
+          target_values)
+    check('合成命令链/回执：requested/approved/dispatch 分行，不被写成执行结果；rejected 未记录如实声明',
+          await page.locator('[data-action-command]').count() == 1
+          and await attr(page, '[data-action-command]', 'data-action-command-stages') == 'requested=1,approved=1,rejected=0,dispatch=1'
+          and '都不等于执行结果' in await page.locator('[data-action-command-chain]').inner_text()
+          and await attr(page, '[data-action-category="command_receipt_rejected"]', 'data-action-category-status') == 'not_recorded_in_this_scan'
+          and '不默认 Human' in await page.locator('[data-action-control-source]').inner_text(),
+          await page.locator('[data-action-command-chain]').inner_text())
+    await page.locator('[data-frame-next]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-index]')?.getAttribute('data-frame-index') ?? '')==='1'", 'syn-action-hit-frame')
+    await wait_action_ready(page, '[data-action-role="dispatch"] [data-action-record-status="ready"]')
+    check('合成 dispatch 实际命中：显示自身位置与下发 payload，并写明不是执行成功',
+          await attr(page, '[data-action-role="dispatch"] [data-action-record]', 'data-action-record-line') == '100'
+          and '不是执行成功' in await page.locator('[data-action-role="dispatch"]').inner_text()
+          and '0.018' in await page.locator('[data-action-role="dispatch"]').inner_text(),
+          await page.locator('[data-action-role="dispatch"]').inner_text())
+    await page.locator('[data-frame-next]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-index]')?.getAttribute('data-frame-index') ?? '')==='2'", 'syn-action-ambiguous-frame')
+    await wait_action_ready(page, '[data-action-role="dispatch"] [data-action-record-status="ready"]')
+    ambiguous = page.locator('[data-action-role="dispatch"]')
+    check('合成多候选：两个 dispatch 候选全部列出，界面不选第一项',
+          await ambiguous.get_attribute('data-action-verdict') == 'ambiguous_candidates'
+          and await ambiguous.locator('[data-action-record]').count() == 2
+          and sorted(await ambiguous.locator('[data-action-record]').evaluate_all('els=>els.map(e=>e.getAttribute("data-action-record-line"))')) == ['101', '102'],
+          await ambiguous.inner_text())
+    # Page-local ownership: crossing a page drops the whole block; a fresh read answers for offset=5.
+    for _ in range(3):
+        await page.locator('[data-frame-next]').click()
+    await page.locator('[data-frame-next]').click()
+    await page.wait_for_function("()=>(document.querySelector('[data-frame-offset]')?.getAttribute('data-frame-offset') ?? '')==='5'", timeout=60000)
+    check('合成跨页：换页后旧 action_basis 立即丢弃，界面提示本页未读取，而不是沿用首屏候选',
+          await attr(page, '[data-action-pane]', 'data-action-basis-key') == 'none'
+          and await count(page, '[data-action-basis-absent]') == 1)
+    await page.locator('[data-action-read-basis]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-action-basis-status]')?.getAttribute('data-action-basis-status') ?? '')==='ready'", 'syn-action-page2')
+    await wait_action_ready(page)
+    check('合成第二页的新读取绑定 offset=5，Target 位置为 36 而不是首屏的 26',
+          await attr(page, '[data-action-pane]', 'data-action-basis-page-offset') == '5'
+          and await attr(page, '[data-action-role="actuator_reference"] [data-action-record-status="ready"]', 'data-action-record-line') == '36')
+    # Rejected receipt: observed rejection is a receipt, never an executed action; selected track does not move the frame cursor.
+    await open_episode(page, 'run_a', 'episode_action_rejected')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='1'")
+    await page.locator('[data-action-read-basis]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-action-basis-status]')?.getAttribute('data-action-basis-status') ?? '')==='ready'", 'syn-action-rejected')
+    cursor_before = await attr(page, '[data-frame-index]', 'data-frame-index')
+    rejected_cell = await page.locator('[data-action-command] [data-action-command-stage="rejected"]').inner_text()
+    await page.locator('[data-action-track-read="events.jsonl#51"][data-action-track-type="rejected"]').click()
+    await page.wait_for_selector('[data-action-track-status="ready"]', timeout=60000)
+    rejected_track = await page.locator('[data-action-track-detail]').inner_text()
+    check('合成 rejected 只作为回执：命令链显示 requested→rejected、无 approved/dispatch，轨详情 event_type=rejected，帧游标不动',
+          await attr(page, '[data-action-category="command_receipt_rejected"]', 'data-action-category-status') == 'observed'
+          and await attr(page, '[data-action-command]', 'data-action-command-stages') == 'requested=1,approved=0,rejected=1,dispatch=0'
+          and '回执（未执行）' in rejected_cell
+          and 'event_type=rejected' in rejected_track and 'event_seq=52' in rejected_track
+          and cursor_before == await attr(page, '[data-frame-index]', 'data-frame-index'),
+          [rejected_cell, rejected_track[:260], cursor_before])
+    # Per-Episode category state: the same category is re-judged, never cached from the previous Episode.
+    await open_episode(page, 'run_a', 'episode_action')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='5'")
+    await page.locator('[data-action-read-basis]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-action-basis-status]')?.getAttribute('data-action-basis-status') ?? '')==='ready'", 'syn-action-per-episode')
+    check('类别状态按当前 Episode 重判：上一 Episode 的 rejected=observed 不被固定缓存到这一 Episode',
+          await attr(page, '[data-action-category="command_receipt_rejected"]', 'data-action-category-status') == 'not_recorded_in_this_scan'
+          and await attr(page, '[data-action-track]', 'data-action-track-episode') == 'episode_action')
+    # Late raw read: the first frame's events GET is delayed; switching frames must not let it write into frame 1.
+    await open_episode(page, 'run_a', 'episode_action_late')
+    await wait_frames(page, "()=>(document.querySelector('[data-frame-returned]')?.getAttribute('data-frame-returned') ?? '')==='2'")
+    await page.locator('[data-action-read-basis]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-action-basis-status]')?.getAttribute('data-action-basis-status') ?? '')==='ready'", 'syn-action-late-basis')
+    await page.wait_for_selector('[data-action-record="events.jsonl#26"][data-action-record-status="loading"]', timeout=30000)
+    await page.locator('[data-frame-next]').click()
+    await wait_state(page, "()=>(document.querySelector('[data-frame-index]')?.getAttribute('data-frame-index') ?? '')==='1'", 'syn-action-late-switch')
+    await wait_action_ready(page, '[data-action-role="actuator_reference"] [data-action-record-status="ready"]')
+    await page.wait_for_timeout(2200)
+    check('合成迟到读取不覆盖新选择：切帧后旧 #26 载荷不写入，当前帧只显示自己的 #28，selection 已换代',
+          await count(page, '[data-action-record="events.jsonl#26"]') == 0
+          and await attr(page, '[data-action-role="actuator_reference"] [data-action-record-status="ready"]', 'data-action-record-line') == '28'
+          and await attr(page, '[data-action-current-frame]', 'data-action-current-line') == '1'
+          and '|1|1|' in (await attr(page, '[data-action-pane]', 'data-action-selection')),
+          [await count(page, '[data-action-record="events.jsonl#26"]'), await attr(page, '[data-action-pane]', 'data-action-selection')])
+    report['synthetic']['action_surface'] = {
+        'target_values': target_values,
+        'dispatch_hit_line': await attr(page, '[data-action-role="dispatch"] [data-action-record]', 'data-action-record-line'),
+        'late_selection': await attr(page, '[data-action-pane]', 'data-action-selection'),
+        'record_requests': [r['url'] for r in report['requests'] if '/streams/events/records' in r['url']][-12:]}
+    await page.screenshot(path=str(a.output / 'synthetic-action-replay.png'), full_page=False)
 
 
 async def boundary_checks(page):

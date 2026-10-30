@@ -502,7 +502,7 @@ export function HistoryView({ api, onLeave }: { api: PlatformEpisodeApi; onLeave
         <p className="session-note history-footer">历史视图不挂载 3D 视口、不订阅 live 快照、没有 Target/Ghost，也不发送命令或物理步进；本页所有 GET 都由前端只读代理精确放行。</p>
       </section>
     </div>
-    <FrameBrowser api={api} episodeId={detail?.identity.episode_id ?? ''} runId={detail?.identity.run_id ?? null}/>
+    <FrameBrowser api={api} episodeId={detail?.identity.episode_id ?? ''} runId={detail?.identity.run_id ?? null} semantics={detail?.action_semantics}/>
   </section>;
 }
 

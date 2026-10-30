@@ -1,3 +1,41 @@
+# M4.2 动作／命令事件回放界面：action_basis、当前帧动作卡与独立事件轨（2026-10-30）
+
+M4.0/M4.1 已有帧游标、记录间隔播放和同一锚点回显，但历史面把记录 Target、dispatch 与命令回执都只当作“不画”的边界，屏幕上没有可检查的动作/事件载荷。本轮新增三件界面产物，仍只读、仍只改 `frontend/`：①`include_action_basis=true` 客户端与 M1.5h/i 资格字段迁移；②当前帧动作卡片，按候选 `record_position` 用既有 events records GET 做有界读取并分开显示 Actual、`actuator_reference`、`dispatch`；③独立命令/事件轨，按 `command_id` 展示 requested/approved/rejected/dispatch，租约与生命周期按 `event_seq`/自身时间基单列。唯一上游是 `127.0.0.1:18985`（M1.5i），没有新增端点、查询参数或代理路由。
+
+## 一、action_basis 客户端
+
+- `readFramesPage` 增加可选 `includeActionBasis`，只发字面 `include_action_basis=true`；类型逐字段按 18985 实际载荷建立（`scope / categories / vocabulary / frame_association / command_chain / control_source / independent_tracks / independent_track_reason / not_proven`），默认帧页不带该键。
+- **按页显式读取**：动作依据不随每次翻页自动携带，由“读取本页动作依据”按当前 offset/limit/窗口/sample 条件重读同一帧页。动作依据存 `basis.page` 与页键（offset/limit/returned/首末行/条件）；换页、改条件、切 Episode 或卸载都递增 `basisSerial` 并丢弃整块，旧响应不能写进新页。实测 limit=5 首屏：`action_basis` 约 23,291 B、整个响应约 158,527 B（客户端 JSON 长度，不是传输字节），`data-action-basis-reads=1`。
+- **Episode 词表 vs 本页 frame_association 分开**：类别、词表、命令链与控制来源标为 Episode 级扫描结果；逐帧候选只取**返回它的那一页**的 `frame_association.candidate_positions_per_frame`。`frame_association.rules` 按开放键读取（`clock_parity`、`recorded_target` 等新增键忽略未知键），不把 rules 当封闭集合。
+- **M1.5h/i 资格迁移**：`intervalGateOf` 优先读 `coverage.reached_end_of_file` 与 `coverage.line_accounting.every_line_of_the_anchor_file_is_decided`，并用逐基 `blocking_reason_scope.coverage/timing` 判阻塞；不可判定行以 `undecidable_positions[]` 显示。没有新字段的旧 census 仍走原分支，原有记录间隔播放（真实差 ÷ 倍速、缓冲、暂停、跨页）保持不变。`eligible_within_this_scan` 仍只作“本次扫描内”披露，不当作当前窗口资格。
+
+## 二、当前帧动作卡片
+
+- 取当前帧候选的 `record_positions`（形如 `events.jsonl#26`），把文件基名映射为契约流 id（`events`），对每个候选发一条带界 GET：`…/streams/events/records?run_id=…&limit=3&offset=<line-1>`。收到后核对 `identity.run_id/episode_id`、响应流 `events`、精确 `line_index`、`event_type` 与帧锚点 `capture_control_tick_id`；任一不符只显示拒绝原因，不扩大扫描、不借用相邻行。
+- Actual（`feedback`）、记录 Target（`actuator_reference`）、dispatch（`dispatch`）三块分开。真实首帧：Target `events.jsonl#26` 六项 `arm_model_reference_rad` 逐项显示索引 0–5 与 `rad`（单位依据 `_rad` 后缀），值与原始 payload 逐字相等（`0,0,0,-1.5707963267948966,0,-1.077632656580025`）；Actual `events.jsonl#27` 的五项 `arm_model_qpos_rad` 单独显示；dispatch 为 `missing`，写明 looked_for 的 tick 与“不补零、不沿用上一 tick、不借用相邻帧”。
+- **不套五轴**：六项参考数组保留原名与原索引，界面不声明维度/顺序映射，不改名成五轴 Actual，也不生成历史 3D Ghost。没有单位后缀的字段（如 `base_twist`、`requested`）显示 `unknown_from_field_name`，不猜单位。
+- 多候选全部列出：候选状态为 `ambiguous_candidates` 时每条位置各读一条并全部渲染，不选第一项。真实归档里 dispatch 多数帧缺失、`rgbd_46af…` 帧命中 `events.jsonl#960`（`tick_000006978`），两种情形都由真实载荷分别验证。
+- 读取成本在屏上：本次选择发起的 GET 数、原始记录 JSON 合计字节、每个候选的 `offset/limit` 窗口；不逐帧重扫 events 文件。
+
+## 三、独立命令／事件轨
+
+- 命令链按 `command_id` 分组：requested（意图）、approved（受理回执）、rejected（拒绝回执）、dispatch（下发）分行；界面明写三者都不等于执行结果、dispatch 不等于执行成功。真实 12561 条 events 的词表/20 条命令链原样显示，首条命令 `requested/approved/dispatch = #331/#332/#333`。
+- 租约（`lease_heartbeat`/`lease_expired`）与生命周期（`recording_start/stop/episode_terminal`）按 `event_seq`、原始位置和自身时间基单列；点击“读取”只做同一个 ±1 行窗口的 records GET。`episode_terminal` 只有 `wall_utc`，界面显示 `numeric=false` 且写明不补数值时刻。
+- 独立事件选择只更新轨详情，不改变帧游标；没有共享键的事件不挂到“最近帧”，不按时间接近建立关联。控制来源只显示记录自身命名的 `payload.*` 字段；没有字段时写“不默认 Human”。类别状态按当前 Episode 重判，切 Episode 后整块作废，不跨 Episode 固定缓存。
+- 合成夹具补齐此前真实归档不存在的路径：`episode_action_rejected` 的 requested→rejected 回执（无 approved/dispatch，显示“回执（未执行）”）、同 tick 两个 dispatch 候选全部列出、延迟 1.8 s 的 events records 读取在切帧后不写入新选择、跨页后 action_basis 丢弃并按 offset=5 重读（Target 从 #26 变为 #36）。
+
+## 四、同一冻结 dist 的验证
+
+最终 release `m1-front-geometry-20261030T120912Z-137de28a5f4e`（101 个源文件，aggregate `137de28a5f4e…`）；真实与合成都在**这个 release 的 dist**上由 `check-release.py` 重新构建并验收，预览分别保留在 `127.0.0.1:19063`（真实）与 `127.0.0.1:19064`（合成），上游只有 `127.0.0.1:18985`。报告在服务器 `var/reports/m1-front-geometry-20261030T120912Z-137de28a5f4e-action-{real,synthetic}/`（`frames/browser.json`、`unit.json`、`preview.json`）。
+
+- 服务器环境：Node `v20.20.2`、前端依赖 `envs/frontend-m12a-node20`、浏览器 Python 为 mobileCar 的 Playwright 1.63；构建、单元、浏览器均在授权服务器执行。单元 **217/217**（11 文件，208 条既有回归 + 9 条新增 action_basis/资格迁移）；浏览器逐套件 `status=passed`、`error=null`：
+  - 真实：`browser-frames.py --mode real` **123 checks**（既有 frames 回归 + 11 条新动作/事件断言），冻结预览 `127.0.0.1:19063`，上游 `127.0.0.1:18985`。
+  - 合成：`browser-frames.py --mode synthetic` **112 checks**（在线路由被夹具拒绝），同一冻结 dist，预览 `127.0.0.1:19064`。
+- 新增断言直接覆盖：页面出现实际 Target 载荷与来源位置、dispatch 缺失与实际命中分别呈现、requested/approved 不冒充执行结果、synthetic rejected 只作回执、跨页不复用旧候选、迟到读取不覆盖新选择、原有播放/缓冲/历史独立装配保持。真实请求证据示例：`…/streams/events/records?run_id=run_0104613f…&limit=3&offset=26`、`offset=25`、`offset=959`；`data-action-record-window="one-bounded-window-per-position"`。
+- 截图：真实 `…-action-real/frames/real-action-target.png`、`real-action-dispatch-hit.png`；合成 `…-action-synthetic/frames/synthetic-action-replay.png`。`frames/browser.json` 的 `action_surface` 内含 Target 位置/值、dispatch 命中位置、命令链行数与读取请求。
+- 复现：`python3 frontend/tools/release-source.py` 冻结源码；`python3 <release>/frontend/tools/check-release.py <release> --environment <env> --node-bin <node20/bin> --browser-python <playwright-python> --reports <dir> --port <free> --read-only --upstream http://127.0.0.1:18985 --frames --history --history-mode {real,synthetic} --skip-readonly`。
+- 不主张：跨流同刻同步、按记录时间的原速回放、命令已被物理执行、整车重建、生产部署或正式 M1/M1.5 验收通过。旧 208 单测与旧 frames 数字仅作回归。
+
 # M4.1 五个历史面板回显同一个具体锚点，Episode 跨度只在 coverage 说“扫完整份锚点文件”时才这样称谓（2026-10-30）
 
 M4.0 已把定位从 `sample_id` 换成“本页位置＋锚点 `line_index`”，并接入 M1.5g census 的记录间隔播放。这一轮只补两件此前**说得比做得多**的事，不新增播放能力、不改后端契约、不改路由：①“媒体、状态、曲线、3D 回显同一个具体锚点”此前只有游标行、曲线竖线与 3D 面板带位置/行号，状态、时间、媒体三块只有 `sample_id`——一页里重复 `sample_id` 时，看屏幕无法逐字证明它们回答的是哪一条锚点；②范围面板此前无条件把 census 的首末/最小最大写成“整个 Episode（census）”，而截断扫描下这些数字只描述被扫到的前缀。唯一上游仍是 `127.0.0.1:18979`；只改 `frontend/`；不发运动/RESET/STOP/录制/导航；不主张跨流同刻同步、整车重建或正式 M1/M1.5 验收。

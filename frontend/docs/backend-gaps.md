@@ -2,6 +2,14 @@
 
 此文件是前端交接记录，不定义第二套公共接口。权威语义仍在后端维护的 `docs/specs/30-contracts`，wire 以 backend 的 mobilecar / drafts / prepare 实现和实际 OpenAPI 为准。
 
+## 已接入（M4.2 · action_basis 与动作/事件界面，18985 实测，2026-10-30）
+
+- 上游固定为 `http://127.0.0.1:18985`（M1.5i，`m1i-20261030T035643Z-platform`），核活 `GET /api/v1/episodes?limit=1`=200。历史读取面仍是八条精确 GET；本轮只使用既有 `frames` 的可选 `include_action_basis=true` 与既有 `streams/events/records`，**没有新增端点、查询参数、服务端播放 Session 或代理白名单条目**。
+- `include_action_basis` 的逐帧候选只属于返回它的帧页：前端按页显式读取，换页/改条件/切 Episode/卸载即丢弃整块；Episode 级类别、词表、命令链与控制来源分开显示。`record_position`（`events.jsonl#<line>`）映射为契约流 `events`，用 `limit=3&offset=<line-1>` 有界读取并核对 run/episode、`line_index`、`event_type` 与帧的 `capture_control_tick_id`。真实首帧 Target `events.jsonl#26`、dispatch `missing`；dispatch 命中帧 `rgbd_46af…` 为 `events.jsonl#960`。
+- 单位只按记录字段名后缀声明；`arm_model_reference_rad` 六项按原索引显示，不套五轴 Actual、不生成历史 3D Ghost。命令链 requested/approved/rejected/dispatch 与租约/生命周期独立成轨，不挂“最近帧”，只有 `wall_utc` 的事件不补数值时刻，控制来源缺失不默认 Human。
+- M1.5h/i 资格迁移：整集记录间隔播放改读 `coverage.reached_end_of_file` + `line_accounting.every_line_of_the_anchor_file_is_decided` + 逐基 `blocking_reason_scope.coverage/timing`；旧 census 分支保留，原有播放/缓冲/暂停/跨页行为未改。
+- 验证：同一冻结 dist 上真实 frames **123 checks**、合成 frames **112 checks**、单元 **217/217**；截图与报告见 `frontend/docs/development.md` 的 M4.2 一节。仍不主张跨流同刻同步、命令物理执行、生产部署或正式 M1/M1.5 验收通过。
+
 ## 统一候选 18959 作为单一上游（2026-10-25 实测）
 
 - 后端统一候选已在服务器常驻：`http://127.0.0.1:18959`（PID 3608367，`tools/launch_unified_gateway.py`，后端 release `m1j-20261025T020857Z-platform`，平台源码 30 文件聚合 `26c60b76acbac68a…`）。同一进程同时提供 geometry-2 场景与 23 个网格资产、capabilities/snapshot/kinematics/preflight、maps/route-drafts/routes versions、Draft/validate/config-snapshots、Session envelope + `current`，以及 `POST /sessions/{id}/recording/begin|stop|recording/end`；实测 OpenAPI 37 个路径。

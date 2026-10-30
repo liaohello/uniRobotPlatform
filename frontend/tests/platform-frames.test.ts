@@ -3,9 +3,14 @@ import { EpisodeContractError } from '../src/adapters/platform-episodes';
 import {
   CURVE_FRAME_ORDER,
   FRAME_LINK_SCHEMA,
+  ACTION_EVENT_ROLES,
+  actionBasisJsonBytes,
+  actionCandidatesOf,
+  actionReadWindow,
   ambiguousRoleCount,
   clockSamenessText,
   curveXAxesOf,
+  eventTimeRowsOf,
   frameActualCurveOf,
   frameAutoLoadRef,
   frameBoundaryNotice,
@@ -21,6 +26,7 @@ import {
   intervalStepOf,
   linkageScopeText,
   mediaDeclarationText,
+  payloadRowsOf,
   provenanceRowsOf,
   quantityRowsOf,
   readFramesPage,
@@ -45,7 +51,6 @@ import {
   type TimeQualityIdentityDto,
   versionMigrationText
 } from '../src/adapters/platform-frames';
-
 // The fixtures are shape copies of the `unirobot-mobilecar-frame-link-2` payloads the candidate on
 // 18969 actually answered on 2026-10-26 (COMPLETE record page 1, the FAILED record page, the
 // sample-filter page at offset=100, and the ambiguity/empty shapes of the isolated fixtures). Only
@@ -826,5 +831,137 @@ describe('one page position, not one sample_id, addresses a frame', () => {
     expect(b).toContain('line 9');
     expect(framePositionKey(EPISODE, RUN, 5, 0, twin)).toContain('5+0');
     expect(framePositionKey(EPISODE, null, 0, 0, null)).toBe(`${EPISODE}||none`);
+  });
+});
+
+// ---- M1.5h/i action basis ---------------------------------------------------------------------
+
+const actionBasisFixture = (positions: Record<string, { status: string; positions?: string[] }>, over: Record<string, unknown> = {}) => ({
+  requested: true,
+  scope: { stream_id: 'events', relative_path: 'events.jsonl', records_scanned: 12561, reached_end_of_file: true, stopped_at_line_index: null,
+    record_limit: 20000, events_stream_present: true, records_without_an_event_type: 0, scope_note: 'covers every record the scan read',
+    page_ticks_considered: 1, anchors_on_this_page: 1 },
+  categories: { command_receipt_rejected: { event_types_recorded: ['rejected'], counts: { rejected: 1 }, status: 'observed', meaning: 'a receipt, never an executed action', absent_event_types: [] } },
+  vocabulary: { rejected: { count: 1, first_line_index: 900, last_line_index: 900, record_positions: ['events.jsonl#900'],
+    join_keys: { command_id: { envelope: { present: 1, null: 0 }, payload: { present: 0, null: 0 } } },
+    time_fields: { wall_utc: { unit: 'iso8601_utc', numeric: 0, null: 0, other: 1 } } } },
+  frame_association: {
+    key: "control_tick_id equals the frame anchor's own capture_control_tick_id",
+    by_event_type: Object.fromEntries(Object.entries(positions).map(([type, value]) => [type, { candidate_count_per_frame_on_this_page: { '1': 1 }, frames_with_this_verdict: 1 }])),
+    candidate_positions_per_frame: [{ sample_id: 'rgbd_a', capture_control_tick_id: 'tick_a',
+      by_event_type: Object.fromEntries(Object.entries(positions).map(([type, value]) => [type, value.status === 'missing'
+        ? { status: 'missing', reason: 'no record names this tick', looked_for: { control_tick_id: 'tick_a' } }
+        : { status: value.status, candidate_count: value.positions?.length ?? 0, record_positions: value.positions ?? [] }])) }],
+    candidate_list_limit: 8, candidate_lists_truncated: false,
+    rules: { clock_parity: 'numerically close stamps never upgrade a link', recorded_target: 'a target is not Actual', rejected_requests: 'a rejection is a receipt' },
+  },
+  command_chain: { grouped_by: 'command_id', commands: [{ command_id: 'cmd_1', stages: { requested: 1, approved: 0, rejected: 1, dispatch: 0 }, positions: { requested: ['events.jsonl#899'], rejected: ['events.jsonl#900'] }, control_tick_id_present: 0 }], commands_truncated: false, note: 'no execution claim' },
+  control_source: { status: 'recorded_only_inside_payload_fields', fields_observed: {}, takeover_event_type_recorded: false, lease_evidence: {}, note: 'never defaults to Human' },
+  independent_tracks: ['command_receipt_rejected'], independent_track_reason: 'no shared key with a frame', not_proven: ['that any command was executed'],
+  ...over,
+});
+const actionPage = (positions: Record<string, { status: string; positions?: string[] }>) => pageFixture({ action_basis: actionBasisFixture(positions) as never });
+
+describe('M1.5h/i action basis: opt-in, page-local, bounded and unit-honest', () => {
+  it('asks for include_action_basis only when requested, on the same exact frames route', async () => {
+    respondWith(pageFixture());
+    await readFramesPage({ episodeId: EPISODE, runId: RUN, limit: 5, offset: 0 }, new AbortController().signal);
+    expect(urls[0]).not.toContain('include_action_basis');
+    await readFramesPage({ episodeId: EPISODE, runId: RUN, limit: 5, offset: 0, includeActionBasis: true }, new AbortController().signal);
+    expect(urls[1]).toContain('include_action_basis=true');
+    expect((urls[1].match(/include_action_basis/g) ?? []).length).toBe(1);
+    expect(urls[1]).toContain('/frames?');
+  });
+
+  it('keeps frame_association page-local: the first page candidates are not returned for another page', () => {
+    const first = actionPage({ actuator_reference: { status: 'matched', positions: ['events.jsonl#26'] }, dispatch: { status: 'missing' } });
+    const second = actionPage({ actuator_reference: { status: 'matched', positions: ['events.jsonl#956'] }, dispatch: { status: 'matched', positions: ['events.jsonl#960'] } });
+    expect(actionCandidatesOf(first, 0)?.by_event_type.actuator_reference.record_positions).toEqual(['events.jsonl#26']);
+    expect(actionCandidatesOf(second, 0)?.by_event_type.actuator_reference.record_positions).toEqual(['events.jsonl#956']);
+    expect(actionCandidatesOf(second, 0)?.by_event_type.dispatch).toMatchObject({ status: 'matched', candidate_count: 1 });
+  });
+
+  it('reads a bounded window around the reader position and never invents a line', () => {
+    expect(actionReadWindow('events.jsonl#0')).toMatchObject({ streamId: 'events', relativePath: 'events.jsonl', lineIndex: 0, offset: 0, limit: 2 });
+    expect(actionReadWindow('events.jsonl#331')).toMatchObject({ streamId: 'events', relativePath: 'events.jsonl', lineIndex: 331, offset: 330, limit: 3 });
+    expect(actionReadWindow('nonsense')).toBeNull();
+  });
+
+  it('shows a six-entry actuator reference with its own indices and name-derived units, never squeezed into five Actual axes', () => {
+    const rows = payloadRowsOf({
+      base_twist: [0, 0, 0],
+      wheel_target_rad_s: [0, 0, 0, 0],
+      wheel_torque_nm: [1e-5, 2e-5, 3e-5, 4e-5],
+      arm_model_reference_rad: [0, 0, 0, -1.5707963267948966, 0, -1.077632656580025],
+      arm_torque_limit_nm: [0.35, 0.6, 0.45, 0.3, 0.15, 0.16],
+      gripper_width_target_m: 0.025,
+    });
+    const reference = rows.filter((row) => row.field === 'arm_model_reference_rad');
+    expect(reference.map((row) => row.index)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(reference.every((row) => row.unit === 'rad' && row.unitBasis.includes('_rad'))).toBe(true);
+    expect(rows.filter((row) => row.field === 'wheel_target_rad_s').every((row) => row.unit === 'rad/s')).toBe(true);
+    expect(rows.filter((row) => row.field === 'base_twist').every((row) => row.unit === 'unknown_from_field_name')).toBe(true);
+    expect(rows.some((row) => row.field === 'arm_model_qpos_rad')).toBe(false);
+    expect(ACTION_EVENT_ROLES.map((role) => role.type)).toEqual(['feedback', 'actuator_reference', 'dispatch']);
+  });
+
+  it('does not turn a wall_utc-only event into a numeric instant', () => {
+    const onlyWall = eventTimeRowsOf({ wall_utc: '2026-10-17T16:10:29.828033Z', backend_monotonic_s: null, sim_time_s: null });
+    expect(onlyWall).toHaveLength(3);
+    expect(onlyWall.filter((row) => row.numeric)).toHaveLength(0);
+    expect(onlyWall.find((row) => row.field === 'wall_utc')).toMatchObject({ unit: 'iso8601_utc', numeric: false });
+    expect(eventTimeRowsOf({ wall_utc: 'x' }).map((row) => row.field)).toEqual(['wall_utc']);
+  });
+
+  it('reports the action basis block size without pretending it is a wire measurement', () => {
+    expect(actionBasisJsonBytes(actionBasisFixture({ dispatch: { status: 'missing' } }) as never)).toBeGreaterThan(100);
+    expect(actionBasisJsonBytes(null)).toBe(0);
+  });
+});
+
+describe('M1.5h coverage / line_accounting / blocking_reason_scope migration', () => {
+  const migrated = (over: Partial<TimeQualityCoverageDto> = {}, eligibility: Partial<IntervalEligibilityDto> = {}) => censusPage({
+    coverage: {
+      reached_end_of_file: true,
+      line_accounting: { benign_lines: { blank_lines_skipped: 0, prefiltered_lines_skipped: 0 },
+        undecidable_lines: { oversize_lines_skipped: 0, unparseable_lines_skipped: 0, non_object_lines_skipped: 0 },
+        undecidable_total: 0, undecidable_positions: [], parsed_records_rejected_by_rule: 0,
+        every_line_of_the_anchor_file_is_decided: true },
+      ...over,
+    },
+    eligibility: { reached_end_of_file: true, every_line_of_the_anchor_file_is_decided: true, readable_anchor_timing_satisfies_schedule: true,
+      blocking_reason_scope: { coverage: [], timing: [] }, ...eligibility },
+  });
+
+  it('accepts the three-fact M1.5h census when every fact is true', () => {
+    const gate = intervalGateOf(migrated(), CAPTURE);
+    expect(gate.allowed).toBe(true);
+    expect(gate.reasons).toEqual([]);
+    expect(gate.disclosures.join(' ')).toContain('line_accounting：reached_end_of_file=true');
+    expect(gate.disclosures.join(' ')).toContain('三个独立事实（M1.5h）');
+  });
+
+  it('refuses a whole-episode claim when an undecidable line could hide an anchor', () => {
+    const gate = intervalGateOf(migrated({ line_accounting: {
+      benign_lines: { blank_lines_skipped: 0, prefiltered_lines_skipped: 0 },
+      undecidable_lines: { oversize_lines_skipped: 0, unparseable_lines_skipped: 1, non_object_lines_skipped: 0 },
+      undecidable_total: 1, undecidable_positions: [{ line_index: 7, record_position: 'observations/persist.jsonl#7' }],
+      parsed_records_rejected_by_rule: 0, every_line_of_the_anchor_file_is_decided: false,
+    } }), CAPTURE);
+    expect(gate.allowed).toBe(false);
+    expect(gate.reasons.join(' ')).toContain('可能藏着锚点');
+    expect(gate.reasons.join(' ')).toContain('observations/persist.jsonl#7');
+  });
+
+  it('uses the reader scoped reasons and refuses an eligible verdict that still carries a scoped blocker', () => {
+    const blocked = intervalGateOf(migrated({}, { eligible_for_whole_episode: false,
+      blocking_reasons: ['1_lines_are_undecidable_and_could_hide_anchors'],
+      blocking_reason_scope: { coverage: ['1_lines_are_undecidable_and_could_hide_anchors'], timing: [] } }), CAPTURE);
+    expect(blocked.allowed).toBe(false);
+    expect(blocked.reasons.join(' ')).toContain('blocking_reason_scope');
+    const contradictory = intervalGateOf(migrated({}, { eligible_for_whole_episode: true,
+      blocking_reason_scope: { coverage: [], timing: ['backwards_step'] } }), CAPTURE);
+    expect(contradictory.allowed).toBe(false);
+    expect(contradictory.reasons.join(' ')).toContain('自相矛盾');
   });
 });
