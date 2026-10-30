@@ -263,11 +263,13 @@ def create_app(catalog_path: str | Path | None = None, *, draft_db_path: Path | 
                        limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
                        time_base: str | None = None, time_from: float | None = None,
                        time_to: float | None = None, sample_id: str | None = None,
-                       include_time_quality: bool = Query(False)) -> dict[str, Any]:
+                       include_time_quality: bool = Query(False),
+                       include_action_basis: bool = Query(False)) -> dict[str, Any]:
         return FrameLinkReader(_archive(request)).frames(episode_id, run_id=run_id, stream=stream, limit=limit,
                                                         offset=offset, time_base=time_base, time_from=time_from,
                                                         time_to=time_to, sample_id=sample_id,
-                                                        include_time_quality=include_time_quality)
+                                                        include_time_quality=include_time_quality,
+                                                        include_action_basis=include_action_basis)
 
     def _pose(request: Request) -> HistoryPoseReader:
         if geometry is None:

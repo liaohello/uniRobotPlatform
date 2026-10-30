@@ -899,6 +899,167 @@ def main() -> int:
                         if "/api/v1/scene" in item["url"]) == 0,
                 {"requests_since_census_start": len(PROBE.entries) - entries_before_census})
 
+    # ---- M1.5h: coverage boundary of the census, and the recorded action/event basis ----
+    accounting = coverage["line_accounting"]
+    results.add("coverage is three separate facts: EOF reached, every line decided, readable timing",
+                coverage["reached_end_of_file"] is True and accounting["every_line_of_the_anchor_file_is_decided"] is True
+                and accounting["undecidable_total"] == 0
+                and all(item["reached_end_of_file"] is True
+                        and item["every_line_of_the_anchor_file_is_decided"] is True
+                        and item["readable_anchor_timing_satisfies_schedule"] is True
+                        and item["eligible_for_whole_episode"] is True for item in schedule.values())
+                and coverage["covers_whole_episode"] is True,
+                {"lines_read": coverage["anchor_lines"]["lines_read"], "benign": accounting["benign_lines"],
+                 "undecidable": accounting["undecidable_lines"],
+                 "rejected_after_parsing": accounting["parsed_records_rejected_by_rule"]})
+    results.add("line accounting names which counters could hide an anchor and which cannot",
+                set(accounting["rules"]) == {"blank_lines_skipped", "prefiltered_lines_skipped",
+                                             "oversize_lines_skipped", "unparseable_lines_skipped",
+                                             "non_object_lines_skipped"}
+                and all(accounting["rules"][key]["classification"] == "benign"
+                        and accounting["rules"][key]["affects_whole_episode_qualification"] is False
+                        for key in ("blank_lines_skipped", "prefiltered_lines_skipped"))
+                and all(accounting["rules"][key]["classification"] == "undecidable"
+                        and accounting["rules"][key]["may_hide_an_anchor"] is True
+                        and accounting["rules"][key]["affects_whole_episode_qualification"] is True
+                        for key in ("oversize_lines_skipped", "unparseable_lines_skipped",
+                                    "non_object_lines_skipped")),
+                {key: value["classification"] for key, value in accounting["rules"].items()})
+    results.add("append-order browsing stays available and is told apart from a complete sequence",
+                census["playback_eligibility"]["append_order_display"]["eligible"] is True
+                and census["playback_eligibility"]["append_order_display"]["displayed_sequence_may_have_gaps"] is False
+                and census["playback_eligibility"]["recorded_interval_schedule"]
+                ["coverage_is_a_separate_question_from_timing"] is True,
+                {"rules_when_unqualified": list(census["playback_eligibility"]["recorded_interval_schedule"]
+                                                ["rules_when_unqualified"])})
+    status, window_scope = get_json(f"{P}/api/v1/episodes/{complete_id}/frames?run_id={complete_run}"
+                                    f"&time_base=capture_sim_time_s&time_from=0.2&time_to=0.6"
+                                    f"&include_time_quality=true")
+    results.add("a time window narrows the frame page while the census still scans the anchor file",
+                status == 200 and len(window_scope["frames"]) == 1
+                and window_scope["paging"]["excluded_outside_time_window"] == coverage["anchors_in_this_scan"] - 1
+                and window_scope["time_quality"]["coverage"]["anchors_in_this_scan"] == coverage["anchors_in_this_scan"]
+                and window_scope["time_quality"]["coverage"]["covers_whole_episode"] is True
+                and "not the census" in window_scope["time_quality"]["coverage"]["scope_note"]
+                and window_scope["time_quality"]["coverage"]["page_filter_context"]["time_base"]
+                == "capture_sim_time_s",
+                {"page_frames": len(window_scope["frames"]),
+                 "excluded": window_scope["paging"]["excluded_outside_time_window"],
+                 "census_anchors": window_scope["time_quality"]["coverage"]["anchors_in_this_scan"],
+                 "scope_note": window_scope["time_quality"]["coverage"]["scope_note"]})
+
+    entries_before_basis = len(PROBE.entries)
+    status, basis_page = get_json(f"{P}/api/v1/episodes/{complete_id}/frames?run_id={complete_run}"
+                                  f"&limit=200&include_action_basis=true")
+    basis = basis_page["action_basis"]
+    vocabulary, categories = basis["vocabulary"], basis["categories"]
+    results.add("the action basis is opt-in and the default page still carries neither block",
+                status == 200 and "action_basis" not in frames and "action_basis" not in census_page
+                and set(basis_page) - set(frames) - {"time_quality"} == {"action_basis"}
+                and basis["scope"]["reached_end_of_file"] is True
+                and basis["scope"]["events_stream_present"] is True,
+                {"basis_bytes": len(json.dumps(basis)), "records_scanned": basis["scope"]["records_scanned"]})
+    results.add("the vocabulary accounts for every event record the stream declares",
+                sum(item["count"] for item in vocabulary.values()) + basis["scope"]["records_without_an_event_type"]
+                == streams["events"]["records"]
+                and basis["scope"]["records_scanned"] == streams["events"]["records"],
+                {"declared": streams["events"]["records"], "types": {name: item["count"]
+                                                                    for name, item in vocabulary.items()}})
+    results.add("Actual, recorded Target, intent, acceptance and dispatch are separate recorded classes",
+                {name: categories[name]["status"] for name in
+                 ("actual_state_feedback", "recorded_target", "command_intent", "command_receipt_accepted",
+                  "command_dispatched", "episode_lifecycle")} ==
+                dict.fromkeys(("actual_state_feedback", "recorded_target", "command_intent",
+                               "command_receipt_accepted", "command_dispatched", "episode_lifecycle"), "observed")
+                and categories["actual_state_feedback"]["event_types_recorded"] == ["feedback"]
+                and categories["recorded_target"]["event_types_recorded"] == ["actuator_reference"]
+                and categories["command_dispatched"]["event_types_recorded"] == ["dispatch"],
+                {name: categories[name]["counts"] for name in categories})
+    results.add("an absent category is reported as not recorded, never filled or treated as impossible",
+                categories["command_receipt_rejected"]["status"] == "not_recorded_in_this_scan"
+                and categories["command_receipt_rejected"]["absent_event_types"] == ["rejected"]
+                and "rejected" not in vocabulary
+                and "never write one" in categories["command_receipt_rejected"]["status_note"],
+                {"vocabulary_types": sorted(vocabulary)})
+    results.add("a join key that the record carries as null is not treated as a join key",
+                vocabulary["feedback"]["join_keys"]["command_id"]["envelope"] == {"present": 0,
+                                                                                 "null": vocabulary["feedback"]["count"]}
+                and vocabulary["feedback"]["join_keys"]["control_tick_id"]["envelope"]["null"] == 0
+                and vocabulary["requested"]["join_keys"]["command_id"]["envelope"]["present"]
+                == vocabulary["requested"]["count"]
+                and vocabulary["requested"]["join_keys"]["control_tick_id"]["envelope"]["present"] == 0,
+                {name: vocabulary[name]["join_keys"] for name in ("feedback", "requested", "dispatch")})
+    association = basis["frame_association"]
+    target_bucket = association["by_event_type"]["actuator_reference"]["candidate_count_per_frame_on_this_page"]
+    dispatch_bucket = association["by_event_type"]["dispatch"]["candidate_count_per_frame_on_this_page"]
+    results.add("per-frame association lists every candidate and reports absence without borrowing one",
+                association["key"] == ("control_tick_id equals the frame anchor's own capture_control_tick_id")
+                and set(target_bucket) == {"1"} and sum(target_bucket.values()) == len(basis_page["frames"])
+                and max(int(key) for key in dispatch_bucket) <= 1
+                and all(item["by_event_type"]["dispatch"]["status"] in ("matched", "missing")
+                        for item in association["candidate_positions_per_frame"])
+                and association["rules"]["when_nothing_matches"].startswith("missing")
+                and association["rules"]["zero_action"] == "no action vector is invented for a tick that records none",
+                {"target_candidates_per_frame": target_bucket, "dispatch_candidates_per_frame": dispatch_bucket,
+                 "frames_without_a_dispatch": dispatch_bucket.get("0", 0)})
+    results.add("the command chain is grouped by command_id and claims no execution result",
+                basis["command_chain"]["grouped_by"] == "command_id"
+                and basis["command_chain"]["commands_truncated"] is False
+                and all(set(item["stages"]) <= {"requested", "approved", "dispatch", "rejected"}
+                        for item in basis["command_chain"]["commands"])
+                and sum(item["stages"].get("dispatch", 0) for item in basis["command_chain"]["commands"])
+                == vocabulary["dispatch"]["count"]
+                and "no execution result" in basis["command_chain"]["note"]
+                and "that any command below was physically executed" in basis["not_proven"],
+                {"commands": len(basis["command_chain"]["commands"]),
+                 "kinds": sorted({item["stages"].get("dispatch", 0) for item in basis["command_chain"]["commands"]})})
+    results.add("units and stamps come from the record's own names, and an unsuffixed field stays unknown",
+                vocabulary["actuator_reference"]["time_fields"]["backend_monotonic_s"]["unit"] == "second"
+                and vocabulary["actuator_reference"]["time_fields"]["wall_utc"]["unit"] == "iso8601_utc"
+                and "payload.wheel_target_rad_s" not in vocabulary["actuator_reference"]["time_fields"]
+                and "payload.wheel_velocity_rad_s" not in vocabulary["feedback"]["time_fields"],
+                {name: sorted(vocabulary[name]["time_fields"]) for name in ("actuator_reference", "feedback")})
+    results.add("control source is only what the record names, and no takeover event was recorded",
+                basis["control_source"]["status"] == "recorded_only_inside_payload_fields"
+                and basis["control_source"]["takeover_event_type_recorded"] is False
+                and "feedback" not in basis["control_source"]["fields_observed"]
+                and any(path.endswith("operator_id") for paths in basis["control_source"]["fields_observed"].values()
+                        for path in paths)
+                and basis["frame_association"]["rules"]["operator_source"].endswith("never defaulted to Human"),
+                {"fields": basis["control_source"]["fields_observed"],
+                 "lease": basis["control_source"]["lease_evidence"]})
+    results.add("events sharing no key with a frame stay an independent track",
+                {"command_intent", "command_receipt_accepted", "episode_lifecycle", "lease_boundary"}
+                <= set(basis["independent_tracks"])
+                and "recorded_target" not in basis["independent_tracks"]
+                and "actual_state_feedback" not in basis["independent_tracks"]
+                and "never attached to" in basis["independent_track_reason"],
+                {"independent": basis["independent_tracks"], "joined": ["recorded_target", "command_dispatched",
+                                                                       "actual_state_feedback", "capture_timing"]})
+    status, failed_basis = get_json(f"{P}/api/v1/episodes/{failed_id}/frames?run_id={failed_run}"
+                                    f"&include_action_basis=true")
+    status, failed_detail = get_json(f"{P}/api/v1/episodes/{failed_id}?run_id={failed_run}")
+    failed_streams = {item["stream_id"]: item["records"] for item in failed_detail["streams"]}
+    failed_categories = failed_basis["action_basis"]["categories"]
+    results.add("the incomplete real record is read with the same vocabulary and its own absences",
+                status == 200 and failed_basis["action_basis"]["scope"]["reached_end_of_file"] is True
+                and failed_categories["episode_lifecycle"]["counts"].get("recording_stop") == 1
+                and failed_categories["episode_lifecycle"]["counts"].get("episode_terminal") == 1
+                and failed_categories["lease_boundary"]["counts"] == {"lease_expired": 1}
+                and failed_categories["command_receipt_rejected"]["status"] == "not_recorded_in_this_scan"
+                and sum(item["count"] for item in failed_basis["action_basis"]["vocabulary"].values())
+                == failed_streams["events"] == failed_basis["action_basis"]["scope"]["records_scanned"],
+                {"declared_events": failed_streams["events"],
+                 "types": {name: item["count"] for name, item in failed_basis["action_basis"]["vocabulary"].items()},
+                 "terminal_null_clocks": failed_basis["action_basis"]["vocabulary"]["episode_terminal"]["time_fields"]
+                 ["backend_monotonic_s"]})
+    results.add("the action basis is asked only of the platform reader, never the live native scene",
+                all(item["url"].startswith(P) and item["method"] == "GET"
+                    for item in PROBE.entries[entries_before_basis:])
+                and sum(1 for item in PROBE.entries[entries_before_basis:]
+                        if "/api/v1/scene" in item["url"]) == 0,
+                {"requests_since_basis_start": len(PROBE.entries) - entries_before_basis})
+
     # ---- how the whole archive behaves, over a bounded sample -------------------
     status, sample = get_json(f"{P}/api/v1/episodes?limit=200")
     picked = sample["episodes"][::12][:16]

@@ -31,6 +31,7 @@ FEEDBACK_1 = f"joint_feedback_{TICK_1.split('_')[1]}"
 FEEDBACK_2 = f"joint_feedback_{TICK_2.split('_')[1]}"
 CAPTURE_1 = 426494.351568496
 CAPTURE_2 = 426496.425533806
+COMMAND_1 = "g2a_command_28973641a08045e8859bce12b77fd986"
 DEPTH = b"\x93NUMPY\x01\x00"
 ARM_MODEL_QPOS = [0.03, -0.0002, 0.0, -1.5705, 0.033]
 MODEL_ID = "landerpi_mecanum_dynamic_5dof_3ca3d6d0a92a"
@@ -90,7 +91,8 @@ def _write_frames(directory: Path, *, resolve_feedback=True, drop_depth_row=Fals
                   blank_lines=False, corrupt_lines=False, duplicate_rgb_row=False,
                   duplicate_state_event=False, payload_sim_time="absent", arm_qpos=None,
                   tcp_position=None, base_position=None, anchor_time_mode="normal",
-                  duplicate_sample_id=False) -> None:
+                  duplicate_sample_id=False, record_action_chain=False, duplicate_target_on_first_tick=False,
+                  anchor_extra_lines="none") -> None:
     index_path = directory / "observations" / "index.jsonl"
     persist_path = directory / "observations" / "persist.jsonl"
     index_path.parent.mkdir(parents=True, exist_ok=True)
@@ -150,6 +152,20 @@ def _write_frames(directory: Path, *, resolve_feedback=True, drop_depth_row=Fals
                                     encoding="utf-8")
         else:
             persist_path.write_text("".join(json.dumps(item) + "\n" for item in anchors), encoding="utf-8")
+        if anchor_extra_lines == "unparseable":
+            with persist_path.open("a", encoding="utf-8") as handle:
+                handle.write('{"stream_id": "rgbd", "sample_id": "truncated_write\n')
+        elif anchor_extra_lines == "oversize":
+            with persist_path.open("a", encoding="utf-8") as handle:
+                handle.write('{"stream_id": "rgbd", "pad": "' + "x" * (256 * 1024 + 8) + '"}\n')
+        elif anchor_extra_lines == "non_object":
+            with persist_path.open("a", encoding="utf-8") as handle:
+                handle.write('[{"stream_id": "rgbd", "sample_id": "wrapped_in_an_array"}]\n')
+        elif anchor_extra_lines == "prefiltered":
+            # Another stream's record in the same file: positively decided, not corruption.
+            with persist_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps({"run_id": RUN, "episode_id": EPISODE, "stream_id": "lidar",
+                                         "sample_id": "lidar_1"}) + "\n")
         if corrupt_lines:
             with persist_path.open("a", encoding="utf-8") as handle:
                 handle.write('{"stream_id": "rgbd" this line is not json\n')
@@ -170,15 +186,18 @@ def _write_frames(directory: Path, *, resolve_feedback=True, drop_depth_row=Fals
     events = [
         {"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE, "event_seq": 1,
          "event_type": "recording_start", "wall_utc": "2026-10-17T16:10:29.711000Z",
-         "backend_monotonic_s": CAPTURE_1 - 0.1, "sim_time_s": 0.0, "control_tick_id": "tick_000000099",
-         "payload": {"recording_segment_id": "seg_001_abc"}},
+         "backend_monotonic_s": CAPTURE_1 - 0.1, "sim_time_s": 0.0, "command_id": None,
+         "control_tick_id": "tick_000000099",
+         "payload": {"recording_segment_id": "seg_001_abc", "operator_id": "g2a_server_acceptance",
+                     "operator_kind": "agent_ui", "view_source": "third_person_3d"}},
     ]
     seq = 2
     for sample, tick, feedback, capture, sim in ((F1, TICK_1, FEEDBACK_1, CAPTURE_1, 0.14),
                                                  (F2, TICK_2, FEEDBACK_2, CAPTURE_2, 2.21)):
         events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
                        "event_seq": seq, "event_type": "rgbd_capture_timing", "wall_utc": "2026-10-17T16:10:29.898727Z",
-                       "backend_monotonic_s": capture + 0.06, "sim_time_s": sim, "control_tick_id": tick,
+                       "backend_monotonic_s": capture + 0.06, "sim_time_s": sim, "command_id": None,
+                       "control_tick_id": tick,
                        "payload": {"sample_id": sample, "interface_profile": "g2a-1.0",
                                    "capture_clocks": {"sim": "sim", "backend_monotonic": "backend_monotonic",
                                                       "wall_utc": "wall_utc"},
@@ -193,7 +212,8 @@ def _write_frames(directory: Path, *, resolve_feedback=True, drop_depth_row=Fals
                      + ([[0.09, 0.0, 0.0, -1.5, 0.0]] if duplicate_state_event and tick == TICK_2 else [])):
             events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
                            "event_seq": seq, "event_type": "feedback", "wall_utc": "2026-10-17T16:10:29.730000Z",
-                           "backend_monotonic_s": capture - 0.002, "sim_time_s": sim - 0.01, "control_tick_id": tick,
+                           "backend_monotonic_s": capture - 0.002, "sim_time_s": sim - 0.01, "command_id": None,
+                           "control_tick_id": tick,
                            "payload": {"arm_model_qpos_rad": qpos,
                                        "wheel_velocity_rad_s": [0.0, 0.0, 0.0, 0.0],
                                        "base_position_world_sim_m": base_position or [0.1, 0.2, 0.0],
@@ -204,6 +224,68 @@ def _write_frames(directory: Path, *, resolve_feedback=True, drop_depth_row=Fals
                                        **({"sim_time_s": 0.14} if payload_sim_time == "numeric" else
                                           {"sim_time_s": "0.14"} if payload_sim_time == "string" else {})}})
             seq += 1
+    if record_action_chain:
+        # Shapes copied from the representative real Episodes: a target on each capture tick, a command
+        # chain whose request and approval carry no tick, one dispatch that does, and a terminal
+        # declaration whose numeric clocks are null.
+        for tick, capture, sim in ((TICK_1, CAPTURE_1, 0.14), (TICK_2, CAPTURE_2, 2.21)):
+            events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
+                           "event_seq": seq, "event_type": "actuator_reference",
+                           "wall_utc": "2026-10-17T16:10:29.716558Z", "backend_monotonic_s": capture - 0.011,
+                           "sim_time_s": sim, "command_id": None, "control_tick_id": tick,
+                           "payload": {"wheel_target_rad_s": [0.0, 0.0, 0.0, 0.0],
+                                       "arm_model_reference_rad": [0.0, 0.0, 0.0, -1.5707963, 0.0],
+                                       "gripper_width_target_m": 0.033, "base_twist": [0.018, 0.0, 0.04]}})
+            seq += 1
+        if duplicate_target_on_first_tick:
+            events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
+                           "event_seq": seq, "event_type": "actuator_reference",
+                           "wall_utc": "2026-10-17T16:10:29.717000Z", "backend_monotonic_s": CAPTURE_1 - 0.009,
+                           "sim_time_s": 0.14, "command_id": None, "control_tick_id": TICK_1,
+                           "payload": {"wheel_target_rad_s": [0.01, 0.0, 0.0, 0.0], "base_twist": [0.02, 0.0, 0.0]}})
+            seq += 1
+        events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
+                       "event_seq": seq, "event_type": "requested", "wall_utc": "2026-10-17T16:10:31.318722Z",
+                       "backend_monotonic_s": CAPTURE_1 + 1.1, "sim_time_s": None, "command_id": COMMAND_1,
+                       "control_tick_id": None,
+                       "payload": {"request": {"operator_id": "g2a_motion_arm", "operator_kind": "agent_ui",
+                                               "session_id": "session_7aa6"}}})
+        seq += 1
+        events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
+                       "event_seq": seq, "event_type": "approved", "wall_utc": "2026-10-17T16:10:31.319845Z",
+                       "backend_monotonic_s": CAPTURE_1 + 1.101, "sim_time_s": 1.62, "command_id": COMMAND_1,
+                       "control_tick_id": None,
+                       "payload": {"decision": {"approved": True, "reason": "approved", "safety_revision": "g1-safety-1"}}})
+        seq += 1
+        events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
+                       "event_seq": seq, "event_type": "dispatch", "wall_utc": "2026-10-17T16:10:31.320108Z",
+                       "backend_monotonic_s": CAPTURE_1 + 1.102, "sim_time_s": 1.62, "command_id": COMMAND_1,
+                       "control_tick_id": TICK_2,
+                       "payload": {"kind": "base_twist", "requested": [0.018, 0.0, 0.04],
+                                   "command": {"operator_id": "g2a_motion_arm", "operator_kind": "agent_ui"}}})
+        seq += 1
+        events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
+                       "event_seq": seq, "event_type": "lease_heartbeat",
+                       "wall_utc": "2026-10-17T16:10:31.459338Z", "backend_monotonic_s": CAPTURE_1 + 1.2,
+                       "sim_time_s": 1.76, "command_id": None, "control_tick_id": TICK_2,
+                       "payload": {"renewed": True, "session_id": "session_7aa6"}})
+        seq += 1
+        events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
+                       "event_seq": seq, "event_type": "lease_expired", "wall_utc": "2026-10-17T16:10:40.721177Z",
+                       "backend_monotonic_s": CAPTURE_1 + 10.5, "sim_time_s": 11.02, "command_id": None,
+                       "control_tick_id": TICK_2, "payload": {"channel": "arm", "owner_session_id": "session_7aa6"}})
+        seq += 1
+        events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
+                       "event_seq": seq, "event_type": "recording_stop", "wall_utc": "2026-10-17T16:11:30.447148Z",
+                       "backend_monotonic_s": CAPTURE_2 + 0.5, "sim_time_s": 60.75, "command_id": None,
+                       "control_tick_id": TICK_2, "payload": {"reason": "G2A_MOTION_ARM_COMPLETE"}})
+        seq += 1
+        events.append({"contract_version": "mobilecar-1.0", "run_id": RUN, "episode_id": EPISODE,
+                       "event_seq": seq, "event_type": "episode_terminal", "wall_utc": "2026-10-17T16:11:30.474883Z",
+                       "backend_monotonic_s": None, "sim_time_s": None, "command_id": None, "control_tick_id": None,
+                       "payload": {"recording_segment_id": "seg_001_abc", "termination_reason": "G2A_MOTION_ARM_COMPLETE",
+                                   "recording_status": "COMPLETE", "audit_status": "COMPLETE"}})
+        seq += 1
     (directory / "events.jsonl").write_text("".join(json.dumps(item) + "\n" for item in events), encoding="utf-8")
 
     body_by_kind = {"rgb": PNG, "depth": DEPTH, "masks": PNG}
@@ -1111,10 +1193,18 @@ def test_a_truncated_census_reports_itself_instead_of_a_whole_episode_claim(tmp_
     census, _ = _quality(tmp_path)
     coverage = census["coverage"]
     assert coverage["anchors_in_this_scan"] == 1 and coverage["whole_anchor_file_scanned"] is False
+    assert coverage["reached_end_of_file"] is False
     assert coverage["covers_whole_episode"] is False and coverage["stopped_at_line_index"] == 0
+    assert coverage["line_accounting"]["undecidable_total"] == 0
+    # EOF was not reached, so nothing about the rest of the file is decided even though no line was refused.
+    assert coverage["line_accounting"]["every_line_of_the_anchor_file_is_decided"] is False
     qualified = census["playback_eligibility"]["recorded_interval_schedule"]["eligible_by_base"]
     assert all(item["eligible_for_whole_episode"] is False for item in qualified.values())
-    assert all("scan_truncated_at_anchor_limit" in item["blocking_reasons"] for item in qualified.values())
+    assert all(item["readable_anchor_timing_satisfies_schedule"] is True for item in qualified.values())
+    assert all(item["blocking_reason_scope"]["coverage"] == ["scan_stopped_at_anchor_limit_before_eof"]
+               and item["blocking_reason_scope"]["timing"] == [] for item in qualified.values())
+    assert all("scan_stopped_at_anchor_limit_before_eof" in item["blocking_reasons"] for item in qualified.values())
+    assert census["playback_eligibility"]["append_order_display"]["displayed_sequence_may_have_gaps"] is True
     # With one anchor there is no recorded gap to measure, so no rate is implied either.
     assert all(item["implied_rate_hz_from_median_recorded_gap"] is None for item in qualified.values())
 
@@ -1128,3 +1218,209 @@ def test_the_census_never_earns_cross_stream_synchronisation(tmp_path):
     assert modes["recorded_interval_schedule"]["any_base_eligible_for_whole_episode"] is True
     assert "a declared sampling rate" in census["not_proven"]
     assert census["profile"]["anchor_fields_declaring_a_numeric_rate"] == []
+
+
+# ---- coverage boundary: undecided content cannot be excluded and then ignored ------------------
+
+def _accounting(tmp_path, **options):
+    census, body = _quality(tmp_path, **options)
+    return census["coverage"], census["coverage"]["line_accounting"], census["playback_eligibility"], body
+
+
+def test_undecidable_anchor_lines_refuse_a_whole_episode_claim_without_denying_append_order(tmp_path):
+    coverage, accounting, modes, _ = _accounting(tmp_path, anchor_extra_lines="unparseable")
+    assert coverage["reached_end_of_file"] is True
+    assert accounting["undecidable_lines"]["unparseable_lines_skipped"] == 1
+    assert accounting["undecidable_total"] == 1
+    assert accounting["every_line_of_the_anchor_file_is_decided"] is False
+    assert coverage["covers_whole_episode"] is False
+    # The readable anchors are still clean; clean timing alone no longer earns the whole Episode.
+    assert all(item["readable_anchor_timing_satisfies_schedule"] is True
+               and item["eligible_within_this_scan"] is True
+               and item["eligible_for_whole_episode"] is False
+               and item["blocking_reason_scope"]["timing"] == []
+               and item["blocking_reason_scope"]["coverage"] == ["1_lines_are_undecidable_and_could_hide_anchors"]
+               for item in modes["recorded_interval_schedule"]["eligible_by_base"].values())
+    assert modes["recorded_interval_schedule"]["any_base_eligible_for_whole_episode"] is False
+    # A stays available, with the gap disclosed and located rather than presented as a complete sequence.
+    assert modes["append_order_display"]["eligible"] is True
+    assert modes["append_order_display"]["displayed_sequence_may_have_gaps"] is True
+    assert accounting["undecidable_positions"][0]["reason"] == "unparseable"
+    assert accounting["undecidable_positions"][0]["record_position"] == "observations/persist.jsonl#2"
+    assert "that undecided anchor-file lines carry no frame record, when such lines exist" in census_not_proven(tmp_path, anchor_extra_lines="unparseable")
+
+
+@pytest.mark.parametrize("kind,counters", [("oversize", "oversize_lines_skipped"), ("non_object", "non_object_lines_skipped")])
+def test_each_kind_of_undecided_line_blocks_the_whole_episode_claim(tmp_path, kind, counters):
+    coverage, accounting, modes, _ = _accounting(tmp_path, anchor_extra_lines=kind)
+    assert accounting["undecidable_lines"][counters] == 1
+    assert coverage["covers_whole_episode"] is False
+    assert all(item["eligible_for_whole_episode"] is False for item in
+               modes["recorded_interval_schedule"]["eligible_by_base"].values())
+
+
+def test_blank_and_confirmed_unrelated_lines_are_decided_and_keep_the_whole_episode_claim(tmp_path):
+    coverage, accounting, modes, _ = _accounting(tmp_path, blank_lines=True)
+    assert accounting["benign_lines"]["blank_lines_skipped"] == 2
+    assert accounting["undecidable_total"] == 0
+    assert coverage["covers_whole_episode"] is True
+    assert modes["recorded_interval_schedule"]["any_base_eligible_for_whole_episode"] is True
+    assert modes["append_order_display"]["displayed_sequence_may_have_gaps"] is False
+
+    other, other_accounting, other_modes, _ = _accounting(tmp_path, anchor_extra_lines="prefiltered")
+    assert other_accounting["benign_lines"]["prefiltered_lines_skipped"] == 1
+    assert other_accounting["undecidable_total"] == 0
+    assert other["covers_whole_episode"] is True
+    assert other_modes["recorded_interval_schedule"]["any_base_eligible_for_whole_episode"] is True
+    assert other_accounting["rules"]["blank_lines_skipped"]["affects_whole_episode_qualification"] is False
+    assert other_accounting["rules"]["oversize_lines_skipped"]["affects_whole_episode_qualification"] is True
+
+
+def census_not_proven(tmp_path, **options):
+    return _quality(tmp_path, **options)[0]["not_proven"]
+
+
+def test_a_time_window_narrows_the_page_and_never_the_census(tmp_path):
+    client = _frames_client(tmp_path)
+    windowed = client.get(f"/api/v1/episodes/{EPISODE}/frames?include_time_quality=true"
+                          f"&time_base=capture_sim_time_s&time_from=0.1&time_to=0.2").json()
+    assert len(windowed["frames"]) == 1
+    assert windowed["paging"]["excluded_outside_time_window"] == 1
+    coverage = windowed["time_quality"]["coverage"]
+    # The census still describes the whole anchor file, window or no window.
+    assert coverage["anchors_in_this_scan"] == 2
+    assert coverage["reached_end_of_file"] is True and coverage["covers_whole_episode"] is True
+    assert coverage["page_filter_context"]["returned"] == 1
+    assert coverage["page_filter_context"]["time_from"] == 0.1
+    assert "narrows the frame page, not the census" in coverage["scope_note"]
+    assert "because the page" not in coverage["scope_note"]
+
+
+# ---- action and event basis ---------------------------------------------------------------------
+
+ACTION_QUERY = "/api/v1/episodes/%s/frames?include_action_basis=true" % EPISODE
+
+
+def _basis(tmp_path, **options):
+    body = _frames_client(tmp_path, **options).get(ACTION_QUERY).json()
+    return body["action_basis"], body
+
+
+def test_the_action_basis_is_opt_in_and_the_default_page_does_not_carry_it(tmp_path):
+    plain = _frames_client(tmp_path, record_action_chain=True).get(f"/api/v1/episodes/{EPISODE}/frames").json()
+    assert "action_basis" not in plain and "time_quality" not in plain
+    basis, with_basis = _basis(tmp_path, record_action_chain=True)
+    assert set(with_basis) - set(plain) == {"action_basis"}
+    without = {key: value for key, value in with_basis.items() if key != "action_basis"}
+    assert {key: value for key, value in plain.items() if key != "retrieved_at"} == \
+           {key: value for key, value in without.items() if key != "retrieved_at"}
+    # The page's own linkage verdicts are untouched by the new optional roles.
+    assert with_basis["summary"]["frames_with_all_primary_roles_matched"] == \
+           plain["summary"]["frames_with_all_primary_roles_matched"]
+    assert basis["scope"]["reached_end_of_file"] is True and basis["scope"]["events_stream_present"] is True
+
+
+def test_the_action_basis_reports_the_recorded_vocabulary_and_its_real_join_keys(tmp_path):
+    basis, _ = _basis(tmp_path, record_action_chain=True)
+    types = basis["vocabulary"]
+    assert types["actuator_reference"]["count"] == 2 and types["feedback"]["count"] == 2
+    assert types["requested"]["count"] == 1 and types["approved"]["count"] == 1 and types["dispatch"]["count"] == 1
+    # Presence and null are different facts, and only a present key can carry an association.
+    assert types["feedback"]["join_keys"]["command_id"]["envelope"] == {"present": 0, "null": 2}
+    assert types["feedback"]["join_keys"]["control_tick_id"]["envelope"] == {"present": 2, "null": 0}
+    assert types["requested"]["join_keys"]["command_id"]["envelope"]["present"] == 1
+    assert types["requested"]["join_keys"]["control_tick_id"]["envelope"]["null"] == 1
+    assert types["rgbd_capture_timing"]["join_keys"]["sample_id"]["payload"]["present"] == 2
+    # Units come from the recorder's own field names; a velocity ending in "s" is not an instant.
+    assert types["actuator_reference"]["time_fields"]["backend_monotonic_s"]["unit"] == "second"
+    assert types["actuator_reference"]["time_fields"]["wall_utc"]["unit"] == "iso8601_utc"
+    assert "payload.wheel_target_rad_s" not in types["actuator_reference"]["time_fields"]
+    assert types["feedback"]["time_fields"]["payload.feedback_time_monotonic"]["unit"] == "unknown_from_field_name"
+    assert types["episode_terminal"]["time_fields"]["backend_monotonic_s"]["null"] == 1
+    assert basis["categories"]["episode_lifecycle"]["counts"] == {"episode_terminal": 1, "recording_start": 1,
+                                                                 "recording_stop": 1}
+    assert basis["categories"]["command_receipt_rejected"]["status"] == "not_recorded_in_this_scan"
+    assert basis["categories"]["command_receipt_rejected"]["absent_event_types"] == ["rejected"]
+    assert ("not a claim that the recorder can never write one"
+            in basis["categories"]["command_receipt_rejected"]["status_note"])
+
+
+def test_frame_association_lists_every_candidate_and_never_picks_the_first_or_the_previous(tmp_path):
+    basis, _ = _basis(tmp_path, record_action_chain=True)
+    association = basis["frame_association"]
+    assert association["key"] == ("control_tick_id equals the frame anchor's own capture_control_tick_id")
+    by_tick = {item["capture_control_tick_id"]: item["by_event_type"] for item in
+               association["candidate_positions_per_frame"]}
+    assert by_tick[TICK_1]["actuator_reference"]["status"] == "matched"
+    assert by_tick[TICK_1]["dispatch"]["status"] == "missing"
+    assert by_tick[TICK_1]["dispatch"]["looked_for"] == {"control_tick_id": TICK_1}
+    assert by_tick[TICK_2]["dispatch"]["status"] == "matched"
+    assert association["by_event_type"]["actuator_reference"]["candidate_count_per_frame_on_this_page"] == {"1": 2}
+
+    doubled, _ = _basis(tmp_path, record_action_chain=True, duplicate_target_on_first_tick=True)
+    repeated = {item["capture_control_tick_id"]: item["by_event_type"] for item in
+                doubled["frame_association"]["candidate_positions_per_frame"]}[TICK_1]["actuator_reference"]
+    assert repeated["status"] == "ambiguous_candidates" and repeated["candidate_count"] == 2
+    assert len(repeated["record_positions"]) == 2
+    assert doubled["frame_association"]["rules"]["when_several_match"].startswith("ambiguous_candidates")
+    assert doubled["frame_association"]["rules"]["when_nothing_matches"].startswith("missing")
+    assert "previous" in doubled["frame_association"]["rules"]["when_nothing_matches"]
+
+
+def test_a_command_chain_is_never_read_as_an_execution_result(tmp_path):
+    basis, _ = _basis(tmp_path, record_action_chain=True)
+    chain = basis["command_chain"]
+    assert chain["grouped_by"] == "command_id" and chain["commands_truncated"] is False
+    command = chain["commands"][0]
+    assert command["command_id"] == COMMAND_1
+    assert command["stages"] == {"requested": 1, "approved": 1, "dispatch": 1}
+    assert command["control_tick_id_present"] == 1
+    assert "no execution result" in chain["note"]
+    assert basis["frame_association"]["rules"]["rejected_requests"] == ("a rejected or unapproved request is never "
+                                                                       "presented as an executed action")
+    assert "that any command below was physically executed" in basis["not_proven"]
+    # The intent and its approval attach to no frame, so they stay an independent track.
+    assert "command_intent" in basis["independent_tracks"] and "command_receipt_accepted" in basis["independent_tracks"]
+    assert "recorded_target" not in basis["independent_tracks"]
+
+
+def test_control_source_is_taken_from_what_the_record_names_and_never_defaulted(tmp_path):
+    basis, _ = _basis(tmp_path, record_action_chain=True)
+    source = basis["control_source"]
+    assert source["status"] == "recorded_only_inside_payload_fields"
+    # The real recorder nests the operator one level down, inside its request and command objects.
+    assert source["fields_observed"]["requested"] == ["payload.request.operator_id", "payload.request.operator_kind",
+                                                     "payload.request.session_id"]
+    assert source["fields_observed"]["dispatch"] == ["payload.command.operator_id", "payload.command.operator_kind"]
+    assert source["fields_observed"]["recording_start"] == ["payload.operator_id", "payload.operator_kind",
+                                                           "payload.view_source"]
+    # A state feedback record names no operator of its own, so the reader may not infer a source for it.
+    assert "feedback" not in source["fields_observed"]
+    assert source["takeover_event_type_recorded"] is False
+    assert source["lease_evidence"] == {"lease_heartbeat": 1, "lease_expired": 1}
+    assert basis["frame_association"]["rules"]["operator_source"] == ("the source is whatever the record's own "
+                                                                     "operator fields name; it is never defaulted "
+                                                                     "to Human")
+    assert "lease_boundary" in basis["independent_tracks"]
+    assert "a control-source switch or takeover" in basis["not_proven"]
+
+
+def test_a_truncated_event_scan_reports_itself_instead_of_an_episode_wide_vocabulary(tmp_path, monkeypatch):
+    monkeypatch.setattr("unirobot.frames.ACTION_BASIS_EVENT_LIMIT", 4)
+    basis, _ = _basis(tmp_path, record_action_chain=True)
+    assert basis["scope"]["records_scanned"] == 4
+    assert basis["scope"]["reached_end_of_file"] is False
+    assert basis["scope"]["stopped_at_line_index"] == 3
+    assert "the scan found no record of this category" in str(basis["categories"]["command_intent"]["status_note"])
+
+
+def test_an_episode_without_events_stream_reports_absence_rather_than_empty_vocabulary(tmp_path):
+    client = _frames_client(tmp_path)
+    (tmp_path / "runs" / RUN / "episodes" / EPISODE / "events.jsonl").unlink()
+    basis = client.get(ACTION_QUERY).json()["action_basis"]
+    assert basis["scope"]["events_stream_present"] is False
+    assert basis["scope"]["records_scanned"] == 0
+    assert basis["vocabulary"] == {}
+    assert all(item["status"] == "not_recorded_in_this_scan" for item in basis["categories"].values())
+    assert all(entry["status"] == "missing" for item in basis["frame_association"]["candidate_positions_per_frame"]
+               for entry in item["by_event_type"].values())

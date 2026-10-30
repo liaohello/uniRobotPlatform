@@ -57,6 +57,30 @@ PLAYBACK_MODES = {
 # The scan is bounded so that asking for the census stays cheap and stays honest about its scope.
 TIME_QUALITY_ANCHOR_LIMIT = 4000
 TIME_QUALITY_DUPLICATE_LIST_LIMIT = 20
+TIME_QUALITY_UNDECIDABLE_LIST_LIMIT = 20
+
+# Which line counter feeds which claim. A line the reader cannot decide about is not a line the
+# reader may exclude and then ignore: it could have carried the very anchor being counted.
+LINE_ACCOUNTING = {
+    "blank_lines_skipped": {"classification": "benign", "may_hide_an_anchor": False,
+                            "affects_whole_episode_qualification": False,
+                            "why": "an empty line carries no record at all, so nothing about it is unknown"},
+    "prefiltered_lines_skipped": {"classification": "benign", "may_hide_an_anchor": False,
+                                  "affects_whole_episode_qualification": False,
+                                  "why": "raw text that cannot contain the requested stream_id token is not an "
+                                         "anchor record of the requested stream under the reader's own documented "
+                                         "prefilter rule"},
+    "oversize_lines_skipped": {"classification": "undecidable", "may_hide_an_anchor": True,
+                               "affects_whole_episode_qualification": True,
+                               "why": "the content was never parsed, so it cannot be ruled out as an anchor record"},
+    "unparseable_lines_skipped": {"classification": "undecidable", "may_hide_an_anchor": True,
+                                  "affects_whole_episode_qualification": True,
+                                  "why": "a truncated or half-written line is exactly how a lost anchor would look"},
+    "non_object_lines_skipped": {"classification": "undecidable", "may_hide_an_anchor": True,
+                                 "affects_whole_episode_qualification": True,
+                                 "why": "valid JSON that is not an object is not a conforming record, and what it "
+                                        "was meant to carry is unknown"},
+}
 
 
 def _median(values: list[float]) -> float | None:
@@ -130,6 +154,14 @@ ROLE_SEMANTICS = {
                              "recorded robot state feedback carried on the frame's capture tick"),
     "feedback_observation_row": ("observations-index", "sample_id",
                                  "an observation row whose own sample_id equals the frame's declared feedback_sample_id"),
+    # These two are optional action roles: they are reported only when the record really shares the
+    # frame's capture tick, and they never change a frame's own completeness verdict.
+    "recorded_target_event": ("events", "control_tick_id",
+                              "the recorded actuator reference (Target) carried on the frame's capture tick; a "
+                              "target is not an achieved state"),
+    "command_dispatch_event": ("events", "control_tick_id",
+                              "the command record the recorder marked as dispatched on the frame's capture tick; "
+                              "sparse, and absent for most frames by measurement"),
 }
 
 # Completeness is decided by what the role means, not by how many lines happened to carry the key.
@@ -140,11 +172,58 @@ ROLE_REQUIREMENTS: dict[str, dict[str, Any]] = {
     "capture_timing_event": {"exact_records": 1, "rule": "exactly one rgbd_capture_timing event naming this sample_id"},
     "state_feedback_event": {"exact_records": 1, "rule": "exactly one state event carrying this control_tick_id"},
     "feedback_observation_row": {"exact_records": 1, "rule": "exactly one observation row whose sample_id equals the declared feedback id"},
+    "recorded_target_event": {"exact_records": None, "requirement": "optional",
+                              "rule": "reported only for records that really carry the frame's control_tick_id; "
+                                      "absence stays absence and is never filled from a neighbouring tick"},
+    "command_dispatch_event": {"exact_records": None, "requirement": "optional",
+                               "rule": "reported only for records that really carry the frame's control_tick_id; "
+                                       "a dispatched command is not evidence that the frame or the state reached it"},
 }
 
 PRIMARY_ROLES = ("image_observation", "camera_transform", "capture_timing_event", "state_feedback_event")
+OPTIONAL_ACTION_ROLES = ("recorded_target_event", "command_dispatch_event")
+# The roles every frame on a page carries; the optional action roles are reported only inside action_basis.
+PAGE_ROLES = tuple(role for role in ROLE_SEMANTICS if role not in OPTIONAL_ACTION_ROLES)
 STATE_EVENT_TYPES = ("feedback", "feedback_initial")
 TIMING_EVENT_TYPE = "rgbd_capture_timing"
+TARGET_EVENT_TYPE = "actuator_reference"
+DISPATCH_EVENT_TYPE = "dispatch"
+COMMAND_CHAIN_EVENT_TYPES = ("requested", "approved", "rejected", "dispatch")
+
+# The categories a replay reader asks history about, each named by the event types the records
+# really use. A category with no recorded type in the scanned scope is reported as not_recorded.
+ACTION_CATEGORIES = {
+    "recorded_state_initial": (("feedback_initial",), "the state snapshot the recorder took when the segment started"),
+    "actual_state_feedback": (("feedback",), "recorded robot state as measured (Actual); never promoted to a live read"),
+    "recorded_target": (("actuator_reference",), "recorded actuator reference (Target); a target is not an achieved state"),
+    "command_intent": (("requested",), "a command the recorder saw requested; intent only, no execution claim"),
+    "command_receipt_accepted": (("approved",), "a recorded approval decision beside the request"),
+    "command_receipt_rejected": (("rejected",), "a recorded rejection; its absence is not evidence that nothing was rejected"),
+    "command_dispatched": (("dispatch",), "a command the recorder marked as dispatched"),
+    "capture_timing": (("rgbd_capture_timing",), "the recorder's own per-frame capture timing event"),
+    "lease_boundary": (("lease_heartbeat", "lease_expired"), "lease renewal and expiry records naming a session; they are not a takeover protocol"),
+    "episode_lifecycle": (("recording_start", "recording_stop", "episode_terminal"), "segment start, stop request and terminal declaration"),
+}
+
+# Join keys the reader may associate a record with, and the fields it must not confuse them with.
+ACTION_JOIN_KEYS = ("control_tick_id", "command_id", "sample_id", "feedback_sample_id", "session_id")
+OPERATOR_FIELDS = ("operator_id", "operator_kind", "view_source", "owner_session_id", "session_id", "channel")
+
+ACTION_BASIS_EVENT_LIMIT = 20000
+ACTION_BASIS_POSITION_LIMIT = 3
+ACTION_BASIS_CANDIDATE_LIMIT = 8
+ACTION_BASIS_COMMAND_LIMIT = 50
+
+ACTION_BASIS_RULES = {
+    "association": "exact equality of the recorded key; a frame's capture tick matched against the record's control_tick_id",
+    "no_shared_key": "the category is reported as an independent event track, readable by event_seq and named time bases only",
+    "when_several_match": "ambiguous_candidates with every candidate position listed; the first line in the file is not chosen",
+    "when_nothing_matches": "missing, with the key that was looked for — no carry-over from the previous tick, no nearest-in-time",
+    "rejected_requests": "a rejected or unapproved request is never presented as an executed action",
+    "operator_source": "the source is whatever the record's own operator fields name; it is never defaulted to Human",
+    "zero_action": "no action vector is invented for a tick that records none",
+    "units": "taken from the recorder's own field-name suffix; a field without a unit-bearing suffix is reported as unknown_from_field_name",
+}
 
 STATUS_MEANING = {
     "matched": "every record the role requires was found by its recorded key, once",
@@ -254,6 +333,20 @@ FRAME_LINK_VERSION_MIGRATION = {
         "the envelope's own simulator time is a separate quantity, "
         "state_event_envelope_sim_time_minus_frame_capture_sim_time",
         "no quantity is ever filled from another record: absence is reported as absence",
+        "time_quality.coverage.covers_whole_episode now requires both that the scan reached end of file and that "
+        "every line of the anchor file was decided; an earlier build of this version reported it from EOF alone, "
+        "so a file holding an unparsable or oversized line could still earn whole-episode scheduling on the "
+        "strength of the anchors that happened to be readable",
+        "time_quality.coverage.scope_note no longer calls a windowed page a reduced census: the page filter narrows "
+        "the frames returned, while the census scans this Episode's anchor file on its own terms",
+    ],
+    "additions": [
+        "time_quality.coverage.line_accounting separates benign lines from undecidable ones and names the positions "
+        "of the undecided ones, so a coverage statement can be checked against the file it describes",
+        "each time base is now reported on three separate questions: reached_end_of_file, "
+        "every_line_of_the_anchor_file_is_decided, readable_anchor_timing_satisfies_schedule",
+        "action_basis (opt-in) is the measured event vocabulary of one Episode, the join keys each type really "
+        "carries, and per-frame association by recorded key — it adds no new endpoint and no server-side session",
     ],
     "compatibility_note": "consumers must read schema_version: frame-link-1 and frame-link-2 pages are not the same contract",
 }
@@ -277,13 +370,14 @@ def _relative(stream_id: str) -> str:
     return STREAMS[stream_id][0]
 
 
-def _stream_lines(path, tokens: tuple[str, ...],
-                  stats: dict[str, int] | None = None) -> Iterator[tuple[int, dict[str, Any]]]:
+def _stream_lines(path, tokens: tuple[str, ...], stats: dict[str, int] | None = None,
+                  undecidable: list[dict[str, Any]] | None = None) -> Iterator[tuple[int, dict[str, Any]]]:
     """Yield only the records that can carry one of the wanted keys, keeping the native line index.
 
     The substring test filters raw text and never changes provenance: ``line_index`` stays the
     real line number in the file, so every returned linkage can be pointed back to its position.
-    Lines dropped on the way are counted rather than silently lost.
+    Lines dropped on the way are counted rather than silently lost, and a caller that needs to
+    know whether a dropped line could have carried an anchor gets its position in ``undecidable``.
     """
     needles = tuple(f'"{token}"' for token in tokens)
     with path.open("r", encoding="utf-8", errors="replace") as handle:
@@ -297,8 +391,10 @@ def _stream_lines(path, tokens: tuple[str, ...],
             if len(raw) > MAX_RECORD_BYTES:
                 if stats is not None:
                     stats["oversize_lines_skipped"] += 1
+                if undecidable is not None:
+                    undecidable.append({"line_index": index, "reason": "oversize", "bytes": len(raw)})
                 continue
-            if not any(item in raw for item in needles):
+            if needles and not any(item in raw for item in needles):
                 if stats is not None:
                     stats["prefiltered_lines_skipped"] += 1
                 continue
@@ -307,11 +403,16 @@ def _stream_lines(path, tokens: tuple[str, ...],
             except json.JSONDecodeError:
                 if stats is not None:
                     stats["unparseable_lines_skipped"] += 1
+                if undecidable is not None:
+                    undecidable.append({"line_index": index, "reason": "unparseable", "bytes": len(raw)})
                 continue
             if isinstance(record, dict):
                 yield index, record
             elif stats is not None:
                 stats["non_object_lines_skipped"] += 1
+                if undecidable is not None:
+                    undecidable.append({"line_index": index, "reason": "non_object",
+                                        "json_type": type(record).__name__})
 
 
 def _new_line_stats() -> dict[str, int]:
@@ -321,6 +422,27 @@ def _new_line_stats() -> dict[str, int]:
 
 def _number(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+# The records name a unit only inside the field name, so the reader reports what the suffix says and
+# says unknown when the name carries no unit at all.
+_UNIT_BY_SUFFIX = (("_rad_s", "rad_per_second"), ("_rad", "radian"), ("_nm", "newton_metre"), ("_ms", "millisecond"),
+                   ("_m", "metre"), ("_s", "second"))
+TIME_UNITS = {"second", "millisecond", "iso8601_utc"}
+
+
+def _unit_of(field: str) -> str:
+    if field.endswith("wall_utc"):
+        return "iso8601_utc"
+    for suffix, unit in _UNIT_BY_SUFFIX:
+        if field.endswith(suffix):
+            return unit
+    return "unknown_from_field_name"
+
+
+def _is_time_named(field: str) -> bool:
+    # A velocity named *_rad_s ends in "s" without being an instant, so the derived unit decides.
+    return _unit_of(field) in TIME_UNITS or "time" in field
 
 
 def _delta(capture: Any, other: Any, meta: dict[str, str], *, line_index: int | None = None) -> dict[str, Any] | None:
@@ -372,7 +494,8 @@ class FrameLinkReader:
     def frames(self, episode_id: str, *, run_id: str | None = None, stream: str = "rgbd",
                limit: int = DEFAULT_PAGE, offset: int = 0, time_base: str | None = None,
                time_from: float | None = None, time_to: float | None = None,
-               sample_id: str | None = None, include_time_quality: bool = False) -> dict[str, Any]:
+               sample_id: str | None = None, include_time_quality: bool = False,
+               include_action_basis: bool = False) -> dict[str, Any]:
         location = self.archive.location(episode_id, run_id)
         anchor_path = location.path_of("observations-persist")
         if not anchor_path.is_file():
@@ -474,6 +597,8 @@ class FrameLinkReader:
                                   "returned": len(frames),
                                   "note": "the census covers the anchors this Episode exposes in file order, not only "
                                           "the rows of this page"})} if include_time_quality else {}),
+            # The action basis reads the events stream in full, so it is opt-in for the same reason.
+            **({"action_basis": self._action_basis(location, anchors)} if include_action_basis else {}),
             "frames": frames,
             "not_proven": NOT_PROVEN,
             "three_d_replay": {"this_slice_does_not_enable_3d_replay": True,
@@ -551,8 +676,9 @@ class FrameLinkReader:
         rejected = {"excluded_identity_mismatch": 0, "excluded_stream_mismatch": 0,
                     "excluded_without_sample_id": 0}
         lines = _new_line_stats()
+        undecidable: list[dict[str, Any]] = []
         truncated_at: int | None = None
-        for line_index, record in _stream_lines(path, (stream,), lines):
+        for line_index, record in _stream_lines(path, (stream,), lines, undecidable):
             if record.get("run_id") != location.run_id or record.get("episode_id") != location.episode_id:
                 rejected["excluded_identity_mismatch"] += 1
                 continue
@@ -567,6 +693,13 @@ class FrameLinkReader:
                 truncated_at = line_index
                 break
 
+        # Reached EOF and "every line is decided" are different facts: a dropped oversize or
+        # unparseable line is reached-past but not known, and it could have carried an anchor.
+        reached_eof = truncated_at is None
+        undecidable_total = len(undecidable)
+        coverage_blocking = ([] if reached_eof else ["scan_stopped_at_anchor_limit_before_eof"]) + (
+            [f"{undecidable_total}_lines_are_undecidable_and_could_hide_anchors"] if undecidable_total else [])
+
         occurrences: dict[str, list[int]] = {}
         for line_index, record in samples:
             occurrences.setdefault(record["sample_id"], []).append(line_index)
@@ -575,29 +708,32 @@ class FrameLinkReader:
                              for key, indexes in occurrences.items() if len(indexes) > 1),
                             key=lambda item: (-item["occurrences"], item["line_indexes"][0]))
         sequences = {field: _base_statistics(samples, field) for field in sorted(FRAME_TIME_BASES)}
-        whole_file = truncated_at is None
+        every_line_is_decided = reached_eof and undecidable_total == 0
+        covers_whole_episode = every_line_is_decided
 
         sequences_out: dict[str, Any] = {}
         eligible_bases: dict[str, Any] = {}
         for field, stats in sequences.items():
-            blocking = []
+            timing_blocking = []
             if not samples:
-                blocking.append("no_readable_anchors_in_this_scan")
+                timing_blocking.append("no_readable_anchors_in_this_scan")
             if stats["missing_count"]:
-                blocking.append(f"time_base_absent_on_{stats['missing_count']}_anchors")
+                timing_blocking.append(f"time_base_absent_on_{stats['missing_count']}_anchors")
             if stats["non_numeric_count"]:
-                blocking.append(f"time_base_non_numeric_on_{stats['non_numeric_count']}_anchors")
+                timing_blocking.append(f"time_base_non_numeric_on_{stats['non_numeric_count']}_anchors")
             if stats["backwards_gaps"]["count"]:
-                blocking.append(f"clock_steps_backwards_{stats['backwards_gaps']['count']}_times_in_file_order")
-            scoped_blocking = list(blocking)
-            if not whole_file:
-                blocking.append("scan_truncated_at_anchor_limit")
+                timing_blocking.append(f"clock_steps_backwards_{stats['backwards_gaps']['count']}_times_in_file_order")
+            timing_ok = bool(samples) and not timing_blocking
             median_gap = stats["recorded_gaps"]["median_s"]
             sequences_out[field] = {**stats, "description": FRAME_TIME_BASES[field]}
             eligible_bases[field] = {
-                "eligible_for_whole_episode": whole_file and not blocking,
-                "eligible_within_this_scan": not scoped_blocking and bool(samples),
-                "blocking_reasons": blocking,
+                "reached_end_of_file": reached_eof,
+                "every_line_of_the_anchor_file_is_decided": every_line_is_decided,
+                "readable_anchor_timing_satisfies_schedule": timing_ok,
+                "eligible_for_whole_episode": timing_ok and not coverage_blocking,
+                "eligible_within_this_scan": timing_ok,
+                "blocking_reasons": coverage_blocking + timing_blocking,
+                "blocking_reason_scope": {"coverage": coverage_blocking, "timing": timing_blocking},
                 "zero_interval_ties_present": stats["equal_adjacent_gaps"]["count"] > 0,
                 "implied_rate_hz_from_median_recorded_gap": (1.0 / median_gap) if median_gap else None,
                 "implied_rate_note": "derived from the recorded values of this scan; it is not a rate the "
@@ -617,12 +753,32 @@ class FrameLinkReader:
                          "rejected_anchors": rejected, "anchor_lines": lines,
                          "first_anchor_line_index": samples[0][0] if samples else None,
                          "last_anchor_line_index": samples[-1][0] if samples else None,
-                         "whole_anchor_file_scanned": whole_file, "anchor_limit": TIME_QUALITY_ANCHOR_LIMIT,
+                         "reached_end_of_file": reached_eof,
+                         "whole_anchor_file_scanned": reached_eof, "anchor_limit": TIME_QUALITY_ANCHOR_LIMIT,
                          "stopped_at_line_index": truncated_at,
-                         "covers_whole_episode": whole_file,
+                         "line_accounting": {
+                             "benign_lines": {key: lines[key] for key in LINE_ACCOUNTING
+                                              if LINE_ACCOUNTING[key]["classification"] == "benign"},
+                             "undecidable_lines": {key: lines[key] for key in LINE_ACCOUNTING
+                                                   if LINE_ACCOUNTING[key]["classification"] == "undecidable"},
+                             "undecidable_total": undecidable_total,
+                             "undecidable_positions": [
+                                 {**item, "record_position": f"{_relative('observations-persist')}#{item['line_index']}"}
+                                 for item in undecidable[:TIME_QUALITY_UNDECIDABLE_LIST_LIMIT]],
+                             "undecidable_positions_truncated": undecidable_total > TIME_QUALITY_UNDECIDABLE_LIST_LIMIT,
+                             "parsed_records_rejected_by_rule": sum(rejected.values()),
+                             "every_line_of_the_anchor_file_is_decided": every_line_is_decided,
+                             "rules": LINE_ACCOUNTING,
+                             "note": "a blank line and a line that cannot carry the requested stream token are "
+                                     "decided, not corruption; a line the reader could not parse is undecided and "
+                                     "could have carried an anchor, so it blocks a whole-episode claim"},
+                         "covers_whole_episode": covers_whole_episode,
                          "not_a_whole_archive_sweep": True,
-                         "scope_note": "this census re-reads one Episode's anchor file; a truncated scan or a "
-                                       "windowed page supports no whole-episode or whole-archive claim",
+                         "scope_note": "the census scans this Episode's anchor file itself; a time window or page "
+                                       "filter narrows the frame page, not the census, so whole-episode support "
+                                       "depends only on this scan reaching EOF with every line decided — a scan "
+                                       "that stopped at the anchor limit or met undecidable content supports no "
+                                       "whole-episode or whole-archive claim",
                          "page_filter_context": page_context},
             "time_bases": sequences_out,
             "identity": {"duplicate_sample_id_groups": len(duplicates),
@@ -646,11 +802,16 @@ class FrameLinkReader:
                     "basis": "the anchor file is read in the recorder's own append order and a full page stops at "
                              "the first further qualifying anchor",
                     "does_not_require": ["a numeric capture time base", "clock sameness", "unique sample ids"],
+                    "displayed_sequence_may_have_gaps": not every_line_is_decided,
+                    "gap_note": "A stays available: undecidable lines are reported with their positions so the "
+                                "reader can show what it could not decide, but they are not silently presented as "
+                                "a complete frame sequence",
                     "anchor_position_never_reordered_by_time": True},
                 "recorded_interval_schedule": {
                     "mode": "B", "eligible_by_base": eligible_bases,
                     "any_base_eligible_for_whole_episode": any(item["eligible_for_whole_episode"]
                                                                for item in eligible_bases.values()),
+                    "coverage_is_a_separate_question_from_timing": True,
                     "rules_when_unqualified": {
                         "missing_or_non_numeric_time": "the base is refused for scheduling; the frame stays visible "
                                                        "in append order and no value is filled from another record",
@@ -658,7 +819,10 @@ class FrameLinkReader:
                                                  "not computed by dividing by zero",
                         "backwards_step": "the base is refused for scheduling over that range, because one continuous "
                                           "clock across the step is not established by the record",
-                        "clock_unknown": "a base that only names a clock is not evidence of a shared clock source"},
+                        "clock_unknown": "a base that only names a clock is not evidence of a shared clock source",
+                        "undecidable_or_truncated_scan": "no whole-episode schedule is claimed: undecided content "
+                                                         "could hide an anchor, so the clean timing of the readable "
+                                                         "anchors cannot prove the rest of the Episode"},
                     "never_assumed": {"default_rate_hz_applied": False, "browser_arrival_time_used": False,
                                       "clock_stitched_across_reset": False,
                                       "why": "no record establishes a nominal rate, a host clock relationship across "
@@ -670,7 +834,178 @@ class FrameLinkReader:
                     "not_derivable_from": ["A", "B"],
                     "same_page_evidence": {"same_clock_verified": False, "synchronized_across_streams": False}}},
             "not_proven": ["a declared sampling rate", "clock sameness across streams", "a sampled-instant match",
-                           "coverage beyond the anchors scanned here", "RESET or segment boundaries on anchors"],
+                           "coverage beyond the anchors scanned here", "RESET or segment boundaries on anchors",
+                           "that undecided anchor-file lines carry no frame record, when such lines exist"],
+        }
+
+    # ---- action and event basis ---------------------------------------------------
+
+    def _action_basis(self, location: EpisodeLocation, anchors: list[tuple[int, dict[str, Any]]]) -> dict[str, Any]:
+        """One bounded pass over the events stream that says what a replay can be built from.
+
+        The pass is unfiltered because a vocabulary answer must not miss a type that happens to
+        carry none of this page's keys. Nothing here invents an action, promotes an approval into
+        an execution result, or attaches a record to a frame it does not name.
+        """
+        path = location.path_of("events")
+        relative = _relative("events")
+        ticks = {record.get("capture_control_tick_id") for _, record in anchors
+                 if isinstance(record.get("capture_control_tick_id"), str)}
+        vocabulary: dict[str, Any] = {}
+        by_tick: dict[str, dict[str, list[str]]] = {}
+        tick_candidates_truncated = False
+        commands: dict[str, Any] = {}
+        scanned = 0
+        untyped = 0
+        truncated_at: int | None = None
+
+        if path.is_file():
+            for line_index, record in _stream_lines(path, ()):
+                scanned += 1
+                event_type = record.get("event_type")
+                if not isinstance(event_type, str):
+                    untyped += 1
+                    continue
+                entry = vocabulary.setdefault(
+                    event_type, {"count": 0, "first_line_index": line_index, "last_line_index": line_index,
+                                 "positions": [], "join_keys": {}, "time_fields": {}, "operator_fields": set()})
+                entry["count"] += 1
+                entry["last_line_index"] = line_index
+                if len(entry["positions"]) < ACTION_BASIS_POSITION_LIMIT:
+                    entry["positions"].append(f"{relative}#{line_index}")
+                payload = record.get("payload") if isinstance(record.get("payload"), dict) else {}
+                for key in ACTION_JOIN_KEYS:
+                    if key in record or key in payload:
+                        slot = entry["join_keys"].setdefault(key, {"envelope": {"present": 0, "null": 0},
+                                                                   "payload": {"present": 0, "null": 0}})
+                        for side, holder in (("envelope", record), ("payload", payload)):
+                            if key in holder:
+                                slot[side]["present" if holder[key] is not None else "null"] += 1
+                for field, value in record.items():
+                    if _is_time_named(field):
+                        stamp = entry["time_fields"].setdefault(
+                            field, {"unit": _unit_of(field), "numeric": 0, "null": 0, "other": 0})
+                        stamp["numeric" if _number(value) else ("null" if value is None else "other")] += 1
+                for field, value in payload.items():
+                    if _is_time_named(field):
+                        stamp = entry["time_fields"].setdefault(
+                            f"payload.{field}", {"unit": _unit_of(field), "numeric": 0, "null": 0, "other": 0})
+                        stamp["numeric" if _number(value) else ("null" if value is None else "other")] += 1
+                entry["operator_fields"].update({f"payload.{field}" for field in OPERATOR_FIELDS if field in payload}
+                                                | {field for field in OPERATOR_FIELDS if field in record})
+                # The recorder names its operator one level deeper, inside request and command objects.
+                for container, values in payload.items():
+                    if isinstance(values, dict):
+                        entry["operator_fields"].update(f"payload.{container}.{field}" for field in OPERATOR_FIELDS
+                                                       if field in values)
+                tick = record.get("control_tick_id")
+                if (isinstance(tick, str) and tick in ticks
+                        and event_type in (TARGET_EVENT_TYPE, DISPATCH_EVENT_TYPE, *STATE_EVENT_TYPES)):
+                    found = by_tick.setdefault(tick, {}).setdefault(event_type, [])
+                    if len(found) < ACTION_BASIS_CANDIDATE_LIMIT:
+                        found.append(f"{relative}#{line_index}")
+                    else:
+                        tick_candidates_truncated = True
+                if event_type in COMMAND_CHAIN_EVENT_TYPES:
+                    command_id = record.get("command_id")
+                    handle = commands.setdefault(
+                        command_id if isinstance(command_id, str) else "<command_id_absent_or_null>",
+                        {"command_id": command_id, "stages": {}, "positions": {}, "control_tick_id_present": 0})
+                    stage = handle["stages"].setdefault(event_type, 0)
+                    handle["stages"][event_type] = stage + 1
+                    if len(handle["positions"].setdefault(event_type, [])) < ACTION_BASIS_POSITION_LIMIT:
+                        handle["positions"][event_type].append(f"{relative}#{line_index}")
+                    if isinstance(record.get("control_tick_id"), str):
+                        handle["control_tick_id_present"] += 1
+                if scanned >= ACTION_BASIS_EVENT_LIMIT:
+                    truncated_at = line_index
+                    break
+
+        categories: dict[str, Any] = {}
+        for name, (types, meaning) in ACTION_CATEGORIES.items():
+            present = {event_type: vocabulary[event_type]["count"] for event_type in types if event_type in vocabulary}
+            categories[name] = {
+                "event_types_recorded": sorted(present),
+                "counts": present,
+                "status": "observed" if present else "not_recorded_in_this_scan",
+                "meaning": meaning,
+                "absent_event_types": sorted(set(types) - set(present))}
+        for name, entry in categories.items():
+            if not entry["event_types_recorded"]:
+                entry["status_note"] = ("the scan found no record of this category; that is a fact about this "
+                                        "Episode's events stream, not a claim that the recorder can never write one")
+
+        by_frame = []
+        distribution: dict[str, dict[str, int]] = {event_type: {} for event_type in
+                                                  (TARGET_EVENT_TYPE, DISPATCH_EVENT_TYPE, *STATE_EVENT_TYPES)}
+        for _, record in anchors:
+            tick = record.get("capture_control_tick_id")
+            roles = {}
+            for event_type in (TARGET_EVENT_TYPE, DISPATCH_EVENT_TYPE, *STATE_EVENT_TYPES):
+                if not isinstance(tick, str):
+                    roles[event_type] = {"status": "missing", "reason": "the frame anchor carries no capture_control_tick_id"}
+                    continue
+                found = by_tick.get(tick, {}).get(event_type, [])
+                bucket = distribution[event_type]
+                bucket[str(len(found))] = bucket.get(str(len(found)), 0) + 1
+                roles[event_type] = ({"status": "missing", "reason": "no record of this type names this capture tick",
+                                      "looked_for": {"control_tick_id": tick}} if not found else
+                                     {"status": "matched", "candidate_count": len(found), "record_positions": found}
+                                    if len(found) == 1 else
+                                     {"status": "ambiguous_candidates", "candidate_count": len(found),
+                                      "record_positions": found,
+                                      "note": "more than one record names this tick, so no single one is chosen"})
+            by_frame.append({"sample_id": record.get("sample_id"), "capture_control_tick_id": tick, "by_event_type": roles})
+
+        return {
+            "requested": True,
+            "scope": {"stream_id": "events", "relative_path": relative, "records_scanned": scanned,
+                      "reached_end_of_file": truncated_at is None, "stopped_at_line_index": truncated_at,
+                      "record_limit": ACTION_BASIS_EVENT_LIMIT, "events_stream_present": path.is_file(),
+                      "records_without_an_event_type": untyped,
+                      "scope_note": "the vocabulary covers every record the scan read in this Episode's events "
+                                    "stream; a scan that stopped at the record limit describes only what it read",
+                      "page_ticks_considered": len(ticks), "anchors_on_this_page": len(anchors)},
+            "categories": categories,
+            "vocabulary": {name: {"count": entry["count"], "first_line_index": entry["first_line_index"],
+                                  "last_line_index": entry["last_line_index"], "record_positions": entry["positions"],
+                                  "join_keys": entry["join_keys"], "time_fields": entry["time_fields"]}
+                           for name, entry in sorted(vocabulary.items(), key=lambda item: -item[1]["count"])},
+            "frame_association": {
+                "key": "control_tick_id equals the frame anchor's own capture_control_tick_id",
+                "by_event_type": {event_type: {"candidate_count_per_frame_on_this_page": bucket,
+                                               "frames_with_this_verdict": sum(bucket.values())}
+                                  for event_type, bucket in distribution.items()},
+                "candidate_positions_per_frame": by_frame,
+                "candidate_list_limit": ACTION_BASIS_CANDIDATE_LIMIT,
+                "candidate_lists_truncated": tick_candidates_truncated,
+                "rules": ACTION_BASIS_RULES},
+            "command_chain": {
+                "grouped_by": "command_id",
+                "commands": list(commands.values())[:ACTION_BASIS_COMMAND_LIMIT],
+                "commands_truncated": len(commands) > ACTION_BASIS_COMMAND_LIMIT,
+                "note": "a request, its approval and its dispatch are separate records joined by command_id; the "
+                        "chain proves no execution result, and a rejected request never becomes an executed action"},
+            "control_source": {
+                "status": "recorded_only_inside_payload_fields",
+                "fields_observed": {name: sorted(entry["operator_fields"]) for name, entry in sorted(vocabulary.items())
+                                   if entry["operator_fields"]},
+                "takeover_event_type_recorded": any(name in vocabulary for name in ("takeover", "control_source_change")),
+                "lease_evidence": {name: vocabulary[name]["count"] for name in ("lease_heartbeat", "lease_expired")
+                                   if name in vocabulary},
+                "note": "the recorder names an operator inside some payloads and a lease beside its own session id; "
+                        "it records no control-source switch or takeover event in this scan, and the reader never "
+                        "defaults a source to Human"},
+            "independent_tracks": sorted(name for name, entry in categories.items()
+                                        if entry["status"] == "observed"
+                                        and name not in ("actual_state_feedback", "recorded_target",
+                                                          "command_dispatched", "capture_timing")),
+            "independent_track_reason": "these categories share no key with a frame anchor in this scan, so they are "
+                                        "read as their own track by event_seq or a named time base, never attached to "
+                                        "the nearest frame or the previous record",
+            "not_proven": ["that any command below was physically executed", "a control-source switch or takeover",
+                           "that an absent category is impossible for the recorder", "any cross-stream simultaneity",
+                           "that a scanned event and a frame share one clock instant"],
         }
 
     # ---- join collection ----------------------------------------------------------
@@ -1025,7 +1360,7 @@ class FrameLinkReader:
     @staticmethod
     def _coverage(frames: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
         out: dict[str, dict[str, int]] = {}
-        for role in ROLE_SEMANTICS:
+        for role in PAGE_ROLES:
             counts: dict[str, int] = {}
             for frame in frames:
                 entry = next(item for item in frame["roles"] if item["role"] == role)
