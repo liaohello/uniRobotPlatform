@@ -1,0 +1,31 @@
+{
+  "release": "m1i-20261030T035643Z-platform",
+  "listen": "127.0.0.1:18985",
+  "pid": 1659550,
+  "process_start_time": "Fri Oct 30 11:56:42 2026",
+  "registered_at": "2026-10-30T03:56:44Z",
+  "isolated_database": "/home/liaozhengyan/Desktop/uniRobotPlatform/var/reports/m1i-20261030T035643Z-platform/frames-20261030T035643Z.sqlite3",
+  "owner_user": "liaozhengyan",
+  "argv": [
+  "/home/liaozhengyan/Desktop/uniRobotPlatform/envs/gateway-py314/bin/python",
+  "tools/launch_unified_gateway.py",
+  "--port",
+  "18985",
+  "--native-url",
+  "http://127.0.0.1:8792",
+  "--geometry-bundle",
+  "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1-geometry-20261023T192202Z-cdfc7472e5de/geometry",
+  "--map-catalog",
+  "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1i-20261030T035643Z-platform/backend/config/maps.catalog.json",
+  "--maps-root",
+  "/home/liaozhengyan/Desktop/mobileCar/var/maps",
+  "--history-source",
+  "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1i-20261030T035643Z-platform/backend/config/mobilecar-history-source.json",
+  "--draft-db",
+  "/home/liaozhengyan/Desktop/uniRobotPlatform/var/reports/m1i-20261030T035643Z-platform/frames-20261030T035643Z.sqlite3",
+  "--out-manifest",
+  "/home/liaozhengyan/Desktop/uniRobotPlatform/var/reports/m1i-20261030T035643Z-platform/history-startup.json"
+],
+  "readiness_probe": "GET /api/v1/episodes?limit=1 == 200 (this service registers no /health route)",
+  "ownership_note": "started by the platform backend agent for the M1.5i rejection-domain and clock-parity closure slice; 18977 (M1.5f), 18979 (M1.5g) and 18983 (M1.5h) were not replaced, and no other service was signalled, stopped or reused"
+}

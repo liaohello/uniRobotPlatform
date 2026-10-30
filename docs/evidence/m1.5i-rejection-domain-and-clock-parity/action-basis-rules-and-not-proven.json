@@ -1,0 +1,29 @@
+{
+ "rules": {
+  "association": "exact equality of the recorded key; a frame's capture tick matched against the record's control_tick_id",
+  "no_shared_key": "the category is reported as an independent event track, readable by event_seq and named time bases only",
+  "when_several_match": "ambiguous_candidates with every candidate position listed; the first line in the file is not chosen",
+  "when_nothing_matches": "missing, with the key that was looked for — no carry-over from the previous tick, no nearest-in-time",
+  "rejected_requests": "a rejected or unapproved request is never presented as an executed action",
+  "recorded_target": "an actuator reference is a recorded Target and is never reported as measured Actual state",
+  "operator_source": "the source is whatever the record's own operator fields name; it is never defaulted to Human",
+  "zero_action": "no action vector is invented for a tick that records none",
+  "clock_parity": "numerically close or even equal stamps never upgrade a link: `synchronized_across_streams` and `same_clock_verified` stay false, and an event whose time equals a frame's capture time but which names no shared key stays an independent track",
+  "units": "taken from the recorder's own field-name suffix; a field without a unit-bearing suffix is reported as unknown_from_field_name"
+ },
+ "not_proven": [
+  "that any command below was physically executed",
+  "a control-source switch or takeover",
+  "that an absent category is impossible for the recorder",
+  "any cross-stream simultaneity",
+  "that a scanned event and a frame share one clock instant"
+ ],
+ "independent_tracks": [
+  "command_intent",
+  "command_receipt_accepted",
+  "episode_lifecycle",
+  "lease_boundary",
+  "recorded_state_initial"
+ ],
+ "independent_track_reason": "these categories share no key with a frame anchor in this scan, so they are read as their own track by event_seq or a named time base, never attached to the nearest frame or the previous record"
+}

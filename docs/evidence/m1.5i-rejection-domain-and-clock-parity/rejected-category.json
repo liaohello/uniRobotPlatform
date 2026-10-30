@@ -1,0 +1,64 @@
+{
+ "category": {
+  "event_types_recorded": [],
+  "counts": {},
+  "status": "not_recorded_in_this_scan",
+  "meaning": "a recorded rejection; its absence is not evidence that nothing was rejected",
+  "absent_event_types": [
+   "rejected"
+  ],
+  "status_note": "the scan found no record of this category; that is a fact about this Episode's events stream, not a claim that the recorder can never write one"
+ },
+ "accepted": {
+  "event_types_recorded": [
+   "approved"
+  ],
+  "counts": {
+   "approved": 20
+  },
+  "status": "observed",
+  "meaning": "a recorded approval decision beside the request",
+  "absent_event_types": []
+ },
+ "dispatch": {
+  "event_types_recorded": [
+   "dispatch"
+  ],
+  "counts": {
+   "dispatch": 20
+  },
+  "status": "observed",
+  "meaning": "a command the recorder marked as dispatched",
+  "absent_event_types": []
+ },
+ "command_chain_note": "a request, its approval and its dispatch are separate records joined by command_id; the chain proves no execution result, and a rejected request never becomes an executed action",
+ "chain_sizes": [
+  {
+   "command_id": "g2a_command_28973641a08045e8859bce12b77fd986",
+   "stages": {
+    "requested": 1,
+    "approved": 1,
+    "dispatch": 1
+   },
+   "control_tick_id_present": 1
+  },
+  {
+   "command_id": "g2a_command_d7ca692ed5cf40bfa50d5012a5de4d89",
+   "stages": {
+    "requested": 1,
+    "approved": 1,
+    "dispatch": 1
+   },
+   "control_tick_id_present": 1
+  },
+  {
+   "command_id": "g2a_command_b37279afbb8f477ab0e6068434135a2a",
+   "stages": {
+    "requested": 1,
+    "approved": 1,
+    "dispatch": 1
+   },
+   "control_tick_id_present": 1
+  }
+ ]
+}

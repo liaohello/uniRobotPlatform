@@ -1,0 +1,224 @@
+{
+ "schema_version": "unirobot-mobilecar-episode-read-1",
+ "read_only": true,
+ "source": {
+  "source_id": "mobilecar-server-history-20261017",
+  "adapter_id": "mobilecar",
+  "robot_id": "landerpi",
+  "native_release_id": "drvfix-20261019T044549Z-0a80415b2577",
+  "native_contract_version": "mobilecar-1.0",
+  "recording_root": "/home/liaozhengyan/Desktop/mobileCar/var/runs",
+  "recording_root_resolved": "/home/liaozhengyan/Desktop/mobileCar/var/runs",
+  "path_boundary": "every derived path is re-resolved and must stay inside the declared root and, for episode contents, inside that episode's resolved directory",
+  "access": "read_only_files",
+  "declaring_instance": {
+   "base_url": "http://127.0.0.1:8792",
+   "config_file": "configs/g4a2_server.yaml",
+   "recording_root_in_config": "../../var/runs",
+   "access": "GET_only"
+  },
+  "archive_baseline": {
+   "scope": "sha256 of every episode.json and episode_complete.json in the archive, folded into one aggregate digest",
+   "files_hashed": 696,
+   "aggregate_sha256": "60c0c6963bc9ae8442bc3d9c9e5f0c33c19973cee966994365313b57ae9d6664",
+   "meaning": "a change-detection reference captured before the platform read path went live; it is not a claim that the archive contents are training-qualified or independently verified"
+  },
+  "platform_writes": false
+ },
+ "retrieved_at": "2026-10-30T03:58:32.173955Z",
+ "identity": {
+  "run_id": "run_0104613ff7364ae78cf2f3946bd45f7b",
+  "episode_id": "episode_27bfed5427684795b361cd2ec21e9aa7",
+  "native_contract_version": "mobilecar-1.0"
+ },
+ "stream": {
+  "stream_id": "events",
+  "relative_path": "events.jsonl",
+  "format": "jsonl",
+  "semantics": "native event append order: lifecycle, feedback_initial, actuator_reference, command intent and feedback events",
+  "file_bytes": 12472413
+ },
+ "paging": {
+  "limit": 5,
+  "offset": 0,
+  "returned": 3,
+  "scanned_lines": 12561,
+  "skipped_before_offset": 0,
+  "next_offset": 334,
+  "has_more": true
+ },
+ "cursor": {
+  "order": "native_append_order",
+  "first_line_index": 331,
+  "last_line_index": 333,
+  "first_event_seq": 332,
+  "last_event_seq": 334,
+  "line_index_is_not_a_clock": true
+ },
+ "time": {
+  "selected_time_base": null,
+  "time_from": null,
+  "time_to": null,
+  "units": "seconds for *_s, milliseconds for *_ms; wall_utc is ISO-8601 Z",
+  "records_without_the_selected_base": 0,
+  "numeric_time_bases": [
+   "arrival_time_s",
+   "backend_monotonic_s",
+   "measurement_time_s",
+   "sim_time_s"
+  ],
+  "synchronized_across_streams": false
+ },
+ "filtering": {
+  "event_seq_range": {
+   "from": 332,
+   "to": 334,
+   "active": true,
+   "excluded_without_valid_event_seq": 0,
+   "anomalies": []
+  },
+  "note": "when a range is active, records whose event_seq is missing, non-integer or boolean are excluded and counted; no sequence number is invented, and line_index is never used as a substitute"
+ },
+ "records": [
+  {
+   "line_index": 331,
+   "record": {
+    "contract_version": "mobilecar-1.0",
+    "run_id": "run_0104613ff7364ae78cf2f3946bd45f7b",
+    "episode_id": "episode_27bfed5427684795b361cd2ec21e9aa7",
+    "event_seq": 332,
+    "event_type": "requested",
+    "wall_utc": "2026-10-17T16:10:31.318722Z",
+    "backend_monotonic_s": 426495.833835117,
+    "sim_time_s": null,
+    "command_id": "g2a_command_28973641a08045e8859bce12b77fd986",
+    "control_tick_id": null,
+    "plan_id": null,
+    "task_phase": null,
+    "payload": {
+     "request": {
+      "contract_version": "mobilecar-1.0",
+      "run_id": "run_0104613ff7364ae78cf2f3946bd45f7b",
+      "backend_generation": 1,
+      "episode_id": "episode_27bfed5427684795b361cd2ec21e9aa7",
+      "session_id": "session_7aa6f5cce8d2486da2c0755b4982a80e",
+      "operator_id": "g2a_motion_arm",
+      "operator_kind": "agent_ui",
+      "view_source": "third_person_3d",
+      "command_id": "g2a_command_28973641a08045e8859bce12b77fd986",
+      "command_seq": 1,
+      "command_type": "set_base_twist",
+      "requested_ttl_s": 0.5,
+      "payload": {
+       "frame_id": "base_link",
+       "vx_m_s": 0.018,
+       "vy_m_s": 0.0,
+       "wz_rad_s": 0.04
+      }
+     }
+    }
+   }
+  },
+  {
+   "line_index": 332,
+   "record": {
+    "contract_version": "mobilecar-1.0",
+    "run_id": "run_0104613ff7364ae78cf2f3946bd45f7b",
+    "episode_id": "episode_27bfed5427684795b361cd2ec21e9aa7",
+    "event_seq": 333,
+    "event_type": "approved",
+    "wall_utc": "2026-10-17T16:10:31.319845Z",
+    "backend_monotonic_s": 426495.834946039,
+    "sim_time_s": 1.6199999999999324,
+    "command_id": "g2a_command_28973641a08045e8859bce12b77fd986",
+    "control_tick_id": null,
+    "plan_id": null,
+    "task_phase": null,
+    "payload": {
+     "decision": {
+      "approved": true,
+      "safety_revision": "g1-safety-1",
+      "reason": "approved",
+      "clipped": {},
+      "effective_payload": {
+       "frame_id": "base_link",
+       "vx_m_s": 0.018,
+       "vy_m_s": 0.0,
+       "wz_rad_s": 0.04
+      },
+      "allowed_contacts": [
+       "wheel-ground",
+       "finger-target-during-grasp"
+      ]
+     },
+     "payload": {
+      "frame_id": "base_link",
+      "vx_m_s": 0.018,
+      "vy_m_s": 0.0,
+      "wz_rad_s": 0.04
+     },
+     "command": {
+      "command_id": "g2a_command_28973641a08045e8859bce12b77fd986",
+      "command_seq": 1,
+      "session_id": "session_7aa6f5cce8d2486da2c0755b4982a80e",
+      "operator_id": "g2a_motion_arm",
+      "operator_kind": "agent_ui",
+      "episode_id": "episode_27bfed5427684795b361cd2ec21e9aa7",
+      "backend_generation": 1,
+      "requested_ttl_s": 0.5
+     }
+    }
+   }
+  },
+  {
+   "line_index": 333,
+   "record": {
+    "contract_version": "mobilecar-1.0",
+    "run_id": "run_0104613ff7364ae78cf2f3946bd45f7b",
+    "episode_id": "episode_27bfed5427684795b361cd2ec21e9aa7",
+    "event_seq": 334,
+    "event_type": "dispatch",
+    "wall_utc": "2026-10-17T16:10:31.320108Z",
+    "backend_monotonic_s": 426495.835208459,
+    "sim_time_s": 1.6199999999999324,
+    "command_id": "g2a_command_28973641a08045e8859bce12b77fd986",
+    "control_tick_id": "tick_000006699",
+    "plan_id": null,
+    "task_phase": null,
+    "payload": {
+     "kind": "base_twist",
+     "requested": [
+      0.018,
+      0.0,
+      0.04
+     ],
+     "command": {
+      "command_id": "g2a_command_28973641a08045e8859bce12b77fd986",
+      "command_seq": 1,
+      "session_id": "session_7aa6f5cce8d2486da2c0755b4982a80e",
+      "operator_id": "g2a_motion_arm",
+      "operator_kind": "agent_ui",
+      "episode_id": "episode_27bfed5427684795b361cd2ec21e9aa7",
+      "backend_generation": 1,
+      "requested_ttl_s": 0.5
+     }
+    }
+   }
+  }
+ ],
+ "integrity": {
+  "corrupt_lines": [],
+  "lines_over_read_size_limit": [],
+  "declared_status": {
+   "recording_status": "COMPLETE",
+   "audit_status": "COMPLETE",
+   "termination_reason": "G2A_MOTION_ARM_COMPLETE",
+   "declaration_only": true
+  },
+  "scope": "records returned by this page only",
+  "not_verified": [
+   "records outside this page",
+   "asset payloads referenced by these records"
+  ]
+ }
+}

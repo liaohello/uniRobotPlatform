@@ -18,6 +18,14 @@
 - 服务器验证：候选 `m1h-20261030T002258Z-platform`（`127.0.0.1:18983`，PID 3745241，启动前端口实测空闲，独立 SQLite `frames-20261030T002258Z.sqlite3`，源码聚合 `68f481b38843d2bc…` 50 文件与启动清单 MATCH、清单内 `frames.py` 摘要与运行目录全等，启动清单 sha256 `90b5234d6308860d…`）读取检查 **146/146**、统一回归 **28/28**、冻结树聚焦 **69 passed**、全量 **203 passed / 3 项历史布局失败**（`test_catalog.py::test_catalog_loads_real_tasks`、`test_catalog.py::test_every_task_has_existing_evidence`、`test_migrate.py::test_manifest_sources_exist`，按名保留、不称全绿）；75 条请求全为 GET、946 文件 `drift=[]`、`live_scene_reads=0`；18977（M1.5f）与 18979（M1.5g）常驻未替换。真实测量：COMPLETE 普查 303 锚点、`undecidable_total=0`、整集资格仍为真；窗口页 1 帧 + 302 窗外而 census 仍 303 锚点；events 全量 12561 条 12 类（FAILED 224 条 11 类），`feedback.command_id` 全 null、`requested.control_tick_id` 全 null、`dispatch` 两键均 present，逐帧候选 `actuator_reference={"1":200}`、`dispatch={"0":199,"1":1}`；`rejected`、执行完成回执与接管事件类型 `not_recorded`；`episode_terminal` 数值时钟为 null；控制来源只见于 payload 字段。合成对照：同一含不可解析行的档案在 `a10b96b` 源码上报 `covers_whole_episode=true`/`any_base=true`，在修正源码上报 `covers_whole_episode=false` 与逐基 `1_lines_are_undecidable_and_could_hide_anchors`，A 在两版中均合格。交付前先在运行同一棵 dev 树的 scratch 实例（18981）跑通 146/146 再冻结，未产生半途 release；scratch 按命令行身份核对后停止。
 - 机器目录：补充来源 22 → 23 个，文档节点与 REQ 计数不变。三句结论仍分开表达："追加顺序播放可用""记录时间播放是否有资格（须逐基且逐覆盖）""跨流同步仍未证明"；本轮不做前端事件轨／倍速实现，不代表生产部署、正式 M1.5 或 M1 验收通过。
 
+### 2026-10-30 M1.5i 拒绝回执分域与时间接近不提升同步
+
+- 新增来源 S29（本轮 Goal 原文：A 段覆盖边界 + B 段动作/事件最小证据面，并明确"被拒请求不当作已执行 action""不因事件时间接近提升 synchronized/same_clock_verified"）与决策 DEC-066（记录到的拒绝保持回执身份、不进入帧关联、命令链不补出审批/下发；`clock_parity` 规则把"数值接近甚至相等都不建立链接"写进 API；`recorded_target` 规则拒绝把 Target 报告为 Actual；原始事件值不改写）。
+- [Episode/事件/标注契约](../30-contracts/03-episode-events-annotations.md)追加回执分域与 `clock_parity` 条款；A 段覆盖边界的实现与迁移说明保持 M1.5h 原样（`frame-link-2` 不升版），本轮只复验并在新候选上重测。
+- 实现：`backend/src/unirobot/frames.py`（`ACTION_BASIS_RULES` 新增 `clock_parity`、`recorded_target`）；`tests/test_frames.py` 新增夹具开关 `record_rejected_receipt` 与两项用例（真实记录的拒绝、完全相等时间戳且无共享键）；`tools/episode_history_check.py` 断言 146 → **148**（时间接近不提升、拒绝回执分域）。
+- 服务器验证：候选 `m1i-20261030T035643Z-platform`（`127.0.0.1:18985`，PID 1659550，启动前端口实测空闲，独立 SQLite `frames-20261030T035643Z.sqlite3`，源码聚合 `107f897ddfe2485f…` 50 文件与启动清单 MATCH、清单内 `frames.py`=`9ae98b126e42760a…` 与运行目录全等，启动清单 sha256 `7338d2779ecf55fb…`）读取检查 **148/148**、统一回归 **28/28**、冻结树聚焦 **71 passed**、全量 **205 passed / 3 项历史布局失败**（三项按名保留）、77 条请求全为 GET、946 文件 `drift=[]`、`live_scene_reads=0`；18977/18979/18983 常驻未替换。真实实测：命令意图/受理时间戳与第 7 行锚点采集时刻仅差 `0.015817145991604775 s` 却不建立任何关联、同步声明全为 false；`rejected` 在本归档 `not_recorded_in_this_scan`；合成夹具补写的 `rejected` 为 `observed` 且不进帧关联、命令链无 `approved`/`dispatch`。交付前先在运行同一棵 dev 树的 scratch 实例（18981）跑通 148/148 再冻结，未产生半途 release。
+- 机器目录：补充来源 23 → 24 个，文档节点与 REQ 计数不变。三句结论仍是分开的；本轮不打开跨流同步、不实现前端回放，也不代表生产部署或 M1 验收通过。
+
 ## V0.8｜2026-10-29
 
 ### 2026-10-29 M1.5g 采集锚点时间质量与播放资格（记录时间播放的真实依据）

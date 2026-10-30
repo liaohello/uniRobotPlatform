@@ -1362,6 +1362,11 @@
         "path": "90-governance/sources/S28-coverage-boundary-and-action-basis.md",
         "sha256": "1fd1914fb808cc841d51e2c66a6856d1f01f46e7990908df34bb1dd7b2194c28",
         "kind": "current_user_coverage_boundary_and_action_basis_goal"
+    },
+    "S29": {
+        "path": "90-governance/sources/S29-rejection-domain-and-clock-parity.md",
+        "sha256": "65e256a74fa99299a71753cd3e6e871873f6e53acc4bd70b04f98404e51cdc60",
+        "kind": "current_user_rejection_domain_and_clock_parity_goal"
     }
   },
   "page_design_index": "10-frontend/page-designs/README.md",

@@ -1,0 +1,25 @@
+{
+ "command_event_stamps_backend_monotonic_s": [
+  426495.833835117,
+  426495.834946039
+ ],
+ "closest_anchor": {
+  "persist_line_index": 7,
+  "capture_backend_monotonic_s": 426495.818017971,
+  "absolute_difference_s": 0.015817145991604775
+ },
+ "anchors_compared": 200,
+ "association_event_types": [
+  "actuator_reference",
+  "dispatch",
+  "feedback",
+  "feedback_initial"
+ ],
+ "frame_association_key": "control_tick_id equals the frame anchor's own capture_control_tick_id",
+ "time": {
+  "same_clock_verified": false,
+  "synchronized_across_streams": false,
+  "verified_by_reader": false
+ },
+ "clock_parity_rule": "numerically close or even equal stamps never upgrade a link: `synchronized_across_streams` and `same_clock_verified` stay false, and an event whose time equals a frame's capture time but which names no shared key stays an independent track"
+}
