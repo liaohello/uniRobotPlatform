@@ -1558,6 +1558,11 @@
       "path": "90-governance/sources/S27-anchor-time-quality-playback.md",
       "sha256": "cf046fe94a4f4a899b81812ce015a8931a825c5dc5cd0d99206cb66506b463b1",
       "kind": "current_user_anchor_time_quality_playback_goal"
+    },
+    "S28": {
+        "path": "90-governance/sources/S28-coverage-boundary-and-action-basis.md",
+        "sha256": "1fd1914fb808cc841d51e2c66a6856d1f01f46e7990908df34bb1dd7b2194c28",
+        "kind": "current_user_coverage_boundary_and_action_basis_goal"
     }
   },
   "visual_registry": "references/visual-assets.json"

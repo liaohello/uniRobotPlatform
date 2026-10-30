@@ -1,0 +1,104 @@
+{
+ "opt_in_isolation": {
+  "default_page_has_time_quality": false,
+  "default_page_has_action_basis": false,
+  "both_can_be_requested_together": {
+   "time_quality": true,
+   "action_basis": true
+  }
+ },
+ "bytes": {
+  "default_page": 39211,
+  "census_block": 11919,
+  "basis_block": 22803
+ },
+ "window_scope": {
+  "page_frames": 1,
+  "page_excluded_outside_time_window": 302,
+  "census_anchors": 303,
+  "covers_whole_episode": true,
+  "scope_note": "the census scans this Episode's anchor file itself; a time window or page filter narrows the frame page, not the census, so whole-episode support depends only on this scan reaching EOF with every line decided — a scan that stopped at the anchor limit or met undecidable content supports no whole-episode or whole-archive claim"
+ },
+ "real_census": {
+  "anchors": 303,
+  "reached_end_of_file": true,
+  "every_line_decided": true,
+  "undecidable_total": 0,
+  "benign_lines": {
+   "blank_lines_skipped": 0,
+   "prefiltered_lines_skipped": 0
+  },
+  "covers_whole_episode": true,
+  "any_base_whole_episode": true,
+  "append_order_eligible": true,
+  "cross_stream_eligible": false
+ },
+ "action_basis": {
+  "events_scanned_complete": 12561,
+  "reached_eof": true,
+  "types_complete": {
+   "actuator_reference": 6074,
+   "feedback": 6074,
+   "rgbd_capture_timing": 303,
+   "lease_heartbeat": 45,
+   "requested": 20,
+   "approved": 20,
+   "dispatch": 20,
+   "recording_start": 1,
+   "feedback_initial": 1,
+   "lease_expired": 1,
+   "recording_stop": 1,
+   "episode_terminal": 1
+  },
+  "types_failed": {
+   "actuator_reference": 106,
+   "feedback": 106,
+   "rgbd_capture_timing": 4,
+   "recording_start": 1,
+   "feedback_initial": 1,
+   "requested": 1,
+   "approved": 1,
+   "dispatch": 1,
+   "lease_expired": 1,
+   "recording_stop": 1,
+   "episode_terminal": 1
+  },
+  "rejected_complete": "not_recorded_in_this_scan",
+  "rejected_failed": "not_recorded_in_this_scan",
+  "lease_failed_counts": {
+   "lease_expired": 1
+  },
+  "terminal_failed_null_clocks": {
+   "unit": "second",
+   "numeric": 0,
+   "null": 1,
+   "other": 0
+  },
+  "target_candidates_per_frame": {
+   "candidate_count_per_frame_on_this_page": {
+    "1": 2
+   },
+   "frames_with_this_verdict": 2
+  },
+  "dispatch_candidates_per_frame": {
+   "candidate_count_per_frame_on_this_page": {
+    "0": 2
+   },
+   "frames_with_this_verdict": 2
+  },
+  "independent_tracks": [
+   "command_intent",
+   "command_receipt_accepted",
+   "episode_lifecycle",
+   "lease_boundary",
+   "recorded_state_initial"
+  ],
+  "control_source_status": "recorded_only_inside_payload_fields",
+  "takeover_recorded": false,
+  "commands_grouped": 20
+ },
+ "openapi_include_params": [
+  "include_time_quality",
+  "include_action_basis"
+ ]
+}

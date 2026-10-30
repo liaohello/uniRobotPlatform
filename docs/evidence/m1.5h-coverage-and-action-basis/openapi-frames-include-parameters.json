@@ -1,0 +1,25 @@
+{
+ "path": "/api/v1/episodes/{episode_id}/frames",
+ "parameters": [
+  {
+   "name": "include_time_quality",
+   "in": "query",
+   "required": false,
+   "schema": {
+    "type": "boolean",
+    "default": false,
+    "title": "Include Time Quality"
+   }
+  },
+  {
+   "name": "include_action_basis",
+   "in": "query",
+   "required": false,
+   "schema": {
+    "type": "boolean",
+    "default": false,
+    "title": "Include Action Basis"
+   }
+  }
+ ]
+}

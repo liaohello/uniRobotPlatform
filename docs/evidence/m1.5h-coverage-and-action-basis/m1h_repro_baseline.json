@@ -1,0 +1,23 @@
+{
+ "sources": "/home/liaozhengyan/Desktop/uniRobotPlatform/releases/m1w-20261029T155818Z-platform/backend",
+ "label": "BASELINE_a10b96b",
+ "anchor_file_lines": {
+  "lines_read": 3,
+  "blank_lines_skipped": 0,
+  "oversize_lines_skipped": 0,
+  "unparseable_lines_skipped": 1,
+  "non_object_lines_skipped": 0,
+  "prefiltered_lines_skipped": 0
+ },
+ "whole_anchor_file_scanned": true,
+ "reached_end_of_file": "field_not_in_this_build",
+ "every_line_decided": "field_not_in_this_build",
+ "covers_whole_episode": true,
+ "any_base_eligible_for_whole_episode": true,
+ "per_base_blocking": {
+  "capture_backend_monotonic_s": [],
+  "capture_sim_time_s": [],
+  "persist_backend_monotonic_s": []
+ },
+ "append_order_display_eligible": true
+}

@@ -82,3 +82,13 @@ Episode 只读面仍是**八条 GET**：本轮没有新增端点、没有通用�
 ## 7. 不主张
 
 生产部署、正式 M1.5 或 M1 验收；历史整车渲染与前端装配完成；跨流同步、统一历史游标、采样同刻、声明速率、全归档覆盖。FAILED 记录的锚点虽然时间上"干净"，但该记录本身仍是不完整终态：census 只说明可读锚点的时间质量，不认证录制的完整性或训练资格。
+
+---
+
+## 8. 更正（2026-10-30，M1.5h/S28/DEC-065）
+
+本节是本记录的最后一处改动，此后不再编辑本文件。
+
+- **覆盖规则收紧**：本文第 3 节的 `covers_whole_episode` 当时只由"扫描是否触顶"得出。该规则允许"锚点文件里存在超限或无法解析的行时，仍由其余干净锚点宣称整条 Episode 的 B 资格"。M1.5h 起 `covers_whole_episode` 同时要求扫描到达 EOF 且每一行都被判定；不可判定行（oversize／unparseable／non_object）以 `n_lines_are_undecidable_and_could_hide_anchors` 阻塞整集结论并给出 `record_position`，空行与"确认无关"的行仍判为良性、不阻塞。旧可选串 `scan_truncated_at_anchor_limit` 由 `scan_stopped_at_anchor_limit_before_eof` 取代。
+- **窗口范围表述更正**：本文第 44 行"带时间窗的页仍会返回同一份 Episode 级 census（窗只筛页，不改 census）"的结论正确，但当时的 `scope_note` 把"窗口页"与"截断扫描"并列为不支持整集声明的原因，容易被读成"页面带时间窗就降为窗口资格"。现行 `scope_note` 明确：窗只筛帧页，整集资格只看普查自身的覆盖与内容。真实复现请求：`...&time_base=capture_sim_time_s&time_from=0.2&time_to=0.6&include_time_quality=true` 返回 1 帧（302 条窗外），同一响应 census 仍 303 锚点、`covers_whole_episode=true`。
+- 上述缺陷在 `a10b96b` 上的复现与修正后对照见 [M1.5h 证据册](evidence/m1.5h-coverage-and-action-basis/README.md)（`m1h_repro_baseline.json`／`m1h_repro_corrected.json`）。本文其余实测数值（130/130、303 锚点、4.998/5.000/4.967 Hz、census 8,733 B 等）是当时候选 18979 的真实测量，保持不变。

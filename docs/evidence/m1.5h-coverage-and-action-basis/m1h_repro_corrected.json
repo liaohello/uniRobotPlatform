@@ -1,0 +1,29 @@
+{
+ "sources": "/home/liaozhengyan/Desktop/uniRobotPlatform/scratch/m1h-dev-20261030T001453Z/backend",
+ "label": "CORRECTED_m1h",
+ "anchor_file_lines": {
+  "lines_read": 3,
+  "blank_lines_skipped": 0,
+  "oversize_lines_skipped": 0,
+  "unparseable_lines_skipped": 1,
+  "non_object_lines_skipped": 0,
+  "prefiltered_lines_skipped": 0
+ },
+ "whole_anchor_file_scanned": true,
+ "reached_end_of_file": true,
+ "every_line_decided": false,
+ "covers_whole_episode": false,
+ "any_base_eligible_for_whole_episode": false,
+ "per_base_blocking": {
+  "capture_backend_monotonic_s": [
+   "1_lines_are_undecidable_and_could_hide_anchors"
+  ],
+  "capture_sim_time_s": [
+   "1_lines_are_undecidable_and_could_hide_anchors"
+  ],
+  "persist_backend_monotonic_s": [
+   "1_lines_are_undecidable_and_could_hide_anchors"
+  ]
+ },
+ "append_order_display_eligible": true
+}

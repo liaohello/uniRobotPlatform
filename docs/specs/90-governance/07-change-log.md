@@ -1,12 +1,22 @@
 # Specification 修订记录
 
-规范 ID：`GOV-CHANGELOG` · 责任层：治理 · 版本：V0.8（2026-10-24）
+规范 ID：`GOV-CHANGELOG` · 责任层：治理 · 版本：V0.9（2026-10-30）
 
 状态：设计草案；S08/S09 是用户提供的分析文本，不自动视为所有细节已确认。Waypoint 范围以 S10 的用户明确选择为准。诊断/草案实现证据见独立交付记录，正式 M1/M2 与工作台验收未执行。
 
 来源：[S08](sources/S08-frontend-ia-analysis.md)、[S09](sources/S09-unified-development-reuse-analysis.md)、[S10](sources/S10-waypoint-scope-confirmation.md)。
 
 [上级目录](README.md) · [总索引](../README.md)
+
+## V0.9｜2026-10-30
+
+### 2026-10-30 M1.5h 时间资格覆盖边界修正与历史动作／事件读取依据
+
+- 新增来源 S28（覆盖边界缺陷复现、修正要求与动作／事件实测依据的 Goal 原文）与决策 DEC-065（`covers_whole_episode` 需"到达 EOF"且"每行被判定"，逐基 `readable_anchor_timing_satisfies_schedule` 单列；不可判定行阻塞整集资格并给出 `record_position`，空行与确认无关行为良性；`scope_note` 更正为"窗只筛页、普查独立扫描锚点文件"；动作／事件十类按记录自身键分类与关联，`not_recorded`/`unknown` 不填充、不默认 Human、不把审批当执行；`include_action_basis` 为 opt-in、`frame-link-2` 不升版、不新增端点）。
+- [Episode/事件/标注契约](../30-contracts/03-episode-events-annotations.md)：census 小节改写覆盖规则与理由串，播放语义小节把覆盖类与时间类阻塞分列，新增两条 M1.5h 条款（`line_accounting` 三事实与计数分类规则；`action_basis` 词表、present/null 关联键、逐帧候选、命令链、控制来源、独立事件轨与必需流 `unknown` 上限）。[时间与坐标契约](../30-contracts/04-time-frames-units.md)追加覆盖边界三事实与动作／事件分类约束；[回放与数据验收](../40-verification/03-replay-data-acceptance.md)标注 TEST-REPLAY-003 的"明确缺失"新增支撑并重申跨流未证明；[M1.5g 交付记录](../../backend-m1.5g-anchor-time-quality.md)追加"更正"一节，写明旧规则只看 EOF 的缺陷与旧 `scope_note` 的易误读处，不改写其历史实测数值。
+- 实现：`backend/src/unirobot/frames.py`（`_stream_lines` 报告不可判定行、`LINE_ACCOUNTING` 分类规则、`_time_quality` 三事实与 `blocking_reason_scope`、`ACTION_CATEGORIES`/`ACTION_BASIS_RULES`/`_action_basis()` 有界 events 扫描、`recorded_target_event`/`command_dispatch_event` 可选角色与 `PAGE_ROLES` 覆盖统计、`_unit_of`/`_is_time_named` 按记录字段名定单位、`version_migration.corrections/additions`）、`backend/src/unirobot/api.py`（`include_action_basis` 参数透传）、新增 `backend/tools/anchor_coverage_repro.py`（基线与修正源码对照复现同一夹具）；`tools/episode_history_check.py` 断言 130 → **146**（本轮 16 项）；`tests/test_frames.py` 新增 9 项隔离用例并修正既有截断用例的理由串。
+- 服务器验证：候选 `m1h-20261030T002258Z-platform`（`127.0.0.1:18983`，PID 3745241，启动前端口实测空闲，独立 SQLite `frames-20261030T002258Z.sqlite3`，源码聚合 `68f481b38843d2bc…` 50 文件与启动清单 MATCH、清单内 `frames.py` 摘要与运行目录全等，启动清单 sha256 `90b5234d6308860d…`）读取检查 **146/146**、统一回归 **28/28**、冻结树聚焦 **69 passed**、全量 **203 passed / 3 项历史布局失败**（`test_catalog.py::test_catalog_loads_real_tasks`、`test_catalog.py::test_every_task_has_existing_evidence`、`test_migrate.py::test_manifest_sources_exist`，按名保留、不称全绿）；75 条请求全为 GET、946 文件 `drift=[]`、`live_scene_reads=0`；18977（M1.5f）与 18979（M1.5g）常驻未替换。真实测量：COMPLETE 普查 303 锚点、`undecidable_total=0`、整集资格仍为真；窗口页 1 帧 + 302 窗外而 census 仍 303 锚点；events 全量 12561 条 12 类（FAILED 224 条 11 类），`feedback.command_id` 全 null、`requested.control_tick_id` 全 null、`dispatch` 两键均 present，逐帧候选 `actuator_reference={"1":200}`、`dispatch={"0":199,"1":1}`；`rejected`、执行完成回执与接管事件类型 `not_recorded`；`episode_terminal` 数值时钟为 null；控制来源只见于 payload 字段。合成对照：同一含不可解析行的档案在 `a10b96b` 源码上报 `covers_whole_episode=true`/`any_base=true`，在修正源码上报 `covers_whole_episode=false` 与逐基 `1_lines_are_undecidable_and_could_hide_anchors`，A 在两版中均合格。交付前先在运行同一棵 dev 树的 scratch 实例（18981）跑通 146/146 再冻结，未产生半途 release；scratch 按命令行身份核对后停止。
+- 机器目录：补充来源 22 → 23 个，文档节点与 REQ 计数不变。三句结论仍分开表达："追加顺序播放可用""记录时间播放是否有资格（须逐基且逐覆盖）""跨流同步仍未证明"；本轮不做前端事件轨／倍速实现，不代表生产部署、正式 M1.5 或 M1 验收通过。
 
 ## V0.8｜2026-10-29
 
